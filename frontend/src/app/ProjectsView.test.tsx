@@ -89,7 +89,12 @@ describe('Project editor', () => {
 });
 
 describe('Project deletion', () => {
-  const project = { id: 77, name: 'Deletion QA', ownerEmail: props.user.email };
+  const project = {
+    id: 77,
+    name: 'Deletion QA',
+    ownerEmail: props.user.email,
+    version: 3,
+  };
   beforeEach(() => vi.clearAllMocks());
   it('explains cascading deletion, supports cancellation, and deletes with one request after confirmation', async () => {
     vi.mocked(api).mockResolvedValue(undefined);
@@ -111,6 +116,7 @@ describe('Project deletion', () => {
     expect(api).toHaveBeenCalledTimes(1);
     expect(api).toHaveBeenCalledWith('/workspace/trash/project/77', {
       method: 'PUT',
+      headers: { 'If-Match': '"3"' },
       body: JSON.stringify({ restore: false }),
     });
   });

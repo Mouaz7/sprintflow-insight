@@ -128,6 +128,11 @@ paths:
         '200': { description: Accessible projects }
     post:
       summary: Create a project owned by the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRequest' }
       responses:
         '200': { description: Created project }
   /api/projects/{id}:
@@ -138,6 +143,11 @@ paths:
     put:
       summary: Edit project details
       parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRequest' }
       responses:
         '200': { description: Updated project }
         '409': { $ref: '#/components/responses/Error' }
@@ -188,6 +198,11 @@ paths:
   /api/stories:
     post:
       summary: Create a user story and optionally assign it to a same-project sprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StoryRequest' }
       responses:
         '200': { description: Created story }
         '400': { $ref: '#/components/responses/Error' }
@@ -242,11 +257,21 @@ paths:
       responses: { '200': { description: Sprints } }
     post:
       summary: Create a dated sprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SprintRequest' }
       responses: { '200': { description: Created sprint } }
   /api/sprints/{id}:
     put:
       summary: Update sprint details and schedule
       parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SprintRequest' }
       responses: { '200': { description: Updated sprint } }
     delete:
       summary: Move a sprint and its active work to the recycle bin
@@ -274,6 +299,11 @@ paths:
       responses: { '200': { description: Project tasks } }
     post:
       summary: Create a task in a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskRequest' }
       responses: { '200': { description: Created task } }
   /api/tasks/{id}:
     get:
@@ -283,6 +313,11 @@ paths:
     put:
       summary: Update a task, including workflow status and associations
       parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskRequest' }
       responses: { '200': { description: Updated task } }
     delete:
       summary: Move a task to the recycle bin
@@ -487,7 +522,12 @@ paths:
       responses: { '200': { description: Account preferences } }
     put:
       summary: Update selected personal preferences
-      description: Accepts language (EN/SV), theme (light/dark), notifications, onboardingCompleted and savedFilters (a JSON array string). The server identifies the account from its session.
+      description: The server identifies the account from its session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferencesRequest' }
       responses: { '200': { description: Saved preferences }, '400': { $ref: '#/components/responses/Error' } }
   /api/auth/integrations:
     get:
@@ -657,20 +697,128 @@ components:
       schema: { type: integer, format: int64 }
   responses:
     RateLimited:
-      description: Too many authentication or recovery attempts from this client IP.
+      description: >-
+        Rate limit reached. Credential endpoints are limited per client address (fixed refill);
+        every other write is limited per account (300/min, smooth refill; uploads 30/min).
       headers:
         Retry-After:
           description: Seconds until another attempt is allowed.
           schema: { type: integer, minimum: 1 }
-    Error:
-      description: Validation, permission, or conflict error
+        RateLimit-Limit:
+          description: Bucket capacity for the applied policy.
+          schema: { type: integer }
+        RateLimit-Remaining:
+          description: Tokens left after this request.
+          schema: { type: integer, minimum: 0 }
       content:
-        application/json:
-          schema:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Error:
+      description: >-
+        RFC 9457 problem document. Branch on `code` (or `type`), never on the human-readable text.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    ProjectRequest:
+      type: object
+      description: Client-settable project fields. The owner is always the signed-in user.
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 255 }
+        description: { type: string, maxLength: 255, nullable: true }
+    StoryRequest:
+      type: object
+      description: Client-settable story fields. Backlog position changes only through the order endpoint.
+      required: [title, acceptanceCriteria, projectId]
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string, maxLength: 255, nullable: true }
+        acceptanceCriteria: { type: string, maxLength: 255 }
+        storyPoints: { type: integer, enum: [1, 2, 3, 5, 8] }
+        priorityId: { type: integer, minimum: 1, maximum: 3 }
+        businessValue: { type: integer, minimum: 1, maximum: 5, nullable: true }
+        projectId: { type: integer, format: int64 }
+        sprintId: { type: integer, format: int64, nullable: true }
+    SprintRequest:
+      type: object
+      required: [name, status, projectId, startDate, endDate]
+      properties:
+        name: { type: string, maxLength: 255 }
+        goal: { type: string, maxLength: 255, nullable: true }
+        status: { type: string, enum: [Planned, Active, Completed, Cancelled] }
+        totalStoryPoints: { type: integer, minimum: 0 }
+        projectId: { type: integer, format: int64 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+    TaskRequest:
+      type: object
+      description: >-
+        Client-settable task fields. Ids, versions, timestamps and recycle-bin state are
+        ignored if sent, so they cannot be mass-assigned.
+      required: [title, status, projectId]
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string, maxLength: 255, nullable: true }
+        status: { type: string, enum: [To Do, In Progress, Review, Done] }
+        blocked: { type: boolean }
+        blockReason: { type: string, maxLength: 255, nullable: true }
+        projectId: { type: integer, format: int64 }
+        sprintId: { type: integer, format: int64, nullable: true }
+        storyId: { type: integer, format: int64, nullable: true }
+        assigneeEmail: { type: string, maxLength: 255, nullable: true }
+        storyPoints: { type: integer, minimum: 0, maximum: 1000 }
+        dueAt: { type: string, format: date-time, nullable: true }
+        labels: { type: array, maxItems: 12, items: { type: string, maxLength: 32 } }
+        checklist:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [id, label]
+            properties:
+              id: { type: string, maxLength: 80 }
+              label: { type: string, maxLength: 180 }
+              completed: { type: boolean }
+              required: { type: boolean }
+    PreferencesRequest:
+      type: object
+      description: Partial update; omitted fields keep their stored value.
+      properties:
+        language: { type: string, enum: [EN, SV] }
+        theme: { type: string, enum: [light, dark] }
+        notifications: { type: boolean }
+        onboardingCompleted: { type: boolean }
+        savedFilters:
+          type: string
+          maxLength: 30000
+          description: JSON array (max 30) of objects with non-blank `id` and `name` (max 80 characters).
+    Problem:
+      type: object
+      required: [type, title, status, detail, code, message]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable problem type, `https://sprintflow.dev/problems/<kebab-case code>`.
+          example: https://sprintflow.dev/problems/validation-failed
+        title: { type: string, example: Validation failed }
+        status: { type: integer, example: 400 }
+        detail: { type: string, description: Human-readable explanation for this occurrence. }
+        instance: { type: string, description: Request path that failed. }
+        code:
+          type: string
+          enum: [MALFORMED_REQUEST, VALIDATION_FAILED, INVALID_PARAMETER, MISSING_PARAMETER, BAD_REQUEST, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, METHOD_NOT_ALLOWED, NOT_ACCEPTABLE, CONFLICT, GONE, PRECONDITION_FAILED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, PRECONDITION_REQUIRED, RATE_LIMITED, INTERNAL_ERROR, SERVICE_UNAVAILABLE]
+        message: { type: string, description: Same text as `detail`; kept for older clients. }
+        errors:
+          type: array
+          description: Present for VALIDATION_FAILED.
+          items:
             type: object
             properties:
+              field: { type: string }
               message: { type: string }
-  schemas:
+        errorId: { type: string, description: Present for INTERNAL_ERROR; quote it when reporting a problem. }
     Registration:
       type: object
       required: [email, password, displayName]

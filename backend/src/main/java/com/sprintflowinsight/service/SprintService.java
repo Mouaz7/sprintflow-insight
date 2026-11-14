@@ -26,8 +26,8 @@ public class SprintService {
   private final ActivityService activityService;
 
   // GET ALL SPRINT
-  public List<Sprint> getAllSprints() {
-    return sprintRepository.findAll().stream().filter(s -> s.getTrashedAt() == null).toList();
+  public List<Sprint> getSprintsVisibleTo(String email) {
+    return sprintRepository.findVisibleTo(email);
   }
 
   public List<Sprint> getSprintsForProject(Long projectId) {
@@ -89,7 +89,7 @@ public class SprintService {
     Sprint sprint =
         sprintRepository
             .findById(id)
-            .orElseThrow(() -> new NoSuchElementException("Sprint with id " + id + " not found"));
+            .orElseThrow(() -> com.sprintflowinsight.common.error.ApiException.notFound("Sprint not found."));
     return updateSprint(sprint, copyWithStatus(sprint, status), actorEmail);
   }
 

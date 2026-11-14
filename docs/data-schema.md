@@ -16,6 +16,8 @@ PostgreSQL is the system of record. The authoritative, executable schema is the 
 - `retrospective_entry` is project/sprint scoped. Account removal anonymizes its author; permanent project removal deletes the entries.
 - `shared_report` stores a hash of the random link token and a limited snapshot with creation/expiry times. Account removal revokes links created by that account; project removal deletes all project reports.
 
+Migration V13 adds the Spring Session tables `spring_session` and `spring_session_attributes`. `principal_name` holds `user:<id>`, which lets the server find and revoke all of an account's sessions.
+
 Migration V12 adds `user_stories.backlog_position` and a project/order index. Existing
 stories keep their relative ID order; subsequent manual changes are atomic and versioned.
 The backend owns the position field, and new stories append to their project's order.

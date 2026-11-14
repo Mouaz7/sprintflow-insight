@@ -27,3 +27,7 @@ the need for these exceptions. Do not suppress future findings automatically.
 Gitleaks scans both committed history and the candidate sources. `.env`, uploads, backups, artifacts and
 build output remain excluded from Git. No paths, values or test directories are
 allowlisted. Browser checks generate disposable passwords at run time.
+
+## Application controls
+
+The control-by-control mapping is in [ASVS coverage](security/asvs.md). Design decisions are recorded as [ADRs](adr/README.md).

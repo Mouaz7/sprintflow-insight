@@ -1,5 +1,7 @@
 package com.sprintflowinsight.story;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.model.Sprint;
 import com.sprintflowinsight.project.ProjectAccessService;
 import com.sprintflowinsight.project.ProjectRepository;
@@ -107,10 +109,10 @@ public class UserStoryController {
   @PostMapping
   @Transactional
   public ResponseEntity<?> createUserStory(
-      @Valid @RequestBody UserStory userStory, HttpSession session) {
-    if (userStory.getProjectId() == null
-        || !projectRepository.existsById(userStory.getProjectId())) {
-      return ResponseEntity.notFound().build();
+      @Valid @RequestBody StoryRequest request, HttpSession session) {
+    UserStory userStory = request.toEntity();
+    if (!projectRepository.existsById(userStory.getProjectId())) {
+      throw ApiException.notFound("Project not found.");
     }
     access.write(userStory.getProjectId(), session);
     mutations.lock(userStory.getProjectId());
@@ -118,8 +120,6 @@ public class UserStoryController {
     ResponseEntity<?> invalid = validateStory(userStory);
     if (invalid != null) return invalid;
     String actorEmail = access.email(session);
-    userStory.setId(null);
-    userStory.setVersion(null);
     userStory.setCreatedAt(Instant.now());
     userStory.setBacklogPosition(userStoryRepository.lastPosition(userStory.getProjectId()) + 1);
     UserStory savedStory = userStoryRepository.save(Objects.requireNonNull(userStory));
@@ -135,11 +135,12 @@ public class UserStoryController {
   @PutMapping("/{id}")
   public ResponseEntity<?> updateUserStory(
       @PathVariable("id") Long id,
-      @Valid @RequestBody UserStory storyDetails,
+      @Valid @RequestBody StoryRequest request,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
+    UserStory storyDetails = request.toEntity();
     if (!projectRepository.existsById(storyDetails.getProjectId())) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Project not found.");
     }
     access.write(storyDetails.getProjectId(), session);
     mutations.lock(storyDetails.getProjectId());
@@ -154,8 +155,7 @@ public class UserStoryController {
             story -> {
               com.sprintflowinsight.VersionPrecondition.require(ifMatch, story.getVersion());
               if (!story.getProjectId().equals(storyDetails.getProjectId()))
-                return ResponseEntity.badRequest()
-                    .body(java.util.Map.of("message", "A story cannot move to another project."));
+                throw ApiException.badRequest("A story cannot move to another project.");
               story.setTitle(storyDetails.getTitle());
               story.setDescription(storyDetails.getDescription());
               story.setAcceptanceCriteria(storyDetails.getAcceptanceCriteria());
@@ -175,7 +175,7 @@ public class UserStoryController {
                   actorEmail);
               return ResponseEntity.ok(saved);
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Story not found."));
   }
 
   @DeleteMapping("/{id}")
@@ -187,7 +187,7 @@ public class UserStoryController {
     UserStory story =
         userStoryRepository.findById(id).filter(item -> item.getTrashedAt() == null).orElse(null);
     if (story == null) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Story not found.");
     }
     access.write(story.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, story.getVersion());

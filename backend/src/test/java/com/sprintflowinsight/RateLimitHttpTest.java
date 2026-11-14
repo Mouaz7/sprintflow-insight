@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "app.security.auth-rate-limit.enabled=true"
     })
 @AutoConfigureMockMvc
-class AuthRateLimitHttpTest {
+class RateLimitHttpTest {
   @Autowired MockMvc mvc;
 
   @Test

@@ -1,5 +1,7 @@
 package com.sprintflowinsight.controller;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.model.Notification;
 import com.sprintflowinsight.model.Task;
 import com.sprintflowinsight.model.TaskComment;
@@ -44,7 +46,7 @@ public class CollaborationController {
   public ResponseEntity<List<TaskComment>> comments(
       @PathVariable Long taskId, HttpSession session) {
     Task task = tasks.gettaskById(taskId).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.read(task.getProjectId(), session);
     return ResponseEntity.ok(comments.findByTaskIdOrderByCreatedAtAsc(taskId));
   }
@@ -53,7 +55,7 @@ public class CollaborationController {
   public ResponseEntity<?> addComment(
       @PathVariable Long taskId, @Valid @RequestBody CommentRequest request, HttpSession session) {
     Task task = tasks.gettaskById(taskId).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     String actor = access.email(session);
     TaskComment comment = new TaskComment();

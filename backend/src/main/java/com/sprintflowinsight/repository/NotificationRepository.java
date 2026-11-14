@@ -25,6 +25,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   boolean existsByProjectIdAndRecipientEmailAndMessageAndCreatedAtAfter(
       Long projectId, String recipientEmail, String message, java.time.Instant createdAt);
 
+  @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+  @org.springframework.data.jpa.repository.Query(
+      """
+      update Notification n set n.isRead = true
+      where lower(n.recipientEmail) = lower(:email) and n.isRead = false
+      """)
+  int markAllRead(@org.springframework.data.repository.query.Param("email") String email);
+
   void deleteByRecipientEmail(String recipientEmail);
 
   void deleteByProjectId(Long projectId);

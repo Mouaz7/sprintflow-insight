@@ -55,6 +55,7 @@ export function ProjectsView({
     try {
       await api(`/workspace/trash/project/${item.id}`, {
         method: 'PUT',
+        headers: { 'If-Match': `"${item.version}"` },
         body: JSON.stringify({ restore: false }),
       });
       await onChanged();

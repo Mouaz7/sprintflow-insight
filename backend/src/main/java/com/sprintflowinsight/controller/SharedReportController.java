@@ -6,7 +6,6 @@ import com.sprintflowinsight.project.*;
 import com.sprintflowinsight.repository.*;
 import com.sprintflowinsight.service.MetricsService;
 import jakarta.servlet.http.HttpSession;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.time.Instant;
 import java.util.*;
@@ -41,10 +40,12 @@ public class SharedReportController {
 
   @PostMapping("/projects/{projectId}/reports")
   public Map<String, Object> create(
-      @PathVariable Long projectId, @RequestBody Map<String, Long> request, HttpSession session)
+      @PathVariable Long projectId,
+      @jakarta.validation.Valid @RequestBody ReportRequest request,
+      HttpSession session)
       throws Exception {
     access.adminOrOwner(projectId, session);
-    Long sprintId = request.get("sprintId");
+    Long sprintId = request.sprintId();
     if (sprintId != null
         && sprints
             .findById(sprintId)
@@ -71,9 +72,7 @@ public class SharedReportController {
             "statusCounts",
             "burndown",
             "burndownAvailable")) if (data.containsKey(key)) snapshot.put(key, data.get(key));
-    byte[] random = new byte[32];
-    new SecureRandom().nextBytes(random);
-    String token = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+    String token = com.sprintflowinsight.common.SecureTokens.token();
     var report = new SharedReport();
     report.setProjectId(projectId);
     report.setTokenHash(hash(token));
@@ -88,7 +87,8 @@ public class SharedReportController {
 
   @GetMapping("/projects/{projectId}/reports")
   public List<Map<String, Object>> list(@PathVariable Long projectId, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    // Listing and revoking stay possible on archived projects: they only reduce exposure.
+    access.require(projectId, session, com.sprintflowinsight.project.AccessContext.Need.MANAGE_ARCHIVED);
     return reports.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
         .map(
             r ->
@@ -97,9 +97,12 @@ public class SharedReportController {
         .toList();
   }
 
+  /** Optional sprint to scope the snapshot to; omitted means the whole project. */
+  public record ReportRequest(@jakarta.validation.constraints.Positive Long sprintId) {}
+
   @DeleteMapping("/projects/{projectId}/reports/{id}")
   public void revoke(@PathVariable Long projectId, @PathVariable Long id, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    access.require(projectId, session, com.sprintflowinsight.project.AccessContext.Need.MANAGE_ARCHIVED);
     var report =
         reports
             .findById(id)
@@ -126,9 +129,7 @@ public class SharedReportController {
     return json.readTree(report.getSnapshot());
   }
 
-  private String hash(String value) throws Exception {
-    return HexFormat.of()
-        .formatHex(
-            MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+  private String hash(String value) {
+    return com.sprintflowinsight.common.SecureTokens.sha256(value);
   }
 }

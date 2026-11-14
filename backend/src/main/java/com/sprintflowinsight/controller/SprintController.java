@@ -1,5 +1,7 @@
 package com.sprintflowinsight.controller;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.model.Sprint;
 import com.sprintflowinsight.project.ProjectAccessService;
@@ -45,21 +47,13 @@ public class SprintController {
       access.read(projectId, session);
       return sprintService.getSprintsForProject(projectId);
     }
-    return sprintService.getAllSprints().stream()
-        .filter(
-            s -> {
-              try {
-                access.roleFor(s.getProjectId(), email);
-                return true;
-              } catch (Exception ignored) {
-                return false;
-              }
-            })
-        .toList();
+    return sprintService.getSprintsVisibleTo(email);
   }
 
   @PostMapping
-  public ResponseEntity<?> createSprint(@Valid @RequestBody Sprint sprint, HttpSession session) {
+  public ResponseEntity<?> createSprint(
+      @Valid @RequestBody SprintRequest request, HttpSession session) {
+    Sprint sprint = request.toEntity();
     if (sprint.getStatus() == null || !VALID_STATUSES.contains(sprint.getStatus())) {
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
@@ -73,9 +67,6 @@ public class SprintController {
     access.write(sprint.getProjectId(), session);
     ResponseEntity<?> dateError = validateSprintDates(sprint);
     if (dateError != null) return dateError;
-    ResponseEntity<?> activeError =
-        validateSingleActiveSprint(sprint.getProjectId(), null, sprint.getStatus());
-    if (activeError != null) return activeError;
     String actorEmail = access.email(session);
     return ResponseEntity.ok(sprintService.createSprint(sprint, actorEmail));
   }
@@ -84,9 +75,10 @@ public class SprintController {
   @PutMapping("/{id}")
   public ResponseEntity<?> updateSprint(
       @PathVariable("id") Long id,
-      @Valid @RequestBody Sprint sprintDetails,
+      @Valid @RequestBody SprintRequest request,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
+    Sprint sprintDetails = request.toEntity();
     if (sprintDetails.getStatus() == null || !VALID_STATUSES.contains(sprintDetails.getStatus())) {
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
@@ -111,14 +103,10 @@ public class SprintController {
                     "A sprint cannot move to another project.");
               ResponseEntity<?> dateError = validateSprintDates(sprintDetails);
               if (dateError != null) return dateError;
-              ResponseEntity<?> activeError =
-                  validateSingleActiveSprint(
-                      sprintDetails.getProjectId(), id, sprintDetails.getStatus());
-              if (activeError != null) return activeError;
               return ResponseEntity.ok(
                   sprintService.updateSprint(sprint, sprintDetails, actorEmail));
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Sprint not found."));
   }
 
   @GetMapping("/{id}")
@@ -130,7 +118,7 @@ public class SprintController {
               access.read(sprint.getProjectId(), session);
               return ResponseEntity.ok(sprint);
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Sprint not found."));
   }
 
   @org.springframework.transaction.annotation.Transactional
@@ -147,12 +135,10 @@ public class SprintController {
     }
     Sprint sprint = sprintService.getSprintById(id).orElse(null);
     if (sprint == null) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Sprint not found.");
     }
     access.write(sprint.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, sprint.getVersion());
-    ResponseEntity<?> activeError = validateSingleActiveSprint(sprint.getProjectId(), id, status);
-    if (activeError != null) return activeError;
     String actorEmail = access.email(session);
     return ResponseEntity.ok(sprintService.updateSprintStatus(id, status, actorEmail));
   }
@@ -165,7 +151,7 @@ public class SprintController {
       HttpSession session) {
     Sprint sprint = sprintService.getSprintById(id).orElse(null);
     if (sprint == null) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Sprint not found.");
     }
     access.write(sprint.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, sprint.getVersion());
@@ -187,19 +173,4 @@ public class SprintController {
     return null;
   }
 
-  private ResponseEntity<?> validateSingleActiveSprint(
-      Long projectId, Long ignoredSprintId, String requestedStatus) {
-    if (!"Active".equals(requestedStatus)) return null;
-    boolean anotherActive =
-        sprintService.getSprintsForProject(projectId).stream()
-            .anyMatch(
-                existing ->
-                    "Active".equals(existing.getStatus())
-                        && !existing.getId().equals(ignoredSprintId));
-    if (anotherActive)
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.CONFLICT,
-          "Only one sprint can be active in a project at a time.");
-    return null;
-  }
 }

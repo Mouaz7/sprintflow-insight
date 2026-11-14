@@ -5,23 +5,40 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class SessionUser {
+  private static final String EMAIL_ATTRIBUTE = SessionUser.class.getName() + ".email.";
   private final UserRepository users;
 
   public SessionUser(UserRepository users) {
     this.users = users;
   }
 
+  /**
+   * The signed-in user's current email. Looked up by immutable id (so email changes take effect
+   * immediately) and memoised for the rest of the HTTP request.
+   */
   public String email(HttpSession session) {
-    return users
-        .findById(id(session))
-        .map(User::getEmail)
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sign in again to continue."));
+    Long id = id(session);
+    RequestAttributes request = RequestContextHolder.getRequestAttributes();
+    String key = EMAIL_ATTRIBUTE + id;
+    if (request != null
+        && request.getAttribute(key, RequestAttributes.SCOPE_REQUEST) instanceof String cached)
+      return cached;
+    String email =
+        users
+            .findById(id)
+            .map(User::getEmail)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Sign in again to continue."));
+    if (request != null) request.setAttribute(key, email, RequestAttributes.SCOPE_REQUEST);
+    return email;
   }
 
   public Long id(HttpSession session) {

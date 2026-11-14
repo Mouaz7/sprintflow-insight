@@ -1,5 +1,7 @@
 package com.sprintflowinsight.project;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.auth.UserRepository;
 import com.sprintflowinsight.service.ActivityService;
@@ -20,6 +22,7 @@ public class ProjectController {
   private final ProjectDeletionService deletion;
   private final ActivityService activity;
   private final com.sprintflowinsight.repository.TaskRepository tasks;
+  private final ProjectFactory factory;
 
   public ProjectController(
       ProjectRepository projects,
@@ -28,7 +31,9 @@ public class ProjectController {
       UserRepository users,
       ProjectDeletionService deletion,
       ActivityService activity,
-      com.sprintflowinsight.repository.TaskRepository tasks) {
+      com.sprintflowinsight.repository.TaskRepository tasks,
+      ProjectFactory factory) {
+    this.factory = factory;
     this.projects = projects;
     this.members = members;
     this.access = access;
@@ -49,24 +54,10 @@ public class ProjectController {
 
   @PostMapping
   @Transactional
-  public ResponseEntity<?> createProject(@Valid @RequestBody Project project, HttpSession session) {
+  public ResponseEntity<?> createProject(
+      @Valid @RequestBody ProjectRequest request, HttpSession session) {
     String email = access.email(session);
-    if (projects.findByName(project.getName().trim()).isPresent())
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.CONFLICT, "A project with this name already exists.");
-    project.setId(null);
-    project.setVersion(null);
-    project.setName(project.getName().trim());
-    project.setOwnerEmail(email);
-    Project saved = projects.save(project);
-    ProjectMember owner = new ProjectMember();
-    owner.setProjectId(saved.getId());
-    owner.setEmail(email);
-    owner.setRole("Owner");
-    members.save(owner);
-    activity.record(
-        saved.getId(), "PROJECT_CREATED", "Created project “" + saved.getName() + "”.", email);
-    return ResponseEntity.ok(saved);
+    return ResponseEntity.ok(factory.create(request.trimmedName(), request.description(), email));
   }
 
   @GetMapping("/{id}")
@@ -79,13 +70,12 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> updateProject(
       @PathVariable Long id,
-      @Valid @RequestBody Project details,
+      @Valid @RequestBody ProjectRequest details,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
-    access.adminOrOwner(id, session);
-    access.write(id, session);
+    access.require(id, session, AccessContext.Need.MANAGE);
     if (projects
-        .findByName(details.getName().trim())
+        .findByName(details.trimmedName())
         .filter(p -> !p.getId().equals(id))
         .isPresent())
       return ApiExceptionHandler.error(
@@ -95,8 +85,8 @@ public class ProjectController {
         .map(
             p -> {
               com.sprintflowinsight.VersionPrecondition.require(ifMatch, p.getVersion());
-              p.setName(details.getName().trim());
-              p.setDescription(details.getDescription());
+              p.setName(details.trimmedName());
+              p.setDescription(details.description());
               Project saved = projects.save(p);
               activity.record(
                   id,
@@ -105,7 +95,7 @@ public class ProjectController {
                   access.email(session));
               return ResponseEntity.ok(saved);
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Project not found."));
   }
 
   @DeleteMapping("/{id}")
@@ -129,7 +119,7 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> addMember(
       @PathVariable Long id, @Valid @RequestBody MemberRequest request, HttpSession session) {
-    access.adminOrOwner(id, session);
+    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
     String email = request.email().trim().toLowerCase();
     if (users.findByEmail(email).isEmpty())
       return ApiExceptionHandler.error(
@@ -146,6 +136,9 @@ public class ProjectController {
           "Transfer ownership before changing the owner role.");
     ProjectMember member =
         members.findByProjectIdAndEmailIgnoreCase(id, email).orElseGet(ProjectMember::new);
+    requireMayManage(caller, member.getId() == null ? null : member.getRole(), email);
+    if (caller.role() != ProjectRole.OWNER && ProjectRole.fromLabel(request.role()) == ProjectRole.ADMIN)
+      throw ApiException.forbidden("Only the project owner can appoint admins.");
     member.setProjectId(id);
     member.setEmail(email);
     member.setRole(request.role());
@@ -159,16 +152,16 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> removeMember(
       @PathVariable Long id, @PathVariable String email, HttpSession session) {
-    access.adminOrOwner(id, session);
+    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
     Project p = projects.lockById(id).orElseThrow();
     if (p.getOwnerEmail().equalsIgnoreCase(email))
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.CONFLICT,
           "Transfer ownership before removing the owner.");
-    if (members.findByProjectIdAndEmailIgnoreCase(id, email).isEmpty())
-      return ResponseEntity.noContent().build();
-    for (var task : tasks.findAllByProjectIdAndAssigneeEmailIgnoreCase(id, email))
-      task.setAssigneeEmail(null);
+    var existing = members.findByProjectIdAndEmailIgnoreCase(id, email);
+    if (existing.isEmpty()) return ResponseEntity.noContent().build();
+    requireMayManage(caller, existing.get().getRole(), email);
+    tasks.unassignInProject(id, email);
     members.deleteByProjectIdAndEmailIgnoreCase(id, email);
     activity.record(
         id, "MEMBER_REMOVED", "Removed project member " + email + ".", access.email(session));
@@ -178,12 +171,8 @@ public class ProjectController {
   @PutMapping("/{id}/owner")
   @Transactional
   public ResponseEntity<?> transferOwnership(
-      @PathVariable Long id, @RequestBody OwnershipRequest request, HttpSession session) {
+      @PathVariable Long id, @Valid @RequestBody OwnershipRequest request, HttpSession session) {
     access.owner(id, session);
-    if (request.email() == null || request.email().isBlank())
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.BAD_REQUEST,
-          "Choose a project member to receive ownership.");
     String nextOwner = request.email().trim().toLowerCase();
     if (users.findByEmail(nextOwner).isEmpty())
       return ApiExceptionHandler.error(
@@ -214,9 +203,23 @@ public class ProjectController {
     return ResponseEntity.ok(saved);
   }
 
+  /**
+   * Admins manage members and viewers. Only the owner may change or remove another admin; an
+   * admin may still step down or leave themselves.
+   */
+  private static void requireMayManage(AccessContext caller, String targetRole, String targetEmail) {
+    if (caller.role() == ProjectRole.OWNER || targetRole == null) return;
+    if (ProjectRole.fromLabel(targetRole) == ProjectRole.ADMIN
+        && !caller.email().equalsIgnoreCase(targetEmail))
+      throw ApiException.forbidden("Only the project owner can change or remove another admin.");
+  }
+
   public record MemberRequest(
       @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Email String email,
       @jakarta.validation.constraints.NotBlank String role) {}
 
-  public record OwnershipRequest(String email) {}
+  public record OwnershipRequest(
+      @jakarta.validation.constraints.NotBlank(message = "Choose a project member to receive ownership.")
+          @jakarta.validation.constraints.Email(message = "Enter a valid email address.")
+          String email) {}
 }

@@ -1,9 +1,5 @@
 package com.sprintflowinsight.auth;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.project.ProjectMemberRepository;
 import com.sprintflowinsight.project.ProjectRepository;
@@ -16,12 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,6 +56,18 @@ public class AuthController {
   @Autowired private ActivityService activityService;
 
   @Autowired private SessionUser sessionUser;
+
+  @Autowired private UserSessions userSessions;
+
+  @Autowired private GoogleTokenVerifier googleTokens;
+
+  /** Compared against when an account has no recovery code, so timing does not reveal that. */
+  private volatile String unusedRecoveryHash;
+
+  private String unusedRecoveryHash() {
+    if (unusedRecoveryHash == null) unusedRecoveryHash = passwordEncoder.encode(createToken());
+    return unusedRecoveryHash;
+  }
 
   @Autowired(required = false)
   private JavaMailSender mailSender;
@@ -154,8 +158,11 @@ public class AuthController {
   }
 
   @PostMapping("/password/change")
+  @Transactional
   public ResponseEntity<?> changePassword(
-      @Valid @RequestBody PasswordChangeRequest request, HttpSession session) {
+      @Valid @RequestBody PasswordChangeRequest request,
+      HttpSession session,
+      HttpServletRequest servletRequest) {
     if (!sessionUser.email(session).equals(request.email().trim().toLowerCase()))
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.FORBIDDEN,
@@ -174,6 +181,7 @@ public class AuthController {
     }
     user.setPassword(passwordEncoder.encode(request.newPassword()));
     userRepository.save(user);
+    userSessions.rotateAndRevokeOthers(servletRequest, user.getId());
     return ResponseEntity.ok(Map.of("message", "Password updated."));
   }
 
@@ -253,12 +261,11 @@ public class AuthController {
     notificationService.deleteForUser(user.getEmail());
     activityService.deleteForActor(user.getEmail());
     projectMemberRepository.deleteByEmailIgnoreCase(user.getEmail());
-    taskRepository
-        .findByAssigneeEmailIgnoreCase(user.getEmail())
-        .forEach(task -> task.setAssigneeEmail(null));
+    taskRepository.unassignEverywhere(user.getEmail());
     retrospectives.anonymizeAuthor(user.getEmail());
     sharedReports.deleteByCreatedBy(user.getEmail());
     userRepository.delete(user);
+    userSessions.revokeAll(user.getId());
     session.invalidate();
     return ResponseEntity.ok(Map.of("message", "Account deleted."));
   }
@@ -324,20 +331,13 @@ public class AuthController {
           org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
           "Google login is not configured yet.");
     }
-    try {
-      GoogleIdTokenVerifier verifier =
-          new GoogleIdTokenVerifier.Builder(
-                  new NetHttpTransport(), GsonFactory.getDefaultInstance())
-              .setAudience(List.of(clientId))
-              .build();
-      GoogleIdToken idToken = verifier.verify(request.credential());
-      if (idToken == null || !Boolean.TRUE.equals(idToken.getPayload().getEmailVerified())) {
-        return ApiExceptionHandler.error(
-            org.springframework.http.HttpStatus.UNAUTHORIZED,
-            "Google could not verify this account.");
-      }
-      GoogleIdToken.Payload payload = idToken.getPayload();
-      String email = payload.getEmail().trim().toLowerCase();
+    var verified = googleTokens.verify(request.credential(), clientId);
+    if (verified.isEmpty())
+      return ApiExceptionHandler.error(
+          org.springframework.http.HttpStatus.UNAUTHORIZED, "Google could not verify this account.");
+    var payload = verified.get();
+    {
+      String email = payload.email().trim().toLowerCase(java.util.Locale.ROOT);
       User user =
           userRepository
               .findByEmail(email)
@@ -346,40 +346,40 @@ public class AuthController {
                     User created = new User();
                     created.setEmail(email);
                     created.setPassword(passwordEncoder.encode(createToken()));
-                    created.setDisplayName((String) payload.get("name"));
-                    created.setAvatarImage((String) payload.get("picture"));
+                    created.setDisplayName(payload.name());
+                    created.setAvatarImage(payload.picture());
                     return userRepository.save(created);
                   });
       authenticationSessions.signIn(user.getEmail(), servletRequest, servletResponse);
       return ResponseEntity.ok(user);
-    } catch (Exception exception) {
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.UNAUTHORIZED,
-          "Google could not verify this account.");
     }
   }
 
+  /**
+   * Unknown account, account without a recovery code and wrong code all produce the same 401 and
+   * cost one BCrypt comparison, so the endpoint does not reveal which accounts exist or have a
+   * code.
+   */
   @PostMapping("/password/reset/recovery")
+  @Transactional
   public ResponseEntity<?> resetPasswordWithRecoveryCode(
       @Valid @RequestBody RecoveryPasswordResetRequest request) {
-    Optional<User> existingUser = userRepository.findByEmail(request.email().trim().toLowerCase());
-    if (existingUser.isEmpty()) {
+    Optional<User> existingUser =
+        userRepository.findByEmail(request.email().trim().toLowerCase(java.util.Locale.ROOT));
+    String storedHash =
+        existingUser.map(User::getRecoveryCodeHash).orElse(null);
+    boolean matches =
+        passwordEncoder.matches(
+            request.recoveryCode(), storedHash == null ? unusedRecoveryHash() : storedHash);
+    if (storedHash == null || !matches) {
+      SECURITY_LOG.warn("Rejected a recovery-code password reset.");
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.UNAUTHORIZED, "Email or recovery code is incorrect.");
-    }
-    if (existingUser.get().getRecoveryCodeHash() == null) {
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.BAD_REQUEST,
-          "No recovery code is saved for this account. Log in and add one in Profile.");
-    }
-    if (!passwordEncoder.matches(
-        request.recoveryCode(), existingUser.get().getRecoveryCodeHash())) {
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.UNAUTHORIZED, "Recovery code is incorrect.");
     }
     User user = existingUser.get();
     user.setPassword(passwordEncoder.encode(request.newPassword()));
     userRepository.save(user);
+    userSessions.revokeAll(user.getId());
     return ResponseEntity.ok(Map.of("message", "Password updated. You can now log in."));
   }
 
@@ -399,13 +399,12 @@ public class AuthController {
     user.setPassword(passwordEncoder.encode(request.newPassword()));
     userRepository.save(user);
     passwordResetTokenRepository.delete(resetToken.get());
+    userSessions.revokeAll(user.getId());
     return ResponseEntity.ok(Map.of("message", "Password updated. You can now log in."));
   }
 
   private String createToken() {
-    byte[] bytes = new byte[32];
-    new SecureRandom().nextBytes(bytes);
-    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    return com.sprintflowinsight.common.SecureTokens.token();
   }
 
   private JavaMailSender activeMailSender() {
@@ -432,13 +431,6 @@ public class AuthController {
   }
 
   private String hash(String value) {
-    try {
-      return java.util.HexFormat.of()
-          .formatHex(
-              MessageDigest.getInstance("SHA-256")
-                  .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-    } catch (NoSuchAlgorithmException exception) {
-      throw new IllegalStateException("SHA-256 is unavailable.", exception);
-    }
+    return com.sprintflowinsight.common.SecureTokens.sha256(value);
   }
 }

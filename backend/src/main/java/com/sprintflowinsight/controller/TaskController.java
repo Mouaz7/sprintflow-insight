@@ -1,5 +1,7 @@
 package com.sprintflowinsight.controller;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.model.Sprint;
 import com.sprintflowinsight.model.Task;
@@ -76,7 +78,8 @@ public class TaskController {
 
   @org.springframework.transaction.annotation.Transactional
   @PostMapping
-  public ResponseEntity<?> createTask(@Valid @RequestBody Task task, HttpSession session) {
+  public ResponseEntity<?> createTask(@Valid @RequestBody TaskRequest request, HttpSession session) {
+    Task task = request.toEntity();
     if (task.getStatus() == null || !VALID_STATUSES.contains(task.getStatus()))
       return error("Status must be To Do, In Progress, Review, or Done.");
     if (task.getProjectId() == null || !projects.existsById(task.getProjectId()))
@@ -92,13 +95,14 @@ public class TaskController {
   @PutMapping("/{id}")
   public ResponseEntity<?> updateTask(
       @PathVariable Long id,
-      @Valid @RequestBody Task changes,
+      @Valid @RequestBody TaskRequest request,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
+    Task changes = request.toEntity();
     if (changes.getStatus() == null || !VALID_STATUSES.contains(changes.getStatus()))
       return error("Status must be To Do, In Progress, Review, or Done.");
     Task task = taskService.gettaskById(id).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, task.getVersion());
@@ -116,7 +120,7 @@ public class TaskController {
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
     Task task = taskService.gettaskById(id).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, task.getVersion());
@@ -132,7 +136,7 @@ public class TaskController {
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
     Task task = taskService.gettaskById(id).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, task.getVersion());
@@ -148,7 +152,7 @@ public class TaskController {
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
     Task task = taskService.gettaskById(id).orElse(null);
-    if (task == null) return ResponseEntity.notFound().build();
+    if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, task.getVersion());

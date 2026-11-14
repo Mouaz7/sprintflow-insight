@@ -19,7 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
       "spring.datasource.url=jdbc:h2:mem:security-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
       "spring.datasource.driver-class-name=org.h2.Driver",
       "spring.jpa.hibernate.ddl-auto=create-drop",
-      "spring.flyway.enabled=false"
+      "spring.flyway.enabled=false",
+      "spring.session.jdbc.initialize-schema=always"
     })
 @ActiveProfiles("dev")
 @org.junit.jupiter.api.extension.ExtendWith(
@@ -40,7 +41,14 @@ class SecurityConfigurationTest {
         .contains("default-src 'self'");
     assertThat(publicResponse.getHeaders().getFirst("Referrer-Policy"))
         .isEqualTo("strict-origin-when-cross-origin");
-    assertThat(publicResponse.getHeaders().getFirst("Permissions-Policy")).contains("camera=()");
+    assertThat(publicResponse.getHeaders().getFirst("Permissions-Policy"))
+        .contains("camera=()", "payment=()");
+    assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy"))
+        .contains("frame-ancestors 'none'", "object-src 'none'");
+    assertThat(publicResponse.getHeaders().getFirst("Cross-Origin-Resource-Policy"))
+        .isEqualTo("same-origin");
+    assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy-Report-Only"))
+        .isEqualTo("require-trusted-types-for 'script'");
   }
 
   @Test
@@ -77,13 +85,15 @@ class SecurityConfigurationTest {
 
   @Test
   void forbiddenApiResponseIsLoggedWithoutSensitiveReason(
-      org.springframework.boot.test.system.CapturedOutput output) {
+      org.springframework.boot.test.system.CapturedOutput output) throws Exception {
     String sensitiveReason = "private-api-error-token-not-for-logs";
     ResponseEntity<?> response =
         new ApiExceptionHandler()
-            .handleAccessError(
+            .handleException(
                 new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.FORBIDDEN, sensitiveReason));
+                    HttpStatus.FORBIDDEN, sensitiveReason),
+                new org.springframework.web.context.request.ServletWebRequest(
+                    new org.springframework.mock.web.MockHttpServletRequest()));
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     assertThat(output.getOut()).contains("Denied API operation.").doesNotContain(sensitiveReason);
   }

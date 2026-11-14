@@ -1,5 +1,7 @@
 package com.sprintflowinsight.service;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.model.Task;
 import com.sprintflowinsight.model.TaskAttachment;
 import com.sprintflowinsight.model.TaskStatusHistory;
@@ -169,8 +171,9 @@ public class TaskService {
   @Transactional
   public Task blockTask(long id, String reason, String actorEmail) {
     Task task =
-        Objects.requireNonNull(
-            taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found")));
+        taskRepository
+            .findById(id)
+            .orElseThrow(() -> ApiException.notFound("Task not found."));
     mutations.lock(task.getProjectId());
 
     task.setBlocked(true);
@@ -190,8 +193,9 @@ public class TaskService {
   @Transactional
   public Task unblockTask(long id, String actorEmail) {
     Task task =
-        Objects.requireNonNull(
-            taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found")));
+        taskRepository
+            .findById(id)
+            .orElseThrow(() -> ApiException.notFound("Task not found."));
     mutations.lock(task.getProjectId());
 
     task.setBlocked(false);
