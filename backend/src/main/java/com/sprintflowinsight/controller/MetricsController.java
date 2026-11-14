@@ -6,6 +6,7 @@ import com.sprintflowinsight.project.Project;
 import com.sprintflowinsight.project.ProjectAccessService;
 import com.sprintflowinsight.project.ProjectRepository;
 import com.sprintflowinsight.repository.TaskRepository;
+import com.sprintflowinsight.service.PdfReportWriter;
 import com.sprintflowinsight.service.ActivityService;
 import com.sprintflowinsight.service.MetricsService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,13 +44,16 @@ public class MetricsController {
   private final ActivityService activity;
   private final TaskRepository tasks;
   private final ProjectAccessService access;
+  private final PdfReportWriter pdfWriter;
 
   public MetricsController(
       ProjectRepository projects,
       MetricsService metrics,
       ActivityService activity,
       TaskRepository tasks,
-      ProjectAccessService access) {
+      ProjectAccessService access,
+      PdfReportWriter pdfWriter) {
+    this.pdfWriter = pdfWriter;
     this.projects = projects;
     this.metrics = metrics;
     this.activity = activity;
@@ -162,48 +166,52 @@ public class MetricsController {
     Project project = projects.findById(projectId).orElseThrow();
     List<Task> selectedTasks = scopedTasks(projectId, sprintId, filters);
 
-    List<String> lines = new ArrayList<>();
-    lines.add("SPRINTFLOW INSIGHT");
-    lines.add("Project: " + project.getName());
-    lines.add("Generated: " + EXPORT_TIME.format(Instant.now()));
-    lines.add("Scope: " + (sprintId == null ? "All sprints" : "Sprint " + sprintId));
-    lines.add("Filters: " + filters.description());
-    lines.add("");
-    lines.add("DELIVERY SUMMARY");
     long completed = selectedTasks.stream().filter(task -> "Done".equals(task.getStatus())).count();
     long completedPoints =
         selectedTasks.stream()
             .filter(task -> "Done".equals(task.getStatus()))
             .mapToLong(Task::getStoryPoints)
             .sum();
-    lines.add("Selected tasks: " + selectedTasks.size() + "   |   Completed tasks: " + completed);
+    List<PdfReportWriter.Line> lines = new ArrayList<>();
+    lines.add(PdfReportWriter.Line.title("SprintFlow Insight"));
+    lines.add(PdfReportWriter.Line.body("Project: " + project.getName()));
+    lines.add(PdfReportWriter.Line.body("Generated: " + EXPORT_TIME.format(Instant.now())));
     lines.add(
-        "Completed points: "
-            + completedPoints
-            + "   |   Open work: "
-            + (selectedTasks.size() - completed));
-    lines.add("Blocked tasks: " + selectedTasks.stream().filter(Task::isBlocked).count());
-    lines.add("");
-    lines.add("TASKS");
-    if (selectedTasks.isEmpty()) {
-      lines.add("No tasks match this export.");
-    } else {
-      for (Task task : selectedTasks) {
-        lines.add(
-            task.getTitle()
-                + " — "
-                + task.getStatus()
-                + " — "
-                + task.getStoryPoints()
-                + " pts"
-                + (task.getDueAt() == null ? "" : " — due " + EXPORT_TIME.format(task.getDueAt()))
-                + (task.isBlocked() ? " — BLOCKED" : ""));
-      }
-    }
+        PdfReportWriter.Line.body(
+            "Scope: " + (sprintId == null ? "All sprints" : "Sprint " + sprintId)));
+    lines.add(PdfReportWriter.Line.body("Filters: " + filters.description()));
+    lines.add(PdfReportWriter.Line.heading("DELIVERY SUMMARY"));
+    lines.add(
+        PdfReportWriter.Line.body(
+            "Selected tasks: " + selectedTasks.size() + "   |   Completed tasks: " + completed));
+    lines.add(
+        PdfReportWriter.Line.body(
+            "Completed points: "
+                + completedPoints
+                + "   |   Open work: "
+                + (selectedTasks.size() - completed)));
+    lines.add(
+        PdfReportWriter.Line.body(
+            "Blocked tasks: " + selectedTasks.stream().filter(Task::isBlocked).count()));
+    lines.add(PdfReportWriter.Line.heading("TASKS"));
+    if (selectedTasks.isEmpty()) lines.add(PdfReportWriter.Line.body("No tasks match this export."));
+    for (Task task : selectedTasks)
+      lines.add(
+          PdfReportWriter.Line.body(
+              task.getTitle()
+                  + " — "
+                  + task.getStatus()
+                  + " — "
+                  + task.getStoryPoints()
+                  + " pts"
+                  + (task.getDueAt() == null ? "" : " — due " + EXPORT_TIME.format(task.getDueAt()))
+                  + (task.isBlocked() ? " — BLOCKED" : "")));
+    byte[] pdf = pdfWriter.render("SprintFlow Insight — " + project.getName(), lines);
     response.setContentType("application/pdf");
     response.setHeader(
         "Content-Disposition", "attachment; filename=sprintflow-" + projectId + ".pdf");
-    response.getOutputStream().write(buildPdf(lines));
+    response.setContentLength(pdf.length);
+    response.getOutputStream().write(pdf);
   }
 
   private List<Task> scopedTasks(
@@ -215,91 +223,8 @@ public class MetricsController {
         .toList();
   }
 
-  private byte[] buildPdf(List<String> lines) throws IOException {
-    List<String> wrapped = new ArrayList<>();
-    for (String line : lines) {
-      String remaining = line == null ? "" : line;
-      while (remaining.length() > 88) {
-        int cut = remaining.lastIndexOf(' ', 88);
-        if (cut < 1) cut = 88;
-        wrapped.add(remaining.substring(0, cut));
-        remaining = remaining.substring(cut).stripLeading();
-      }
-      wrapped.add(remaining);
-    }
-    List<List<String>> pages = new ArrayList<>();
-    for (int index = 0; index < wrapped.size(); index += 42)
-      pages.add(wrapped.subList(index, Math.min(index + 42, wrapped.size())));
-    if (pages.isEmpty()) pages.add(List.of("SprintFlow Insight"));
 
-    int pageCount = pages.size();
-    int fontId = 3 + pageCount * 2;
-    List<byte[]> objects = new ArrayList<>();
-    objects.add(ascii("<< /Type /Catalog /Pages 2 0 R >>"));
-    StringBuilder kids = new StringBuilder("<< /Type /Pages /Kids [");
-    for (int page = 0; page < pageCount; page++) kids.append(3 + page * 2).append(" 0 R ");
-    kids.append("] /Count ").append(pageCount).append(" >>");
-    objects.add(ascii(kids.toString()));
 
-    for (int page = 0; page < pageCount; page++) {
-      int pageId = 3 + page * 2;
-      int contentId = pageId + 1;
-      StringBuilder content = new StringBuilder("BT\n/F1 11 Tf\n48 750 Td\n15 TL\n");
-      for (String line : pages.get(page))
-        content.append('(').append(pdfEscape(line)).append(") Tj\nT*\n");
-      content.append("ET\n");
-      byte[] stream = content.toString().getBytes(StandardCharsets.ISO_8859_1);
-      objects.add(
-          ascii(
-              "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 "
-                  + fontId
-                  + " 0 R >> >> /Contents "
-                  + contentId
-                  + " 0 R >>"));
-      ByteArrayOutputStream contentObject = new ByteArrayOutputStream();
-      contentObject.write(ascii("<< /Length " + stream.length + " >>\nstream\n"));
-      contentObject.write(stream);
-      contentObject.write(ascii("endstream"));
-      objects.add(contentObject.toByteArray());
-    }
-    objects.add(
-        ascii("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
-
-    ByteArrayOutputStream pdf = new ByteArrayOutputStream();
-    pdf.write(ascii("%PDF-1.4\n%âãÏÓ\n"));
-    List<Integer> offsets = new ArrayList<>();
-    offsets.add(0);
-    for (int index = 0; index < objects.size(); index++) {
-      offsets.add(pdf.size());
-      pdf.write(ascii((index + 1) + " 0 obj\n"));
-      pdf.write(objects.get(index));
-      pdf.write(ascii("\nendobj\n"));
-    }
-    int xref = pdf.size();
-    pdf.write(ascii("xref\n0 " + (objects.size() + 1) + "\n0000000000 65535 f \n"));
-    for (int offset = 1; offset < offsets.size(); offset++)
-      pdf.write(ascii(String.format(Locale.ROOT, "%010d 00000 n \n", offsets.get(offset))));
-    pdf.write(
-        ascii(
-            "trailer\n<< /Size "
-                + (objects.size() + 1)
-                + " /Root 1 0 R >>\nstartxref\n"
-                + xref
-                + "\n%%EOF"));
-    return pdf.toByteArray();
-  }
-
-  private byte[] ascii(String value) {
-    return value.getBytes(StandardCharsets.ISO_8859_1);
-  }
-
-  private String pdfEscape(String value) {
-    return value
-        .replaceAll("[^\\x20-\\xFF]", "?")
-        .replace("\\", "\\\\")
-        .replace("(", "\\(")
-        .replace(")", "\\)");
-  }
 
   private String q(String value) {
     return com.sprintflowinsight.CsvCell.quote(value);

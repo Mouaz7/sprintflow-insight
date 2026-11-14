@@ -166,7 +166,7 @@ class SprintFlowIntegrationTest {
             new HttpEntity<>(cookieHeaders()),
             byte[].class);
     assertThat(pdf.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(new String(pdf.getBody(), StandardCharsets.ISO_8859_1))
+    assertThat(pdfText(pdf.getBody()))
         .contains("Unique export match", "Selected tasks: 1");
     assertThat(
             rest.exchange(
@@ -2402,17 +2402,10 @@ class SprintFlowIntegrationTest {
             HttpMethod.GET,
             new HttpEntity<>(exportHeaders),
             byte[].class);
-    String pdfText = new String(pdf.getBody(), StandardCharsets.ISO_8859_1);
     assertThat(pdf.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(pdf.getHeaders().getContentType().toString()).startsWith("application/pdf");
-    assertThat(pdfText)
-        .startsWith("%PDF-1.4")
-        .contains(
-            "/Type /Catalog",
-            "/Type /Page",
-            "/Contents 4 0 R",
-            "DELIVERY SUMMARY",
-            "Overdue upload task");
+    assertThat(new String(pdf.getBody(), 0, 5, StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
+    assertThat(pdfText(pdf.getBody())).contains("DELIVERY SUMMARY", "Overdue upload task");
   }
 
   @Test
@@ -2826,6 +2819,14 @@ class SprintFlowIntegrationTest {
     HttpHeaders headers = new HttpHeaders();
     if (sessionCookie != null) headers.set(HttpHeaders.COOKIE, sessionCookie);
     return headers;
+  }
+
+  private static String pdfText(byte[] pdf) {
+    try (var document = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+      return new org.apache.pdfbox.text.PDFTextStripper().getText(document);
+    } catch (java.io.IOException invalid) {
+      throw new AssertionError("Export is not a readable PDF", invalid);
+    }
   }
 
   private HttpHeaders csrfHeaders() {
