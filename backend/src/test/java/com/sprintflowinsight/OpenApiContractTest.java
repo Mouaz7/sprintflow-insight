@@ -58,6 +58,22 @@ class OpenApiContractTest {
                     .as("every ErrorCode is documented, and nothing else")
                     .containsExactlyInAnyOrderElementsOf(java.util.Arrays.stream(
                             com.sprintflowinsight.common.error.ErrorCode.values()).map(Enum::name).toList());
+
+            // Documented request schemas must list exactly the fields the request records accept.
+            Map<String, Class<? extends Record>> requests = Map.of(
+                    "ProjectRequest", com.sprintflowinsight.project.ProjectRequest.class,
+                    "StoryRequest", com.sprintflowinsight.story.StoryRequest.class,
+                    "SprintRequest", com.sprintflowinsight.controller.SprintRequest.class,
+                    "TaskRequest", com.sprintflowinsight.controller.TaskRequest.class,
+                    "PreferencesRequest", com.sprintflowinsight.auth.PreferencesRequest.class);
+            requests.forEach((name, type) -> {
+                Map<String, Object> documented = (Map<String, Object>) schemas.get(name);
+                assertThat(documented).as(name + " is documented").isNotNull();
+                assertThat(((Map<String, Object>) documented.get("properties")).keySet())
+                        .as(name + " properties")
+                        .containsExactlyInAnyOrderElementsOf(java.util.Arrays.stream(type.getRecordComponents())
+                                .map(java.lang.reflect.RecordComponent::getName).toList());
+            });
         }
     }
 }
