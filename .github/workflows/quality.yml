@@ -1,0 +1,143 @@
+name: Quality and package check
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Check repository documentation and exclusions
+        run: node scripts/verification/repository-check.ts
+      - run: npm ci --prefix scripts
+      - name: Type-check verification scripts
+        run: npm run check --prefix scripts
+      - run: npm ci --prefix frontend
+      - run: npm run check --prefix frontend
+      - run: ./mvnw -q verify
+        working-directory: backend
+      - name: Verify the packaged app contains the frontend
+        shell: bash
+        working-directory: backend
+        run: jar tf target/*.jar | grep -q 'BOOT-INF/classes/static/index.html'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sprintflow-insight-package
+          path: backend/target/sprintflow-insight-*.jar
+          if-no-files-found: error
+          retention-days: 7
+  postgres-integration:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sprintflow_test
+          POSTGRES_USER: sprintflow_test
+          POSTGRES_PASSWORD: isolated-ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sprintflow_test -d sprintflow_test"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify migrations and integration flows on PostgreSQL
+        working-directory: backend
+        env:
+          SPRINTFLOW_TEST_DB_URL: jdbc:postgresql://localhost:5432/sprintflow_test
+          SPRINTFLOW_TEST_DB_DRIVER: org.postgresql.Driver
+          SPRINTFLOW_DB_USER: sprintflow_test
+          SPRINTFLOW_DB_PASSWORD: isolated-ci-only-password
+        run: ./mvnw -B verify
+  docker:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Prepare isolated settings and writable uploads
+        shell: bash
+        run: |
+          cp .env.example .env
+          sed -i 's/^SPRINTFLOW_DB_PASSWORD=.*/SPRINTFLOW_DB_PASSWORD=isolated-ci-only-password/' .env
+          sed -i "s/^SPRINTFLOW_CONTAINER_UID=.*/SPRINTFLOW_CONTAINER_UID=$(id -u)/" .env
+          sed -i "s/^SPRINTFLOW_CONTAINER_GID=.*/SPRINTFLOW_CONTAINER_GID=$(id -g)/" .env
+          mkdir -p backend/data
+      - name: Build and start containers
+        run: docker compose -p sprintflow-ci up -d --build --wait --wait-timeout 180
+      - name: Verify account, workflow, and non-root uploads
+        run: node scripts/verification/container-smoke.ts prepare
+      - name: Restart containers and verify persistence
+        run: |
+          docker compose -p sprintflow-ci restart
+          docker compose -p sprintflow-ci up -d --wait --wait-timeout 180
+          node scripts/verification/container-smoke.ts verify
+      - name: Logs
+        if: failure()
+        run: docker compose -p sprintflow-ci logs --tail 100
+      - name: Remove isolated CI containers
+        if: always()
+        run: docker compose -p sprintflow-ci down -v
+
+  security:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install pinned scanners and verify checksums
+        shell: bash
+        run: |
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          curl -fsSL https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64 -o /tmp/osv-scanner
+          echo '160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b  /tmp/osv-scanner' | sha256sum -c -
+          chmod +x /tmp/osv-scanner
+      - name: Check committed history for secrets
+        run: /tmp/gitleaks git . --redact --no-banner
+      - name: Audit resolved runtime and tooling dependencies
+        run: /tmp/osv-scanner scan source --lockfile frontend/package-lock.json --lockfile scripts/package-lock.json --lockfile backend/pom.xml --config osv-scanner.toml --format json --output-file dependency-audit.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: dependency-audit
+          path: dependency-audit.json
+          if-no-files-found: ignore
+          retention-days: 7

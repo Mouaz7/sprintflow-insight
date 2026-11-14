@@ -1,0 +1,680 @@
+openapi: 3.0.3
+info:
+  title: SprintFlow REST API
+  version: 1.0.0
+  description: >-
+    Same-origin REST API for the React and TypeScript client. Authenticated requests use a
+    server-managed JSESSIONID session. State-changing requests also require the CSRF header
+    returned by GET /api/auth/csrf. Authentication and recovery POST requests are limited
+    per client IP and endpoint over one minute. A rejected request returns 429 and Retry-After.
+servers:
+  - url: http://localhost:8081
+security:
+  - sessionCookie: []
+paths:
+  /actuator/health:
+    get:
+      security: []
+      summary: Read minimal application and database health
+      responses:
+        '200': { description: Healthy, status UP without details }
+        '503': { description: Unhealthy, status DOWN without details }
+  /api/auth/csrf:
+    get:
+      security: []
+      summary: Get the session CSRF token and header name
+      responses:
+        '200': { description: CSRF token }
+  /api/auth/register:
+    post:
+      security: []
+      summary: Register a user and create a server session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Registration' }
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: User and authenticated session }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/login:
+    post:
+      security: []
+      summary: Sign in and create a server session
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: User and authenticated session }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/logout:
+    post:
+      summary: Invalidate the current session
+      responses:
+        '204': { description: Signed out }
+  /api/auth/me:
+    get:
+      summary: Return the signed-in user
+      responses:
+        '200': { description: Current user }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/profile:
+    put:
+      summary: Update the signed-in profile
+      responses:
+        '200': { description: Updated profile }
+        '400': { $ref: '#/components/responses/Error' }
+  /api/auth/password/change:
+    post:
+      summary: Change the current password
+      responses:
+        '200': { description: Password changed }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/password/reset/request:
+    post:
+      security: []
+      summary: Request an email password reset
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: Request accepted }
+        '503': { $ref: '#/components/responses/Error' }
+  /api/auth/password/reset/available:
+    get:
+      security: []
+      summary: Check whether email password recovery is configured
+      responses: { '200': { description: Availability } }
+  /api/auth/password/reset/recovery:
+    post:
+      security: []
+      summary: Reset a password with a recovery code
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: Password reset }
+        '400': { $ref: '#/components/responses/Error' }
+  /api/auth/password/reset/confirm:
+    post:
+      security: []
+      summary: Confirm an email password reset token
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: Password reset }
+        '400': { $ref: '#/components/responses/Error' }
+  /api/auth/google/config:
+    get:
+      security: []
+      summary: Get Google sign-in configuration
+      responses: { '200': { description: Configuration } }
+  /api/auth/google:
+    post:
+      security: []
+      summary: Sign in with a verified Google identity token
+      responses:
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '200': { description: User and authenticated session }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/account:
+    delete:
+      summary: Delete the signed-in account after ownership is resolved
+      responses:
+        '200': { description: Account deleted }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects:
+    get:
+      summary: List projects accessible to the signed-in user
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/size' }
+      responses:
+        '200': { description: Accessible projects }
+    post:
+      summary: Create a project owned by the signed-in user
+      responses:
+        '200': { description: Created project }
+  /api/projects/{id}:
+    get:
+      summary: Get an accessible project
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Project details } }
+    put:
+      summary: Edit project details
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses:
+        '200': { description: Updated project }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Delete a project and all its contents (owner only)
+      description: Removes stories, sprints, tasks, comments, attachments, status history, activity, notifications and memberships in one transaction. Uploaded files are cleaned up after commit.
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses:
+        '204': { description: Project deleted }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{id}/role:
+    get:
+      summary: Get the signed-in user's role in a project
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Membership role } }
+  /api/projects/{id}/members:
+    get:
+      summary: List project members
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Project members } }
+    post:
+      summary: Add or update a registered member as Admin, Member or Viewer
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Updated membership } }
+  /api/projects/{id}/owner:
+    put:
+      summary: Transfer project ownership to a current member
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Project with new owner } }
+  /api/projects/{id}/members/{email}:
+    delete:
+      summary: Remove a member from a project
+      parameters:
+        - { $ref: '#/components/parameters/id' }
+        - in: path
+          name: email
+          required: true
+          schema: { type: string, format: email }
+      responses:
+        '204': { description: Member removed }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/stories/project/{projectId}:
+    get:
+      summary: List user stories in an accessible project
+      parameters: [{ $ref: '#/components/parameters/projectId' }]
+      responses: { '200': { description: Project backlog } }
+  /api/stories:
+    post:
+      summary: Create a user story and optionally assign it to a same-project sprint
+      responses:
+        '200': { description: Created story }
+        '400': { $ref: '#/components/responses/Error' }
+  /api/stories/project/{projectId}/order:
+    put:
+      summary: Persist the manual backlog order for an authorized writer
+      description: Supply every active story exactly once with its observed version. Project locking makes the change atomic. Missing versions return 428, stale versions 412, and changed membership of the backlog or duplicate IDs 409. Foreign-project IDs are rejected.
+      parameters: [{ $ref: '#/components/parameters/projectId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, version]
+                    properties:
+                      id: { type: integer, format: int64 }
+                      version: { type: integer, format: int64 }
+      responses:
+        '200': { description: Stories in their saved order with current versions }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
+  /api/stories/{id}:
+    get:
+      summary: Get an accessible item and its current version
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Item details } }
+    put:
+      summary: Update a user story
+      description: Changing the sprint moves all linked tasks to the same sprint in the same transaction, including trashed tasks. Task versions advance and history records the new sprint.
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '200': { description: Updated story } }
+    delete:
+      summary: Move a story and its active tasks to the recycle bin
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '204': { description: Story deleted } }
+  /api/sprints:
+    get:
+      summary: List accessible sprints
+      parameters:
+        - in: query
+          name: projectId
+          schema: { type: integer, format: int64 }
+      responses: { '200': { description: Sprints } }
+    post:
+      summary: Create a dated sprint
+      responses: { '200': { description: Created sprint } }
+  /api/sprints/{id}:
+    put:
+      summary: Update sprint details and schedule
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '200': { description: Updated sprint } }
+    delete:
+      summary: Move a sprint and its active work to the recycle bin
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '204': { description: Sprint deleted } }
+  /api/sprints/{id}/status:
+    put:
+      summary: Change sprint lifecycle status
+      parameters:
+        - { $ref: '#/components/parameters/ifMatch' }
+        - { $ref: '#/components/parameters/id' }
+        - in: query
+          name: status
+          required: true
+          schema: { type: string, enum: [Planned, Active, Completed, Cancelled] }
+      responses: { '200': { description: Updated sprint } }
+  /api/tasks:
+    get:
+      summary: List tasks in an accessible project
+      parameters:
+        - in: query
+          name: projectId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses: { '200': { description: Project tasks } }
+    post:
+      summary: Create a task in a project
+      responses: { '200': { description: Created task } }
+  /api/tasks/{id}:
+    get:
+      summary: Get an accessible item and its current version
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '200': { description: Item details } }
+    put:
+      summary: Update a task, including workflow status and associations
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '200': { description: Updated task } }
+    delete:
+      summary: Move a task to the recycle bin
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '204': { description: Task deleted } }
+  /api/tasks/{id}/block:
+    put:
+      summary: Block a task with a required reason
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '200': { description: Blocked task } }
+  /api/tasks/{id}/unblock:
+    put:
+      summary: Remove a task blocker
+      parameters: [{ $ref: '#/components/parameters/id' }, { $ref: '#/components/parameters/ifMatch' }]
+      responses: { '200': { description: Unblocked task } }
+  /api/tasks/{taskId}/attachments:
+    get:
+      summary: List task attachments and links
+      parameters: [{ $ref: '#/components/parameters/taskId' }]
+      responses: { '200': { description: Attachments } }
+    post:
+      summary: Add an HTTP or HTTPS link to a task
+      parameters: [{ $ref: '#/components/parameters/taskId' }]
+      responses: { '200': { description: Created link } }
+  /api/tasks/{taskId}/attachments/upload:
+    post:
+      summary: Upload a JPG, PNG, GIF, WebP or PDF file up to 15 MB
+      parameters: [{ $ref: '#/components/parameters/taskId' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses: { '200': { description: Uploaded file } }
+  /api/tasks/{taskId}/attachments/{id}/file:
+    get:
+      summary: Download a task attachment
+      parameters:
+        - { $ref: '#/components/parameters/taskId' }
+        - { $ref: '#/components/parameters/id' }
+      responses: { '200': { description: Attachment bytes } }
+  /api/tasks/{taskId}/attachments/{id}:
+    delete:
+      summary: Delete an attachment or link
+      parameters:
+        - { $ref: '#/components/parameters/taskId' }
+        - { $ref: '#/components/parameters/id' }
+      responses: { '204': { description: Attachment deleted } }
+  /api/tasks/{taskId}/comments:
+    get:
+      summary: List task comments
+      parameters: [{ $ref: '#/components/parameters/taskId' }]
+      responses: { '200': { description: Comments } }
+    post:
+      summary: Add a task comment and notify the owner
+      parameters: [{ $ref: '#/components/parameters/taskId' }]
+      responses: { '200': { description: Created comment } }
+  /api/notifications:
+    get:
+      summary: List notifications for the signed-in user
+      parameters:
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/size' }
+      responses: { '200': { description: Notifications } }
+  /api/notifications/{id}/read:
+    put:
+      summary: Mark a notification as read
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      responses: { '204': { description: Notification updated } }
+  /api/projects/{projectId}/metrics:
+    get:
+      summary: Calculate project metrics or selected sprint metrics
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: sprintId
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Project or sprint-scoped metrics derived from current state and persisted workflow history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cycleTimeHours: { type: number, format: double, nullable: true }
+                  leadTimeHours: { type: number, format: double, nullable: true }
+                  throughput: { type: integer, format: int64, description: Selected scope throughput; last 14 days for a project or the selected sprint }
+                  throughputLast14Days: { type: integer, format: int64 }
+                  velocityStoryPoints: { type: integer, format: int64, description: Points captured on persisted Done transitions }
+                  taskCount: { type: integer }
+                  completionRate: { type: integer, description: Current completed-task percentage }
+                  burndownAvailable: { type: boolean }
+                  completedSprints:
+                    type: array
+                    description: Completed sprints in this project. Delivery replays workflow state at actual closure; later task edits or moves do not rewrite delivered points. Entries with invalid closure timestamps are withheld.
+                    items:
+                      type: object
+                      required: [id, name, completedAt, plannedStoryPoints, actualStoryPoints, completedTasks]
+                      properties:
+                        id: { type: integer, format: int64 }
+                        name: { type: string }
+                        completedAt: { type: string, format: date-time }
+                        plannedStoryPoints: { type: integer, minimum: 0, description: The sprint's current planned estimate }
+                        actualStoryPoints: { type: integer, minimum: 0, description: Persisted Done point snapshots at closure }
+                        completedTasks: { type: integer, minimum: 0, description: Tasks in Done for this sprint at closure }
+                  burndown:
+                    type: array
+                    items:
+                      type: object
+                      required: [date, remainingPoints]
+                      properties:
+                        date: { type: string, format: date }
+                        remainingPoints: { type: integer }
+  /api/projects/{projectId}/activity:
+    get:
+      summary: List project activity for an authorized member
+      parameters: [{ $ref: '#/components/parameters/projectId' }]
+      responses: { '200': { description: Project activity } }
+    delete:
+      summary: Clear project activity as an owner or admin
+      parameters: [{ $ref: '#/components/parameters/projectId' }]
+      responses: { '204': { description: Activity cleared } }
+  /api/projects/{projectId}/activity/{activityId}:
+    put:
+      summary: Edit an activity summary as an owner or admin
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: path
+          name: activityId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [summary]
+              properties:
+                summary: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200': { description: Updated activity }
+        '403': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Delete one activity update as an owner or admin
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: path
+          name: activityId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Activity deleted }
+        '403': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/export.csv:
+    get:
+      summary: Export project and optional sprint tasks as CSV
+      description: Applies the current board filters within the authorized project. Metadata records scope, generation time and filters. CSV text is protected against spreadsheet formulas; PDF counts describe the filtered selection.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: sprintId
+          schema: { type: integer, format: int64 }
+        - { $ref: '#/components/parameters/exportStatus' }
+        - { $ref: '#/components/parameters/exportSprint' }
+        - { $ref: '#/components/parameters/exportAssignee' }
+        - { $ref: '#/components/parameters/exportDue' }
+        - { $ref: '#/components/parameters/exportBlocked' }
+        - { $ref: '#/components/parameters/exportLabel' }
+        - { $ref: '#/components/parameters/exportQ' }
+      responses: { '200': { description: CSV report, content: { text/csv: { schema: { type: string } } } } }
+  /api/projects/{projectId}/export.pdf:
+    get:
+      summary: Export a project delivery report as PDF
+      description: Applies the current board filters within the authorized project. Metadata records scope, generation time and filters. CSV text is protected against spreadsheet formulas; PDF counts describe the filtered selection.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: sprintId
+          schema: { type: integer, format: int64 }
+        - { $ref: '#/components/parameters/exportStatus' }
+        - { $ref: '#/components/parameters/exportSprint' }
+        - { $ref: '#/components/parameters/exportAssignee' }
+        - { $ref: '#/components/parameters/exportDue' }
+        - { $ref: '#/components/parameters/exportBlocked' }
+        - { $ref: '#/components/parameters/exportLabel' }
+        - { $ref: '#/components/parameters/exportQ' }
+      responses:
+        '200':
+          description: PDF report
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+  /api/auth/preferences:
+    get:
+      summary: Read personal language, theme, notification, onboarding and saved filter settings
+      responses: { '200': { description: Account preferences } }
+    put:
+      summary: Update selected personal preferences
+      description: Accepts language (EN/SV), theme (light/dark), notifications, onboardingCompleted and savedFilters (a JSON array string). The server identifies the account from its session.
+      responses: { '200': { description: Saved preferences }, '400': { $ref: '#/components/responses/Error' } }
+  /api/auth/integrations:
+    get:
+      summary: Check Gmail and Google configuration readiness without exposing credentials
+      responses: { '200': { description: gmailReady and googleReady flags } }
+  /api/projects/templates:
+    post:
+      summary: Create Blank, Scrum or Kanban project content in one transaction
+      description: Requires name and template. Optional description and language (EN/SV). The authenticated user owns the created project.
+      responses: { '200': { description: Created project }, '409': { $ref: '#/components/responses/Error' } }
+  /api/projects/{id}/archive:
+    put:
+      summary: Archive or unarchive a project as its owner or admin
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      description: Body contains archived (boolean). Archived work remains readable and rejects changes.
+      responses: { '200': { description: Updated project }, '403': { $ref: '#/components/responses/Error' } }
+  /api/workspace/trash:
+    get:
+      summary: List recoverable work authorized for the signed-in user
+      responses: { '200': { description: Items with kind, id, projectId, title, trashedAt and version } }
+  /api/workspace/trash/{kind}/{id}:
+    parameters:
+      - in: path
+        name: kind
+        required: true
+        schema: { type: string, enum: [project, task, story, sprint] }
+      - { $ref: '#/components/parameters/id' }
+    put:
+      parameters:
+        - in: header
+          name: If-Match
+          required: false
+          description: Required quoted version for task, story and sprint changes; project lifecycle uses its existing contract.
+          schema: { type: string }
+      summary: Move work to the recycle bin or restore it
+      description: Body contains restore (boolean). Project trash/restore is owner only; other work requires write access. Stories and sprints move active child work in the same transaction. Restore parents before children.
+      responses: { '200': { description: Lifecycle change saved }, '409': { $ref: '#/components/responses/Error' } }
+    delete:
+      parameters: [{ $ref: '#/components/parameters/ifMatch' }]
+      summary: Permanently purge a trashed task, story or sprint as the project owner
+      description: Project purge uses DELETE /api/projects/{id} instead. Purging a story/sprint detaches surviving work; task purge removes related comments, history and attachments.
+      responses: { '200': { description: Item purged }, '403': { $ref: '#/components/responses/Error' } }
+  /api/tasks/{taskId}/comments/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/taskId' }
+      - { $ref: '#/components/parameters/id' }
+    put:
+      summary: Edit an own comment or moderate one as an owner/admin
+      description: Body contains message (1–1000 characters) and optional version for conflict detection.
+      responses: { '200': { description: Saved comment }, '403': { $ref: '#/components/responses/Error' }, '409': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: Delete an own comment or moderate one as an owner/admin
+      responses: { '204': { description: Comment deleted }, '403': { $ref: '#/components/responses/Error' } }
+  /api/notifications/read:
+    put:
+      summary: Mark all notifications visible to the signed-in user as read
+      responses: { '204': { description: Notifications marked read } }
+  /api/projects/{projectId}/retrospective:
+    parameters: [{ $ref: '#/components/parameters/projectId' }]
+    get:
+      summary: List retrospective entries in a project sprint
+      parameters: [{ in: query, name: sprintId, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Retrospective entries } }
+    post:
+      summary: Add a retrospective entry
+      description: Body contains sprintId, category (well/improve/actions) and message (1–1000 characters).
+      responses: { '200': { description: Created entry }, '403': { $ref: '#/components/responses/Error' } }
+  /api/projects/{projectId}/retrospective/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/projectId' }
+      - { $ref: '#/components/parameters/id' }
+    put:
+      summary: Edit an own retrospective entry or moderate as an owner/admin
+      description: The sprint cannot change. Optional version detects concurrent edits.
+      responses: { '200': { description: Updated entry }, '403': { $ref: '#/components/responses/Error' }, '409': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: Delete an own retrospective entry or moderate as an owner/admin
+      responses: { '200': { description: Entry deleted }, '403': { $ref: '#/components/responses/Error' } }
+  /api/projects/{projectId}/reports:
+    parameters: [{ $ref: '#/components/parameters/projectId' }]
+    get:
+      summary: List report identifiers and expiry times as an owner/admin
+      responses: { '200': { description: Report metadata without link tokens } }
+    post:
+      summary: Create a limited public report snapshot as an owner/admin
+      description: Optional sprintId. Returns id, path with a random token, and expiresAt. Tokens are hashed in storage; reports expire after seven days.
+      responses: { '200': { description: New report link }, '403': { $ref: '#/components/responses/Error' } }
+  /api/projects/{projectId}/reports/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/projectId' }
+      - { $ref: '#/components/parameters/id' }
+    delete:
+      summary: Revoke a shared report as an owner/admin
+      responses: { '200': { description: Report revoked } }
+  /api/shared-reports/{token}:
+    get:
+      security: []
+      summary: Read a limited report snapshot using its unguessable link token
+      parameters: [{ in: path, name: token, required: true, schema: { type: string } }]
+      description: No member lists, account credentials or comments. Invalid, revoked, expired or trashed-project links return 404.
+      responses: { '200': { description: Public snapshot }, '404': { $ref: '#/components/responses/Error' } }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+  parameters:
+    exportStatus:
+      in: query
+      name: status
+      schema: { type: string, enum: ['To Do', 'In Progress', 'Review', 'Done'] }
+    exportSprint:
+      in: query
+      name: sprint
+      schema: { type: string, enum: [backlog] }
+    exportAssignee:
+      in: query
+      name: assignee
+      schema: { type: string, description: 'Project member email or unassigned', maxLength: 320 }
+    exportDue:
+      in: query
+      name: due
+      schema: { type: string, enum: [overdue, has-date, no-date] }
+    exportBlocked:
+      in: query
+      name: blocked
+      schema: { type: boolean }
+    exportLabel:
+      in: query
+      name: label
+      schema: { type: string, maxLength: 32 }
+    exportQ:
+      in: query
+      name: q
+      schema: { type: string, maxLength: 1000 }
+    ifMatch:
+      in: header
+      name: If-Match
+      required: true
+      description: Quoted current entity version; missing returns 428, stale returns 412.
+      schema: { type: string, example: '"0"' }
+    page:
+      in: query
+      name: page
+      description: Optional zero-based page. Omit to retrieve the complete accessible list.
+      schema: { type: integer, minimum: 0 }
+    size:
+      in: query
+      name: size
+      description: Number of items when page is supplied.
+      schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, format: int64 }
+    projectId:
+      in: path
+      name: projectId
+      required: true
+      schema: { type: integer, format: int64 }
+    taskId:
+      in: path
+      name: taskId
+      required: true
+      schema: { type: integer, format: int64 }
+  responses:
+    RateLimited:
+      description: Too many authentication or recovery attempts from this client IP.
+      headers:
+        Retry-After:
+          description: Seconds until another attempt is allowed.
+          schema: { type: integer, minimum: 1 }
+    Error:
+      description: Validation, permission, or conflict error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+  schemas:
+    Registration:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6, maxLength: 72 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }

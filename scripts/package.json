@@ -1,0 +1,19 @@
+{
+  "name": "sprintflow-verification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "repository": "node verification/repository-check.ts",
+    "smoke": "node verification/container-smoke.ts",
+    "responsive": "node verification/responsive.ts",
+    "creation-visibility": "node verification/creation-visibility.ts",
+    "business-rules": "node verification/business-rules.ts",
+    "guidance": "node verification/guidance.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24",
+    "playwright": "1.55.1",
+    "typescript": "5.7.2"
+  }
+}

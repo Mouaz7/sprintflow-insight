@@ -1,0 +1,146 @@
+package com.sprintflowinsight.controller;
+
+import com.sprintflowinsight.model.Task;
+import com.sprintflowinsight.model.TaskAttachment;
+import com.sprintflowinsight.project.ProjectAccessService;
+import com.sprintflowinsight.repository.TaskAttachmentRepository;
+import com.sprintflowinsight.service.TaskService;
+import jakarta.servlet.http.HttpSession;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/api/tasks/{taskId}/attachments")
+public class TaskAttachmentController {
+  private static final Path UPLOAD_DIRECTORY =
+      Path.of("data", "attachments").toAbsolutePath().normalize();
+  private final com.sprintflowinsight.service.UploadValidator validator;
+  private final com.sprintflowinsight.service.AttachmentStorageService storage;
+  private final TaskService tasks;
+  private final TaskAttachmentRepository attachments;
+  private final ProjectAccessService access;
+
+  public TaskAttachmentController(
+      TaskService tasks,
+      TaskAttachmentRepository attachments,
+      ProjectAccessService access,
+      com.sprintflowinsight.service.UploadValidator validator,
+      com.sprintflowinsight.service.AttachmentStorageService storage) {
+    this.validator = validator;
+    this.storage = storage;
+
+    this.tasks = tasks;
+    this.attachments = attachments;
+    this.access = access;
+  }
+
+  @GetMapping
+  public ResponseEntity<?> list(@PathVariable Long taskId, HttpSession session) {
+    Task task = findTask(taskId);
+    if (task == null) return ResponseEntity.notFound().build();
+    access.read(task.getProjectId(), session);
+    return ResponseEntity.ok(attachments.findByTaskIdOrderByCreatedAtAsc(taskId));
+  }
+
+  @PostMapping
+  public ResponseEntity<?> addLink(
+      @PathVariable Long taskId, @RequestBody AttachmentRequest request, HttpSession session) {
+    Task task = findTask(taskId);
+    if (task == null) return ResponseEntity.notFound().build();
+    access.write(task.getProjectId(), session);
+    try {
+      URI uri = URI.create(request.url());
+      if (uri.getScheme() == null
+          || !(uri.getScheme().equals("https") || uri.getScheme().equals("http")))
+        throw new IllegalArgumentException();
+    } catch (Exception ex) {
+      return ResponseEntity.badRequest()
+          .body(Map.of("message", "Attachment link must start with https:// or http://."));
+    }
+    TaskAttachment item = new TaskAttachment();
+    item.setTaskId(taskId);
+    item.setProjectId(task.getProjectId());
+    item.setName(
+        request.name() == null || request.name().isBlank() ? request.url() : request.name().trim());
+    item.setUrl(request.url().trim());
+    item.setCreatedAt(Instant.now());
+    return ResponseEntity.ok(attachments.save(item));
+  }
+
+  @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<?> upload(
+      @PathVariable Long taskId, @RequestParam("file") MultipartFile file, HttpSession session) {
+    Task task = findTask(taskId);
+    if (task == null) return ResponseEntity.notFound().build();
+    access.write(task.getProjectId(), session);
+    if (file.isEmpty() || file.getSize() > com.sprintflowinsight.service.UploadValidator.MAX_BYTES)
+      return ResponseEntity.badRequest()
+          .body(Map.of("message", "File must be between 1 byte and 15 MB."));
+    String safeName =
+        Optional.ofNullable(file.getOriginalFilename())
+            .orElse("Attachment")
+            .replaceAll("[\\p{Cntrl}\\\\/\"]", "");
+    if (safeName.isBlank()) safeName = "Attachment";
+    if (safeName.length() > 200) safeName = safeName.substring(0, 200);
+    try {
+      byte[] bytes = file.getBytes();
+      String extension = validator.validate(bytes);
+      return ResponseEntity.ok(storage.store(task, bytes, extension, safeName, session));
+    } catch (java.io.IOException error) {
+      return ResponseEntity.internalServerError()
+          .body(Map.of("message", "Could not store the attachment."));
+    }
+  }
+
+  @GetMapping("/{id}/file")
+  public ResponseEntity<Resource> file(
+      @PathVariable Long taskId, @PathVariable Long id, HttpSession session) {
+    Task task = findTask(taskId);
+    if (task == null) return ResponseEntity.notFound().build();
+    access.read(task.getProjectId(), session);
+    TaskAttachment item =
+        attachments
+            .findById(id)
+            .filter(a -> taskId.equals(a.getTaskId()) && a.getStorageKey() != null)
+            .orElse(null);
+    if (item == null) return ResponseEntity.notFound().build();
+    Path path = UPLOAD_DIRECTORY.resolve(item.getStorageKey()).normalize();
+    if (!path.startsWith(UPLOAD_DIRECTORY) || !Files.isRegularFile(path))
+      return ResponseEntity.notFound().build();
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + item.getName().replace("\"", "") + "\"")
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(new FileSystemResource(path));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<?> delete(
+      @PathVariable Long taskId, @PathVariable Long id, HttpSession session) {
+    Task task = findTask(taskId);
+    if (task == null) return ResponseEntity.notFound().build();
+    access.write(task.getProjectId(), session);
+    TaskAttachment attachment = attachments.findById(id).orElse(null);
+    if (attachment == null || !taskId.equals(attachment.getTaskId()))
+      return ResponseEntity.notFound().build();
+    storage.delete(task, attachment, session);
+    return ResponseEntity.noContent().build();
+  }
+
+  private Task findTask(Long taskId) {
+    return tasks.gettaskById(taskId).orElse(null);
+  }
+
+  public record AttachmentRequest(String name, String url) {}
+}

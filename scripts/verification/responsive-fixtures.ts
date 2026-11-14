@@ -1,0 +1,109 @@
+import type { Page } from './browser.ts';
+
+// Every API request is intercepted; layout checks never change real accounts.
+const user = {
+  id: 1,
+  email: 'leo@example.com',
+  displayName: 'Alexandra Andersson · Produktutveckling och gemensam planering',
+  jobTitle: 'Product designer',
+  bio: 'Creating useful experiences with the SprintFlow team.',
+};
+const project = {
+  id: 1,
+  name: 'Website launch · Gemensam planering och leverans för hela produktteamet',
+  description: 'A focused workspace for our next release. Plan together, keep delivery visible.',
+  ownerEmail: user.email,
+};
+const stories = [{
+  id: 1, projectId: 1, title: 'A smooth first experience',
+  description: 'Help new teammates find their way around the workspace.',
+  acceptanceCriteria: 'New users can create a project and find their tasks.',
+  storyPoints: 8, priorityId: 1, businessValue: 5, sprintId: 1,
+}];
+const sprints = [{
+  id: 1, projectId: 1, name: 'Sprint 04 · Delivery',
+  goal: 'Ship the core experience and make onboarding simpler.',
+  status: 'Active', totalStoryPoints: 24,
+  startDate: '2026-10-05', endDate: '2026-10-18',
+}];
+const tasks = ['To Do', 'In Progress', 'Review', 'Done'].map((status, i) => ({
+  id: i + 1, projectId: 1,
+  title: [
+    'Design the welcome flow with a clear introduction for every new team member',
+    'Build the project dashboard', 'Review account settings', 'Create the shared workspace',
+  ][i],
+  description: 'Keep the flow clear and accessible.', status,
+  dueAt: new Date().toISOString(), storyPoints: [3, 8, 5, 2][i],
+  sprintId: 1, storyId: 1, assigneeEmail: user.email, blocked: false,
+}));
+const activity = [{
+  id: 1, summary: 'Moved task “Create the shared workspace” to Done.',
+  actorEmail: user.email, createdAt: '2026-10-11T18:10:00Z',
+}, {
+  id: 2, summary: 'Updated the sprint goal and delivery plan.',
+  actorEmail: 'sara@example.com', createdAt: '2026-10-11T17:15:00Z',
+}];
+const metrics = {
+  taskCount: 4, completionRate: 25, throughputLast14Days: 7,
+  averageCycleTimeHours: 36, averageLeadTimeHours: 64, velocity: 18,
+  statusCounts: { 'To Do': 1, 'In Progress': 1, Review: 1, Done: 1 },
+  burndownAvailable: true,
+  burndown: Array.from({ length: 14 }, (_, i) => ({
+    date: `2026-10-${String(i + 1).padStart(2, '0')}`,
+    remainingPoints: [24, 24, 21, 21, 19, 19, 16, 16, 13, 13, 10, 10, 8, 6][i],
+  })),
+  sprintHealth: { status: 'Healthy', workInProgress: 2, blockedTasks: 0, explanation: 'Work is moving steadily with no blocked tasks.' },
+  sprintPace: { available: true, status: 'On track', plannedStoryPoints: 24, deliveredStoryPoints: 18, expectedStoryPoints: 16, elapsedPercent: 67 },
+  businessValue: { planned: 24, delivered: 18 },
+};
+
+type Options = {
+  signedIn?: boolean;
+  empty?: boolean;
+  language: 'EN' | 'SV';
+  theme: 'light' | 'dark';
+};
+
+export async function responsiveFixture(page: Page, options: Options) {
+  const { signedIn = true, empty = false, language, theme } = options;
+  const preferences = { language, theme, version: 1, onboardingCompleted: true, notifications: true, savedFilters: '[]' };
+  await page.addInitScript(({ language, theme }) => {
+    localStorage.setItem('sprintflow-language', language);
+    localStorage.setItem('sprintflow-theme', theme);
+  }, { language, theme });
+  await page.route('**/api/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (!pathname.startsWith('/api/')) return route.continue();
+    let body: unknown = [];
+    let status = 200;
+    if (pathname.endsWith('/auth/me')) {
+      body = signedIn ? user : { message: 'Authentication required' };
+      status = signedIn ? 200 : 401;
+    } else if (pathname.endsWith('/auth/csrf')) {
+      body = { token: 'fixture-token', headerName: 'X-CSRF-TOKEN' };
+    } else if (pathname.endsWith('/projects')) {
+      body = signedIn ? (empty ? [] : [project]) : { message: 'Authentication required' };
+      status = signedIn ? 200 : 401;
+    } else if (pathname.endsWith('/auth/preferences')) {
+      body = preferences;
+    } else if (pathname.endsWith('/notifications')) {
+      body = Array.from({ length: 12 }, (_, i) => ({
+        id: i + 1, title: 'Uppdatering för projektet med ett långt namn',
+        message: 'En längre avisering som behöver kunna radbrytas och läsas även i ett lågt fönster.',
+        read: false, createdAt: '2026-10-22T12:00:00Z',
+      }));
+    } else if (pathname.endsWith('/members')) {
+      body = [{ id: 1, email: user.email, role: 'Owner' }, { id: 2, email: 'sara@example.com', role: 'Member' }];
+    } else if (pathname.endsWith('/role')) body = { role: 'Owner' };
+    else if (pathname.endsWith('/metrics')) body = metrics;
+    else if (pathname.endsWith('/activity')) body = activity;
+    else if (pathname.endsWith('/stories/project/1')) body = stories;
+    else if (pathname.endsWith('/sprints')) body = sprints;
+    else if (pathname.endsWith('/tasks')) body = tasks;
+    else if (pathname.endsWith('/auth/login')) {
+      body = { message: 'Invalid credentials' };
+      status = 401;
+    }
+    await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+}

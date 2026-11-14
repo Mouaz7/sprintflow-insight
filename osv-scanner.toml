@@ -1,0 +1,9 @@
+[[IgnoredVulns]]
+id = "GHSA-j9f9-w8pj-32f8"
+reason = "Not applicable: SprintFlow does not stream view fragments over SSE. SecurityConfigurationTest rejects ResponseBodyEmitter/FragmentsRendering handlers. Vendor advisory: https://spring.io/security/cve-2026-47890/. Reassess before expiry or adding streaming."
+ignoreUntil = 2027-01-31T00:00:00Z
+
+[[IgnoredVulns]]
+id = "GHSA-pc63-qcmh-9cmg"
+reason = "Not applicable: no XsltViewResolver or XSLT views are configured; SPA forwarding uses an explicit static view. SecurityConfigurationTest enforces this. Vendor advisory: https://spring.io/security/cve-2026-47884/. Reassess before expiry or adding server-rendered views."
+ignoreUntil = 2027-01-31T00:00:00Z

@@ -1,0 +1,10 @@
+* text=auto
+*.sh text eol=lf
+mvnw text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.cmd text eol=crlf
+*.png binary
+
+*.yml text eol=lf
+*.ts text eol=lf

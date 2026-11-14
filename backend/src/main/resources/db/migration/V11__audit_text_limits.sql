@@ -1,0 +1,2 @@
+ALTER TABLE activity_event ALTER COLUMN summary TYPE VARCHAR(1000);
+ALTER TABLE notification ALTER COLUMN message TYPE VARCHAR(1000);

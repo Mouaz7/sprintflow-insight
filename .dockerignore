@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+!.env.example
+**/client_secret*.json
+backend/data
+backend/uploads
+backend/target
+backend/.m2
+frontend/node_modules
+frontend/dist
+frontend/coverage
+**/*.log
+docs/design/preview
+scripts/node_modules
+backups
+artifacts
