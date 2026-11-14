@@ -57,7 +57,7 @@ public class SecurityConfiguration {
                     + "script-src 'self' https://accounts.google.com; "
                     + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; "
                     + "connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; "
-                    + "object-src 'none'; base-uri 'self'; form-action 'self'"))
+                    + "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"))
                 .addHeaderWriter((request, response) -> {
                     String forwardedUri = (String) request.getAttribute(jakarta.servlet.RequestDispatcher.FORWARD_REQUEST_URI);
                     String originalUri = forwardedUri == null ? request.getRequestURI() : forwardedUri;
@@ -70,7 +70,13 @@ public class SecurityConfiguration {
                         ? "no-referrer-when-downgrade" : "strict-origin-when-cross-origin");
                 })
                 .addHeaderWriter(new StaticHeadersWriter("Cross-Origin-Opener-Policy", "same-origin-allow-popups"))
-                .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", "camera=(), microphone=(), geolocation=()")))
+                .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), browsing-topics=()"))
+                .addHeaderWriter(new StaticHeadersWriter("Cross-Origin-Resource-Policy", "same-origin"))
+                // Staged rollout: Trusted Types are reported, not yet enforced, until the browser
+                // suite has proven that React and Google Identity Services never sink raw HTML.
+                .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy-Report-Only",
+                    "require-trusted-types-for 'script'")))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/shared-reports/**").permitAll()

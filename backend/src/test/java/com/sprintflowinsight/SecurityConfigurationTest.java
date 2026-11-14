@@ -41,7 +41,14 @@ class SecurityConfigurationTest {
         .contains("default-src 'self'");
     assertThat(publicResponse.getHeaders().getFirst("Referrer-Policy"))
         .isEqualTo("strict-origin-when-cross-origin");
-    assertThat(publicResponse.getHeaders().getFirst("Permissions-Policy")).contains("camera=()");
+    assertThat(publicResponse.getHeaders().getFirst("Permissions-Policy"))
+        .contains("camera=()", "payment=()");
+    assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy"))
+        .contains("frame-ancestors 'none'", "object-src 'none'");
+    assertThat(publicResponse.getHeaders().getFirst("Cross-Origin-Resource-Policy"))
+        .isEqualTo("same-origin");
+    assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy-Report-Only"))
+        .isEqualTo("require-trusted-types-for 'script'");
   }
 
   @Test
