@@ -68,6 +68,8 @@ function WorkspaceContent({
   const menuButton = useRef<HTMLButtonElement>(null);
   const [taskRequest, setTaskRequest] = useState(0);
   const sv = language === 'SV';
+  const accountName = session.user.displayName || session.user.email;
+  const accountInitial = accountName.slice(0, 1).toUpperCase();
   const activeProject = session.projects.find((p) => p.id === activeProjectId);
   const draftProjects = useMemo(() => ({ projects: session.projects, onSelect: setActiveProjectId }), [session.projects]);
   const labels = sv
@@ -241,20 +243,19 @@ function WorkspaceContent({
             <button
               className="account-profile"
               type="button"
-              aria-label={`${session.user.displayName || session.user.email} · ${labels.profile}`}
+              aria-label={`${session.user.avatarImage ? '' : `${accountInitial} `}${accountName} · ${labels.profile}`}
               onClick={() => selectView('profile')}
             >
               <span className="avatar">
                 {session.user.avatarImage ? (
                   <img src={session.user.avatarImage} alt="" />
                 ) : (
-                  (session.user.displayName || session.user.email)
-                    .slice(0, 1)
-                    .toUpperCase()
+                  accountInitial
                 )}
               </span>
+              {' '}
               <span className="account-name">
-                {session.user.displayName || session.user.email}
+                {accountName}
               </span>
             </button>
             <button

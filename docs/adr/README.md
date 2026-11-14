@@ -8,3 +8,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0002](0002-sessions-in-postgresql.md) | Sessions in PostgreSQL via Spring Session JDBC | Accepted |
 | [0003](0003-token-bucket-rate-limiting.md) | Token-bucket rate limiting per address and per account | Accepted |
 | [0004](0004-single-query-access-context.md) | Single-query access context with declared needs | Accepted |
+| [0005](0005-postgresql-tests-and-sql-migrations.md) | PostgreSQL tests and SQL-only Flyway migrations | Accepted |

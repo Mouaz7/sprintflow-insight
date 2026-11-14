@@ -149,12 +149,12 @@ For frontend hot reload, run `npm ci` then `npm run dev` inside `frontend` while
 npm ci --prefix frontend
 npm run check --prefix frontend
 cd backend
-.\mvnw.cmd verify
+.\mvnw.cmd clean verify
 cd ..
 docker compose build app
 ```
 
-`npm run check` runs frontend tests and the production build. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. Backend tests use an isolated in-memory database and temporary upload directory by default; set `SPRINTFLOW_TEST_DB_URL` and `SPRINTFLOW_TEST_DB_DRIVER` to run them against a disposable PostgreSQL database.
+`npm run check` runs frontend tests and the production build. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 17 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
 
 All verification scripts are TypeScript and run directly with Node 24. Install tooling with `npm ci --prefix scripts`, then use:
 

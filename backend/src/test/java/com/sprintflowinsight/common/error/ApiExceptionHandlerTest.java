@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +49,8 @@ class ApiExceptionHandlerTest {
   @Test
   void unreadableBodyIsAMalformedRequest() throws Exception {
     expectProblem(
-            mvc.perform(post("/test/body").contentType(MediaType.APPLICATION_JSON).content("{not json")),
+            mvc.perform(
+                post("/test/body").contentType(MediaType.APPLICATION_JSON).content("{not json")),
             ErrorCode.MALFORMED_REQUEST)
         .andExpect(jsonPath("$.detail", containsString("could not be read")))
         .andExpect(jsonPath("$.instance").value("/test/body"));
@@ -58,7 +60,9 @@ class ApiExceptionHandlerTest {
   void beanValidationListsEveryRejectedField() throws Exception {
     expectProblem(
             mvc.perform(
-                post("/test/body").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}")),
+                post("/test/body")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"\"}")),
             ErrorCode.VALIDATION_FAILED)
         .andExpect(jsonPath("$.errors[0].field").value("name"))
         .andExpect(jsonPath("$.message").value("Name is required."));
@@ -68,7 +72,8 @@ class ApiExceptionHandlerTest {
   void missingAndMistypedParametersAreNamed() throws Exception {
     expectProblem(mvc.perform(get("/test/param")), ErrorCode.MISSING_PARAMETER)
         .andExpect(jsonPath("$.detail").value("Required parameter 'projectId' is missing."));
-    expectProblem(mvc.perform(get("/test/param").param("projectId", "abc")), ErrorCode.INVALID_PARAMETER)
+    expectProblem(
+            mvc.perform(get("/test/param").param("projectId", "abc")), ErrorCode.INVALID_PARAMETER)
         .andExpect(jsonPath("$.detail").value("Parameter 'projectId' has an invalid value."));
   }
 
@@ -98,6 +103,16 @@ class ApiExceptionHandlerTest {
   }
 
   @Test
+  void databaseFailuresAreRetryableProblemsEvenWhenWrapped() throws Exception {
+    for (String path : new String[] {"/test/database", "/test/database-wrapped"}) {
+      expectProblem(mvc.perform(get(path)), ErrorCode.SERVICE_UNAVAILABLE)
+          .andExpect(header().string("Retry-After", "5"))
+          .andExpect(jsonPath("$.detail").value(DatabaseUnavailableFilter.DETAIL))
+          .andExpect(content().string(not(containsString("secret-driver-text"))));
+    }
+  }
+
+  @Test
   void wrappedClientErrorsKeepTheirStatusInsteadOfBecoming500() throws Exception {
     expectProblem(mvc.perform(get("/test/wrapped")), ErrorCode.BAD_REQUEST)
         .andExpect(jsonPath("$.detail").value("Invalid export filters."));
@@ -118,7 +133,8 @@ class ApiExceptionHandlerTest {
         .isEqualTo(ErrorCode.BAD_REQUEST);
   }
 
-  private static ResultActions expectProblem(ResultActions result, ErrorCode code) throws Exception {
+  private static ResultActions expectProblem(ResultActions result, ErrorCode code)
+      throws Exception {
     return result
         .andExpect(status().is(code.status().value()))
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -174,6 +190,17 @@ class ApiExceptionHandlerTest {
     @GetMapping("/test/crash")
     String crash() {
       throw new IllegalStateException("connection failed for db-password=secret");
+    }
+
+    @GetMapping("/test/database")
+    String database() {
+      throw new org.springframework.dao.DataAccessResourceFailureException("secret-driver-text");
+    }
+
+    @GetMapping("/test/database-wrapped")
+    String wrappedDatabase() {
+      throw new org.springframework.orm.jpa.JpaSystemException(
+          new RuntimeException(new java.sql.SQLException("secret-driver-text", "08001")));
     }
   }
 }

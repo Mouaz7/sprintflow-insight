@@ -4,6 +4,8 @@
 /backend/*.jar
 /backend/data/
 /backend/uploads/
+/backend/.jqwik-database
+/backend/.attach_pid*
 
 # React and TypeScript build output
 /frontend/node_modules/
