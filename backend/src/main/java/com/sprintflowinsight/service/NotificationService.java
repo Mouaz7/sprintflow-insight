@@ -108,12 +108,7 @@ public class NotificationService {
 
   @Transactional
   public void markAllRead(String email) {
-    forRecipient(email)
-        .forEach(
-            n -> {
-              n.setRead(true);
-              repository.save(n);
-            });
+    repository.markAllRead(email);
   }
 
   private boolean enabled(String email) {

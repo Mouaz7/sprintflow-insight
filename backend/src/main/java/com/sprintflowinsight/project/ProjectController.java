@@ -22,6 +22,7 @@ public class ProjectController {
   private final ProjectDeletionService deletion;
   private final ActivityService activity;
   private final com.sprintflowinsight.repository.TaskRepository tasks;
+  private final ProjectFactory factory;
 
   public ProjectController(
       ProjectRepository projects,
@@ -30,7 +31,9 @@ public class ProjectController {
       UserRepository users,
       ProjectDeletionService deletion,
       ActivityService activity,
-      com.sprintflowinsight.repository.TaskRepository tasks) {
+      com.sprintflowinsight.repository.TaskRepository tasks,
+      ProjectFactory factory) {
+    this.factory = factory;
     this.projects = projects;
     this.members = members;
     this.access = access;
@@ -54,18 +57,7 @@ public class ProjectController {
   public ResponseEntity<?> createProject(
       @Valid @RequestBody ProjectRequest request, HttpSession session) {
     String email = access.email(session);
-    if (projects.findByName(request.trimmedName()).isPresent())
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.CONFLICT, "A project with this name already exists.");
-    Project saved = projects.save(new Project(request.trimmedName(), request.description(), email));
-    ProjectMember owner = new ProjectMember();
-    owner.setProjectId(saved.getId());
-    owner.setEmail(email);
-    owner.setRole("Owner");
-    members.save(owner);
-    activity.record(
-        saved.getId(), "PROJECT_CREATED", "Created project “" + saved.getName() + "”.", email);
-    return ResponseEntity.ok(saved);
+    return ResponseEntity.ok(factory.create(request.trimmedName(), request.description(), email));
   }
 
   @GetMapping("/{id}")
@@ -169,8 +161,7 @@ public class ProjectController {
     var existing = members.findByProjectIdAndEmailIgnoreCase(id, email);
     if (existing.isEmpty()) return ResponseEntity.noContent().build();
     requireMayManage(caller, existing.get().getRole(), email);
-    for (var task : tasks.findAllByProjectIdAndAssigneeEmailIgnoreCase(id, email))
-      task.setAssigneeEmail(null);
+    tasks.unassignInProject(id, email);
     members.deleteByProjectIdAndEmailIgnoreCase(id, email);
     activity.record(
         id, "MEMBER_REMOVED", "Removed project member " + email + ".", access.email(session));

@@ -12,12 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -265,9 +261,7 @@ public class AuthController {
     notificationService.deleteForUser(user.getEmail());
     activityService.deleteForActor(user.getEmail());
     projectMemberRepository.deleteByEmailIgnoreCase(user.getEmail());
-    taskRepository
-        .findByAssigneeEmailIgnoreCase(user.getEmail())
-        .forEach(task -> task.setAssigneeEmail(null));
+    taskRepository.unassignEverywhere(user.getEmail());
     retrospectives.anonymizeAuthor(user.getEmail());
     sharedReports.deleteByCreatedBy(user.getEmail());
     userRepository.delete(user);
@@ -410,9 +404,7 @@ public class AuthController {
   }
 
   private String createToken() {
-    byte[] bytes = new byte[32];
-    new SecureRandom().nextBytes(bytes);
-    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    return com.sprintflowinsight.common.SecureTokens.token();
   }
 
   private JavaMailSender activeMailSender() {
@@ -439,13 +431,6 @@ public class AuthController {
   }
 
   private String hash(String value) {
-    try {
-      return java.util.HexFormat.of()
-          .formatHex(
-              MessageDigest.getInstance("SHA-256")
-                  .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-    } catch (NoSuchAlgorithmException exception) {
-      throw new IllegalStateException("SHA-256 is unavailable.", exception);
-    }
+    return com.sprintflowinsight.common.SecureTokens.sha256(value);
   }
 }

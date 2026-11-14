@@ -70,7 +70,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   private static final java.util.Map<String, String> CONSTRAINT_MESSAGES =
       java.util.Map.of(
           "sprint_one_active_project_idx",
-          com.sprintflowinsight.service.ProjectMutationService.ACTIVE_SPRINT_MESSAGE);
+          com.sprintflowinsight.service.ProjectMutationService.ACTIVE_SPRINT_MESSAGE,
+          "story_points_allowed",
+          "Story points must be 1, 2, 3, 5, or 8.",
+          "task_points_range",
+          "Story points must be between 0 and 1000.",
+          "sprint_points_nonnegative",
+          "Story points cannot be negative.");
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ProblemDetail> handleIntegrityViolation(
@@ -99,7 +105,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
       if (cause instanceof org.hibernate.exception.ConstraintViolationException hibernate
           && hibernate.getConstraintName() != null) return hibernate.getConstraintName();
-      if (cause.getMessage() != null && cause.getMessage().toLowerCase(java.util.Locale.ROOT).contains("_idx"))
+      if (cause.getMessage() != null)
         for (String key : CONSTRAINT_MESSAGES.keySet())
           if (cause.getMessage().toLowerCase(java.util.Locale.ROOT).contains(key)) return key;
     }

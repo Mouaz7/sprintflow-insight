@@ -66,15 +66,12 @@ public class LifecycleService {
       if (restore) ensureParents(null, story.getSprintId());
       String previous = story.getDeletionBatchId();
       Instant previousTime = story.getTrashedAt();
+      if (!restore) tasks.trashWithStory(projectId, id, now, batch);
+      else if (previous != null) tasks.restoreBatch(projectId, previous);
+      else tasks.restoreLegacy(projectId, id, null, previousTime);
+      story = stories.findById(id).orElseThrow(this::missing);
       story.setTrashedAt(restore ? null : now);
       story.setDeletionBatchId(restore ? null : batch);
-      for (Task task : tasks.findAllByProjectId(projectId))
-        if (id.equals(task.getStoryId())
-            && included(
-                task.getTrashedAt(), task.getDeletionBatchId(), previousTime, previous, restore)) {
-          task.setTrashedAt(restore ? null : now);
-          task.setDeletionBatchId(restore ? null : batch);
-        }
       stories.save(story);
     } else if (kind.equals("sprint")) {
       Sprint sprint = sprints.findById(id).orElseThrow(this::missing);
@@ -82,25 +79,18 @@ public class LifecycleService {
       if (restore) mutations.requireSingleActiveSprint(projectId, id, sprint.getStatus());
       String previous = sprint.getDeletionBatchId();
       Instant previousTime = sprint.getTrashedAt();
-      var childStories =
-          stories.findAllByProjectId(projectId).stream()
-              .filter(story -> id.equals(story.getSprintId()))
-              .toList();
-      var childIds =
-          childStories.stream().map(UserStory::getId).collect(java.util.stream.Collectors.toSet());
-      for (UserStory story : childStories)
-        if (included(
-            story.getTrashedAt(), story.getDeletionBatchId(), previousTime, previous, restore)) {
-          story.setTrashedAt(restore ? null : now);
-          story.setDeletionBatchId(restore ? null : batch);
-        }
-      for (Task task : tasks.findAllByProjectId(projectId))
-        if ((id.equals(task.getSprintId()) || childIds.contains(task.getStoryId()))
-            && included(
-                task.getTrashedAt(), task.getDeletionBatchId(), previousTime, previous, restore)) {
-          task.setTrashedAt(restore ? null : now);
-          task.setDeletionBatchId(restore ? null : batch);
-        }
+      // Tasks first: their selection follows stories' sprint membership, which trashing keeps.
+      if (!restore) {
+        tasks.trashWithSprint(projectId, id, now, batch);
+        stories.trashWithSprint(projectId, id, now, batch);
+      } else if (previous != null) {
+        tasks.restoreBatch(projectId, previous);
+        stories.restoreBatch(projectId, previous);
+      } else {
+        tasks.restoreLegacy(projectId, null, id, previousTime);
+        stories.restoreLegacyForSprint(projectId, id, previousTime);
+      }
+      sprint = sprints.findById(id).orElseThrow(this::missing);
       sprint.setTrashedAt(restore ? null : now);
       sprint.setDeletionBatchId(restore ? null : batch);
       sprints.save(sprint);
@@ -135,10 +125,8 @@ public class LifecycleService {
       tasks.clearStoryReference(id);
       stories.deleteById(id);
     } else {
-      for (Task task : tasks.findAllByProjectId(projectId))
-        if (id.equals(task.getSprintId())) task.setSprintId(null);
-      for (UserStory story : stories.findAllByProjectId(projectId))
-        if (id.equals(story.getSprintId())) story.setSprintId(null);
+      tasks.detachFromSprint(projectId, id);
+      stories.detachFromSprint(projectId, id);
       retrospectives.deleteBySprintId(id);
       sprints.deleteById(id);
     }
@@ -152,15 +140,6 @@ public class LifecycleService {
         Instant.now());
   }
 
-  private boolean included(
-      Instant trashedAt, String batch, Instant parentTime, String parentBatch, boolean restore) {
-    if (!restore) return trashedAt == null;
-    // Timestamp matching preserves restoration of trash created before deletion batch IDs existed.
-    return trashedAt != null
-        && (parentBatch != null
-            ? Objects.equals(parentBatch, batch)
-            : parentTime != null && parentTime.equals(trashedAt));
-  }
 
   private void requireState(Instant trashedAt, boolean restore) {
     if (restore == (trashedAt == null))

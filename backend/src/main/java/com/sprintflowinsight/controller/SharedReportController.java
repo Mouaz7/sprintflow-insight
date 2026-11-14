@@ -6,7 +6,6 @@ import com.sprintflowinsight.project.*;
 import com.sprintflowinsight.repository.*;
 import com.sprintflowinsight.service.MetricsService;
 import jakarta.servlet.http.HttpSession;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.time.Instant;
 import java.util.*;
@@ -73,9 +72,7 @@ public class SharedReportController {
             "statusCounts",
             "burndown",
             "burndownAvailable")) if (data.containsKey(key)) snapshot.put(key, data.get(key));
-    byte[] random = new byte[32];
-    new SecureRandom().nextBytes(random);
-    String token = Base64.getUrlEncoder().withoutPadding().encodeToString(random);
+    String token = com.sprintflowinsight.common.SecureTokens.token();
     var report = new SharedReport();
     report.setProjectId(projectId);
     report.setTokenHash(hash(token));
@@ -132,9 +129,7 @@ public class SharedReportController {
     return json.readTree(report.getSnapshot());
   }
 
-  private String hash(String value) throws Exception {
-    return HexFormat.of()
-        .formatHex(
-            MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+  private String hash(String value) {
+    return com.sprintflowinsight.common.SecureTokens.sha256(value);
   }
 }
