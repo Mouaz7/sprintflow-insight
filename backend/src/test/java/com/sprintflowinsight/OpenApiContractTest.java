@@ -50,6 +50,14 @@ class OpenApiContractTest {
             Map<String, Object> historicalFields = (Map<String, Object>) historicalItem.get("properties");
             assertThat(historicalFields).containsKeys("id", "name", "completedAt", "plannedStoryPoints",
                     "actualStoryPoints", "completedTasks");
+
+            Map<String, Object> schemas = (Map<String, Object>) ((Map<String, Object>) document.get("components")).get("schemas");
+            Map<String, Object> problem = (Map<String, Object>) schemas.get("Problem");
+            Map<String, Object> code = (Map<String, Object>) ((Map<String, Object>) problem.get("properties")).get("code");
+            assertThat((java.util.List<String>) code.get("enum"))
+                    .as("every ErrorCode is documented, and nothing else")
+                    .containsExactlyInAnyOrderElementsOf(java.util.Arrays.stream(
+                            com.sprintflowinsight.common.error.ErrorCode.values()).map(Enum::name).toList());
         }
     }
 }

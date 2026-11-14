@@ -77,13 +77,15 @@ class SecurityConfigurationTest {
 
   @Test
   void forbiddenApiResponseIsLoggedWithoutSensitiveReason(
-      org.springframework.boot.test.system.CapturedOutput output) {
+      org.springframework.boot.test.system.CapturedOutput output) throws Exception {
     String sensitiveReason = "private-api-error-token-not-for-logs";
     ResponseEntity<?> response =
         new ApiExceptionHandler()
-            .handleAccessError(
+            .handleException(
                 new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.FORBIDDEN, sensitiveReason));
+                    HttpStatus.FORBIDDEN, sensitiveReason),
+                new org.springframework.web.context.request.ServletWebRequest(
+                    new org.springframework.mock.web.MockHttpServletRequest()));
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     assertThat(output.getOut()).contains("Denied API operation.").doesNotContain(sensitiveReason);
   }

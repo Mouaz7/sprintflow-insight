@@ -1,5 +1,7 @@
 package com.sprintflowinsight.project;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.auth.UserRepository;
 import com.sprintflowinsight.service.ActivityService;
@@ -105,7 +107,7 @@ public class ProjectController {
                   access.email(session));
               return ResponseEntity.ok(saved);
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Project not found."));
   }
 
   @DeleteMapping("/{id}")

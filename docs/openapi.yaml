@@ -663,14 +663,38 @@ components:
           description: Seconds until another attempt is allowed.
           schema: { type: integer, minimum: 1 }
     Error:
-      description: Validation, permission, or conflict error
+      description: >-
+        RFC 9457 problem document. Branch on `code` (or `type`), never on the human-readable text.
       content:
-        application/json:
-          schema:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, code, message]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable problem type, `https://sprintflow.dev/problems/<kebab-case code>`.
+          example: https://sprintflow.dev/problems/validation-failed
+        title: { type: string, example: Validation failed }
+        status: { type: integer, example: 400 }
+        detail: { type: string, description: Human-readable explanation for this occurrence. }
+        instance: { type: string, description: Request path that failed. }
+        code:
+          type: string
+          enum: [MALFORMED_REQUEST, VALIDATION_FAILED, INVALID_PARAMETER, MISSING_PARAMETER, BAD_REQUEST, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, METHOD_NOT_ALLOWED, NOT_ACCEPTABLE, CONFLICT, GONE, PRECONDITION_FAILED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, PRECONDITION_REQUIRED, RATE_LIMITED, INTERNAL_ERROR, SERVICE_UNAVAILABLE]
+        message: { type: string, description: Same text as `detail`; kept for older clients. }
+        errors:
+          type: array
+          description: Present for VALIDATION_FAILED.
+          items:
             type: object
             properties:
+              field: { type: string }
               message: { type: string }
-  schemas:
+        errorId: { type: string, description: Present for INTERNAL_ERROR; quote it when reporting a problem. }
     Registration:
       type: object
       required: [email, password, displayName]

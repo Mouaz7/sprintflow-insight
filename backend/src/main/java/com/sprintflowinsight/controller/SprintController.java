@@ -1,5 +1,7 @@
 package com.sprintflowinsight.controller;
 
+import com.sprintflowinsight.common.error.ApiException;
+
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.model.Sprint;
 import com.sprintflowinsight.project.ProjectAccessService;
@@ -118,7 +120,7 @@ public class SprintController {
               return ResponseEntity.ok(
                   sprintService.updateSprint(sprint, sprintDetails, actorEmail));
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Sprint not found."));
   }
 
   @GetMapping("/{id}")
@@ -130,7 +132,7 @@ public class SprintController {
               access.read(sprint.getProjectId(), session);
               return ResponseEntity.ok(sprint);
             })
-        .orElseGet(() -> ResponseEntity.notFound().build());
+        .orElseThrow(() -> ApiException.notFound("Sprint not found."));
   }
 
   @org.springframework.transaction.annotation.Transactional
@@ -147,7 +149,7 @@ public class SprintController {
     }
     Sprint sprint = sprintService.getSprintById(id).orElse(null);
     if (sprint == null) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Sprint not found.");
     }
     access.write(sprint.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, sprint.getVersion());
@@ -165,7 +167,7 @@ public class SprintController {
       HttpSession session) {
     Sprint sprint = sprintService.getSprintById(id).orElse(null);
     if (sprint == null) {
-      return ResponseEntity.notFound().build();
+      throw ApiException.notFound("Sprint not found.");
     }
     access.write(sprint.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, sprint.getVersion());

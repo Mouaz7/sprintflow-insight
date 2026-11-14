@@ -1,6 +1,8 @@
 package com.sprintflowinsight.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprintflowinsight.common.error.ErrorCode;
+import com.sprintflowinsight.common.error.Problems;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,7 +24,6 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
 
 @Configuration
@@ -80,11 +81,21 @@ public class SecurityConfiguration {
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
             .exceptionHandling(errors -> errors
-                .authenticationEntryPoint((request, response, error) -> { response.setStatus(401); response.setContentType("application/json"); json.writeValue(response.getOutputStream(), Map.of("message", "Sign in to continue.")); })
-                .accessDeniedHandler((request, response, error) -> { SECURITY_LOG.warn("Denied protected request."); response.setStatus(403); response.setContentType("application/json"); json.writeValue(response.getOutputStream(), Map.of("message", "Access denied. Refresh the page and try again.")); }))
+                .authenticationEntryPoint((request, response, error) -> writeProblem(json, request, response, ErrorCode.UNAUTHENTICATED, "Sign in to continue."))
+                .accessDeniedHandler((request, response, error) -> { SECURITY_LOG.warn("Denied protected request."); writeProblem(json, request, response, ErrorCode.FORBIDDEN, "Access denied. Refresh the page and try again."); }))
             .logout(logout -> logout.logoutUrl("/api/auth/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
                 .logoutSuccessHandler((request, response, auth) -> response.setStatus(204)))
             .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable());
         return http.build();
+    }
+
+    /** Writes the same RFC 9457 problem shape as the MVC handler, for filter-level failures. */
+    public static void writeProblem(ObjectMapper json, jakarta.servlet.http.HttpServletRequest request,
+            jakarta.servlet.http.HttpServletResponse response, ErrorCode code, String detail) throws java.io.IOException {
+        org.springframework.http.ProblemDetail problem = Problems.of(code, detail);
+        problem.setInstance(java.net.URI.create(request.getRequestURI()));
+        response.setStatus(code.status().value());
+        response.setContentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        json.writeValue(response.getOutputStream(), Problems.asMap(problem));
     }
 }
