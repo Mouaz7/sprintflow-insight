@@ -15,14 +15,17 @@ public class SessionAuthenticationService {
   private final SecurityContextRepository contexts;
   private final SessionAuthenticationStrategy sessions;
   private final UserRepository users;
+  private final UserSessions userSessions;
 
   public SessionAuthenticationService(
       SecurityContextRepository contexts,
       SessionAuthenticationStrategy sessions,
-      UserRepository users) {
+      UserRepository users,
+      UserSessions userSessions) {
     this.contexts = contexts;
     this.sessions = sessions;
     this.users = users;
+    this.userSessions = userSessions;
   }
 
   public void signIn(String email, HttpServletRequest request, HttpServletResponse response) {
@@ -36,5 +39,6 @@ public class SessionAuthenticationService {
     context.setAuthentication(authentication);
     SecurityContextHolder.setContext(context);
     contexts.saveContext(context, request, response);
+    userSessions.bind(request.getSession(), user.getId());
   }
 }

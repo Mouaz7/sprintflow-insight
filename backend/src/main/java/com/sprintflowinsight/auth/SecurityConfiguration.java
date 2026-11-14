@@ -28,6 +28,7 @@ import java.util.Locale;
 
 @Configuration
 public class SecurityConfiguration {
+    public static final String SESSION_COOKIE = "SPRINTFLOW_SESSION";
     private static final org.slf4j.Logger SECURITY_LOG = org.slf4j.LoggerFactory.getLogger("security.events");
     @org.springframework.beans.factory.annotation.Value("${app.password-reset.base-url:http://localhost:8081}") private String publicUrl;
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
@@ -83,7 +84,7 @@ public class SecurityConfiguration {
             .exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, error) -> writeProblem(json, request, response, ErrorCode.UNAUTHENTICATED, "Sign in to continue."))
                 .accessDeniedHandler((request, response, error) -> { SECURITY_LOG.warn("Denied protected request."); writeProblem(json, request, response, ErrorCode.FORBIDDEN, "Access denied. Refresh the page and try again."); }))
-            .logout(logout -> logout.logoutUrl("/api/auth/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
+            .logout(logout -> logout.logoutUrl("/api/auth/logout").invalidateHttpSession(true).deleteCookies(SESSION_COOKIE)
                 .logoutSuccessHandler((request, response, auth) -> response.setStatus(204)))
             .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable());
         return http.build();

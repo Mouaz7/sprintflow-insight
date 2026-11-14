@@ -19,7 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
       "spring.datasource.url=jdbc:h2:mem:security-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
       "spring.datasource.driver-class-name=org.h2.Driver",
       "spring.jpa.hibernate.ddl-auto=create-drop",
-      "spring.flyway.enabled=false"
+      "spring.flyway.enabled=false",
+      "spring.session.jdbc.initialize-schema=always"
     })
 @ActiveProfiles("dev")
 @org.junit.jupiter.api.extension.ExtendWith(
