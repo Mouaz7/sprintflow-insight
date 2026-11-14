@@ -143,6 +143,100 @@ class ProjectAccessIntegrationTest {
         .andExpect(jsonPath("$.code").value("NOT_FOUND"));
   }
 
+  @Test
+  void adminsManageMembersButOnlyTheOwnerChangesOtherAdmins() throws Exception {
+    User owner = user();
+    User admin = user();
+    User otherAdmin = user();
+    User colleague = user();
+    Project project = project(owner, null);
+    member(project, admin, "Admin");
+    member(project, otherAdmin, "Admin");
+
+    // An admin may add and remove ordinary members ...
+    mvc.perform(memberPut(project, admin, colleague, "Member")).andExpect(status().isOk());
+    // ... but may not appoint admins, nor change or remove another admin.
+    mvc.perform(memberPut(project, admin, colleague, "Admin"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.detail").value("Only the project owner can appoint admins."));
+    mvc.perform(memberPut(project, admin, otherAdmin, "Viewer"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.detail").value("Only the project owner can change or remove another admin."));
+    mvc.perform(
+            delete("/api/projects/" + project.getId() + "/members/" + otherAdmin.getEmail())
+                .with(as(admin))
+                .with(csrf()))
+        .andExpect(status().isForbidden());
+    assertThat(members.findByProjectIdAndEmailIgnoreCase(project.getId(), otherAdmin.getEmail()))
+        .get()
+        .extracting(ProjectMember::getRole)
+        .isEqualTo("Admin");
+
+    // An admin may step down, and the owner may change any admin.
+    mvc.perform(memberPut(project, admin, admin, "Member")).andExpect(status().isOk());
+    mvc.perform(memberPut(project, owner, otherAdmin, "Viewer")).andExpect(status().isOk());
+  }
+
+  @Test
+  void movingAProjectToTheRecycleBinRequiresTheCurrentVersion() throws Exception {
+    User owner = user();
+    Project project = project(owner, null);
+    String path = "/api/workspace/trash/project/" + project.getId();
+    String body = "{\"restore\":false}";
+    mvc.perform(put(path).with(as(owner)).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().is(428))
+        .andExpect(jsonPath("$.code").value("PRECONDITION_REQUIRED"));
+    mvc.perform(
+            put(path)
+                .with(as(owner))
+                .with(csrf())
+                .header("If-Match", "\"" + (project.getVersion() + 1) + "\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isPreconditionFailed());
+    mvc.perform(
+            put(path)
+                .with(as(owner))
+                .with(csrf())
+                .header("If-Match", "\"" + project.getVersion() + "\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isOk());
+    assertThat(projects.findById(project.getId()).orElseThrow().getTrashedAt()).isNotNull();
+  }
+
+  @Test
+  void theDatabaseIndexRejectsASecondActiveSprintWithAReadableConflict() {
+    User owner = user();
+    Project project = project(owner, null);
+    Sprint first = new Sprint("Active one", "Goal", "Active", 0);
+    first.setProjectId(project.getId());
+    sprints.saveAndFlush(first);
+    Sprint second = new Sprint("Active two", "Goal", "Active", 0);
+    second.setProjectId(project.getId());
+    var thrown =
+        org.assertj.core.api.Assertions.catchThrowableOfType(
+            org.springframework.dao.DataIntegrityViolationException.class,
+            () -> sprints.saveAndFlush(second));
+    var response =
+        new com.sprintflowinsight.ApiExceptionHandler()
+            .handleIntegrityViolation(
+                thrown,
+                new org.springframework.web.context.request.ServletWebRequest(
+                    new org.springframework.mock.web.MockHttpServletRequest()));
+    assertThat(response.getBody().getDetail())
+        .isEqualTo("Only one sprint can be active in a project at a time.");
+  }
+
+  private org.springframework.test.web.servlet.RequestBuilder memberPut(
+      Project project, User caller, User target, String role) {
+    return post("/api/projects/" + project.getId() + "/members")
+        .with(as(caller))
+        .with(csrf())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"email\":\"" + target.getEmail() + "\",\"role\":\"" + role + "\"}");
+  }
+
   private interface Call {
     void run() throws Exception;
   }

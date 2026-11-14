@@ -65,9 +65,6 @@ public class SprintController {
     access.write(sprint.getProjectId(), session);
     ResponseEntity<?> dateError = validateSprintDates(sprint);
     if (dateError != null) return dateError;
-    ResponseEntity<?> activeError =
-        validateSingleActiveSprint(sprint.getProjectId(), null, sprint.getStatus());
-    if (activeError != null) return activeError;
     String actorEmail = access.email(session);
     return ResponseEntity.ok(sprintService.createSprint(sprint, actorEmail));
   }
@@ -103,10 +100,6 @@ public class SprintController {
                     "A sprint cannot move to another project.");
               ResponseEntity<?> dateError = validateSprintDates(sprintDetails);
               if (dateError != null) return dateError;
-              ResponseEntity<?> activeError =
-                  validateSingleActiveSprint(
-                      sprintDetails.getProjectId(), id, sprintDetails.getStatus());
-              if (activeError != null) return activeError;
               return ResponseEntity.ok(
                   sprintService.updateSprint(sprint, sprintDetails, actorEmail));
             })
@@ -143,8 +136,6 @@ public class SprintController {
     }
     access.write(sprint.getProjectId(), session);
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, sprint.getVersion());
-    ResponseEntity<?> activeError = validateSingleActiveSprint(sprint.getProjectId(), id, status);
-    if (activeError != null) return activeError;
     String actorEmail = access.email(session);
     return ResponseEntity.ok(sprintService.updateSprintStatus(id, status, actorEmail));
   }
@@ -179,19 +170,4 @@ public class SprintController {
     return null;
   }
 
-  private ResponseEntity<?> validateSingleActiveSprint(
-      Long projectId, Long ignoredSprintId, String requestedStatus) {
-    if (!"Active".equals(requestedStatus)) return null;
-    boolean anotherActive =
-        sprintService.getSprintsForProject(projectId).stream()
-            .anyMatch(
-                existing ->
-                    "Active".equals(existing.getStatus())
-                        && !existing.getId().equals(ignoredSprintId));
-    if (anotherActive)
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.CONFLICT,
-          "Only one sprint can be active in a project at a time.");
-    return null;
-  }
 }

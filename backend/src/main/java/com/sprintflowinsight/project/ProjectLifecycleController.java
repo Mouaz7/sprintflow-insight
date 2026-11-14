@@ -123,6 +123,7 @@ public class ProjectLifecycleController {
       if (!project.getOwnerEmail().equalsIgnoreCase(access.email(session)))
         throw new ResponseStatusException(
             HttpStatus.FORBIDDEN, "Only the project owner can manage deleted projects.");
+      VersionPrecondition.require(ifMatch, project.getVersion());
       project.setTrashedAt(restore ? null : Instant.now());
       projects.save(project);
       return;

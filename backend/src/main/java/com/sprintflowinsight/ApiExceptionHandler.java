@@ -66,9 +66,44 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     return withInstance(Problems.validation(violations), request);
   }
 
+  /** Database constraints that encode business rules, mapped to user-facing explanations. */
+  private static final java.util.Map<String, String> CONSTRAINT_MESSAGES =
+      java.util.Map.of(
+          "sprint_one_active_project_idx",
+          com.sprintflowinsight.service.ProjectMutationService.ACTIVE_SPRINT_MESSAGE);
+
   @ExceptionHandler(DataIntegrityViolationException.class)
-  public ResponseEntity<ProblemDetail> handleIntegrityViolation(WebRequest request) {
-    return respond(ErrorCode.CONFLICT, "This record conflicts with existing data.", request);
+  public ResponseEntity<ProblemDetail> handleIntegrityViolation(
+      DataIntegrityViolationException exception, WebRequest request) {
+    String constraint = constraintName(exception);
+    String message =
+        constraint == null
+            ? null
+            : CONSTRAINT_MESSAGES.entrySet().stream()
+                .filter(entry -> constraint.toLowerCase(java.util.Locale.ROOT).contains(entry.getKey()))
+                .map(java.util.Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    return respond(
+        ErrorCode.CONFLICT,
+        message == null ? "This record conflicts with existing data." : message,
+        request);
+  }
+
+  @ExceptionHandler(java.util.NoSuchElementException.class)
+  public ResponseEntity<ProblemDetail> handleMissing(WebRequest request) {
+    return respond(ErrorCode.NOT_FOUND, "Resource not found.", request);
+  }
+
+  private static String constraintName(Throwable exception) {
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof org.hibernate.exception.ConstraintViolationException hibernate
+          && hibernate.getConstraintName() != null) return hibernate.getConstraintName();
+      if (cause.getMessage() != null && cause.getMessage().toLowerCase(java.util.Locale.ROOT).contains("_idx"))
+        for (String key : CONSTRAINT_MESSAGES.keySet())
+          if (cause.getMessage().toLowerCase(java.util.Locale.ROOT).contains(key)) return key;
+    }
+    return null;
   }
 
   @ExceptionHandler(ObjectOptimisticLockingFailureException.class)

@@ -89,7 +89,7 @@ public class SprintService {
     Sprint sprint =
         sprintRepository
             .findById(id)
-            .orElseThrow(() -> new NoSuchElementException("Sprint with id " + id + " not found"));
+            .orElseThrow(() -> com.sprintflowinsight.common.error.ApiException.notFound("Sprint not found."));
     return updateSprint(sprint, copyWithStatus(sprint, status), actorEmail);
   }
 

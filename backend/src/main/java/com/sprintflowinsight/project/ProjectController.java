@@ -131,7 +131,7 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> addMember(
       @PathVariable Long id, @Valid @RequestBody MemberRequest request, HttpSession session) {
-    access.adminOrOwner(id, session);
+    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
     String email = request.email().trim().toLowerCase();
     if (users.findByEmail(email).isEmpty())
       return ApiExceptionHandler.error(
@@ -148,6 +148,9 @@ public class ProjectController {
           "Transfer ownership before changing the owner role.");
     ProjectMember member =
         members.findByProjectIdAndEmailIgnoreCase(id, email).orElseGet(ProjectMember::new);
+    requireMayManage(caller, member.getId() == null ? null : member.getRole(), email);
+    if (caller.role() != ProjectRole.OWNER && ProjectRole.fromLabel(request.role()) == ProjectRole.ADMIN)
+      throw ApiException.forbidden("Only the project owner can appoint admins.");
     member.setProjectId(id);
     member.setEmail(email);
     member.setRole(request.role());
@@ -161,14 +164,15 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> removeMember(
       @PathVariable Long id, @PathVariable String email, HttpSession session) {
-    access.adminOrOwner(id, session);
+    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
     Project p = projects.lockById(id).orElseThrow();
     if (p.getOwnerEmail().equalsIgnoreCase(email))
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.CONFLICT,
           "Transfer ownership before removing the owner.");
-    if (members.findByProjectIdAndEmailIgnoreCase(id, email).isEmpty())
-      return ResponseEntity.noContent().build();
+    var existing = members.findByProjectIdAndEmailIgnoreCase(id, email);
+    if (existing.isEmpty()) return ResponseEntity.noContent().build();
+    requireMayManage(caller, existing.get().getRole(), email);
     for (var task : tasks.findAllByProjectIdAndAssigneeEmailIgnoreCase(id, email))
       task.setAssigneeEmail(null);
     members.deleteByProjectIdAndEmailIgnoreCase(id, email);
@@ -214,6 +218,17 @@ public class ProjectController {
         "Transferred project ownership to " + nextOwner + ".",
         access.email(session));
     return ResponseEntity.ok(saved);
+  }
+
+  /**
+   * Admins manage members and viewers. Only the owner may change or remove another admin; an
+   * admin may still step down or leave themselves.
+   */
+  private static void requireMayManage(AccessContext caller, String targetRole, String targetEmail) {
+    if (caller.role() == ProjectRole.OWNER || targetRole == null) return;
+    if (ProjectRole.fromLabel(targetRole) == ProjectRole.ADMIN
+        && !caller.email().equalsIgnoreCase(targetEmail))
+      throw ApiException.forbidden("Only the project owner can change or remove another admin.");
   }
 
   public record MemberRequest(

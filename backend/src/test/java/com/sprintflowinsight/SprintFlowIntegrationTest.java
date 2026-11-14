@@ -2867,7 +2867,7 @@ class SprintFlowIntegrationTest {
                   "/api/(tasks|sprints|stories|projects)/(\\d+)(?:/.*|\\?.*)?")
               .matcher(path);
       var trash =
-          java.util.regex.Pattern.compile("/api/workspace/trash/(task|sprint|story)/(\\d+)")
+          java.util.regex.Pattern.compile("/api/workspace/trash/(task|sprint|story|project)/(\\d+)")
               .matcher(path);
       String kind = null;
       Long itemId = null;
