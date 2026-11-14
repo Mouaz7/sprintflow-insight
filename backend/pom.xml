@@ -23,6 +23,8 @@
         <tomcat.version>10.1.61</tomcat.version>
         <log4j2.version>2.26.1</log4j2.version>
         <postgresql.version>42.7.14</postgresql.version>
+        <!-- Commons Compress requires the CVE-2025-48924 fix, above Boot's managed 3.17.0. -->
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <jqwik.version>1.10.1</jqwik.version>
         <coverage.minimum.lines>0.90</coverage.minimum.lines>
         <coverage.minimum.branches>0.65</coverage.minimum.branches>
