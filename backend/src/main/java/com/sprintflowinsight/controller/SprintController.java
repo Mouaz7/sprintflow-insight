@@ -51,7 +51,9 @@ public class SprintController {
   }
 
   @PostMapping
-  public ResponseEntity<?> createSprint(@Valid @RequestBody Sprint sprint, HttpSession session) {
+  public ResponseEntity<?> createSprint(
+      @Valid @RequestBody SprintRequest request, HttpSession session) {
+    Sprint sprint = request.toEntity();
     if (sprint.getStatus() == null || !VALID_STATUSES.contains(sprint.getStatus())) {
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
@@ -73,9 +75,10 @@ public class SprintController {
   @PutMapping("/{id}")
   public ResponseEntity<?> updateSprint(
       @PathVariable("id") Long id,
-      @Valid @RequestBody Sprint sprintDetails,
+      @Valid @RequestBody SprintRequest request,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
+    Sprint sprintDetails = request.toEntity();
     if (sprintDetails.getStatus() == null || !VALID_STATUSES.contains(sprintDetails.getStatus())) {
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,

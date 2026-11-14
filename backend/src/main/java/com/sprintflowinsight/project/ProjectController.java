@@ -51,16 +51,13 @@ public class ProjectController {
 
   @PostMapping
   @Transactional
-  public ResponseEntity<?> createProject(@Valid @RequestBody Project project, HttpSession session) {
+  public ResponseEntity<?> createProject(
+      @Valid @RequestBody ProjectRequest request, HttpSession session) {
     String email = access.email(session);
-    if (projects.findByName(project.getName().trim()).isPresent())
+    if (projects.findByName(request.trimmedName()).isPresent())
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.CONFLICT, "A project with this name already exists.");
-    project.setId(null);
-    project.setVersion(null);
-    project.setName(project.getName().trim());
-    project.setOwnerEmail(email);
-    Project saved = projects.save(project);
+    Project saved = projects.save(new Project(request.trimmedName(), request.description(), email));
     ProjectMember owner = new ProjectMember();
     owner.setProjectId(saved.getId());
     owner.setEmail(email);
@@ -81,13 +78,12 @@ public class ProjectController {
   @Transactional
   public ResponseEntity<?> updateProject(
       @PathVariable Long id,
-      @Valid @RequestBody Project details,
+      @Valid @RequestBody ProjectRequest details,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
-    access.adminOrOwner(id, session);
-    access.write(id, session);
+    access.require(id, session, AccessContext.Need.MANAGE);
     if (projects
-        .findByName(details.getName().trim())
+        .findByName(details.trimmedName())
         .filter(p -> !p.getId().equals(id))
         .isPresent())
       return ApiExceptionHandler.error(
@@ -97,8 +93,8 @@ public class ProjectController {
         .map(
             p -> {
               com.sprintflowinsight.VersionPrecondition.require(ifMatch, p.getVersion());
-              p.setName(details.getName().trim());
-              p.setDescription(details.getDescription());
+              p.setName(details.trimmedName());
+              p.setDescription(details.description());
               Project saved = projects.save(p);
               activity.record(
                   id,
@@ -184,12 +180,8 @@ public class ProjectController {
   @PutMapping("/{id}/owner")
   @Transactional
   public ResponseEntity<?> transferOwnership(
-      @PathVariable Long id, @RequestBody OwnershipRequest request, HttpSession session) {
+      @PathVariable Long id, @Valid @RequestBody OwnershipRequest request, HttpSession session) {
     access.owner(id, session);
-    if (request.email() == null || request.email().isBlank())
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.BAD_REQUEST,
-          "Choose a project member to receive ownership.");
     String nextOwner = request.email().trim().toLowerCase();
     if (users.findByEmail(nextOwner).isEmpty())
       return ApiExceptionHandler.error(
@@ -235,5 +227,8 @@ public class ProjectController {
       @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Email String email,
       @jakarta.validation.constraints.NotBlank String role) {}
 
-  public record OwnershipRequest(String email) {}
+  public record OwnershipRequest(
+      @jakarta.validation.constraints.NotBlank(message = "Choose a project member to receive ownership.")
+          @jakarta.validation.constraints.Email(message = "Enter a valid email address.")
+          String email) {}
 }

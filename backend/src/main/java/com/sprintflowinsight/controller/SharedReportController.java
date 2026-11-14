@@ -41,10 +41,12 @@ public class SharedReportController {
 
   @PostMapping("/projects/{projectId}/reports")
   public Map<String, Object> create(
-      @PathVariable Long projectId, @RequestBody Map<String, Long> request, HttpSession session)
+      @PathVariable Long projectId,
+      @jakarta.validation.Valid @RequestBody ReportRequest request,
+      HttpSession session)
       throws Exception {
     access.adminOrOwner(projectId, session);
-    Long sprintId = request.get("sprintId");
+    Long sprintId = request.sprintId();
     if (sprintId != null
         && sprints
             .findById(sprintId)
@@ -97,6 +99,9 @@ public class SharedReportController {
                     "id", r.getId(), "createdAt", r.getCreatedAt(), "expiresAt", r.getExpiresAt()))
         .toList();
   }
+
+  /** Optional sprint to scope the snapshot to; omitted means the whole project. */
+  public record ReportRequest(@jakarta.validation.constraints.Positive Long sprintId) {}
 
   @DeleteMapping("/projects/{projectId}/reports/{id}")
   public void revoke(@PathVariable Long projectId, @PathVariable Long id, HttpSession session) {

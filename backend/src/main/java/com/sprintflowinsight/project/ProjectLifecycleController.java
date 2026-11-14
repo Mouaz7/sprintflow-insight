@@ -41,10 +41,12 @@ public class ProjectLifecycleController {
   @PutMapping("/projects/{id}/archive")
   @Transactional
   public Project archive(
-      @PathVariable Long id, @RequestBody Map<String, Boolean> body, HttpSession session) {
+      @PathVariable Long id,
+      @jakarta.validation.Valid @RequestBody ArchiveRequest body,
+      HttpSession session) {
     access.require(id, session, AccessContext.Need.MANAGE_ARCHIVED);
     Project project = projects.lockById(id).orElseThrow(this::missing);
-    project.setArchivedAt(Boolean.TRUE.equals(body.get("archived")) ? Instant.now() : null);
+    project.setArchivedAt(body.archived() ? Instant.now() : null);
     return projects.save(project);
   }
 
@@ -114,10 +116,10 @@ public class ProjectLifecycleController {
   public void change(
       @PathVariable String kind,
       @PathVariable Long id,
-      @RequestBody Map<String, Boolean> body,
+      @jakarta.validation.Valid @RequestBody TrashRequest body,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
-    boolean restore = Boolean.TRUE.equals(body.get("restore"));
+    boolean restore = body.restore();
     if (kind.equals("project")) {
       Project project = projects.lockById(id).orElseThrow(this::missing);
       if (!project.getOwnerEmail().equalsIgnoreCase(access.email(session)))
@@ -150,6 +152,14 @@ public class ProjectLifecycleController {
   private ResponseStatusException missing() {
     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found.");
   }
+
+  public record ArchiveRequest(
+      @jakarta.validation.constraints.NotNull(message = "State whether the project is archived.")
+          Boolean archived) {}
+
+  public record TrashRequest(
+      @jakarta.validation.constraints.NotNull(message = "State whether to restore the item.")
+          Boolean restore) {}
 
   public record TrashItem(
       String kind, Long id, Long projectId, String title, Instant trashedAt, Long version) {}

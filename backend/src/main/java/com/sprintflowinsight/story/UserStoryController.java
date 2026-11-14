@@ -109,10 +109,10 @@ public class UserStoryController {
   @PostMapping
   @Transactional
   public ResponseEntity<?> createUserStory(
-      @Valid @RequestBody UserStory userStory, HttpSession session) {
-    if (userStory.getProjectId() == null
-        || !projectRepository.existsById(userStory.getProjectId())) {
-      throw ApiException.notFound("Story not found.");
+      @Valid @RequestBody StoryRequest request, HttpSession session) {
+    UserStory userStory = request.toEntity();
+    if (!projectRepository.existsById(userStory.getProjectId())) {
+      throw ApiException.notFound("Project not found.");
     }
     access.write(userStory.getProjectId(), session);
     mutations.lock(userStory.getProjectId());
@@ -120,8 +120,6 @@ public class UserStoryController {
     ResponseEntity<?> invalid = validateStory(userStory);
     if (invalid != null) return invalid;
     String actorEmail = access.email(session);
-    userStory.setId(null);
-    userStory.setVersion(null);
     userStory.setCreatedAt(Instant.now());
     userStory.setBacklogPosition(userStoryRepository.lastPosition(userStory.getProjectId()) + 1);
     UserStory savedStory = userStoryRepository.save(Objects.requireNonNull(userStory));
@@ -137,11 +135,12 @@ public class UserStoryController {
   @PutMapping("/{id}")
   public ResponseEntity<?> updateUserStory(
       @PathVariable("id") Long id,
-      @Valid @RequestBody UserStory storyDetails,
+      @Valid @RequestBody StoryRequest request,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
+    UserStory storyDetails = request.toEntity();
     if (!projectRepository.existsById(storyDetails.getProjectId())) {
-      throw ApiException.notFound("Story not found.");
+      throw ApiException.notFound("Project not found.");
     }
     access.write(storyDetails.getProjectId(), session);
     mutations.lock(storyDetails.getProjectId());

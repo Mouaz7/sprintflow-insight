@@ -1,23 +1,85 @@
 package com.sprintflowinsight.auth;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprintflowinsight.common.error.ApiException;
+import com.sprintflowinsight.common.error.ErrorCode;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-import java.util.Map;
-import java.util.Set;
-@RestController @RequestMapping("/api/auth")
+import jakarta.validation.Valid;
+import jakarta.validation.Validator;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
 public class PreferencesController {
- private final UserPreferencesRepository preferences; private final UserRepository users; private final SessionUser sessionUser; private final ObjectMapper json;
- public PreferencesController(UserPreferencesRepository preferences,UserRepository users,SessionUser sessionUser,ObjectMapper json){this.preferences=preferences;this.users=users;this.sessionUser=sessionUser;this.json=json;}
- @GetMapping("/preferences") public UserPreferences get(HttpSession session){Long id=users.findByEmail(sessionUser.email(session)).orElseThrow().getId();return preferences.findById(id).orElseGet(()->{var value=new UserPreferences();value.setUserId(id);return value;});}
- @PutMapping("/preferences") public UserPreferences save(@RequestBody Map<String,Object> request,HttpSession session){var value=get(session);
-  if(request.containsKey("language")){String language=String.valueOf(request.get("language"));if(!Set.of("EN","SV").contains(language))throw invalid();value.setLanguage(language);}
-  if(request.containsKey("theme")){String theme=String.valueOf(request.get("theme"));if(!Set.of("light","dark").contains(theme))throw invalid();value.setTheme(theme);}
-  if(request.containsKey("notifications")){if(!(request.get("notifications") instanceof Boolean))throw invalid();value.setNotifications((Boolean)request.get("notifications"));}
-  if(request.containsKey("onboardingCompleted")){if(!(request.get("onboardingCompleted") instanceof Boolean))throw invalid();value.setOnboardingCompleted((Boolean)request.get("onboardingCompleted"));}
-  if(request.containsKey("savedFilters")){String filters=String.valueOf(request.get("savedFilters"));try{var node=json.readTree(filters);if(!node.isArray()||node.size()>30||filters.length()>30000)throw invalid();for(var filter:node){if(!filter.isObject()||!filter.hasNonNull("id")||!filter.hasNonNull("name")||filter.get("name").asText().length()>80)throw invalid();}}catch(ResponseStatusException ex){throw ex;}catch(Exception ex){throw invalid();}value.setSavedFilters(filters);}
-  return preferences.save(value);
- }
- private ResponseStatusException invalid(){return new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid preference settings.");}
+  static final int MAX_SAVED_FILTERS = 30;
+
+  private final UserPreferencesRepository preferences;
+  private final SessionUser sessionUser;
+  private final ObjectMapper json;
+  private final Validator validator;
+
+  public PreferencesController(
+      UserPreferencesRepository preferences,
+      SessionUser sessionUser,
+      ObjectMapper json,
+      Validator validator) {
+    this.preferences = preferences;
+    this.sessionUser = sessionUser;
+    this.json = json;
+    this.validator = validator;
+  }
+
+  @GetMapping("/preferences")
+  public UserPreferences get(HttpSession session) {
+    Long id = sessionUser.id(session);
+    return preferences
+        .findById(id)
+        .orElseGet(
+            () -> {
+              var value = new UserPreferences();
+              value.setUserId(id);
+              return value;
+            });
+  }
+
+  @PutMapping("/preferences")
+  public UserPreferences save(
+      @Valid @RequestBody PreferencesRequest request, HttpSession session) {
+    sessionUser.email(session); // the account must still exist
+    var value = get(session);
+    if (request.language() != null) value.setLanguage(request.language());
+    if (request.theme() != null) value.setTheme(request.theme());
+    if (request.notifications() != null) value.setNotifications(request.notifications());
+    if (request.onboardingCompleted() != null)
+      value.setOnboardingCompleted(request.onboardingCompleted());
+    if (request.savedFilters() != null) value.setSavedFilters(validFilters(request.savedFilters()));
+    return preferences.save(value);
+  }
+
+  private String validFilters(String text) {
+    List<PreferencesRequest.SavedFilter> filters;
+    try {
+      filters = json.readValue(text, new TypeReference<>() {});
+    } catch (Exception malformed) {
+      throw invalid("Saved filters must be a JSON array.");
+    }
+    if (filters == null || filters.size() > MAX_SAVED_FILTERS)
+      throw invalid("You can save at most " + MAX_SAVED_FILTERS + " filters.");
+    for (var filter : filters) {
+      if (filter == null) throw invalid("Saved filters must be objects.");
+      var violations = validator.validate(filter);
+      if (!violations.isEmpty()) throw invalid(violations.iterator().next().getMessage());
+    }
+    return text;
+  }
+
+  private static ApiException invalid(String message) {
+    return new ApiException(ErrorCode.VALIDATION_FAILED, message);
+  }
 }

@@ -56,7 +56,9 @@ public class TaskAttachmentController {
 
   @PostMapping
   public ResponseEntity<?> addLink(
-      @PathVariable Long taskId, @RequestBody AttachmentRequest request, HttpSession session) {
+      @PathVariable Long taskId,
+      @jakarta.validation.Valid @RequestBody AttachmentRequest request,
+      HttpSession session) {
     Task task = findTask(taskId);
     if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
@@ -142,5 +144,10 @@ public class TaskAttachmentController {
     return tasks.gettaskById(taskId).orElse(null);
   }
 
-  public record AttachmentRequest(String name, String url) {}
+  public record AttachmentRequest(
+      @jakarta.validation.constraints.Size(max = 255, message = "Link names can be at most 255 characters.")
+          String name,
+      @jakarta.validation.constraints.NotBlank(message = "Enter a link.")
+          @jakarta.validation.constraints.Size(max = 2000, message = "Links can be at most 2000 characters.")
+          String url) {}
 }
