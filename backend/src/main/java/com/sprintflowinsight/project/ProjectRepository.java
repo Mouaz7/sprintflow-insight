@@ -29,6 +29,26 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
   List<Project> findAccessibleIncludingTrash(
       @org.springframework.data.repository.query.Param("email") String email);
 
+  /** Project state plus the caller's membership role, in one round trip. */
+  @org.springframework.data.jpa.repository.Query(
+      """
+      select new com.sprintflowinsight.project.ProjectRepository$AccessRow(
+        project.ownerEmail, project.archivedAt, project.trashedAt, member.role)
+      from Project project
+      left join ProjectMember member
+        on member.projectId = project.id and lower(member.email) = :email
+      where project.id = :id
+      """)
+  Optional<AccessRow> findAccessRow(
+      @org.springframework.data.repository.query.Param("id") Long id,
+      @org.springframework.data.repository.query.Param("email") String normalizedEmail);
+
+  record AccessRow(
+      String ownerEmail,
+      java.time.Instant archivedAt,
+      java.time.Instant trashedAt,
+      String memberRole) {}
+
   Optional<Project> findByName(String name);
 
   List<Project> findByOwnerEmail(String ownerEmail);

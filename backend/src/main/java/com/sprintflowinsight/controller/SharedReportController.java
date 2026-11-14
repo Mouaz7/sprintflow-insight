@@ -88,7 +88,8 @@ public class SharedReportController {
 
   @GetMapping("/projects/{projectId}/reports")
   public List<Map<String, Object>> list(@PathVariable Long projectId, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    // Listing and revoking stay possible on archived projects: they only reduce exposure.
+    access.require(projectId, session, com.sprintflowinsight.project.AccessContext.Need.MANAGE_ARCHIVED);
     return reports.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
         .map(
             r ->
@@ -99,7 +100,7 @@ public class SharedReportController {
 
   @DeleteMapping("/projects/{projectId}/reports/{id}")
   public void revoke(@PathVariable Long projectId, @PathVariable Long id, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    access.require(projectId, session, com.sprintflowinsight.project.AccessContext.Need.MANAGE_ARCHIVED);
     var report =
         reports
             .findById(id)

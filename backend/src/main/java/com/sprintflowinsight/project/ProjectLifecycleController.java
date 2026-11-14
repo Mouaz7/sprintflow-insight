@@ -42,7 +42,7 @@ public class ProjectLifecycleController {
   @Transactional
   public Project archive(
       @PathVariable Long id, @RequestBody Map<String, Boolean> body, HttpSession session) {
-    access.adminOrOwner(id, session);
+    access.require(id, session, AccessContext.Need.MANAGE_ARCHIVED);
     Project project = projects.lockById(id).orElseThrow(this::missing);
     project.setArchivedAt(Boolean.TRUE.equals(body.get("archived")) ? Instant.now() : null);
     return projects.save(project);

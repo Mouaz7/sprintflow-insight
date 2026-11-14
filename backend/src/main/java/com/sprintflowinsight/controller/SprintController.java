@@ -47,17 +47,7 @@ public class SprintController {
       access.read(projectId, session);
       return sprintService.getSprintsForProject(projectId);
     }
-    return sprintService.getAllSprints().stream()
-        .filter(
-            s -> {
-              try {
-                access.roleFor(s.getProjectId(), email);
-                return true;
-              } catch (Exception ignored) {
-                return false;
-              }
-            })
-        .toList();
+    return sprintService.getSprintsVisibleTo(email);
   }
 
   @PostMapping

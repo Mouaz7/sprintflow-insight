@@ -117,8 +117,7 @@ public class LifecycleService {
 
   public void purge(String kind, Long id, HttpSession session) {
     Long projectId = projectFor(kind, id);
-    access.owner(projectId, session);
-    access.write(projectId, session);
+    access.require(projectId, session, com.sprintflowinsight.project.AccessContext.Need.OWNER);
     mutations.lock(projectId);
 
     Instant trashedAt =
