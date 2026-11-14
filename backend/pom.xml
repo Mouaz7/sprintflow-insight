@@ -107,6 +107,9 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Testcontainers 1.21.4 brings Compress 1.24.0 (CVE-2024-25710/26308).
+                 Keep its test-only transitive dependency on the patched release. -->
+            <dependency><groupId>org.apache.commons</groupId><artifactId>commons-compress</artifactId><version>1.28.0</version></dependency>
             <!-- google-api-client pulls Guava 33.1.0, affected by GHSA-xxph-c9ww-hj94 (fixed in 33.7.2). -->
             <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.8.0-jre</version></dependency>
         </dependencies>
