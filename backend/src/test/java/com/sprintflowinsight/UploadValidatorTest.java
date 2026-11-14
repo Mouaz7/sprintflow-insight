@@ -1,5 +1,6 @@
 package com.sprintflowinsight;
 
+import com.sprintflowinsight.support.TestFiles;
 import static org.assertj.core.api.Assertions.*;
 
 import com.sprintflowinsight.service.UploadValidator;

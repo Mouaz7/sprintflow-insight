@@ -11,11 +11,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:rate-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-      "spring.datasource.driver-class-name=org.h2.Driver",
-      "spring.jpa.hibernate.ddl-auto=validate",
       "app.security.auth-rate-limit.enabled=true"
     })
 @AutoConfigureMockMvc
