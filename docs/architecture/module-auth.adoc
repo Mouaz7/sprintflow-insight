@@ -26,8 +26,6 @@ _Repositories_
 
 _Others_
 
-* `c.s.a.CspPolicy`
-* `c.s.a.CspResources`
 * `c.s.a.GoogleTokenVerifier`
 * `c.s.a.SecurityConfiguration`
 * `c.s.a.SessionUser`

@@ -32,7 +32,7 @@ _Others_
 |Aggregate roots
 |* `c.s.r.SharedReport`
 |Events listened to
-|* `c.s.a.AccountDeleting` 
-* `c.s.w.events.ProjectDeleting` 
+|* `c.s.w.events.ProjectDeleting` 
+* `c.s.a.AccountDeleting` 
 * `c.s.a.UserEmailChanged` 
 |===
