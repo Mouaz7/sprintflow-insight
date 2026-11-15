@@ -12,12 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
-@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.context.annotation.Import(
+    com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "app.security.auth-rate-limit.enabled=false"
-    })
+    properties = {"app.security.auth-rate-limit.enabled=false"})
 @ActiveProfiles("dev")
 @org.junit.jupiter.api.extension.ExtendWith(
     org.springframework.boot.test.system.OutputCaptureExtension.class)
@@ -43,8 +42,43 @@ class SecurityConfigurationTest {
         .contains("frame-ancestors 'none'", "object-src 'none'");
     assertThat(publicResponse.getHeaders().getFirst("Cross-Origin-Resource-Policy"))
         .isEqualTo("same-origin");
+    assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy"))
+        .contains(
+            "require-trusted-types-for 'script'",
+            "trusted-types sprintflow-google goog#html",
+            "script-src 'none'");
     assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy-Report-Only"))
-        .isEqualTo("require-trusted-types-for 'script'");
+        .isNull();
+  }
+
+  @Test
+  void builtFrontendGetsAFreshMatchingNonceAndCannotReturnAStale304() {
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        new org.springframework.core.io.ClassPathResource("static/index.html").exists(),
+        "Build frontend first to exercise its packaged document.");
+    var first = rest.getForEntity(url("/"), String.class);
+    var second = rest.getForEntity(url("/index.html"), String.class);
+    assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(second.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(first.getHeaders().getCacheControl()).contains("no-store");
+    var pattern = java.util.regex.Pattern.compile("'nonce-([A-Za-z0-9_-]{32})'");
+    var firstNonce = pattern.matcher(first.getHeaders().getFirst("Content-Security-Policy"));
+    var secondNonce = pattern.matcher(second.getHeaders().getFirst("Content-Security-Policy"));
+    assertThat(firstNonce.find()).isTrue();
+    assertThat(secondNonce.find()).isTrue();
+    assertThat(firstNonce.group(1)).isNotEqualTo(secondNonce.group(1));
+    assertThat(first.getBody())
+        .contains("nonce=\"" + firstNonce.group(1) + "\"")
+        .doesNotContain("__SPRINTFLOW_CSP_NONCE__");
+    var headers = new org.springframework.http.HttpHeaders();
+    headers.setIfModifiedSince(System.currentTimeMillis() + 86400000);
+    var conditional =
+        rest.exchange(
+            url("/index.html"),
+            HttpMethod.GET,
+            new org.springframework.http.HttpEntity<>(headers),
+            String.class);
+    assertThat(conditional.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
   @Test

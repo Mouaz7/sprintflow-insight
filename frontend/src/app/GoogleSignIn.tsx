@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, clearCsrfToken } from '../api/client';
 import type { Language, User } from '../api/contracts';
 import { Notice } from './ui';
+import { googleScriptUrl } from '../security/googleScriptUrl';
 type GoogleIdentity = {
   accounts: {
     id: {
@@ -33,7 +34,9 @@ function loadGoogle() {
   if (!scriptPromise)
     scriptPromise = new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
+      script.src = googleScriptUrl();
+      const nonce = document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]')?.nonce;
+      if (nonce) script.nonce = nonce;
       script.async = true;
       const timeout = setTimeout(() => {
         script.remove();
