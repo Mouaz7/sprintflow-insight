@@ -45,7 +45,7 @@ if [[ -z "$(read_setting SPRINTFLOW_DB_PASSWORD '')" ]]; then
 fi
 
 # The data-encryption key is generated once, like the password, and never replaced automatically:
-# a new key would make existing encrypted values unreadable (rotation: docs/adr/0011).
+# a new key would make existing encrypted values unreadable (rotation: docs/adr/0015).
 if [[ -z "$(read_setting SPRINTFLOW_ENCRYPTION_KEY '')" ]]; then
   key="$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
   write_setting SPRINTFLOW_ENCRYPTION_KEY "$key"

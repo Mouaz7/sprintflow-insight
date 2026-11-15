@@ -27,7 +27,7 @@ if ($settings -notmatch '(?m)^SPRINTFLOW_DB_PASSWORD=[^\r\n]+\r?$') {
     [IO.File]::WriteAllText($environmentFile, $settings, [Text.UTF8Encoding]::new($false))
     Write-Host 'Generated a private database password in .env. Keep this file for future starts.'
 }
-# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0011).
+# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0015).
 if ($settings -notmatch '(?m)^SPRINTFLOW_ENCRYPTION_KEY=[^\r\n]+\r?$') {
     $keyLine = 'SPRINTFLOW_ENCRYPTION_KEY=' + (New-LocalDatabasePassword)
     if ($settings -match '(?m)^SPRINTFLOW_ENCRYPTION_KEY=\r?$') {

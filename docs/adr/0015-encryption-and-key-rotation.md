@@ -1,4 +1,4 @@
-# ADR 0011: Application-level encryption with versioned keys
+# ADR 0015: Application-level encryption with versioned keys
 
 Status: accepted for B0. Later phases (webhook secrets, integration tokens, import credentials) store their secrets through this service.
 

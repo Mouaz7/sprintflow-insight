@@ -28,7 +28,7 @@ if (-not (Test-Path -LiteralPath $environmentFile)) {
     [IO.File]::WriteAllText($environmentFile, $template, [Text.UTF8Encoding]::new($false))
     Write-Host 'Created .env with a local PostgreSQL password.'
 }
-# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0011).
+# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0015).
 $settings = [IO.File]::ReadAllText($environmentFile)
 if ($settings -notmatch '(?m)^SPRINTFLOW_ENCRYPTION_KEY=[^\r\n]+\r?$') {
     $bytes = New-Object byte[] 32
