@@ -86,7 +86,7 @@ and the [metric definitions](docs/metrics-definition.md) for how delivery data i
 
 ## Configuration
 
-All private settings belong in local `.env`, which is excluded from Git and Docker's build context. Every start script creates it from `.env.example` on first run through one shared bootstrap (`scripts/env-bootstrap.sh`, `scripts/env-bootstrap.ps1`): it generates a random database password, sets `SPRINTFLOW_COOKIE_SECURE=false` for local HTTP and validates the ports. Run `scripts/env-bootstrap.sh` on its own to prepare `.env` without starting anything.
+All private settings belong in local `.env`, which is excluded from Git and Docker's build context. Every start script creates it from `.env.example` on first run through one shared bootstrap (`scripts/env-bootstrap.sh`, `scripts/env-bootstrap.ps1`): it generates a random database password and the encryption key (once; it is never replaced), sets `SPRINTFLOW_COOKIE_SECURE=false` for local HTTP and validates the ports. Run `scripts/env-bootstrap.sh` on its own to prepare `.env` without starting anything.
 
 | Variable | Purpose |
 | --- | --- |
