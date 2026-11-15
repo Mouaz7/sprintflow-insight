@@ -73,7 +73,7 @@ jobs:
         run: |
           jar tf target/*.jar > "$RUNNER_TEMP/jar-contents.txt"
           grep -q 'BOOT-INF/classes/static/index.html' "$RUNNER_TEMP/jar-contents.txt"
-          grep -q 'BOOT-INF/classes/META-INF/sbom/application.cdx.json' "$RUNNER_TEMP/jar-contents.txt"
+          grep -q '^META-INF/sbom/application.cdx.json' "$RUNNER_TEMP/jar-contents.txt"
       - name: Collect CycloneDX SBOMs
         shell: bash
         run: |

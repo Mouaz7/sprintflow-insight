@@ -1,2 +1,14 @@
 # OWASP ZAP baseline rule overrides: <rule id> TAB <IGNORE|INFO|WARN|FAIL> TAB <reason>.
-# Every override needs a reason; see docs/security/supply-chain.md.
+# Any alert not listed here fails the zap-baseline job. Reasons: docs/security/supply-chain.md.
+# Not a weakness: API responses are no-store on purpose (authenticated data).
+10049	IGNORE	(Non-Storable Content)
+# Not a weakness: the CSP nonce and CSRF token are random base64 values by design.
+10094	IGNORE	(Base64 Disclosure)
+# Informational: the app is a single-page application, so ZAP suggests the AJAX spider (already on).
+10109	IGNORE	(Modern Web Application)
+# Concerns headers in requests sent by ZAP itself, not server behaviour.
+90005	IGNORE	(Sec-Fetch-Dest Header is Missing)
+# Product decision pending: img-src allows any https: image; narrowing it needs an image-source policy.
+10055	INFO	(CSP: Wildcard Directive)
+# Product decision pending: COEP require-corp would block Google sign-in, Google Fonts and remote images.
+90004	INFO	(Cross-Origin-Embedder-Policy Header Missing or Invalid)
