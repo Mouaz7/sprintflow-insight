@@ -1,28 +1,24 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type {
-  ChecklistStep,
-  Language,
-  Task,
-  TaskComment,
-} from '../../api/contracts';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import type { ChecklistStep, Task, TaskComment } from '../../api/contracts';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
+import { tasksText } from './i18n';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 import { commentsQuery } from './queries';
 
 export function TaskMetadata({
   task,
-  language,
   onChange,
   editable = true,
 }: {
   task: Task;
-  language: Language;
   onChange: (changes: Partial<Task>) => Promise<boolean>;
   editable?: boolean;
 }) {
-  const sv = language === 'SV';
+  const t = useT(tasksText);
+  const fieldExample = useFieldExample();
   const [label, setLabel] = useState('');
   const [step, setStep] = useState('');
   const [busy, setBusy] = useState(false);
@@ -45,7 +41,7 @@ export function TaskMetadata({
   return (
     <details className="task-metadata" aria-busy={busy}>
       <summary>
-        {sv ? 'Etiketter och checklista' : 'Labels and checklist'}{' '}
+        {t('labelsAndChecklist')}{' '}
         {checklist.length > 0 &&
           `(${checklist.filter((item) => item.completed).length}/${checklist.length})`}
       </summary>
@@ -56,7 +52,7 @@ export function TaskMetadata({
             {editable && (
               <button
                 disabled={busy}
-                aria-label={`${sv ? 'Ta bort etikett' : 'Remove label'} ${item}`}
+                aria-label={`${t('removeLabel')} ${item}`}
                 onClick={() =>
                   save({
                     labels: (task.labels ?? []).filter(
@@ -82,19 +78,19 @@ export function TaskMetadata({
           }}
         >
           <label>
-            {sv ? 'Ny etikett' : 'New label'}
+            {t('newLabel')}
             <input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
               maxLength={32}
-              placeholder={fieldExample('label', language)}
+              placeholder={fieldExample('label')}
               disabled={busy || (task.labels?.length ?? 0) >= 12}
             />
           </label>
           <button
             disabled={busy || !label.trim() || (task.labels?.length ?? 0) >= 12}
           >
-            {sv ? 'Lägg till etikett' : 'Add label'}
+            {t('addLabel')}
           </button>
         </form>
       )}
@@ -118,7 +114,7 @@ export function TaskMetadata({
               />
               <span>
                 {item.label}
-                {item.required && <small> · {sv ? 'Krävs' : 'Required'}</small>}
+                {item.required && <small> · {t('required')}</small>}
               </span>
             </label>
             {editable && (
@@ -130,17 +126,13 @@ export function TaskMetadata({
                     setEditedLabel(item.label);
                   }}
                 >
-                  {sv ? 'Byt namn' : 'Rename'}
+                  {t('rename')}
                 </button>
                 <button
                   disabled={busy}
-                  aria-label={`${sv ? 'Ta bort steg' : 'Remove step'} ${item.label}`}
+                  aria-label={`${t('removeStep')} ${item.label}`}
                   onClick={async () => {
-                    if (
-                      await confirm(
-                        sv ? 'Ta bort steget?' : 'Remove this step?',
-                      )
-                    )
+                    if (await confirm(t('confirmRemoveStep')))
                       await save({
                         checklist: checklist.filter(
                           (value) => value.id !== item.id,
@@ -169,18 +161,18 @@ export function TaskMetadata({
                 }}
               >
                 <input
-                  aria-label={sv ? 'Stegets namn' : 'Step name'}
+                  aria-label={t('stepName')}
                   required
                   maxLength={180}
-                  placeholder={fieldExample('checklist', language)}
+                  placeholder={fieldExample('checklist')}
                   value={editedLabel}
                   onChange={(event) => setEditedLabel(event.target.value)}
                 />
                 <button disabled={busy || !editedLabel.trim()}>
-                  {sv ? 'Spara' : 'Save'}
+                  {t('save')}
                 </button>
                 <button type="button" onClick={() => setEditing(undefined)}>
-                  {sv ? 'Avbryt' : 'Cancel'}
+                  {t('cancel')}
                 </button>
               </form>
             )}
@@ -209,9 +201,9 @@ export function TaskMetadata({
           }}
         >
           <label>
-            {sv ? 'Nytt steg' : 'New step'}
+            {t('newStep')}
             <input
-              placeholder={fieldExample('checklist', language)}
+              placeholder={fieldExample('checklist')}
               value={step}
               maxLength={180}
               disabled={busy || checklist.length >= 50}
@@ -219,35 +211,31 @@ export function TaskMetadata({
             />
           </label>
           <button disabled={busy || !step.trim() || checklist.length >= 50}>
-            {sv ? 'Lägg till steg' : 'Add step'}
+            {t('addStep')}
           </button>
         </form>
       )}
-      <small>
-        {sv
-          ? 'Slutför alla obligatoriska steg innan uppgiften markeras som klar.'
-          : 'Complete all required steps before marking this task Done.'}
-      </small>
+      <small>{t('checklistHint')}</small>
     </details>
   );
 }
 
 export function TaskDiscussion({
   task,
-  language,
   userEmail,
   canModerate,
   readOnly,
   onClose,
 }: {
   task: Task;
-  language: Language;
   userEmail: string;
   canModerate: boolean;
   readOnly: boolean;
   onClose: () => void;
 }) {
-  const sv = language === 'SV';
+  const t = useT(tasksText);
+  const { format } = useLanguage();
+  const fieldExample = useFieldExample();
   const queryClient = useQueryClient();
   const commentList = useQuery(commentsQuery(task.id));
   const comments = commentList.data ?? [];
@@ -297,11 +285,7 @@ export function TaskDiscussion({
     }
   }
   async function remove(item: TaskComment) {
-    if (
-      busy ||
-      !(await confirm(sv ? 'Ta bort kommentaren?' : 'Delete this comment?'))
-    )
-      return;
+    if (busy || !(await confirm(t('confirmDeleteComment')))) return;
     setBusy(true);
     try {
       await api(`/tasks/${task.id}/comments/${item.id}`, { method: 'DELETE' });
@@ -314,32 +298,23 @@ export function TaskDiscussion({
   }
   return (
     <Drawer
-      title={`${sv ? 'Kommentarer' : 'Comments'} · ${task.title}`}
-      language={language}
+      title={`${t('comments')} · ${task.title}`}
       dirty={!!message.trim()}
       busy={busy}
       onClose={onClose}
     >
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       {loading ? (
-        <p role="status">{sv ? 'Laddar kommentarer…' : 'Loading comments…'}</p>
+        <p role="status">{t('loadingComments')}</p>
       ) : (
         <div className="discussion-list">
-          {comments.length === 0 && (
-            <p>
-              {sv
-                ? 'Starta diskussionen om den här uppgiften.'
-                : 'Start the discussion on this task.'}
-            </p>
-          )}
+          {comments.length === 0 && <p>{t('startDiscussion')}</p>}
           {comments.map((item) => (
             <article key={item.id}>
               <header>
                 <strong>{item.authorEmail}</strong>
                 <time dateTime={item.createdAt}>
-                  {new Date(item.createdAt).toLocaleString(
-                    sv ? 'sv-SE' : 'en-GB',
-                  )}
+                  {format.dateTime(item.createdAt)}
                 </time>
               </header>
               <p>{item.message}</p>
@@ -353,23 +328,21 @@ export function TaskDiscussion({
                       onClick={async () => {
                         if (
                           message.trim() &&
-                          !(await confirm(
-                            sv ? 'Kasta ditt utkast?' : 'Discard your draft?',
-                          ))
+                          !(await confirm(t('discardDraft')))
                         )
                           return;
                         setEditing(item);
                         setMessage(item.message);
                       }}
                     >
-                      {sv ? 'Redigera' : 'Edit'}
+                      {t('edit')}
                     </button>
                     <button
                       className="danger-action"
                       disabled={busy}
                       onClick={() => remove(item)}
                     >
-                      {sv ? 'Ta bort' : 'Delete'}
+                      {t('delete')}
                     </button>
                   </div>
                 )}
@@ -379,29 +352,15 @@ export function TaskDiscussion({
       )}
       {!readOnly && (
         <form className="editor-form" onSubmit={submit}>
-          <FormGuide topic="comment" language={language} />
+          <FormGuide topic="comment" />
           <label>
-            {editing
-              ? sv
-                ? 'Redigera kommentar'
-                : 'Edit comment'
-              : sv
-                ? 'Ny kommentar'
-                : 'New comment'}
+            {editing ? t('editComment') : t('newComment')}
             <textarea
-              aria-label={
-                editing
-                  ? sv
-                    ? 'Redigera kommentar'
-                    : 'Edit comment'
-                  : sv
-                    ? 'Ny kommentar'
-                    : 'New comment'
-              }
+              aria-label={editing ? t('editComment') : t('newComment')}
               required
               maxLength={1000}
               rows={4}
-              placeholder={fieldExample('comment', language)}
+              placeholder={fieldExample('comment')}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               disabled={busy}
@@ -413,16 +372,10 @@ export function TaskDiscussion({
               disabled={busy || !message.trim()}
             >
               {busy
-                ? sv
-                  ? 'Sparar…'
-                  : 'Saving…'
+                ? t('saving')
                 : editing
-                  ? sv
-                    ? 'Spara kommentar'
-                    : 'Save comment'
-                  : sv
-                    ? 'Skicka kommentar'
-                    : 'Post comment'}
+                  ? t('saveComment')
+                  : t('postComment')}
             </button>
             {editing && (
               <button
@@ -433,7 +386,7 @@ export function TaskDiscussion({
                   setMessage('');
                 }}
               >
-                {sv ? 'Avbryt' : 'Cancel'}
+                {t('cancel')}
               </button>
             )}
           </div>

@@ -18,7 +18,6 @@ it('allows an admin to manage membership while reserving ownership transfer for 
     <MemberManager
       project={project}
       userEmail="admin@example.com"
-      language="EN"
       onChanged={vi.fn()}
     />,
   );
@@ -35,7 +34,6 @@ it('shows ownership transfer to the owner', async () => {
     <MemberManager
       project={project}
       userEmail="owner@example.com"
-      language="EN"
       onChanged={vi.fn()}
     />,
   );

@@ -1,4 +1,6 @@
+import { useT } from '../../shared/i18n/LanguageProvider';
 import { PageHeader } from '../../shared/ui/ui';
+import { profileText } from './i18n';
 import { PreferencesPanel } from './PreferencesPanel';
 import { ProfileDetails } from './ProfileDetails';
 import { Feedback, SettingsIcon } from './ProfileFeedback';
@@ -6,9 +8,8 @@ import { DeleteAccountSettings, PasswordSettings } from './ProfileSecurity';
 import { useProfile, type ProfileViewProps } from './useProfile';
 export function ProfileView(props: ProfileViewProps) {
   const controller = useProfile(props);
+  const t = useT(profileText);
   const {
-    language,
-    sv,
     loggingOut,
     saving,
     logout,
@@ -24,14 +25,9 @@ export function ProfileView(props: ProfileViewProps) {
     <section className="page profile-page">
       <PageHeader
         guide="profile"
-        language={language}
-        eyebrow={sv ? 'KONTOINSTÄLLNINGAR' : 'ACCOUNT SETTINGS'}
-        title={sv ? 'Din profil' : 'Your profile'}
-        description={
-          sv
-            ? 'Dina uppgifter. Din arbetsyta.'
-            : 'Your details. Your workspace.'
-        }
+        eyebrow={t('accountSettings')}
+        title={t('title')}
+        description={t('description')}
         action={
           <button
             type="button"
@@ -40,13 +36,7 @@ export function ProfileView(props: ProfileViewProps) {
             onClick={logout}
           >
             <SettingsIcon kind="logout" />
-            {loggingOut
-              ? sv
-                ? 'Loggar ut…'
-                : 'Logging out…'
-              : sv
-                ? 'Logga ut'
-                : 'Log out'}
+            {t(loggingOut ? 'loggingOut' : 'logOut')}
           </button>
         }
       />
@@ -62,14 +52,12 @@ export function ProfileView(props: ProfileViewProps) {
           <h2>{user.displayName || user.email}</h2>
           <p>{user.email}</p>
         </div>
-        <span className="status-badge">
-          {user.jobTitle || (sv ? 'Teammedlem' : 'Team member')}
-        </span>
+        <span className="status-badge">{user.jobTitle || t('teamMember')}</span>
       </div>
       <div
         className="profile-tabs"
         role="tablist"
-        aria-label={sv ? 'Profilinställningar' : 'Profile settings'}
+        aria-label={t('profileSettings')}
       >
         {(['details', 'security', 'settings'] as const).map((key) => (
           <button
@@ -102,32 +90,24 @@ export function ProfileView(props: ProfileViewProps) {
               }
             }}
           >
-            {key === 'details'
-              ? sv
-                ? 'Personliga uppgifter'
-                : 'Personal details'
-              : key === 'security'
-                ? sv
-                  ? 'Säkerhet'
-                  : 'Security'
-                : sv
-                  ? 'Inställningar'
-                  : 'Settings'}
+            {t(
+              key === 'details'
+                ? 'tabDetails'
+                : key === 'security'
+                  ? 'tabSecurity'
+                  : 'tabSettings',
+            )}
           </button>
         ))}
       </div>
-      <Feedback sv={sv} error={logoutError} />
+      <Feedback error={logoutError} />
       {tab === 'settings' && (
         <div
           id="profile-panel-settings"
           role="tabpanel"
           aria-labelledby="profile-tab-settings"
         >
-          <PreferencesPanel
-            language={language}
-            onAppearance={onAppearance}
-            onReplay={onReplay}
-          />
+          <PreferencesPanel onAppearance={onAppearance} onReplay={onReplay} />
         </div>
       )}
       <div
@@ -146,10 +126,9 @@ export function ProfileView(props: ProfileViewProps) {
         aria-labelledby="profile-tab-security"
         hidden={tab !== 'security'}
       >
-        <PasswordSettings email={user.email} sv={sv} />
+        <PasswordSettings email={user.email} />
         <DeleteAccountSettings
           email={user.email}
-          sv={sv}
           onDeleted={onAccountDeleted}
         />
       </div>

@@ -4,21 +4,22 @@ import { api } from '../../api/client';
 import type { Story } from '../../api/contracts';
 import { sprintsQuery } from '../../api/queries';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { useConfirm } from '../../shared/ui/ui';
+import { planningText } from './i18n';
 export type BacklogManagerProps = {
   projectId: number;
   items: Story[];
-  language: 'EN' | 'SV';
   onChanged: (saved?: Story) => void;
 };
 export function useBacklog({
   projectId,
   items,
-  language,
   onChanged,
 }: BacklogManagerProps) {
   const confirm = useConfirm();
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(planningText);
   const [panelOpen, setPanelOpen] = useState(false);
   const draft = useDraftProject(projectId, language);
   const [editing, setEditing] = useState<Story>();
@@ -96,13 +97,7 @@ export function useBacklog({
     }
   }
   async function remove(story: Story) {
-    if (
-      !(await confirm(
-        sv
-          ? `Ta bort “${story.title}”?`
-          : `Move “${story.title}” to the recycle bin?`,
-      ))
-    )
+    if (!(await confirm(t('confirmDeleteStory', { title: story.title }))))
       return;
     try {
       await api<unknown>(`/workspace/trash/story/${story.id}`, {
@@ -186,7 +181,7 @@ export function useBacklog({
     language,
     onChanged,
     confirm,
-    sv,
+    t,
     panelOpen,
     setPanelOpen,
     draft,

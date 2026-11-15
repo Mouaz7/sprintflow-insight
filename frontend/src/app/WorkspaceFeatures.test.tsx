@@ -44,7 +44,7 @@ describe('Workspace feature components', () => {
   });
   it('preserves a failed checklist/label draft and sends required checklist steps', async () => {
     const onChange = vi.fn().mockResolvedValue(false);
-    render(<TaskMetadata task={task} language="EN" onChange={onChange} />);
+    render(<TaskMetadata task={task} onChange={onChange} />);
     fireEvent.click(screen.getByText('Labels and checklist'));
     fireEvent.change(screen.getByLabelText('New label'), {
       target: { value: 'Bug' },
@@ -87,7 +87,6 @@ describe('Workspace feature components', () => {
     render(
       <TaskDiscussion
         task={task}
-        language="EN"
         userEmail="qa@example.com"
         canModerate={false}
         readOnly={false}
@@ -112,12 +111,12 @@ describe('Workspace feature components', () => {
     render(
       <TaskDiscussion
         task={task}
-        language="SV"
         userEmail="viewer@example.com"
         canModerate={false}
         readOnly
         onClose={vi.fn()}
       />,
+      { language: 'SV' },
     );
     await screen.findByText('Starta diskussionen om den här uppgiften.');
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -136,7 +135,7 @@ describe('Workspace feature components', () => {
           ]
         : undefined,
     );
-    render(<NotificationBell language="EN" onProject={vi.fn()} />);
+    render(<NotificationBell onProject={vi.fn()} />, { language: 'EN' });
     const bell = await screen.findByRole('button', {
       name: 'Notifications, 1 unread',
     });
@@ -191,7 +190,7 @@ describe('Workspace feature components', () => {
           createdAt: '2026-10-12T00:00:00Z',
         })),
       );
-      render(<NotificationBell language={language} onProject={vi.fn()} />);
+      render(<NotificationBell onProject={vi.fn()} />, { language });
       const bell = await screen.findByRole('button', { name });
       expect(bell).toHaveTextContent(badge);
     },
@@ -204,7 +203,6 @@ describe('Workspace feature components', () => {
     render(
       <SavedFilters
         projectId={1}
-        language="EN"
         userEmail="qa@example.com"
         current={{
           query: 'QA',
@@ -267,11 +265,11 @@ describe('Workspace feature components', () => {
     const onChanged = vi.fn().mockResolvedValue(undefined);
     render(
       <TrashView
-        language="EN"
         projects={[]}
         userEmail="qa@example.com"
         onChanged={onChanged}
       />,
+      { language: 'EN' },
     );
     await screen.findByRole('heading', { name: 'Deleted QA' });
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
@@ -297,7 +295,9 @@ describe('Workspace feature components', () => {
           : preferences,
     );
     const onAppearance = vi.fn();
-    render(<PreferencesPanel language="EN" onAppearance={onAppearance} />);
+    render(<PreferencesPanel onAppearance={onAppearance} />, {
+      language: 'EN',
+    });
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Save settings' }),
@@ -317,7 +317,7 @@ describe('Workspace feature components', () => {
     expect(localStorage.getItem('sprintflow-theme')).toBe('dark');
   });
   it('shows a calendar empty state without requesting another project', () => {
-    render(<CalendarView language="EN" />);
+    render(<CalendarView />);
     expect(
       screen.getByText('Choose or create a project first.'),
     ).toBeInTheDocument();
@@ -331,13 +331,7 @@ describe('Workspace feature components', () => {
         return [{ id: 1, name: 'QA Sprint', status: 'Completed' }];
       return [];
     });
-    render(
-      <RetrospectiveView
-        projectId={1}
-        language="EN"
-        userEmail="qa@example.com"
-      />,
-    );
+    render(<RetrospectiveView projectId={1} userEmail="qa@example.com" />);
     fireEvent.click(await screen.findByRole('button', { name: 'New note' }));
     fireEvent.change(screen.getByLabelText('Note'), {
       target: { value: 'Keep learning' },
@@ -351,7 +345,7 @@ describe('Workspace feature components', () => {
     vi.mocked(api).mockImplementation(async (path) =>
       path.includes('/role') ? { role: 'Owner' } : [],
     );
-    render(<ShareReportCard projectId={1} language="EN" />);
+    render(<ShareReportCard projectId={1} />);
     fireEvent.click(
       await screen.findByRole('button', { name: 'Create report link' }),
     );
@@ -383,9 +377,9 @@ describe('Workspace feature components', () => {
     vi.mocked(api).mockResolvedValue(preferences);
     const onClose = vi.fn(),
       onNavigate = vi.fn();
-    render(
-      <Onboarding language="EN" onClose={onClose} onNavigate={onNavigate} />,
-    );
+    render(<Onboarding onClose={onClose} onNavigate={onNavigate} />, {
+      language: 'EN',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Open projects' }));
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('projects'));
     expect(onClose).toHaveBeenCalledTimes(1);

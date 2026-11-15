@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useState } from 'react';
 import type { Language, Project } from '../../api/contracts';
 import { roleQuery } from '../../api/queries';
+import { common } from '../i18n/common';
+import { translator } from '../i18n/lexicon';
 
 export const DraftProjectsContext = createContext<
   | {
@@ -48,11 +50,7 @@ export function useDraftProject(
     blocked: loading || invalid || denied,
     error:
       (access?.id === targetId && access?.error) ||
-      (denied
-        ? language === 'SV'
-          ? 'Du har inte skrivrättighet i det valda projektet.'
-          : 'You cannot create items in the selected project.'
-        : ''),
+      (denied ? translator(common, language)('noWriteAccess') : ''),
     change: (id: number) => {
       if (id !== targetId) setTargetId(id);
     },

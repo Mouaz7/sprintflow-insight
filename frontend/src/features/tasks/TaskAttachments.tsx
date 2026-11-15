@@ -4,15 +4,12 @@ import { useState } from 'react';
 import { api } from '../../api/client';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { FormGuide } from '../../shared/ui/Guidance';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { tasksText } from './i18n';
 import { attachmentsQuery } from './queries';
-export function TaskAttachments({
-  taskId,
-  language,
-}: {
-  taskId: number;
-  language: 'EN' | 'SV';
-}) {
-  const sv = language === 'SV';
+export function TaskAttachments({ taskId }: { taskId: number }) {
+  const { language } = useLanguage();
+  const t = useT(tasksText);
   const queryClient = useQueryClient();
   const attachments = useQuery(attachmentsQuery(taskId));
   const items = attachments.data ?? [];
@@ -74,7 +71,7 @@ export function TaskAttachments({
   return (
     <details className="task-attachments">
       <summary>
-        {sv ? 'Bilagor och länkar' : 'Attachments and links'} ({items.length})
+        {t('attachments')} ({items.length})
       </summary>
       <ul>
         {items.map((item) => (
@@ -87,15 +84,15 @@ export function TaskAttachments({
               className="danger-action"
               onClick={() => remove(item.id)}
             >
-              {sv ? 'Ta bort' : 'Remove'}
+              {t('remove')}
             </button>
           </li>
         ))}
       </ul>
-      <FormGuide topic="attachment" language={language} />
+      <FormGuide topic="attachment" />
       <form onSubmit={addLink}>
         <label>
-          {sv ? 'Lägg till länk' : 'Add link'}
+          {t('addLink')}
           <input
             type="url"
             required
@@ -104,11 +101,11 @@ export function TaskAttachments({
             placeholder="https://example.com/login-design.pdf"
           />
         </label>
-        <button>{sv ? 'Spara länk' : 'Save link'}</button>
+        <button>{t('saveLink')}</button>
       </form>
       <form onSubmit={addFile}>
         <label>
-          {sv ? 'Ladda upp fil' : 'Upload file'}
+          {t('uploadFile')}
           <input
             type="file"
             required
@@ -116,11 +113,11 @@ export function TaskAttachments({
             onChange={(event) => setFile(event.target.files?.[0])}
           />
         </label>
-        <button disabled={!file}>{sv ? 'Ladda upp' : 'Upload'}</button>
+        <button disabled={!file}>{t('upload')}</button>
       </form>
       {message && (
         <p className="form-message error" role="alert">
-          {localizeMessage(message, sv ? 'SV' : 'EN')}
+          {localizeMessage(message, language)}
         </p>
       )}
     </details>

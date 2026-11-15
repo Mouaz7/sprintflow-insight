@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { api, clearCsrfToken } from '../../api/client';
-import type { Language, User } from '../../api/contracts';
+import type { User } from '../../api/contracts';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Notice } from '../../shared/ui/ui';
 import { googleScriptUrl } from './googleScriptUrl';
+import { authText } from './i18n';
 import { googleConfigQuery } from './queries';
 type GoogleIdentity = {
   accounts: {
@@ -62,15 +64,15 @@ function loadGoogle() {
   return scriptPromise;
 }
 export function GoogleSignIn({
-  language,
   darkMode,
   onSignedIn,
 }: {
-  language: Language;
   darkMode: boolean;
   onSignedIn: (user: User) => Promise<void>;
 }) {
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(authText);
+  const locale = t('googleLocale');
   const root = useRef<HTMLDivElement>(null);
   const latestSignedIn = useRef(onSignedIn);
   useEffect(() => {
@@ -146,7 +148,7 @@ export function GoogleSignIn({
               Math.floor(root.current.getBoundingClientRect().width),
             ),
           ),
-          locale: sv ? 'sv' : 'en',
+          locale,
         });
         setOutcome({ attempt, ready: true });
       } catch (cause) {
@@ -160,7 +162,7 @@ export function GoogleSignIn({
     }
     void initialize();
     return () => run.abort();
-  }, [attempt, clientId, darkMode, sv]);
+  }, [attempt, clientId, darkMode, locale]);
   return (
     <div className="google-sign-in">
       <div
@@ -183,21 +185,11 @@ export function GoogleSignIn({
           }}
         >
           <span aria-hidden="true">G</span>
-          {loading
-            ? sv
-              ? 'Laddar Google…'
-              : 'Loading Google…'
-            : sv
-              ? 'Fortsätt med Google'
-              : 'Continue with Google'}
+          {t(loading ? 'loadingGoogle' : 'continueWithGoogle')}
         </button>
       )}
-      {busy && (
-        <p role="status">
-          {sv ? 'Loggar in med Google…' : 'Signing in with Google…'}
-        </p>
-      )}
-      <Notice language={language} error={error} />
+      {busy && <p role="status">{t('signingInWithGoogle')}</p>}
+      <Notice error={error} />
     </div>
   );
 }

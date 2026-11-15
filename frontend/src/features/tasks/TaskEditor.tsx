@@ -7,13 +7,13 @@ import {
   validDate,
 } from '../../shared/lib/formValues';
 import { DateInput } from '../../shared/ui/DateInput';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer } from '../../shared/ui/ui';
 import type { UseTaskBoardState } from './useTaskBoard';
 export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
   const {
     editing,
-    sv,
+    t,
     language,
     draft,
     saving,
@@ -43,18 +43,10 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
     draftLinksError,
     message,
   } = controller;
+  const fieldExample = useFieldExample();
   return (
     <Drawer
-      title={
-        editing
-          ? sv
-            ? 'Redigera uppgift'
-            : 'Edit task'
-          : sv
-            ? 'Ny uppgift'
-            : 'New task'
-      }
-      language={language}
+      title={editing ? t('editTask') : t('newTask')}
       projectSelection={
         !editing && draft.projects
           ? {
@@ -88,29 +80,29 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
       }
     >
       <form className="editor-form" onSubmit={saveTask}>
-        <FormGuide topic="task" language={language} />
+        <FormGuide topic="task" />
         <fieldset disabled={saving}>
           <div className="task-form-grid">
             <label>
-              {sv ? 'Titel' : 'Title'}
+              {t('fieldTitle')}
               <input
                 required
                 maxLength={255}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder={fieldExample('taskTitle', language)}
+                placeholder={fieldExample('taskTitle')}
               />
             </label>
             <label>
-              {sv ? 'Beskrivning' : 'Description'}
+              {t('fieldDescription')}
               <input
-                placeholder={fieldExample('taskDescription', language)}
+                placeholder={fieldExample('taskDescription')}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
             <label>
-              {sv ? 'Story points' : 'Story points'}
+              {t('storyPoints')}
               <input
                 type="number"
                 min={0}
@@ -124,15 +116,14 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
               />
             </label>
             <label>
-              {sv ? 'Slutdatum' : 'Due date'}
+              {t('dueDate')}
               <DateInput
-                language={language}
                 min={MIN_DATE}
                 max={MAX_DATE}
                 value={dueDate}
                 onBlur={() => {
                   if (dueDate && !validDate(dueDate))
-                    setMessage(localizeMessage(DATE_ERROR, sv ? 'SV' : 'EN'));
+                    setMessage(localizeMessage(DATE_ERROR, language));
                 }}
                 onChange={(value) => {
                   setDueDate(value);
@@ -141,9 +132,9 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
               />
             </label>
             <label style={{ alignContent: 'start' }}>
-              {sv ? 'Berättelse' : 'User story'}
+              {t('userStory')}
               <select
-                aria-label={sv ? 'Berättelse' : 'User story'}
+                aria-label={t('userStory')}
                 disabled={draftLinksLoading}
                 value={storyId}
                 onChange={(event) => {
@@ -155,7 +146,7 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
                   setSprintId(story?.sprintId ? String(story.sprintId) : '');
                 }}
               >
-                <option value="">{sv ? 'Ingen' : 'None'}</option>
+                <option value="">{t('none')}</option>
                 {editorStories.map((story) => (
                   <option value={story.id} key={story.id}>
                     {story.title}
@@ -164,9 +155,9 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
               </select>
             </label>
             <label>
-              {sv ? 'Sprint' : 'Sprint'}
+              {t('sprint')}
               <select
-                aria-label={sv ? 'Sprint' : 'Sprint'}
+                aria-label={t('sprint')}
                 disabled={draftLinksLoading || !!storyId}
                 aria-describedby={
                   storyId ? 'task-sprint-inheritance' : undefined
@@ -174,9 +165,7 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
                 value={sprintId}
                 onChange={(event) => setSprintId(event.target.value)}
               >
-                <option value="">
-                  {sv ? 'Produktbacklog' : 'Product backlog'}
-                </option>
+                <option value="">{t('productBacklog')}</option>
                 {editorSprints.map((sprint) => (
                   <option value={sprint.id} key={sprint.id}>
                     {sprint.name}
@@ -185,21 +174,19 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
               </select>
               {storyId && (
                 <small id="task-sprint-inheritance">
-                  {sv
-                    ? 'Följer berättelsens sprint, även i produktbackloggen.'
-                    : 'Follows the story’s sprint, including the product backlog.'}
+                  {t('followsStorySprint')}
                 </small>
               )}
             </label>
             <label>
-              {sv ? 'Ansvarig' : 'Assignee'}
+              {t('assignee')}
               <select
-                aria-label={sv ? 'Ansvarig' : 'Assignee'}
+                aria-label={t('assignee')}
                 disabled={draftLinksLoading}
                 value={assigneeEmail}
                 onChange={(event) => setAssigneeEmail(event.target.value)}
               >
-                <option value="">{sv ? 'Ingen' : 'Unassigned'}</option>
+                <option value="">{t('unassigned')}</option>
                 {editorMembers.map((member) => (
                   <option key={member.id} value={member.email}>
                     {member.email}
@@ -221,7 +208,7 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
         )}
         {message && (
           <p className="form-message error" role="alert">
-            {localizeMessage(message, sv ? 'SV' : 'EN')}
+            {localizeMessage(message, language)}
           </p>
         )}
         <div className="form-actions">
@@ -232,16 +219,10 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
             }
           >
             {saving
-              ? sv
-                ? 'Sparar…'
-                : 'Saving…'
+              ? t('saving')
               : editing
-                ? sv
-                  ? 'Spara ändringar'
-                  : 'Save changes'
-                : sv
-                  ? 'Skapa uppgift'
-                  : 'Create task'}
+                ? t('saveChanges')
+                : t('createTask')}
           </button>
         </div>
       </form>

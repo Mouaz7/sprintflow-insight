@@ -3,19 +3,21 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Language, Preferences } from '../../api/contracts';
 import { preferencesQuery } from '../../api/queries';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { translator } from '../../shared/i18n/lexicon';
 import { Notice } from '../../shared/ui/ui';
+import { profileText } from './i18n';
 import { integrationsQuery } from './queries';
 export function PreferencesPanel({
-  language,
   onAppearance,
   onReplay,
 }: {
-  language: Language;
   onAppearance?:
     ((language: Language, theme: 'light' | 'dark') => void) | undefined;
   onReplay?: (() => void) | undefined;
 }) {
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(profileText);
   const queryClient = useQueryClient();
   const preferences = useQuery(preferencesQuery);
   const integrations = useQuery(integrationsQuery).data;
@@ -63,11 +65,8 @@ export function PreferencesPanel({
       localStorage.setItem('sprintflow-theme', value.theme);
       onAppearance?.(value.language, value.theme);
       window.dispatchEvent(new Event('sprintflow:notifications'));
-      setSuccess(
-        value.language === 'SV'
-          ? 'Inställningarna är sparade.'
-          : 'Settings saved.',
-      );
+      // Confirmed in the language that was just saved.
+      setSuccess(translator(profileText, value.language)('settingsSaved'));
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -77,12 +76,12 @@ export function PreferencesPanel({
   return (
     <div className="profile-layout">
       <form className="profile-card" onSubmit={save}>
-        <h2>{sv ? 'Utseende och notiser' : 'Appearance and notifications'}</h2>
+        <h2>{t('appearance')}</h2>
         <fieldset disabled={busy || !ready}>
           <label>
-            {sv ? 'Språk' : 'Language'}
+            {t('language')}
             <select
-              aria-label={sv ? 'Språk' : 'Language'}
+              aria-label={t('language')}
               value={settings.language}
               onChange={(event) =>
                 setSettings((value) => ({
@@ -96,9 +95,9 @@ export function PreferencesPanel({
             </select>
           </label>
           <label>
-            {sv ? 'Tema' : 'Theme'}
+            {t('theme')}
             <select
-              aria-label={sv ? 'Tema' : 'Theme'}
+              aria-label={t('theme')}
               value={settings.theme}
               onChange={(event) =>
                 setSettings((value) => ({
@@ -107,8 +106,8 @@ export function PreferencesPanel({
                 }))
               }
             >
-              <option value="light">{sv ? 'Ljust' : 'Light'}</option>
-              <option value="dark">{sv ? 'Mörkt' : 'Dark'}</option>
+              <option value="light">{t('light')}</option>
+              <option value="dark">{t('dark')}</option>
             </select>
           </label>
           <label className="checkbox-row">
@@ -122,46 +121,25 @@ export function PreferencesPanel({
                 }))
               }
             />
-            {sv
-              ? 'Ta emot samarbetsnotiser och deadlinepåminnelser'
-              : 'Receive collaboration notifications and deadline reminders'}
+            {t('receiveNotifications')}
           </label>
-          <button className="primary-action">
-            {sv ? 'Spara inställningar' : 'Save settings'}
-          </button>
+          <button className="primary-action">{t('saveSettings')}</button>
         </fieldset>
-        <Notice language={language} error={error} success={success} />
+        <Notice error={error} success={success} />
         <button className="secondary-action" type="button" onClick={onReplay}>
-          {sv ? 'Visa introduktionen igen' : 'Replay introduction'}
+          {t('replayIntroduction')}
         </button>
       </form>
       <section className="profile-card">
-        <h2>{sv ? 'Kontotjänster' : 'Account services'}</h2>
+        <h2>{t('accountServices')}</h2>
         <p>
-          Gmail ·{' '}
-          {integrations?.gmailReady
-            ? sv
-              ? 'Konfigurerad'
-              : 'Configured'
-            : sv
-              ? 'Behöver konfigureras'
-              : 'Setup required'}
+          Gmail · {t(integrations?.gmailReady ? 'configured' : 'setupRequired')}
         </p>
         <p>
           Google OAuth ·{' '}
-          {integrations?.googleReady
-            ? sv
-              ? 'Konfigurerad'
-              : 'Configured'
-            : sv
-              ? 'Behöver konfigureras'
-              : 'Setup required'}
+          {t(integrations?.googleReady ? 'configured' : 'setupRequired')}
         </p>
-        <p>
-          {sv
-            ? 'Administratören konfigurerar tjänsterna på servern. Lösenord och nycklar sparas aldrig i din profil.'
-            : 'The administrator configures these services on the server. Passwords and keys are never stored in your profile.'}
-        </p>
+        <p>{t('servicesHelp')}</p>
       </section>
     </div>
   );

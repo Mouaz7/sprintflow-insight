@@ -73,11 +73,10 @@ function Page({ children }: { children: ReactNode }) {
 }
 
 function OverviewRoute() {
-  const { activeProject, language, selectView, requestTask } = useWorkspace();
+  const { activeProject, selectView, requestTask } = useWorkspace();
   return (
     <OverviewView
       project={activeProject}
-      language={language}
       onNavigate={selectView}
       onNewTask={requestTask}
     />
@@ -85,19 +84,13 @@ function OverviewRoute() {
 }
 
 function ProjectsRoute() {
-  const {
-    session,
-    activeProject,
-    language,
-    refreshProjects,
-    setActiveProjectId,
-  } = useWorkspace();
+  const { session, activeProject, refreshProjects, setActiveProjectId } =
+    useWorkspace();
   return (
     <ProjectsView
       projects={session.projects}
       project={activeProject}
       user={session.user}
-      language={language}
       onChanged={refreshProjects}
       onSelect={setActiveProjectId}
     />
@@ -109,7 +102,6 @@ function TasksRoute() {
     session,
     activeProject,
     activeProjectId,
-    language,
     taskRequest,
     clearTaskRequest,
   } = useWorkspace();
@@ -118,7 +110,6 @@ function TasksRoute() {
       key={activeProjectId}
       hasProjects={session.projects.length > 0}
       projectId={activeProjectId}
-      language={language}
       openRequest={taskRequest}
       userEmail={session.user.email}
       readOnly={!!activeProject?.archivedAt}
@@ -132,46 +123,37 @@ function InsightRoute({
 }: {
   view: 'backlog' | 'sprints' | 'metrics' | 'updates';
 }) {
-  const { session, activeProjectId, language } = useWorkspace();
+  const { session, activeProjectId } = useWorkspace();
   return (
     <ProjectInsightView
       key={activeProjectId}
       view={view}
       projectId={activeProjectId}
       hasProjects={session.projects.length > 0}
-      language={language}
     />
   );
 }
 
 function CalendarRoute() {
-  const { activeProjectId, language } = useWorkspace();
-  return (
-    <CalendarView
-      key={activeProjectId}
-      projectId={activeProjectId}
-      language={language}
-    />
-  );
+  const { activeProjectId } = useWorkspace();
+  return <CalendarView key={activeProjectId} projectId={activeProjectId} />;
 }
 
 function RetrospectiveRoute() {
-  const { activeProjectId, language, session } = useWorkspace();
+  const { activeProjectId, session } = useWorkspace();
   return (
     <RetrospectiveView
       key={activeProjectId}
       projectId={activeProjectId}
-      language={language}
       userEmail={session.user.email}
     />
   );
 }
 
 function TrashRoute() {
-  const { session, language, refreshProjects } = useWorkspace();
+  const { session, refreshProjects } = useWorkspace();
   return (
     <TrashView
-      language={language}
       projects={session.projects}
       userEmail={session.user.email}
       onChanged={refreshProjects}
@@ -180,14 +162,12 @@ function TrashRoute() {
 }
 
 function ProfileRoute() {
-  const { session, language, changeUser, logout, openGuide, signedOut } =
-    useWorkspace();
+  const { session, changeUser, logout, openGuide, signedOut } = useWorkspace();
   const { setLanguage } = useLanguage();
   const { setTheme } = useTheme();
   return (
     <ProfileView
       user={session.user}
-      language={language}
       onSaved={changeUser}
       onLogout={logout}
       onAppearance={(nextLanguage, theme) => {

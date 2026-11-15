@@ -1,8 +1,10 @@
 import type { Task } from '../../api/contracts';
+import { useLanguage } from '../../shared/i18n/LanguageProvider';
 import { TaskAttachments } from './TaskAttachments';
 import { TaskMetadata } from './TaskCollaboration';
 import type { UseTaskBoardState } from './useTaskBoard';
 export function Board({ controller }: { controller: UseTaskBoardState }) {
+  const { format } = useLanguage();
   const {
     columns,
     tasks,
@@ -13,11 +15,10 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
     filtered,
     busyTasks,
     canWrite,
-    sv,
+    t,
     editTask,
     toggleBlocked,
     deleteTask,
-    language,
     setDiscussion,
   } = controller;
   return (
@@ -52,25 +53,25 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
                 <strong>{task.title}</strong>
                 {task.blocked && (
                   <small className="blocked-label">
-                    {sv ? 'BLOCKERAD' : 'BLOCKED'} · {task.blockReason}
+                    {t('blockedLabel')} · {task.blockReason}
                   </small>
                 )}
                 <small>
-                  {task.storyPoints} {sv ? 'poäng' : 'pts'}
+                  {task.storyPoints} {t('points')}
                   {task.dueAt
-                    ? ` · ${sv ? 'förfaller' : 'due'} ${new Date(task.dueAt).toLocaleDateString()}`
+                    ? t('due', { date: format.date(task.dueAt) })
                     : ''}
                 </small>
                 {task.assigneeEmail && (
                   <small>
-                    {sv ? 'Ansvarig' : 'Assigned'} · {task.assigneeEmail}
+                    {t('assigned')} · {task.assigneeEmail}
                   </small>
                 )}
                 <label className="task-status-control">
-                  {sv ? 'Flytta till' : 'Move to'}
+                  {t('moveTo')}
                   <select
                     disabled={!canWrite || busyTasks.has(task.id)}
-                    aria-label={sv ? 'Flytta till' : 'Move to'}
+                    aria-label={t('moveTo')}
                     value={task.status}
                     onChange={(event) =>
                       updateTask(task, {
@@ -91,20 +92,14 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
                     disabled={!canWrite || busyTasks.has(task.id)}
                     onClick={() => editTask(task)}
                   >
-                    {sv ? 'Redigera' : 'Edit'}
+                    {t('edit')}
                   </button>
                   <button
                     type="button"
                     disabled={!canWrite || busyTasks.has(task.id)}
                     onClick={() => toggleBlocked(task)}
                   >
-                    {task.blocked
-                      ? sv
-                        ? 'Avblockera'
-                        : 'Unblock'
-                      : sv
-                        ? 'Blockera'
-                        : 'Block'}
+                    {task.blocked ? t('unblock') : t('block')}
                   </button>
                   <button
                     type="button"
@@ -112,14 +107,11 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
                     disabled={!canWrite || busyTasks.has(task.id)}
                     onClick={() => deleteTask(task)}
                   >
-                    {sv ? 'Ta bort' : 'Delete'}
+                    {t('delete')}
                   </button>
                 </div>
                 {!!task.labels?.length && (
-                  <div
-                    className="task-labels"
-                    aria-label={sv ? 'Etiketter' : 'Labels'}
-                  >
+                  <div className="task-labels" aria-label={t('labels')}>
                     {task.labels.map((label) => (
                       <span className="status-badge" key={label}>
                         {label}
@@ -129,7 +121,6 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
                 )}
                 <TaskMetadata
                   task={task}
-                  language={language}
                   editable={canWrite && !busyTasks.has(task.id)}
                   onChange={(changes) => updateTask(task, changes)}
                 />
@@ -137,13 +128,13 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
                   className="secondary-action"
                   onClick={() => setDiscussion(task)}
                 >
-                  {sv ? 'Kommentarer' : 'Comments'}
+                  {t('comments')}
                 </button>
-                <TaskAttachments taskId={task.id} language={language} />
+                <TaskAttachments taskId={task.id} />
               </article>
             ))}
           {!filtered.some((task) => task.status === column) && (
-            <p className="empty-column">{sv ? 'Inga uppgifter' : 'No tasks'}</p>
+            <p className="empty-column">{t('noTasks')}</p>
           )}
         </section>
       ))}

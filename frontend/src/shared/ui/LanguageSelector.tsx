@@ -1,4 +1,6 @@
 import type { Language } from '../../api/contracts';
+import { translator } from '../i18n/lexicon';
+import { uiText } from './i18n';
 
 export function LanguageSelector({
   language,
@@ -7,6 +9,8 @@ export function LanguageSelector({
   language: Language;
   onChange: (language: Language) => void;
 }) {
+  // Named in the selected language, which is also the page language.
+  const t = translator(uiText, language);
   return (
     <div className="language-selector">
       <svg
@@ -26,10 +30,8 @@ export function LanguageSelector({
       </svg>
       <select
         className="language-control"
-        aria-label={language === 'SV' ? 'Språk' : 'Language'}
-        title={
-          language === 'SV' ? 'Byt språk: Svenska' : 'Change language: English'
-        }
+        aria-label={t('language')}
+        title={t('changeLanguage')}
         value={language}
         onChange={(event) => onChange(event.target.value as Language)}
       >

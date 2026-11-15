@@ -1,62 +1,49 @@
 import type { UseBacklogState } from './useBacklog';
 export function StoryTable({ controller }: { controller: UseBacklogState }) {
-  const { sv, visibleStories, sprints, sortBy, saving, move, begin, remove } =
+  const { t, visibleStories, sprints, sortBy, saving, move, begin, remove } =
     controller;
   return (
     <table className="backlog-table">
-      <caption className="sr-only">
-        {sv ? 'Produktbacklog' : 'Product backlog'}
-      </caption>
+      <caption className="sr-only">{t('productBacklog')}</caption>
       <thead>
         <tr>
-          <th>{sv ? 'Berättelse' : 'Story'}</th>
-          <th>{sv ? 'Prioritet' : 'Priority'}</th>
-          <th>{sv ? 'Poäng' : 'Points'}</th>
-          <th>{sv ? 'Affärsvärde' : 'Value'}</th>
+          <th>{t('story')}</th>
+          <th>{t('priority')}</th>
+          <th>{t('points')}</th>
+          <th>{t('value')}</th>
           <th>Sprint</th>
           <th>
-            <span className="sr-only">{sv ? 'Åtgärder' : 'Actions'}</span>
+            <span className="sr-only">{t('actions')}</span>
           </th>
         </tr>
       </thead>
       <tbody>
         {visibleStories.map((story) => (
           <tr key={story.id}>
-            <td data-label={sv ? 'Berättelse' : 'Story'}>
+            <td data-label={t('story')}>
               <h2>{story.title}</h2>
-              <p>
-                {story.description ||
-                  (sv ? 'Ingen beskrivning.' : 'No description.')}
-              </p>
+              <p>{story.description || t('noDescription')}</p>
               <details>
-                <summary>
-                  {sv ? 'Acceptanskriterier' : 'Acceptance criteria'}
-                </summary>
+                <summary>{t('acceptanceCriteria')}</summary>
                 <p>{story.acceptanceCriteria}</p>
               </details>
             </td>
-            <td data-label={sv ? 'Prioritet' : 'Priority'}>
+            <td data-label={t('priority')}>
               <span className={'status-badge priority-' + story.priorityId}>
-                {story.priorityId === 1
-                  ? sv
-                    ? 'Hög'
-                    : 'High'
-                  : story.priorityId === 2
-                    ? sv
-                      ? 'Medel'
-                      : 'Medium'
-                    : sv
-                      ? 'Låg'
-                      : 'Low'}
+                {t(
+                  story.priorityId === 1
+                    ? 'high'
+                    : story.priorityId === 2
+                      ? 'medium'
+                      : 'low',
+                )}
               </span>
             </td>
-            <td data-label={sv ? 'Poäng' : 'Points'}>{story.storyPoints}</td>
-            <td data-label={sv ? 'Affärsvärde' : 'Value'}>
-              {story.businessValue ?? '—'}
-            </td>
+            <td data-label={t('points')}>{story.storyPoints}</td>
+            <td data-label={t('value')}>{story.businessValue ?? '—'}</td>
             <td data-label="Sprint">
               {sprints.find((sprint) => sprint.id === story.sprintId)?.name ??
-                (sv ? 'Ej planerad' : 'Unplanned')}
+                t('unplanned')}
             </td>
             <td>
               <div className="card-actions">
@@ -65,7 +52,7 @@ export function StoryTable({ controller }: { controller: UseBacklogState }) {
                     <button
                       type="button"
                       disabled={saving || story === visibleStories[0]}
-                      aria-label={`${sv ? 'Flytta upp' : 'Move up'}: ${story.title}`}
+                      aria-label={t('moveUp', { title: story.title })}
                       onClick={() => move(story, -1)}
                     >
                       ↑
@@ -76,7 +63,7 @@ export function StoryTable({ controller }: { controller: UseBacklogState }) {
                         saving ||
                         story === visibleStories[visibleStories.length - 1]
                       }
-                      aria-label={`${sv ? 'Flytta ned' : 'Move down'}: ${story.title}`}
+                      aria-label={t('moveDown', { title: story.title })}
                       onClick={() => move(story, 1)}
                     >
                       ↓
@@ -84,14 +71,14 @@ export function StoryTable({ controller }: { controller: UseBacklogState }) {
                   </>
                 )}
                 <button type="button" onClick={() => begin(story)}>
-                  {sv ? 'Redigera' : 'Edit'}
+                  {t('edit')}
                 </button>
                 <button
                   type="button"
                   className="danger-action"
                   onClick={() => remove(story)}
                 >
-                  {sv ? 'Ta bort' : 'Delete'}
+                  {t('delete')}
                 </button>
               </div>
             </td>

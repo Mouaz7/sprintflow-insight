@@ -30,6 +30,26 @@ export const appText = defineLexicon({
     calendar: 'Calendar',
     retrospective: 'Retrospective',
     trash: 'Recycle bin',
+    notifications: 'Notifications',
+    notificationsUnread: ({ count }: { count: number }) =>
+      count > 99
+        ? `Notifications, 99+ unread (${count} total)`
+        : `Notifications, ${count} unread`,
+    notificationList: 'Notification list',
+    closeNotifications: 'Close notifications',
+    markAllRead: 'Mark all read',
+    markRead: 'Mark read',
+    noNotifications: 'You have no notifications yet.',
+    backlogDescription: 'Ideas with a clear priority and next step.',
+    sprintsDescription: 'A shared goal. A focused delivery.',
+    metricsDescription: 'Understand how work moves forward.',
+    updatesDescription: 'Your project’s story, one step at a time.',
+    workspaceEyebrow: ({ title }: { title: string }) =>
+      `WORKSPACE / ${title.toUpperCase()}`,
+    createProjectFirst: ({ title }: { title: string }) =>
+      `Create a project before using ${title.toLowerCase()}.`,
+    tryAgain: 'Try again',
+    loading: 'Loading…',
   },
   SV: {
     loadingApp: 'Laddar SprintFlow…',
@@ -60,5 +80,24 @@ export const appText = defineLexicon({
     calendar: 'Kalender',
     retrospective: 'Retrospektiv',
     trash: 'Papperskorg',
+    notifications: 'Notiser',
+    notificationsUnread: ({ count }) =>
+      count > 99
+        ? `Notiser, 99+ olästa (${count} totalt)`
+        : `Notiser, ${count} olästa`,
+    notificationList: 'Notislista',
+    closeNotifications: 'Stäng notiser',
+    markAllRead: 'Markera alla som lästa',
+    markRead: 'Markera läst',
+    noNotifications: 'Du har inga notiser ännu.',
+    backlogDescription: 'Idéer med en tydlig prioritet och nästa steg.',
+    sprintsDescription: 'Ett gemensamt mål. En fokuserad leverans.',
+    metricsDescription: 'Förstå hur arbetet rör sig framåt.',
+    updatesDescription: 'Projektets historia, ett steg i taget.',
+    workspaceEyebrow: ({ title }) => `ARBETSYTA / ${title.toUpperCase()}`,
+    createProjectFirst: ({ title }) =>
+      `Skapa ett projekt innan du använder ${title.toLowerCase()}.`,
+    tryAgain: 'Försök igen',
+    loading: 'Laddar…',
   },
 });

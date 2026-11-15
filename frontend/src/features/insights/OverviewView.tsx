@@ -1,23 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Language, Project, WorkspaceView } from '../../api/contracts';
+import type { Project, WorkspaceView } from '../../api/contracts';
 import { sprintsQuery, tasksQuery } from '../../api/queries';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { PageHeader } from '../../shared/ui/ui';
 import { activitySummary } from './activityText';
+import { boardStatus, healthStatus, insightsText } from './i18n';
 import { activityQuery, metricsQuery } from './queries';
 
 export function OverviewView({
   project,
-  language,
   onNavigate,
   onNewTask,
 }: {
   project?: Project | undefined;
-  language: Language;
   onNavigate: (view: WorkspaceView) => void;
   onNewTask: () => void;
 }) {
-  const sv = language === 'SV';
+  const t = useT(insightsText);
+  const { language, format } = useLanguage();
   const id = project?.id;
   const enabled = id !== undefined;
   const projectId = id ?? 0;
@@ -43,32 +44,19 @@ export function OverviewView({
       <section className="page">
         <PageHeader
           guide="overview"
-          language={language}
-          eyebrow={sv ? 'DIN ARBETSYTA' : 'YOUR WORKSPACE'}
-          title={sv ? 'Välj ett projekt' : 'Choose a project'}
-          description={
-            sv
-              ? 'Börja med en gemensam plats för ditt team.'
-              : 'Start with a shared space for your team.'
-          }
+          eyebrow={t('yourWorkspace')}
+          title={t('chooseProject')}
+          description={t('sharedSpace')}
         />
         <div className="empty-state">
           <InterfaceIcon name="projects" />
-          <h2>
-            {sv
-              ? 'Ditt nästa initiativ börjar här'
-              : 'Your next initiative starts here'}
-          </h2>
-          <p>
-            {sv
-              ? 'Skapa ett projekt för uppgifter, sprintar och leveransdata.'
-              : 'Create a project for tasks, sprints and delivery data.'}
-          </p>
+          <h2>{t('nextInitiative')}</h2>
+          <p>{t('createProjectHint')}</p>
           <button
             className="primary-action"
             onClick={() => onNavigate('projects')}
           >
-            {sv ? 'Skapa projekt' : 'Create project'}
+            {t('createProject')}
           </button>
         </div>
       </section>
@@ -82,48 +70,38 @@ export function OverviewView({
     .slice(0, 4);
   const cards = [
     [
-      sv ? 'Uppgifter' : 'Tasks',
+      t('tasks'),
       metrics ? String(metrics.taskCount ?? 0) : '—',
-      sv ? 'I projektet' : 'In this project',
+      t('inThisProject'),
     ],
     [
-      sv ? 'Slutfört' : 'Completion',
+      t('completion'),
       metrics ? `${metrics.completionRate ?? 0}%` : '—',
-      sv ? 'Av allt arbete' : 'Of all work',
+      t('ofAllWork'),
     ],
     [
-      sv ? 'Genomströmning' : 'Throughput',
+      t('throughput'),
       metrics ? String(metrics.throughputLast14Days ?? 0) : '—',
-      sv ? 'Senaste 14 dagarna' : 'Last 14 days',
+      t('last14Days'),
     ],
     [
-      sv ? 'Leveransstatus' : 'Delivery health',
+      t('deliveryHealth'),
       health?.status
-        ? sv
-          ? health.status === 'Healthy'
-            ? 'Stabil'
-            : health.status === 'At risk'
-              ? 'Risk'
-              : 'Håll koll'
-          : health.status
+        ? healthStatus(t, language, health.status, 'healthWatch')
         : metrics
-          ? sv
-            ? 'Stabil'
-            : 'Healthy'
+          ? t('healthHealthy')
           : '—',
-      sv ? 'Aktuell status' : 'Current status',
+      t('currentStatus'),
     ],
   ];
   function sectionState(path: string, ready: boolean, empty: string) {
     return failed.includes(path) ? (
       <p className="form-message error" role="alert">
-        {sv
-          ? 'Den här delen kunde inte laddas. Försök ladda om sidan.'
-          : 'This section could not load. Try refreshing the page.'}
+        {t('sectionFailed')}
       </p>
     ) : (
       <p className="quiet-state" role={ready ? undefined : 'status'}>
-        {ready ? empty : sv ? 'Laddar…' : 'Loading…'}
+        {ready ? empty : t('loading')}
       </p>
     );
   }
@@ -131,18 +109,12 @@ export function OverviewView({
     <section className="page dashboard-page">
       <PageHeader
         guide="overview"
-        language={language}
-        eyebrow={sv ? 'PROJEKTÖVERSIKT' : 'PROJECT OVERVIEW'}
+        eyebrow={t('projectOverview')}
         title={project.name}
-        description={
-          project.description ||
-          (sv
-            ? 'Ditt teams nästa steg, på ett ställe.'
-            : 'Your team’s next steps, in one place.')
-        }
+        description={project.description || t('teamNextSteps')}
         action={
           <button className="primary-action" onClick={onNewTask}>
-            + {sv ? 'Ny uppgift' : 'New task'}
+            + {t('newTask')}
           </button>
         }
       />
@@ -164,13 +136,11 @@ export function OverviewView({
         <section className="dashboard-work surface">
           <header className="section-heading">
             <div>
-              <span className="eyebrow">
-                {sv ? 'NÄSTA STEG' : 'NEXT STEPS'}
-              </span>
-              <h2>{sv ? 'Arbetet som pågår' : 'Work in motion'}</h2>
+              <span className="eyebrow">{t('nextSteps')}</span>
+              <h2>{t('workInMotion')}</h2>
             </div>
             <button className="text-button" onClick={() => onNavigate('tasks')}>
-              {sv ? 'Öppna tavlan' : 'Open board'} ↗
+              {t('openBoard')} ↗
             </button>
           </header>
           {work?.length ? (
@@ -189,62 +159,39 @@ export function OverviewView({
                   />
                   <span>
                     <strong>{task.title}</strong>
-                    <small>
-                      {task.assigneeEmail ||
-                        (sv ? 'Ingen ansvarig' : 'Unassigned')}
-                    </small>
+                    <small>{task.assigneeEmail || t('unassigned')}</small>
                   </span>
                   <span className="status-badge">
-                    {sv
-                      ? {
-                          'To Do': 'Att göra',
-                          'In Progress': 'Pågår',
-                          Review: 'Granskning',
-                          Done: 'Klart',
-                        }[task.status]
-                      : task.status}
+                    {boardStatus(t, task.status)}
                   </span>
                 </button>
               ))}
             </div>
           ) : (
-            sectionState(
-              `/tasks?projectId=${id}`,
-              !!tasks,
-              sv
-                ? 'Inga öppna uppgifter. Nästa steg är ditt.'
-                : 'No open tasks. The next step is yours.',
-            )
+            sectionState(`/tasks?projectId=${id}`, !!tasks, t('noOpenTasks'))
           )}
         </section>
         <section className="dashboard-sprint surface">
           <header className="section-heading">
             <div>
-              <span className="eyebrow">
-                {sv ? 'TEAMETS FOKUS' : 'TEAM FOCUS'}
-              </span>
-              <h2>{sv ? 'Aktiv sprint' : 'Active sprint'}</h2>
+              <span className="eyebrow">{t('teamFocus')}</span>
+              <h2>{t('activeSprint')}</h2>
             </div>
             <InterfaceIcon name="sprints" />
           </header>
           {activeSprint ? (
             <>
-              <span className="status-badge">{sv ? 'AKTIV' : 'ACTIVE'}</span>
+              <span className="status-badge">{t('activeBadge')}</span>
               <h3>{activeSprint.name}</h3>
-              <p>
-                {activeSprint.goal ||
-                  (sv
-                    ? 'Lägg till ett gemensamt sprintmål.'
-                    : 'Add a shared sprint goal.')}
-              </p>
+              <p>{activeSprint.goal || t('addSprintGoal')}</p>
               <div className="sprint-summary-foot">
                 <strong>
                   {activeSprint.totalStoryPoints}{' '}
-                  <small>{sv ? 'planerade poäng' : 'planned points'}</small>
+                  <small>{t('plannedPoints')}</small>
                 </strong>
                 <span>
                   {activeSprint.endDate
-                    ? `${sv ? 'Till' : 'Until'} ${activeSprint.endDate}`
+                    ? t('until', { date: activeSprint.endDate })
                     : '—'}
                 </span>
               </div>
@@ -253,29 +200,27 @@ export function OverviewView({
             sectionState(
               `/sprints?projectId=${id}`,
               !!sprints,
-              sv ? 'Ingen aktiv sprint ännu.' : 'No active sprint yet.',
+              t('noActiveSprint'),
             )
           )}
           <button
             className="secondary-action"
             onClick={() => onNavigate('sprints')}
           >
-            {sv ? 'Visa sprintar' : 'View sprints'} ↗
+            {t('viewSprints')} ↗
           </button>
         </section>
         <section className="dashboard-activity surface">
           <header className="section-heading">
             <div>
-              <span className="eyebrow">
-                {sv ? 'SENASTE HÄNDELSER' : 'LATEST ACTIVITY'}
-              </span>
-              <h2>{sv ? 'Från teamet' : 'From the team'}</h2>
+              <span className="eyebrow">{t('latestActivity')}</span>
+              <h2>{t('fromTheTeam')}</h2>
             </div>
             <button
               className="text-button"
               onClick={() => onNavigate('updates')}
             >
-              {sv ? 'Visa historik' : 'View history'} ↗
+              {t('viewHistory')} ↗
             </button>
           </header>
           {recent?.length ? (
@@ -286,10 +231,7 @@ export function OverviewView({
                   <div>
                     <strong>{activitySummary(item, language)}</strong>
                     <small>
-                      {item.actorEmail} ·{' '}
-                      {new Date(item.createdAt).toLocaleString(
-                        sv ? 'sv-SE' : 'en-GB',
-                      )}
+                      {item.actorEmail} · {format.dateTime(item.createdAt)}
                     </small>
                   </div>
                 </article>
@@ -299,9 +241,7 @@ export function OverviewView({
             sectionState(
               `/projects/${id}/activity`,
               !!activity,
-              sv
-                ? 'Ingen aktivitet i projektet ännu.'
-                : 'No activity yet for this project.',
+              t('noActivity'),
             )
           )}
         </section>

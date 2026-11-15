@@ -26,14 +26,7 @@ it.each(['backlog', 'sprints'] as const)(
         throw new Error('The list could not refresh.');
       return [];
     });
-    render(
-      <ProjectInsightView
-        view={view}
-        projectId={2}
-        hasProjects
-        language="EN"
-      />,
-    );
+    render(<ProjectInsightView view={view} projectId={2} hasProjects />);
     fireEvent.click(
       await screen.findByRole('button', {
         name: view === 'backlog' ? /New story/ : /New sprint/,
@@ -85,7 +78,7 @@ it('reveals a created task when search and a saved blocked filter would hide it'
     if (path === '/auth/preferences') return { savedFilters: '[]' };
     return [];
   });
-  render(<TasksView hasProjects projectId={2} language="EN" />);
+  render(<TasksView hasProjects projectId={2} />);
   await waitFor(() =>
     expect(screen.getByRole('button', { name: /New task/ })).toBeEnabled(),
   );
@@ -119,7 +112,6 @@ it('reveals and selects a new project despite search and archived-project filter
       <ProjectsView
         projects={projects}
         user={{ id: 1, email: 'qa@example.com' }}
-        language="EN"
         onSelect={select}
         onChanged={async () => {
           setProjects([alpha, beta]);

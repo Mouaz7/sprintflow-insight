@@ -10,7 +10,7 @@ export function TasksView(props: TasksViewProps) {
   const controller = useTaskBoard(props);
   const {
     language,
-    sv,
+    t,
     projectId,
     canWrite,
     clearForm,
@@ -33,14 +33,9 @@ export function TasksView(props: TasksViewProps) {
     <section className="page tasks-page">
       <PageHeader
         guide="tasks"
-        language={language}
-        eyebrow={sv ? 'TEAMETS ARBETE' : 'TEAM EXECUTION'}
-        title={sv ? 'Uppgifter' : 'Tasks'}
-        description={
-          sv
-            ? 'Från nästa steg till levererat arbete.'
-            : 'From the next step to delivered work.'
-        }
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         action={
           projectId && (
             <button
@@ -52,7 +47,7 @@ export function TasksView(props: TasksViewProps) {
                 setPanelOpen(true);
               }}
             >
-              + {sv ? 'Ny uppgift' : 'New task'}
+              + {t('newTask')}
             </button>
           )
         }
@@ -62,7 +57,6 @@ export function TasksView(props: TasksViewProps) {
           {blocking && (
             <BlockTaskPanel
               task={blocking}
-              language={language}
               onClose={() => setBlocking(undefined)}
               onSaved={(saved) => {
                 setTasks((items) =>
@@ -75,33 +69,24 @@ export function TasksView(props: TasksViewProps) {
           {panelOpen && <TaskEditor controller={controller} />}
           {!panelOpen && savedTitle && (
             <p className="form-message success" role="status">
-              {sv
-                ? `Uppgiften ”${savedTitle}” har sparats. Alla uppgifter visas.`
-                : `Task “${savedTitle}” saved. Showing all tasks.`}
+              {t('taskSaved', { title: savedTitle })}
             </p>
           )}
           <TaskFilters controller={controller} />
           {!panelOpen && message && (
             <p className="form-message error" role="alert">
-              {localizeMessage(message, sv ? 'SV' : 'EN')}
+              {localizeMessage(message, language)}
             </p>
           )}
-          {loading && (
-            <p role="status">{sv ? 'Laddar uppgifter…' : 'Loading tasks…'}</p>
-          )}
+          {loading && <p role="status">{t('loadingTasks')}</p>}
           <Board controller={controller} />
         </>
       ) : (
-        <div className="empty-state">
-          {sv
-            ? 'Skapa ett projekt innan du lägger till uppgifter.'
-            : 'Create a project before adding tasks.'}
-        </div>
+        <div className="empty-state">{t('createProjectFirst')}</div>
       )}
       {discussion && (
         <TaskDiscussion
           task={discussion}
-          language={language}
           userEmail={userEmail}
           canModerate={role === 'Owner' || role === 'Admin'}
           readOnly={!canWrite}

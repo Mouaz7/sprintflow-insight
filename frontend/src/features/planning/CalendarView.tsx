@@ -1,18 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import type { Language } from '../../api/contracts';
 import { sprintsQuery, tasksQuery } from '../../api/queries';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Notice, PageHeader } from '../../shared/ui/ui';
+import { planningText } from './i18n';
+
+// ISO calendar-day key (YYYY-MM-DD) in local time; not user-facing text.
+const dayKey = (date: Date) => date.toLocaleDateString('en-CA');
 
 export function CalendarView({
   projectId,
-  language,
 }: {
   projectId?: number | undefined;
-  language: Language;
 }) {
-  const sv = language === 'SV',
-    locale = sv ? 'sv-SE' : 'en-GB';
+  const { format } = useLanguage();
+  const t = useT(planningText);
   const [month, setMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
@@ -34,20 +36,16 @@ export function CalendarView({
     { length: count },
     (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1),
   );
-  const today = new Date().toLocaleDateString('sv-SE');
+  const today = dayKey(new Date());
   function events(date: Date) {
-    const key = date.toLocaleDateString('sv-SE');
+    const key = dayKey(date);
     return [
       ...tasks
-        .filter(
-          (task) =>
-            task.dueAt &&
-            new Date(task.dueAt).toLocaleDateString('sv-SE') === key,
-        )
+        .filter((task) => task.dueAt && dayKey(new Date(task.dueAt)) === key)
         .map((task) => ({
           id: 't' + task.id,
           title: task.title,
-          kind: sv ? 'Förfaller' : 'Due',
+          kind: t('due'),
           done: task.status === 'Done',
         })),
       ...sprints
@@ -61,7 +59,7 @@ export function CalendarView({
         .map((sprint) => ({
           id: 's' + sprint.id,
           title: sprint.name,
-          kind: sv ? 'Sprint' : 'Sprint',
+          kind: t('sprint'),
           done: sprint.status === 'Completed',
         })),
     ];
@@ -70,27 +68,18 @@ export function CalendarView({
     <section className="page">
       <PageHeader
         guide="calendar"
-        language={language}
-        eyebrow={sv ? 'TEAMETS PLANERING' : 'TEAM SCHEDULE'}
-        title={sv ? 'Kalender' : 'Calendar'}
-        description={
-          sv
-            ? 'Sprintar och deadlines på samma plats.'
-            : 'Sprint dates and task deadlines in one place.'
-        }
+        eyebrow={t('calendarEyebrow')}
+        title={t('calendar')}
+        description={t('calendarDescription')}
       />
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       {!projectId ? (
-        <div className="empty-state">
-          {sv
-            ? 'Välj eller skapa ett projekt först.'
-            : 'Choose or create a project first.'}
-        </div>
+        <div className="empty-state">{t('chooseProjectFirst')}</div>
       ) : (
         <>
           <div className="collection-actions calendar-toolbar">
             <button
-              aria-label={sv ? 'Föregående månad' : 'Previous month'}
+              aria-label={t('previousMonth')}
               onClick={() =>
                 setMonth(
                   (value) =>
@@ -101,13 +90,10 @@ export function CalendarView({
               ←
             </button>
             <h2 aria-live="polite">
-              {month.toLocaleDateString(locale, {
-                month: 'long',
-                year: 'numeric',
-              })}
+              {format.date(month, { month: 'long', year: 'numeric' })}
             </h2>
             <button
-              aria-label={sv ? 'Nästa månad' : 'Next month'}
+              aria-label={t('nextMonth')}
               onClick={() =>
                 setMonth(
                   (value) =>
@@ -124,17 +110,13 @@ export function CalendarView({
                 )
               }
             >
-              {sv ? 'Idag' : 'Today'}
+              {t('today')}
             </button>
           </div>
-          {loading && (
-            <p role="status">{sv ? 'Laddar kalender…' : 'Loading calendar…'}</p>
-          )}
+          {loading && <p role="status">{t('loadingCalendar')}</p>}
           <div className="calendar-weekdays" aria-hidden="true">
             {Array.from({ length: 7 }, (_, i) =>
-              new Date(2026, 0, 5 + i).toLocaleDateString(locale, {
-                weekday: 'short',
-              }),
+              format.date(new Date(2026, 0, 5 + i), { weekday: 'short' }),
             ).map((day) => (
               <span key={day}>{day}</span>
             ))}
@@ -144,7 +126,7 @@ export function CalendarView({
               <div className="calendar-spacer" key={'empty' + i} />
             ))}
             {days.map((date) => {
-              const key = date.toLocaleDateString('sv-SE'),
+              const key = dayKey(date),
                 items = events(date);
               return (
                 <section
@@ -154,7 +136,7 @@ export function CalendarView({
                     (key === today ? ' today' : '')
                   }
                   key={key}
-                  aria-label={date.toLocaleDateString(locale, {
+                  aria-label={format.date(date, {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
@@ -165,7 +147,7 @@ export function CalendarView({
                       {date.getDate()}
                       <span className="calendar-mobile-date">
                         {' '}
-                        · {date.toLocaleDateString(locale, { weekday: 'long' })}
+                        · {format.date(date, { weekday: 'long' })}
                       </span>
                     </time>
                   </h3>
@@ -177,7 +159,7 @@ export function CalendarView({
                   ))}
                   {items.length === 0 && (
                     <span className="calendar-empty">
-                      {sv ? 'Inget planerat' : 'Nothing scheduled'}
+                      {t('nothingScheduled')}
                     </span>
                   )}
                 </section>
@@ -185,11 +167,7 @@ export function CalendarView({
             })}
           </div>
           {!loading && !days.some((date) => events(date).length) && (
-            <p className="empty-state">
-              {sv
-                ? 'Inga sprintar eller deadlines den här månaden.'
-                : 'No sprints or deadlines this month.'}
-            </p>
+            <p className="empty-state">{t('nothingThisMonth')}</p>
           )}
         </>
       )}

@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LanguageScope } from '../../shared/i18n/LanguageProvider';
 import { renderWithProviders } from '../../test/render';
 import { api } from '../../api/client';
 import { ActivityTimeline } from './ActivityTimeline';
@@ -33,7 +34,9 @@ describe('Activity presentation', () => {
       onChanged: vi.fn(),
     };
     const { rerender } = renderWithProviders(
-      <ActivityTimeline {...props} language="SV" />,
+      <LanguageScope language="SV">
+        <ActivityTimeline {...props} />
+      </LanguageScope>,
     );
     expect(
       screen.getByRole('heading', {
@@ -44,7 +47,11 @@ describe('Activity presentation', () => {
       screen.getByRole('heading', { name: custom.summary }),
     ).toBeInTheDocument();
 
-    rerender(<ActivityTimeline {...props} language="EN" />);
+    rerender(
+      <LanguageScope language="EN">
+        <ActivityTimeline {...props} />
+      </LanguageScope>,
+    );
     expect(
       screen.getByRole('heading', { name: event.summary }),
     ).toBeInTheDocument();
@@ -70,13 +77,19 @@ describe('Activity presentation', () => {
       onNewTask: vi.fn(),
     };
     const { rerender } = renderWithProviders(
-      <OverviewView {...props} language="SV" />,
+      <LanguageScope language="SV">
+        <OverviewView {...props} />
+      </LanguageScope>,
     );
     expect(
       await screen.findByText('Skapade projektet “Mobilkontroll”.'),
     ).toBeInTheDocument();
 
-    rerender(<OverviewView {...props} language="EN" />);
+    rerender(
+      <LanguageScope language="EN">
+        <OverviewView {...props} />
+      </LanguageScope>,
+    );
     expect(await screen.findByText(event.summary)).toBeInTheDocument();
   });
 });

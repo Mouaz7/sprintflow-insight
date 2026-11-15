@@ -1,20 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
-import type { Language, Notification } from '../api/contracts';
+import type { Notification } from '../api/contracts';
+import { useLanguage, useT } from '../shared/i18n/LanguageProvider';
 import { localizeMessage } from '../shared/i18n/messages';
 import { Notice } from '../shared/ui/ui';
+import { appText } from './i18n';
 
 const notificationsKey = ['notifications'];
 
 export function NotificationBell({
-  language,
   onProject,
 }: {
-  language: Language;
   onProject: (id: number) => void;
 }) {
-  const sv = language === 'SV';
+  const { language, format } = useLanguage();
+  const t = useT(appText);
   const client = useQueryClient();
   const notifications = useQuery({
     queryKey: notificationsKey,
@@ -86,13 +87,9 @@ export function NotificationBell({
   }
   const unread = items.filter((item) => !item.read).length;
   const unreadBadge = unread > 99 ? '99+' : String(unread);
-  const unreadTotal =
-    unread > 99 ? ` (${unread} ${sv ? 'totalt' : 'total'})` : '';
   const label = unread
-    ? `${sv ? 'Notiser' : 'Notifications'}, ${unreadBadge} ${sv ? 'olästa' : 'unread'}${unreadTotal}`
-    : sv
-      ? 'Notiser'
-      : 'Notifications';
+    ? t('notificationsUnread', { count: unread })
+    : t('notifications');
   return (
     <div className="notification-control" ref={root}>
       <button
@@ -127,30 +124,24 @@ export function NotificationBell({
         <section
           id="notification-list"
           className="notification-popover"
-          aria-label={sv ? 'Notislista' : 'Notification list'}
+          aria-label={t('notificationList')}
         >
           <header>
-            <h2>{sv ? 'Notiser' : 'Notifications'}</h2>
+            <h2>{t('notifications')}</h2>
             <button
               onClick={() => setOpen(false)}
-              aria-label={sv ? 'Stäng notiser' : 'Close notifications'}
+              aria-label={t('closeNotifications')}
             >
               ×
             </button>
           </header>
-          <Notice language={language} error={error} />
+          <Notice error={error} />
           {unread > 0 && (
             <button disabled={busy} onClick={() => mark()}>
-              {sv ? 'Markera alla som lästa' : 'Mark all read'}
+              {t('markAllRead')}
             </button>
           )}
-          {items.length === 0 && (
-            <p>
-              {sv
-                ? 'Du har inga notiser ännu.'
-                : 'You have no notifications yet.'}
-            </p>
-          )}
+          {items.length === 0 && <p>{t('noNotifications')}</p>}
           <ul>
             {items.map((item) => (
               <li key={item.id} className={item.read ? 'read' : 'unread'}>
@@ -162,15 +153,11 @@ export function NotificationBell({
                   }}
                 >
                   {localizeMessage(item.message, language)}
-                  <small>
-                    {new Date(item.createdAt).toLocaleString(
-                      sv ? 'sv-SE' : 'en-GB',
-                    )}
-                  </small>
+                  <small>{format.dateTime(item.createdAt)}</small>
                 </button>
                 {!item.read && (
                   <button disabled={busy} onClick={() => mark(item)}>
-                    {sv ? 'Markera läst' : 'Mark read'}
+                    {t('markRead')}
                   </button>
                 )}
               </li>

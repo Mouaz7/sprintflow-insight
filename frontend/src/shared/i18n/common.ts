@@ -12,6 +12,7 @@ export const common = defineLexicon({
     switchToDark: 'Switch to dark mode',
     language: 'Language',
     changeLanguage: 'Change language: English',
+    noWriteAccess: 'You cannot create items in the selected project.',
   },
   SV: {
     loading: 'Laddar…',
@@ -23,5 +24,6 @@ export const common = defineLexicon({
     switchToDark: 'Byt till mörkt läge',
     language: 'Språk',
     changeLanguage: 'Byt språk: Svenska',
+    noWriteAccess: 'Du har inte skrivrättighet i det valda projektet.',
   },
 });

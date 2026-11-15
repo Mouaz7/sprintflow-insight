@@ -88,7 +88,6 @@ function storedProject(projects: Project[]): number | undefined {
 /** Shared state for the workspace pages, provided to every view route. */
 export type WorkspaceContext = {
   session: Session;
-  language: Language;
   activeProject: Project | undefined;
   activeProjectId: number | undefined;
   setActiveProjectId: (id: number) => void;
@@ -108,14 +107,13 @@ export function useWorkspace() {
 }
 
 export function WorkspaceLayout() {
-  const { language } = useLanguage();
   const { pathname } = useLocation();
   const { session } = useSession();
   // `/` opens the view this account last used in this browser tab.
   if (pathname === '/')
     return <Navigate to={`/${rememberedView(session.user.id)}`} replace />;
   return (
-    <ConfirmProvider language={language}>
+    <ConfirmProvider>
       <WorkspaceShell />
     </ConfirmProvider>
   );
@@ -197,7 +195,6 @@ function WorkspaceShell() {
   }
   const context: WorkspaceContext = {
     session,
-    language,
     activeProject,
     activeProjectId,
     setActiveProjectId,
@@ -278,7 +275,6 @@ function WorkspaceShell() {
               <InterfaceIcon name={darkMode ? 'sun' : 'moon'} />
             </button>
             <NotificationBell
-              language={language}
               onProject={(id) => {
                 setActiveProjectId(id);
                 selectView('tasks');
@@ -355,7 +351,7 @@ function WorkspaceShell() {
           }
         >
           <main className="workspace-content" id="workspace-page" tabIndex={-1}>
-            <Notice language={language} error={preferenceError} />
+            <Notice error={preferenceError} />
             {guideAvailable &&
               view === 'overview' &&
               session.projects.length === 0 && (
@@ -372,7 +368,6 @@ function WorkspaceShell() {
       </DraftProjectsContext>
       {guideOpen && (
         <Onboarding
-          language={language}
           onClose={() => {
             setGuideOpen(false);
             setGuideDismissed(true);

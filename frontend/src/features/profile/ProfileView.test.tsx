@@ -15,7 +15,6 @@ const user = {
 };
 const props = {
   user,
-  language: 'EN' as const,
   onSaved: vi.fn(),
   onLogout: vi.fn().mockResolvedValue(undefined),
   onAccountDeleted: vi.fn(),

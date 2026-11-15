@@ -18,26 +18,27 @@ import {
 } from '../../shared/lib/formValues';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
 import { useConfirm } from '../../shared/ui/ui';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { tasksText } from './i18n';
 export type TasksViewProps = {
   userEmail?: string;
   readOnly?: boolean;
   hasProjects: boolean;
   projectId?: number | undefined;
-  language: 'EN' | 'SV';
   openRequest?: number;
   onRequestHandled?: () => void;
 };
 export function useTaskBoard({
   hasProjects,
   projectId,
-  language,
   openRequest = 0,
   onRequestHandled,
   userEmail = '',
   readOnly = false,
 }: TasksViewProps) {
   const confirm = useConfirm();
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(tasksText);
   const draft = useDraftProject(projectId, language);
   const [panelOpen, setPanelOpen] = useState(false);
   const [savedTitle, setSavedTitle] = useState('');
@@ -187,15 +188,11 @@ export function useTaskBoard({
     )
       return;
     if (!validPoints(points, 1000)) {
-      setMessage(
-        sv
-          ? 'Ange ett heltal mellan 0 och 1000.'
-          : 'Enter a whole number between 0 and 1000.',
-      );
+      setMessage(t('pointsRange'));
       return;
     }
     if (dueDate && !validDate(dueDate)) {
-      setMessage(localizeMessage(DATE_ERROR, sv ? 'SV' : 'EN'));
+      setMessage(localizeMessage(DATE_ERROR, language));
       return;
     }
     setSaving(true);
@@ -300,14 +297,7 @@ export function useTaskBoard({
   }
   async function deleteTask(task: Task) {
     if (pendingTasks.current.has(task.id)) return;
-    if (
-      !(await confirm(
-        sv
-          ? `Flytta “${task.title}” till papperskorgen? Du kan återställa den senare.`
-          : `Move “${task.title}” to the recycle bin? You can restore it later.`,
-      ))
-    )
-      return;
+    if (!(await confirm(t('confirmTrash', { title: task.title })))) return;
     if (!beginTaskChange(task.id)) return;
     try {
       await api<unknown>(`/workspace/trash/task/${task.id}`, {
@@ -325,19 +315,12 @@ export function useTaskBoard({
     }
   }
   const columns = ['To Do', 'In Progress', 'Review', 'Done'] as const;
-  const labels: Record<(typeof columns)[number], string> = sv
-    ? {
-        'To Do': 'Att göra',
-        'In Progress': 'Pågår',
-        Review: 'Granskning',
-        Done: 'Klart',
-      }
-    : {
-        'To Do': 'To Do',
-        'In Progress': 'In Progress',
-        Review: 'Review',
-        Done: 'Done',
-      };
+  const labels: Record<(typeof columns)[number], string> = {
+    'To Do': t('statusToDo'),
+    'In Progress': t('statusInProgress'),
+    Review: t('statusReview'),
+    Done: t('statusDone'),
+  };
   const filtered = tasks.filter(
     (task) =>
       (!statusFilter || task.status === statusFilter) &&
@@ -388,7 +371,7 @@ export function useTaskBoard({
     userEmail,
     readOnly,
     confirm,
-    sv,
+    t,
     draft,
     panelOpen,
     setPanelOpen,

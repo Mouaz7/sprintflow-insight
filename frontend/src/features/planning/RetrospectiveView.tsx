@@ -1,22 +1,23 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Language, RetrospectiveEntry } from '../../api/contracts';
+import type { RetrospectiveEntry } from '../../api/contracts';
 import { afterProjectWrite, roleQuery, sprintsQuery } from '../../api/queries';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import { useT } from '../../shared/i18n/LanguageProvider';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
+import { planningText } from './i18n';
 import { retrospectiveQuery } from './queries';
 
 export function RetrospectiveView({
   projectId,
-  language,
   userEmail,
 }: {
   projectId?: number | undefined;
-  language: Language;
   userEmail: string;
 }) {
-  const sv = language === 'SV';
+  const t = useT(planningText);
+  const fieldExample = useFieldExample();
   const queryClient = useQueryClient();
   const enabled = !!projectId;
   const sprintList = useQuery({ ...sprintsQuery(projectId ?? 0), enabled });
@@ -83,8 +84,7 @@ export function RetrospectiveView({
     }
   }
   async function remove(entry: RetrospectiveEntry) {
-    if (!(await confirm(sv ? 'Ta bort anteckningen?' : 'Delete this note?')))
-      return;
+    if (!(await confirm(t('confirmDeleteNote')))) return;
     try {
       await api(`/projects/${projectId}/retrospective/${entry.id}`, {
         method: 'DELETE',
@@ -95,22 +95,17 @@ export function RetrospectiveView({
     }
   }
   const labels = {
-    well: sv ? 'Det gick bra' : 'Went well',
-    improve: sv ? 'Att förbättra' : 'To improve',
-    actions: sv ? 'Nästa steg' : 'Action items',
+    well: t('wentWell'),
+    improve: t('toImprove'),
+    actions: t('actionItems'),
   };
   return (
     <section className="page">
       <PageHeader
         guide="retrospective"
-        language={language}
-        eyebrow={sv ? 'LÄR OCH FÖRBÄTTRA' : 'LEARN AND IMPROVE'}
-        title={sv ? 'Retrospektiv' : 'Retrospective'}
-        description={
-          sv
-            ? 'Samla lärdomar och konkreta nästa steg för varje sprint.'
-            : 'Capture lessons and concrete actions for each sprint.'
-        }
+        eyebrow={t('retroEyebrow')}
+        title={t('retrospective')}
+        description={t('retroDescription')}
         action={
           sprintId && role !== 'Viewer' ? (
             <button
@@ -121,21 +116,21 @@ export function RetrospectiveView({
                 setEditor({});
               }}
             >
-              {sv ? 'Ny anteckning' : 'New note'}
+              {t('newNote')}
             </button>
           ) : undefined
         }
       />
-      <Notice language={language} error={editor ? undefined : error} />
+      <Notice error={editor ? undefined : error} />
       <label>
-        {sv ? 'Sprint' : 'Sprint'}
+        {t('sprint')}
         <select
-          aria-label={sv ? 'Sprint' : 'Sprint'}
+          aria-label={t('sprint')}
           value={sprintId}
           onChange={(event) => setSprintId(event.target.value)}
           disabled={!sprints.length}
         >
-          <option value="">{sv ? 'Välj sprint' : 'Choose sprint'}</option>
+          <option value="">{t('chooseSprint')}</option>
           {sprints.map((sprint) => (
             <option key={sprint.id} value={sprint.id}>
               {sprint.name}
@@ -143,15 +138,9 @@ export function RetrospectiveView({
           ))}
         </select>
       </label>
-      {loading && (
-        <p role="status">{sv ? 'Laddar anteckningar…' : 'Loading notes…'}</p>
-      )}
+      {loading && <p role="status">{t('loadingNotes')}</p>}
       {!sprintId ? (
-        <div className="empty-state">
-          {sv
-            ? 'Skapa en sprint för att börja samla lärdomar.'
-            : 'Create a sprint to start collecting lessons.'}
-        </div>
+        <div className="empty-state">{t('createSprintFirst')}</div>
       ) : (
         <div className="retrospective-grid">
           {(['well', 'improve', 'actions'] as const).map((key) => (
@@ -175,20 +164,20 @@ export function RetrospectiveView({
                               setCategory(entry.category);
                             }}
                           >
-                            {sv ? 'Redigera' : 'Edit'}
+                            {t('edit')}
                           </button>
                           <button
                             className="danger-action"
                             onClick={() => remove(entry)}
                           >
-                            {sv ? 'Ta bort' : 'Delete'}
+                            {t('delete')}
                           </button>
                         </div>
                       )}
                   </article>
                 ))}
               {!items.some((entry) => entry.category === key) && (
-                <p>{sv ? 'Inga anteckningar ännu.' : 'No notes yet.'}</p>
+                <p>{t('noNotes')}</p>
               )}
             </section>
           ))}
@@ -196,16 +185,7 @@ export function RetrospectiveView({
       )}
       {editor && (
         <Drawer
-          title={
-            editor.entry
-              ? sv
-                ? 'Redigera anteckning'
-                : 'Edit note'
-              : sv
-                ? 'Ny anteckning'
-                : 'New note'
-          }
-          language={language}
+          title={t(editor.entry ? 'editNote' : 'newNote')}
           dirty={
             message !== (editor.entry?.message ?? '') ||
             category !== (editor.entry?.category ?? 'well')
@@ -214,11 +194,11 @@ export function RetrospectiveView({
           onClose={() => setEditor(undefined)}
         >
           <form className="editor-form" onSubmit={save}>
-            <FormGuide topic="retro" language={language} />
+            <FormGuide topic="retro" />
             <label>
-              {sv ? 'Kategori' : 'Category'}
+              {t('category')}
               <select
-                aria-label={sv ? 'Kategori' : 'Category'}
+                aria-label={t('category')}
                 value={category}
                 onChange={(event) =>
                   setCategory(
@@ -234,23 +214,23 @@ export function RetrospectiveView({
               </select>
             </label>
             <label>
-              {sv ? 'Anteckning' : 'Note'}
+              {t('note')}
               <textarea
-                aria-label={sv ? 'Anteckning' : 'Note'}
+                aria-label={t('note')}
                 required
                 maxLength={1000}
-                placeholder={fieldExample('retro', language)}
+                placeholder={fieldExample('retro')}
                 value={message}
                 rows={6}
                 onChange={(event) => setMessage(event.target.value)}
               />
             </label>
-            <Notice language={language} error={error} />
+            <Notice error={error} />
             <button
               className="primary-action"
               disabled={busy || !message.trim()}
             >
-              {sv ? 'Spara anteckning' : 'Save note'}
+              {t('saveNote')}
             </button>
           </form>
         </Drawer>

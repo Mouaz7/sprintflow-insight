@@ -1,21 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../../api/client';
-import type { Language, Project, TrashItem } from '../../api/contracts';
+import type { Project, TrashItem } from '../../api/contracts';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
+import { projectsText } from './i18n';
 import { trashQuery } from './queries';
 export function TrashView({
-  language,
   projects,
   userEmail,
   onChanged,
 }: {
-  language: Language;
   projects: Project[];
   userEmail: string;
   onChanged: () => Promise<void>;
 }) {
-  const sv = language === 'SV';
+  const t = useT(projectsText);
+  const { format } = useLanguage();
   const [writeError, setError] = useState('');
   const [busy, setBusy] = useState('');
   const confirm = useConfirm();
@@ -25,14 +26,7 @@ export function TrashView({
   const error = writeError || trash.error?.message || '';
   async function change(item: TrashItem, purge = false) {
     if (busy) return;
-    if (
-      purge &&
-      !(await confirm(
-        sv
-          ? `Radera “${item.title}” permanent? Det går inte att ångra.`
-          : `Permanently delete “${item.title}”? This cannot be undone.`,
-      ))
-    )
+    if (purge && !(await confirm(t('confirmPurge', { title: item.title }))))
       return;
     setBusy(item.kind + item.id);
     setError('');
@@ -56,29 +50,22 @@ export function TrashView({
     }
   }
   const names = {
-    project: sv ? 'Projekt' : 'Project',
-    task: sv ? 'Uppgift' : 'Task',
-    story: sv ? 'Berättelse' : 'Story',
-    sprint: sv ? 'Sprint' : 'Sprint',
+    project: t('kindProject'),
+    task: t('kindTask'),
+    story: t('kindStory'),
+    sprint: t('kindSprint'),
   };
   return (
     <section className="page">
       <PageHeader
         guide="trash"
-        language={language}
-        eyebrow={sv ? 'ÅTERSTÄLL ARBETE' : 'RECOVER WORK'}
-        title={sv ? 'Papperskorg' : 'Recycle bin'}
-        description={
-          sv
-            ? 'Återställ borttaget innehåll. Permanent radering tar också bort tillhörande data.'
-            : 'Restore deleted work. Permanent deletion also removes its related data.'
-        }
+        eyebrow={t('recoverWork')}
+        title={t('recycleBin')}
+        description={t('recycleBinHelp')}
       />
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       {loading ? (
-        <p role="status">
-          {sv ? 'Laddar papperskorg…' : 'Loading recycle bin…'}
-        </p>
+        <p role="status">{t('loadingTrash')}</p>
       ) : items.length ? (
         <div className="project-directory">
           {items.map((item) => (
@@ -86,15 +73,11 @@ export function TrashView({
               <span className="status-badge">{names[item.kind]}</span>
               <div className="project-row-main">
                 <h2>{item.title}</h2>
-                <p>
-                  {new Date(item.trashedAt).toLocaleString(
-                    sv ? 'sv-SE' : 'en-GB',
-                  )}
-                </p>
+                <p>{format.dateTime(item.trashedAt)}</p>
               </div>
               <div className="card-actions">
                 <button disabled={!!busy} onClick={() => change(item)}>
-                  {sv ? 'Återställ' : 'Restore'}
+                  {t('restore')}
                 </button>
                 {(item.kind === 'project' ||
                   projects
@@ -105,7 +88,7 @@ export function TrashView({
                     disabled={!!busy}
                     onClick={() => change(item, true)}
                   >
-                    {sv ? 'Radera permanent' : 'Delete permanently'}
+                    {t('deletePermanently')}
                   </button>
                 )}
               </div>
@@ -114,12 +97,8 @@ export function TrashView({
         </div>
       ) : (
         <div className="empty-state">
-          <h2>{sv ? 'Papperskorgen är tom' : 'Your recycle bin is empty'}</h2>
-          <p>
-            {sv
-              ? 'Borttaget innehåll visas här tills du återställer eller raderar det permanent.'
-              : 'Deleted work appears here until you restore or permanently remove it.'}
-          </p>
+          <h2>{t('trashEmpty')}</h2>
+          <p>{t('trashEmptyHelp')}</p>
         </div>
       )}
     </section>

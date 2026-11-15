@@ -1,27 +1,27 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Language, Project, User } from '../../api/contracts';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import type { Project, User } from '../../api/contracts';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
+import { projectsText } from './i18n';
 import { MemberManager } from './MemberManager';
 
 export function ProjectsView({
   projects,
   project,
   user,
-  language,
   onChanged,
   onSelect,
 }: {
   projects: Project[];
   project?: Project | undefined;
   user: User;
-  language: Language;
   onChanged: () => Promise<void>;
   onSelect: (id: number) => void;
 }) {
-  const sv = language === 'SV';
+  const t = useT(projectsText);
   const confirm = useConfirm();
   const [editor, setEditor] = useState<{ project?: Project | undefined }>();
   const [error, setError] = useState('');
@@ -43,11 +43,7 @@ export function ProjectsView({
   async function remove(item: Project) {
     if (
       removing ||
-      !(await confirm(
-        sv
-          ? `Flytta projektet “${item.name}” till papperskorgen? Allt innehåll följer med och kan återställas.`
-          : `Move project “${item.name}” to the recycle bin? All its contents are retained and can be restored.`,
-      ))
+      !(await confirm(t('confirmMoveToTrash', { name: item.name })))
     )
       return;
     setRemoving(item.id);
@@ -78,47 +74,39 @@ export function ProjectsView({
     <section className="page projects-page">
       <PageHeader
         guide="projects"
-        language={language}
-        eyebrow={sv ? 'PROJEKTREGISTER' : 'PROJECT DIRECTORY'}
-        title={sv ? 'Projekt' : 'Projects'}
-        description={
-          sv
-            ? 'Ett gemensamt hem för varje initiativ.'
-            : 'A shared home for every initiative.'
-        }
+        eyebrow={t('directory')}
+        title={t('title')}
+        description={t('description')}
         action={
           <button className="primary-action" onClick={() => setEditor({})}>
-            + {sv ? 'Skapa projekt' : 'Create project'}
+            + {t('createProject')}
           </button>
         }
       />
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       <div className="collection-actions">
         <button
           aria-pressed={!showArchived}
           onClick={() => setShowArchived(false)}
         >
-          {sv ? 'Aktiva projekt' : 'Active projects'}
+          {t('activeProjects')}
         </button>
         <button
           aria-pressed={showArchived}
           onClick={() => setShowArchived(true)}
         >
-          {sv ? 'Arkiverade projekt' : 'Archived projects'}
+          {t('archivedProjects')}
         </button>
       </div>
       <div className="directory-toolbar">
         <input
           type="search"
-          aria-label={sv ? 'Sök projekt' : 'Search projects'}
-          placeholder={sv ? 'Sök projekt…' : 'Search projects…'}
+          aria-label={t('searchProjects')}
+          placeholder={t('searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <span>
-          {filtered.length}{' '}
-          {sv ? 'projekt' : filtered.length === 1 ? 'project' : 'projects'}
-        </span>
+        <span>{t('projectCount', { count: filtered.length })}</span>
       </div>
       <div className="project-directory">
         {filtered.map((item, index) => (
@@ -133,48 +121,27 @@ export function ProjectsView({
             </span>
             <div className="project-row-main">
               <span className="eyebrow">
-                {item.id === project?.id
-                  ? sv
-                    ? 'VALT PROJEKT'
-                    : 'SELECTED PROJECT'
-                  : sv
-                    ? 'PROJEKT'
-                    : 'PROJECT'}
+                {t(item.id === project?.id ? 'selectedProject' : 'project')}
               </span>
               <h2>{item.name}</h2>
-              <p>
-                {item.description ||
-                  (sv ? 'Ingen beskrivning ännu.' : 'No description yet.')}
-              </p>
+              <p>{item.description || t('noDescription')}</p>
               <small>
-                {sv ? 'Ägare' : 'Owner'} · {item.ownerEmail}
+                {t('owner')} · {item.ownerEmail}
               </small>
             </div>
             <div className="card-actions">
               <button onClick={() => archive(item)}>
-                {item.archivedAt
-                  ? sv
-                    ? 'Återaktivera'
-                    : 'Unarchive'
-                  : sv
-                    ? 'Arkivera'
-                    : 'Archive'}
+                {t(item.archivedAt ? 'unarchive' : 'archive')}
               </button>
               <button type="button" onClick={() => onSelect(item.id)}>
-                {item.id === project?.id
-                  ? sv
-                    ? 'Valt'
-                    : 'Selected'
-                  : sv
-                    ? 'Välj'
-                    : 'Select'}
+                {t(item.id === project?.id ? 'selected' : 'select')}
               </button>
               <button
                 type="button"
                 disabled={!!item.archivedAt}
                 onClick={() => setEditor({ project: item })}
               >
-                {sv ? 'Redigera' : 'Edit'}
+                {t('edit')}
               </button>
               <button
                 className="danger-action"
@@ -185,14 +152,12 @@ export function ProjectsView({
                 }
                 title={
                   item.ownerEmail.toLowerCase() !== user.email.toLowerCase()
-                    ? sv
-                      ? 'Endast projektägaren kan ta bort projektet.'
-                      : 'Only the project owner can delete this project.'
+                    ? t('ownerOnlyDelete')
                     : undefined
                 }
                 onClick={() => remove(item)}
               >
-                {sv ? 'Ta bort' : 'Delete'}
+                {t('delete')}
               </button>
             </div>
           </article>
@@ -201,47 +166,30 @@ export function ProjectsView({
       {!filtered.length && (
         <div className="empty-state">
           <InterfaceIcon name="projects" />
-          <h2>
-            {showArchived
-              ? sv
-                ? 'Inga arkiverade projekt'
-                : 'No archived projects'
-              : sv
-                ? 'Inga projekt att visa'
-                : 'No projects to show'}
-          </h2>
+          <h2>{t(showArchived ? 'noArchived' : 'noProjects')}</h2>
           <p>
-            {query.trim()
-              ? sv
-                ? 'Prova ett annat sökord.'
-                : 'Try another search.'
-              : showArchived
-                ? sv
-                  ? 'Arkiverade projekt visas här.'
-                  : 'Archived projects appear here.'
-                : projects.some((item) => item.archivedAt)
-                  ? sv
-                    ? 'Alla projekt är arkiverade. Öppna Arkiverade projekt för att återaktivera dem.'
-                    : 'All projects are archived. Open Archived projects to reactivate them.'
-                  : sv
-                    ? 'Skapa ditt första projekt för att komma igång.'
-                    : 'Create your first project to get started.'}
+            {t(
+              query.trim()
+                ? 'tryAnotherSearch'
+                : showArchived
+                  ? 'archivedAppearHere'
+                  : projects.some((item) => item.archivedAt)
+                    ? 'allArchived'
+                    : 'createFirst',
+            )}
           </p>
         </div>
       )}
       {project && (
         <section className="selected-project-details">
           <header>
-            <span className="eyebrow">
-              {sv ? 'PROJEKTDETALJER' : 'PROJECT DETAILS'}
-            </span>
-            <h2>{sv ? 'Projektinformation' : 'Project information'}</h2>
+            <span className="eyebrow">{t('details')}</span>
+            <h2>{t('information')}</h2>
             <p>{project.description}</p>
           </header>
           <MemberManager
             project={project}
             userEmail={user.email}
-            language={language}
             onChanged={onChanged}
           />
         </section>
@@ -250,7 +198,6 @@ export function ProjectsView({
         <ProjectEditor
           key={editor.project?.id ?? 'new'}
           project={editor.project}
-          language={language}
           onClose={() => setEditor(undefined)}
           onSaved={async (saved) => {
             await onChanged();
@@ -268,16 +215,16 @@ export function ProjectsView({
 
 function ProjectEditor({
   project,
-  language,
   onClose,
   onSaved,
 }: {
   project?: Project | undefined;
-  language: Language;
   onClose: () => void;
   onSaved: (saved: Project) => Promise<void>;
 }) {
-  const sv = language === 'SV';
+  const t = useT(projectsText);
+  const { language } = useLanguage();
+  const fieldExample = useFieldExample();
   const [name, setName] = useState(project?.name ?? '');
   const [description, setDescription] = useState(project?.description ?? '');
   const [template, setTemplate] = useState('Blank');
@@ -292,7 +239,7 @@ function ProjectEditor({
     event.preventDefault();
     if (busy) return;
     if (!name.trim()) {
-      setError(sv ? 'Ange ett projektnamn.' : 'Enter a project name.');
+      setError(t('enterName'));
       return;
     }
     setBusy(true);
@@ -341,87 +288,62 @@ function ProjectEditor({
   }
   return (
     <Drawer
-      title={
-        project
-          ? sv
-            ? 'Redigera projekt'
-            : 'Edit project'
-          : sv
-            ? 'Nytt projekt'
-            : 'New project'
-      }
+      title={t(project ? 'editProject' : 'newProject')}
       dirty={dirty}
       busy={busy}
-      language={language}
       onClose={onClose}
     >
       <form className="editor-form" onSubmit={save}>
-        <FormGuide topic="project" language={language} />
+        <FormGuide topic="project" />
         <fieldset disabled={busy}>
           {!project && (
             <label>
-              {sv ? 'Projektmall' : 'Project template'}
+              {t('template')}
               <select
-                aria-label={sv ? 'Projektmall' : 'Project template'}
+                aria-label={t('template')}
                 value={template}
                 onChange={(event) => setTemplate(event.target.value)}
               >
-                <option value="Blank">
-                  {sv ? 'Tomt projekt' : 'Blank project'}
-                </option>
+                <option value="Blank">{t('blankProject')}</option>
                 <option value="Scrum">Scrum</option>
                 <option value="Kanban">Kanban</option>
               </select>
               <small>
-                {template === 'Scrum'
-                  ? sv
-                    ? 'Skapar en planerad sprint, en berättelse och tre startuppgifter.'
-                    : 'Creates a planned sprint, one story and three starter tasks.'
-                  : template === 'Kanban'
-                    ? sv
-                      ? 'Skapar tre uppgifter för att starta ett löpande arbetsflöde.'
-                      : 'Creates three starter tasks for continuous work.'
-                    : sv
-                      ? 'Du skapar allt innehåll själv.'
-                      : 'Start without generated content.'}
+                {t(
+                  template === 'Scrum'
+                    ? 'scrumHelp'
+                    : template === 'Kanban'
+                      ? 'kanbanHelp'
+                      : 'blankHelp',
+                )}
               </small>
             </label>
           )}
           <label>
-            {sv ? 'Projektnamn' : 'Project name'}
+            {t('projectName')}
             <input
               required
               maxLength={255}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={fieldExample('projectName', language)}
+              placeholder={fieldExample('projectName')}
             />
           </label>
           <label>
-            {sv ? 'Beskrivning' : 'Description'}
+            {t('descriptionLabel')}
             <textarea
-              aria-label={sv ? 'Beskrivning' : 'Description'}
+              aria-label={t('descriptionLabel')}
               rows={5}
-              placeholder={fieldExample('projectDescription', language)}
+              placeholder={fieldExample('projectDescription')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
         </fieldset>
-        <Notice language={language} error={error} />
+        <Notice error={error} />
         <div className="editor-footer">
           <button className="primary-action" disabled={busy}>
-            {busy
-              ? sv
-                ? 'Sparar…'
-                : 'Saving…'
-              : project
-                ? sv
-                  ? 'Spara projekt'
-                  : 'Save project'
-                : sv
-                  ? 'Skapa projekt'
-                  : 'Create project'}
+            {t(busy ? 'saving' : project ? 'saveProject' : 'createProject')}
           </button>
         </div>
       </form>
