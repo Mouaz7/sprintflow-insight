@@ -70,9 +70,8 @@ describe('CommandCenter', () => {
 
   it('opens with Ctrl+K as a modal combobox, focuses the input and closes with Escape', () => {
     renderCenter();
-    const launcher = screen.getByRole('button', {
-      name: 'Search and commands (Ctrl+K)',
-    });
+    const launcher = screen.getByRole('button', { name: 'Search' });
+    expect(launcher).toHaveAttribute('title', 'Search and commands (Ctrl+K)');
     launcher.focus();
     const input = openPalette();
     const dialog = screen.getByRole('dialog', { name: 'Search and commands' });

@@ -38,7 +38,7 @@ export function CommandCenter({ language, onNavigate, onNewTask }: Props) {
       <button
         type="button"
         className="command-launcher"
-        aria-label={t('openHint')}
+        title={t('openHint')}
         aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
         onClick={() => setOpen('palette')}
       >
