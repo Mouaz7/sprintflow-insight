@@ -344,7 +344,7 @@ export function useTaskBoard({
             : !task.dueAt)) &&
       (!blockedOnly || task.blocked) &&
       (!labelFilter || task.labels?.includes(labelFilter)) &&
-      `${task.title} ${task.description ?? ''}`
+      `${task.key ?? ''} ${task.title} ${task.description ?? ''}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );

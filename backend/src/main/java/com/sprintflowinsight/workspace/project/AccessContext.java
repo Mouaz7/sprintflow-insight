@@ -10,6 +10,7 @@ import java.time.Instant;
  */
 public record AccessContext(
     Long projectId,
+    Long userId,
     String email,
     ProjectRole role,
     String ownerEmail,

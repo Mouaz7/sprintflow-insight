@@ -68,6 +68,28 @@ public class TaskApplicationService {
     return task;
   }
 
+  /**
+   * Looks a task up by its identifier, e.g. {@code SF-123}. Unknown keys, trashed tasks and projects
+   * the caller cannot read all answer 404, so keys cannot be used to probe for other projects.
+   */
+  public Task getTaskByKey(String key, HttpSession session) {
+    TaskKey parsed = TaskKey.parse(key).orElseThrow(() -> ApiException.notFound("Task not found."));
+    Task task =
+        projects
+            .findByProjectKey(parsed.projectKey())
+            .flatMap(project -> taskService.findByNumber(project.getId(), parsed.number()))
+            .filter(found -> found.getTrashedAt() == null)
+            .orElseThrow(() -> ApiException.notFound("Task not found."));
+    try {
+      access.read(task.getProjectId(), session);
+    } catch (ApiException denied) {
+      if (denied.code() == com.sprintflowinsight.common.error.ErrorCode.FORBIDDEN)
+        throw ApiException.notFound("Task not found.");
+      throw denied;
+    }
+    return task;
+  }
+
   @org.springframework.transaction.annotation.Transactional
   public ResponseEntity<?> createTask(TaskRequest request, HttpSession session) {
     Task task = request.toEntity();

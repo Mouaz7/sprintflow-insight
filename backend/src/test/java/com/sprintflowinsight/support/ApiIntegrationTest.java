@@ -69,17 +69,33 @@ public abstract class ApiIntegrationTest {
     return users.save(user);
   }
 
+  /** A project with an Owner membership row for {@code owner}, as ProjectFactory creates it. */
   protected Project project(User owner, User member) {
     Project project =
         projects.save(
-            new Project("Project " + UUID.randomUUID(), "Test project", owner.getEmail()));
+            new Project(
+                "Project " + UUID.randomUUID(), "Test project", owner.getEmail(), uniqueKey()));
+    member(project, owner, "Owner");
     if (member != null) member(project, member, "Member");
     return project;
+  }
+
+  /** Ten random letters: unique enough for a shared test database. */
+  public static String uniqueKeyForTests() {
+    return uniqueKey();
+  }
+
+  protected static String uniqueKey() {
+    StringBuilder key = new StringBuilder();
+    java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+    for (int i = 0; i < 10; i++) key.append((char) ('A' + random.nextInt(26)));
+    return key.toString();
   }
 
   protected void member(Project project, User user, String role) {
     ProjectMember member = new ProjectMember();
     member.setProjectId(project.getId());
+    member.setUserId(user.getId());
     member.setEmail(user.getEmail());
     member.setRole(role);
     members.save(member);

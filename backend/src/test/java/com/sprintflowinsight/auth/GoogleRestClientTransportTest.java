@@ -16,6 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 
 class GoogleRestClientTransportTest {
+  /**
+   * Generous limits for every request that is expected to succeed or fail for another reason, so
+   * a loaded CI runner cannot turn them into spurious timeouts. Only the read-timeout test uses a
+   * short limit on purpose.
+   */
+  private static final Duration GENEROUS = Duration.ofSeconds(20);
+
   private HttpServer server;
   private String base;
 
@@ -34,8 +41,7 @@ class GoogleRestClientTransportTest {
 
   private GoogleRestClientTransport transport(Duration read) {
     var client =
-        new HttpClientConfiguration()
-            .outboundRestClient(RestClient.builder(), Duration.ofMillis(300), read);
+        new HttpClientConfiguration().outboundRestClient(RestClient.builder(), GENEROUS, read);
     return new GoogleRestClientTransport(client);
   }
 
@@ -53,7 +59,7 @@ class GoogleRestClientTransportTest {
           exchange.close();
         });
     var request =
-        transport(Duration.ofSeconds(2))
+        transport(GENEROUS)
             .createRequestFactory()
             .buildGetRequest(new GenericUrl(base + "/keys"));
     request.getHeaders().set("X-Verification", "fixture");
@@ -72,7 +78,7 @@ class GoogleRestClientTransportTest {
   void rejectsUnexpectedMethodsAndOversizedKeyDocuments() throws Exception {
     assertThatThrownBy(
             () ->
-                transport(Duration.ofSeconds(1))
+                transport(GENEROUS)
                     .createRequestFactory()
                     .buildPostRequest(new GenericUrl(base), null)
                     .execute())
@@ -87,7 +93,7 @@ class GoogleRestClientTransportTest {
         });
     assertThatThrownBy(
             () ->
-                transport(Duration.ofSeconds(2))
+                transport(GENEROUS)
                     .createRequestFactory()
                     .buildGetRequest(new GenericUrl(base + "/large"))
                     .execute())
@@ -122,7 +128,7 @@ class GoogleRestClientTransportTest {
         });
     assertThatThrownBy(
             () ->
-                transport(Duration.ofSeconds(2))
+                transport(GENEROUS)
                     .createRequestFactory()
                     .buildGetRequest(new GenericUrl(base + "/unavailable"))
                     .execute())

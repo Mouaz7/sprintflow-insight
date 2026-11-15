@@ -64,6 +64,17 @@ public final class MigrationFixture implements AutoCloseable {
         .defaultSchema(schema);
   }
 
+  /** A data source whose connections use this fixture's schema; one connection per call. */
+  public javax.sql.DataSource dataSource() {
+    var db = PostgresTestContainer.POSTGRES;
+    var source = new org.postgresql.ds.PGSimpleDataSource();
+    source.setUrl(db.getJdbcUrl());
+    source.setUser(db.getUsername());
+    source.setPassword(db.getPassword());
+    source.setCurrentSchema(schema);
+    return source;
+  }
+
   public Connection connection() {
     return connection;
   }

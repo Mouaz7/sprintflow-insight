@@ -33,6 +33,7 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
       onDragEnd={() => setDraggedTaskId(undefined)}
       className={`${task.blocked ? 'is-blocked' : ''} ${task.dueAt && new Date(task.dueAt) < new Date() && task.status !== 'Done' ? 'is-overdue' : ''}`}
     >
+      {task.key && <small className="task-key">{task.key}</small>}
       <strong>{task.title}</strong>
       {task.blocked && (
         <small className="blocked-label">

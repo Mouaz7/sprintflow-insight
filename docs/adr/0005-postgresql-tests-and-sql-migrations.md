@@ -18,7 +18,7 @@ H2 emulated PostgreSQL but could not test its partial indexes, JDBC sessions or 
 
 Fresh databases need no repair. For a database that already applied Java V8:
 
-1. Back up the database and stop application instances. Use this release's complete migration directory, Java 17 and Maven wrapper. Export `SPRINTFLOW_DB_URL` (a JDBC PostgreSQL URL), `SPRINTFLOW_DB_USER` and `SPRINTFLOW_DB_PASSWORD` for the intended database; Maven does not read `.env` automatically.
+1. Back up the database and stop application instances. Use this release's complete migration directory, Java 25 and Maven wrapper. Export `SPRINTFLOW_DB_URL` (a JDBC PostgreSQL URL), `SPRINTFLOW_DB_USER` and `SPRINTFLOW_DB_PASSWORD` for the intended database; Maven does not read `.env` automatically.
 2. From `backend`, inspect `./mvnw flyway:info` and the history:
 
    ```sql
@@ -31,7 +31,7 @@ Fresh databases need no repair. For a database that already applied Java V8:
 
    Applied V8 must be the successful Java migration (`JDBC`, no checksum) and the index must be unique on `sprint(project_id)` with `status = 'Active'` and `trashed_at is null`. Investigate any other missing, failed or altered migrations first. In a non-default schema, configure `-Dflyway.schemas=your_schema` consistently for every command.
 3. Run `./mvnw '-Dflyway.ignoreMigrationPatterns=*:pending' flyway:validate` (pending new migrations are expected before startup). For this upgrade the expected discrepancy is V8's type/checksum changing from Java to SQL. Review the difference against this release; repair changes history and does not recreate database objects.
-4. With the application still stopped, change **only** the expected Java V8 history entry to SQL. Flyway 11.7.2 otherwise treats the old Java entry as missing and marks it deleted, so do not run `repair` before this step. In `psql` connected to the same database/schema:
+4. With the application still stopped, change **only** the expected Java V8 history entry to SQL. Flyway otherwise treats the old Java entry as missing and marks it deleted, so do not run `repair` before this step. In `psql` connected to the same database/schema:
 
    ```sql
    begin;
@@ -45,7 +45,7 @@ Fresh databases need no repair. For a database that already applied Java V8:
 5. Run `./mvnw flyway:repair`, then `./mvnw '-Dflyway.ignoreMigrationPatterns=*:pending' flyway:validate`. Repair must align V8's checksum only, without removing failed migrations or marking missing migrations deleted. Recheck the history and index. V8 is now `SQL` with a checksum, and its existing index remains in place. A direct repair before step 4 is unsupported by this upgrade procedure.
 6. Start the new application. Flyway applies pending migrations normally and Hibernate validates the resulting schema. Verify `/actuator/health` and an authenticated workflow. Do not repair again on routine restarts.
 
-The Maven plugin uses the application's managed Flyway version and `filesystem:src/main/resources/db/migration` for all commands. Flyway [repair](https://documentation.red-gate.com/fd/repair-277578892.html) repairs schema history and must use the same migration locations as validation/migration. The guarded metadata update above is required by the Java-to-SQL resolution behaviour verified on the application’s managed Flyway 11.7.2; repair then aligns the SQL checksum. `SchemaMigrationTest` verifies this path against real PostgreSQL.
+The Maven plugin uses the application's managed Flyway version and `filesystem:src/main/resources/db/migration` for all commands. Flyway [repair](https://documentation.red-gate.com/fd/repair-277578892.html) repairs schema history and must use the same migration locations as validation/migration. The guarded metadata update above is required by the Java-to-SQL resolution behaviour first verified on Flyway 11.7.2 (phase A2) and unchanged in Flyway 11.14.1, the version Spring Boot 4.0.9 manages since phase A4; repair then aligns the SQL checksum. The upgrade to Java 25, Spring Boot 4 and Flyway 11.14.1 does not change the V8 repair: steps 1–6 apply as written. `SchemaMigrationTest` verifies this path against real PostgreSQL with the managed Flyway version on every build.
 
 ## Consequences
 

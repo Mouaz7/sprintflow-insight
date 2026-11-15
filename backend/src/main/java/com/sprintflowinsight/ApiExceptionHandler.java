@@ -77,7 +77,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           "task_points_range",
           "Story points must be between 0 and 1000.",
           "sprint_points_nonnegative",
-          "Story points cannot be negative.");
+          "Story points cannot be negative.",
+          "projects_key_unique",
+          "This project key is already in use.");
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ProblemDetail> handleIntegrityViolation(
@@ -119,6 +121,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         .headers(response.getHeaders())
         .header(HttpHeaders.RETRY_AFTER, "5")
         .body(response.getBody());
+  }
+
+  /**
+   * A competing transaction held a lock, caused a deadlock or changed the row first. The database
+   * is healthy, so this is a 409 the client can resolve by reloading, never a 503. Spring picks
+   * this over the {@link org.springframework.dao.TransientDataAccessException} handler because
+   * {@link org.springframework.dao.ConcurrencyFailureException} is the closer match.
+   */
+  @ExceptionHandler(org.springframework.dao.ConcurrencyFailureException.class)
+  public ResponseEntity<ProblemDetail> handleConcurrencyConflict(
+      Exception exception, WebRequest request) {
+    LOG.info("Concurrency conflict on {}: {}", path(request), exception.getClass().getSimpleName());
+    return respond(
+        ErrorCode.CONFLICT,
+        com.sprintflowinsight.common.error.DatabaseFailures.CONFLICT_DETAIL,
+        request);
   }
 
   @ExceptionHandler(java.util.NoSuchElementException.class)
@@ -167,6 +185,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleUnexpected(Exception exception, WebRequest request)
       throws Exception {
+    if (com.sprintflowinsight.common.error.DatabaseFailures.isConcurrencyConflict(exception))
+      return handleConcurrencyConflict(exception, request);
     if (com.sprintflowinsight.common.error.DatabaseFailures.isDatabaseUnavailable(exception))
       return handleDatabaseUnavailable(exception, request);
     // Binding and proxies wrap deliberate client errors (e.g. a constructor rejecting a filter).

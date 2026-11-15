@@ -51,7 +51,7 @@ public class ProjectLifecycleService {
     String email = access.email(session);
     List<TrashItem> result = new ArrayList<>();
     List<Long> visible = new ArrayList<>();
-    for (Project project : projects.findAccessibleIncludingTrash(email)) {
+    for (Project project : projects.findAccessibleIncludingTrash(access.userId(session))) {
       if (project.getTrashedAt() != null) {
         if (project.getOwnerEmail().equalsIgnoreCase(email))
           result.add(

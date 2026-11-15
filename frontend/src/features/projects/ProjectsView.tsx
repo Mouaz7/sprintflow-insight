@@ -7,6 +7,12 @@ import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
 import { projectsText } from './i18n';
 import { MemberManager } from './MemberManager';
+import {
+  PROJECT_KEY_MESSAGE,
+  deriveProjectKey,
+  isValidProjectKey,
+  normalizeProjectKey,
+} from './projectKey';
 
 export function ProjectsView({
   projects,
@@ -66,7 +72,7 @@ export function ProjectsView({
   const filtered = projects
     .filter((p) => !!p.archivedAt === showArchived)
     .filter((p) =>
-      `${p.name} ${p.description ?? ''}`
+      `${p.key ?? ''} ${p.name} ${p.description ?? ''}`
         .toLowerCase()
         .includes(query.toLowerCase()),
     );
@@ -123,7 +129,10 @@ export function ProjectsView({
               <span className="eyebrow">
                 {t(item.id === project?.id ? 'selectedProject' : 'project')}
               </span>
-              <h2>{item.name}</h2>
+              <h2>
+                {item.key && <span className="project-key">{item.key}</span>}
+                {item.name}
+              </h2>
               <p>{item.description || t('noDescription')}</p>
               <small>
                 {t('owner')} · {item.ownerEmail}
@@ -227,12 +236,14 @@ function ProjectEditor({
   const fieldExample = useFieldExample();
   const [name, setName] = useState(project?.name ?? '');
   const [description, setDescription] = useState(project?.description ?? '');
+  const [key, setKey] = useState(project?.key ?? '');
   const [template, setTemplate] = useState('Blank');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const dirty =
     name !== (project?.name ?? '') ||
     description !== (project?.description ?? '') ||
+    key !== (project?.key ?? '') ||
     (!project && template !== 'Blank');
   const [persisted, setPersisted] = useState(project);
   async function save(event: FormEvent) {
@@ -240,6 +251,11 @@ function ProjectEditor({
     if (busy) return;
     if (!name.trim()) {
       setError(t('enterName'));
+      return;
+    }
+    const chosenKey = normalizeProjectKey(key);
+    if (chosenKey && !isValidProjectKey(chosenKey)) {
+      setError(PROJECT_KEY_MESSAGE);
       return;
     }
     setBusy(true);
@@ -250,7 +266,8 @@ function ProjectEditor({
       if (
         !persisted ||
         persisted.name !== name.trim() ||
-        (persisted.description ?? '') !== description.trim()
+        (persisted.description ?? '') !== description.trim() ||
+        (chosenKey !== '' && persisted.key !== chosenKey)
       ) {
         const saved = await api<Project>(
           persisted
@@ -269,6 +286,7 @@ function ProjectEditor({
               language,
               name: name.trim(),
               description: description.trim(),
+              key: chosenKey || undefined,
             }),
           },
         );
@@ -338,6 +356,28 @@ function ProjectEditor({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </label>
+          <label>
+            {t('projectKey')}
+            <input
+              aria-label={t('projectKey')}
+              aria-describedby="project-key-help"
+              maxLength={10}
+              autoCapitalize="characters"
+              spellCheck={false}
+              value={key}
+              onChange={(e) => setKey(e.target.value.toUpperCase())}
+              placeholder={project ? undefined : deriveProjectKey(name)}
+            />
+            <small id="project-key-help">
+              {project
+                ? t('projectKeyChangeHelp', {
+                    key: normalizeProjectKey(key) || (project.key ?? ''),
+                  })
+                : t('projectKeyNewHelp', {
+                    key: normalizeProjectKey(key) || deriveProjectKey(name),
+                  })}
+            </small>
           </label>
         </fieldset>
         <Notice error={error} />

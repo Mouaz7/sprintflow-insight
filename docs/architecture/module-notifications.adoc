@@ -29,8 +29,8 @@ _Event listeners_
 |* `c.s.n.Notification`
 |Events listened to
 |* `c.s.w.events.CommentAdded` (async) 
-* `c.s.a.AccountDeleting` 
 * `c.s.w.events.ProjectDeleting` 
+* `c.s.a.AccountDeleting` 
 * `c.s.a.UserEmailChanged` 
 * `c.s.w.events.TaskMoved` (async) 
 * `c.s.w.events.NotificationRequested` (async) 

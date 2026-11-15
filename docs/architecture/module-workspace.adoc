@@ -41,6 +41,10 @@ _Repositories_
 _Event listeners_
 
 * `c.s.w.WorkspaceAccountListener`
+
+_Others_
+
+* `c.s.w.task.TaskNumberAllocator`
 |Bean references
 |* `c.s.a.SessionUser` (in Auth)
 * `c.s.a.UserRepository` (in Auth)

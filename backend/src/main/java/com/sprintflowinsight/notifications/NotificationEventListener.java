@@ -11,6 +11,16 @@ import org.springframework.transaction.annotation.*;
 
 @Component
 public class NotificationEventListener {
+  /**
+   * Outstanding requests addressed only to the deleted user can never be delivered. Rows are
+   * matched by event type and the exact serialized id, as plain text so no row is parsed as JSON.
+   * Comment and task events stay: they also notify the project owner, and delivery skips the
+   * deleted user.
+   */
+  static final String UNDELIVERABLE_REQUESTS =
+      "delete from event_publication where completion_date is null and event_type = ?1"
+          + " and serialized_event ~ ?2";
+
   private final NotificationService notifications;
   private final NotificationRepository repository;
   private final EntityManager entities;
@@ -28,7 +38,7 @@ public class NotificationEventListener {
   public void moved(TaskMoved event) {
     notifications.notifyProjectOwner(
         event.projectId(),
-        event.actorEmail(),
+        event.actorUserId(),
         "Moved task “" + event.title() + "” to " + event.status() + ".",
         event.eventId());
   }
@@ -37,21 +47,21 @@ public class NotificationEventListener {
   public void commented(CommentAdded event) {
     String message = "New comment on “" + event.title() + "”.";
     notifications.notifyProjectOwner(
-        event.projectId(), event.actorEmail(), message, event.eventId());
+        event.projectId(), event.actorUserId(), message, event.eventId());
     notifications.notifyRecipient(
-        event.projectId(), event.assigneeEmail(), event.actorEmail(), message, event.eventId());
+        event.projectId(), event.assigneeUserId(), event.actorUserId(), message, event.eventId());
   }
 
   @ApplicationModuleListener
   public void requested(NotificationRequested event) {
     if (event.projectOwner())
       notifications.notifyProjectOwner(
-          event.projectId(), event.actorEmail(), event.message(), event.eventId());
+          event.projectId(), event.actorUserId(), event.message(), event.eventId());
     else
       notifications.notifyRecipient(
           event.projectId(),
-          event.recipientEmail(),
-          event.actorEmail(),
+          event.recipientUserId(),
+          event.actorUserId(),
           event.message(),
           event.eventId());
   }
@@ -66,6 +76,11 @@ public class NotificationEventListener {
   @Transactional(propagation = Propagation.MANDATORY)
   public void deleting(AccountDeleting event) {
     repository.deleteByRecipientEmail(event.email());
+    entities
+        .createNativeQuery(UNDELIVERABLE_REQUESTS)
+        .setParameter(1, NotificationRequested.class.getName())
+        .setParameter(2, "\"recipientUserId\":" + event.userId() + "[,}]")
+        .executeUpdate();
   }
 
   @EventListener

@@ -36,13 +36,14 @@ public class ProjectAccessService {
     return sessionUser.email(session);
   }
 
-  /** Verifies {@code need} for the signed-in user and returns the loaded context. */
-  public AccessContext require(Long projectId, HttpSession session, Need need) {
-    return require(projectId, email(session), need);
+  /** The signed-in account's immutable id; membership is always matched on it. */
+  public Long userId(HttpSession session) {
+    return sessionUser.id(session);
   }
 
-  public AccessContext require(Long projectId, String email, Need need) {
-    AccessContext context = context(projectId, email);
+  /** Verifies {@code need} for the signed-in user and returns the loaded context. */
+  public AccessContext require(Long projectId, HttpSession session, Need need) {
+    AccessContext context = context(projectId, userId(session), email(session));
     if (context == null) throw new ApiException(ErrorCode.NOT_FOUND, "Project not found.");
     if (context.trashed())
       throw new ApiException(ErrorCode.NOT_FOUND, "Project is in the recycle bin.");
@@ -71,10 +72,6 @@ public class ProjectAccessService {
     return require(projectId, session, Need.READ).role().label();
   }
 
-  public String roleFor(Long projectId, String email) {
-    return require(projectId, email, Need.READ).role().label();
-  }
-
   public void read(Long projectId, HttpSession session) {
     require(projectId, session, Need.READ);
   }
@@ -97,24 +94,22 @@ public class ProjectAccessService {
     if (cache != null) cache.keySet().removeIf(key -> key.startsWith(projectId + ":"));
   }
 
-  private AccessContext context(Long projectId, String email) {
+  private AccessContext context(Long projectId, Long userId, String email) {
     String normalized = email.trim().toLowerCase(Locale.ROOT);
     Map<String, AccessContext> cache = cache();
-    String key = projectId + ":" + normalized;
+    String key = projectId + ":" + userId;
     if (cache != null && cache.containsKey(key)) return cache.get(key);
     AccessContext context =
         projects
-            .findAccessRow(projectId, normalized)
+            .findAccessRow(projectId, userId)
             .map(
                 row -> {
+                  // The owner always holds an Owner membership row (ProjectFactory, transfer, V15).
                   ProjectRole role =
-                      row.ownerEmail().equalsIgnoreCase(normalized)
-                          ? ProjectRole.OWNER
-                          : row.memberRole() == null
-                              ? null
-                              : ProjectRole.fromLabel(row.memberRole());
+                      row.memberRole() == null ? null : ProjectRole.fromLabel(row.memberRole());
                   return new AccessContext(
                       projectId,
+                      userId,
                       normalized,
                       role,
                       row.ownerEmail(),

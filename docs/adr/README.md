@@ -12,4 +12,9 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0006](0006-modulith-and-transactional-events.md) | Feature services and durable module events | Accepted |
 | [0007](0007-boot4-java25.md) | Spring Boot 4 and Java 25 | Accepted |
 | [0008](0008-frontend-feature-folders-and-lint.md) | Frontend feature folders, import boundaries and lint gate | Accepted |
+| [0010](0010-probabilistic-forecast-models.md) | Probabilistic forecast models selected by backtested CRPS | Accepted |
+| [0011](0011-cp-sat-sprint-optimisation.md) | CP-SAT for sprint optimisation with greedy and DP baselines | Accepted |
+| [0012](0012-late-task-risk-model.md) | Hand-written regularised logistic regression for late-task risk | Accepted |
 | [0013](0013-router-query-and-typed-lexicon.md) | Client routes, query cache and typed lexicon | Accepted |
+| [0014](0014-ci-supply-chain.md) | CI pipeline and software supply chain: one build, SBOMs, keyless signing, provenance | Accepted |
+| [0015](0015-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |

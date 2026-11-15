@@ -4,31 +4,15 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $frontend = Join-Path $root 'frontend'
 $backend = Join-Path $root 'backend'
-$environmentFile = Join-Path $root '.env'
 $env:SPRING_PROFILES_ACTIVE = 'dev'
 
-function New-LocalDatabasePassword {
-    $characters = ('abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789').ToCharArray()
-    -join (1..32 | ForEach-Object { $characters | Get-Random })
-}
-
-function Import-EnvironmentFile([string]$path) {
-    Get-Content -LiteralPath $path | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -and -not $line.StartsWith('#') -and $line -match '^([^=]+)=(.*)$') {
-            [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
-        }
-    }
-}
-
-if (-not (Test-Path -LiteralPath $environmentFile)) {
-    $template = Get-Content (Join-Path $root '.env.example') -Raw
-    $template = $template -replace '(?m)^SPRINTFLOW_DB_PASSWORD=\r?$', "SPRINTFLOW_DB_PASSWORD=$(New-LocalDatabasePassword)"
-    $template = $template -replace '(?m)^SPRINTFLOW_COOKIE_SECURE=.*$', 'SPRINTFLOW_COOKIE_SECURE=false'
-    [IO.File]::WriteAllText($environmentFile, $template, [Text.UTF8Encoding]::new($false))
-    Write-Host 'Created .env with a local PostgreSQL password.'
-}
-Import-EnvironmentFile $environmentFile
+. (Join-Path $PSScriptRoot 'env-bootstrap.ps1')
+$environmentFile = Initialize-SprintFlowEnvironment $root
+$appPort = Read-SprintFlowPort $environmentFile 'SPRINTFLOW_APP_PORT' 8081
+$null = Read-SprintFlowPort $environmentFile 'SPRINTFLOW_DB_PORT' 5432
+Import-SprintFlowEnvironment $environmentFile
+# Spring Boot reads PORT (server.port=${PORT:8081}); keep it in step with Docker's published port.
+$env:PORT = [string]$appPort
 
 $npmCommand = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
 if (-not $npmCommand -and (Test-Path 'C:\Program Files\nodejs\npm.cmd')) {
@@ -132,7 +116,7 @@ try {
             throw 'Docker is unavailable and PostgreSQL is not running in WSL. Start PostgreSQL in WSL, then run .\start.cmd again.'
         }
 
-        Write-Host 'Docker is unavailable. Starting Spring Boot on Windows with local WSL PostgreSQL at http://localhost:8081/'
+        Write-Host "Docker is unavailable. Starting Spring Boot on Windows with local WSL PostgreSQL at http://localhost:$appPort/"
         Push-Location $backend
         & (Join-Path $backend 'mvnw.cmd') spring-boot:run
         exit $LASTEXITCODE
@@ -142,7 +126,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not stop Docker app.' }
     & $dockerCommand compose --env-file $environmentFile up -d --wait postgres
     if ($LASTEXITCODE -ne 0) { throw 'Could not start PostgreSQL with Docker Compose.' }
-    $existingServer = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    $existingServer = Get-NetTCPConnection -LocalPort $appPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($existingServer) {
         $existingProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$($existingServer.OwningProcess)" -ErrorAction SilentlyContinue
         $isSprintFlowProcess = $false
@@ -157,17 +141,17 @@ try {
         }
 
         if (-not $isSprintFlowProcess) {
-            throw 'Port 8081 is already used by another application. Close that application, then run .\start.cmd again.'
+            throw "Port $appPort is already used by another application. Close that application, then run .\start.cmd again."
         }
 
         Write-Host 'Restarting the existing SprintFlow server to load the latest frontend and backend changes...'
         Stop-Process -Id $existingServer.OwningProcess -Force
         for ($attempt = 1; $attempt -le 20; $attempt++) {
             Start-Sleep -Milliseconds 500
-            $stillListening = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+            $stillListening = Get-NetTCPConnection -LocalPort $appPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
             if (-not $stillListening) { break }
         }
-        if ($stillListening) { throw 'The old SprintFlow server did not release port 8081.' }
+        if ($stillListening) { throw "The old SprintFlow server did not release port $appPort." }
     }
 
     Push-Location $backend

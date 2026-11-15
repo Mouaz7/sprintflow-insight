@@ -46,7 +46,11 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
   const fieldExample = useFieldExample();
   return (
     <Drawer
-      title={editing ? t('editTask') : t('newTask')}
+      title={
+        editing
+          ? `${t('editTask')}${editing.key ? ` · ${editing.key}` : ''}`
+          : t('newTask')
+      }
       projectSelection={
         !editing && draft.projects
           ? {

@@ -25,8 +25,8 @@ public class SprintService {
   private final ActivityService activityService;
 
   // GET ALL SPRINT
-  public List<Sprint> getSprintsVisibleTo(String email) {
-    return sprintRepository.findVisibleTo(email);
+  public List<Sprint> getSprintsVisibleTo(Long userId) {
+    return sprintRepository.findVisibleTo(userId);
   }
 
   public List<Sprint> getSprintsForProject(Long projectId) {

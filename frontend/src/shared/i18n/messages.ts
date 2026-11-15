@@ -47,6 +47,10 @@ const swedish: Record<string, string> = {
   'Restore the parent story or sprint first.':
     'Återställ den tillhörande berättelsen eller sprinten först.',
   'Choose a valid project template.': 'Välj en giltig projektmall.',
+  'Project key must be 2–10 letters A–Z.':
+    'Projektnyckeln måste bestå av 2–10 bokstäver mellan A och Z (inte Å, Ä eller Ö).',
+  'This project key is already in use.':
+    'Projektnyckeln används redan. Välj en annan.',
   'Choose a sprint in this project.': 'Välj en sprint från det här projektet.',
   'Choose a valid retrospective category.':
     'Välj en giltig kategori för retrospektivet.',

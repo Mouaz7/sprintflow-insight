@@ -18,3 +18,96 @@ Moving a story to another sprint (or back to the backlog) moves its linked tasks
 including tasks already in the recycle bin; deletion markers remain unchanged.
 Tasks linked to a story must have exactly the story's sprint, including a null sprint
 for an unplanned story. Only standalone tasks can choose a sprint independently.
+
+## Probabilistic forecasts and backtesting (C2)
+
+The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput history into a **predictive distribution** of the number of items completed in the next *t* periods. Planning answers are derived from it. The algorithms are pure Java; the REST endpoints and the UI come in a later C2 step. ADR 0010 explains the model choice.
+
+### Input
+
+- A **history** of non-negative counts per consecutive period, oldest first. The normal case is items completed per week (`ThroughputHistory.weekly`). Sprint velocity (`sprintVelocity`) uses one period per sprint and story points as the unit.
+- Calendar days become fractional periods (`days / periodDays`). The models assume completions accrue evenly within a period.
+- Randomness (the bootstrap only) comes from an injected `java.util.random.RandomGenerator`. With a fixed seed, forecasts and backtests are reproducible.
+
+### Models
+
+All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteDistribution`: a pmf on a contiguous integer range with its cdf, quantiles, mean and variance.
+
+1. **Bootstrap Monte Carlo** (`bootstrap-monte-carlo`, from B6). Each of 10 000 trials (the default) sums ⌊t⌋ periods drawn with replacement from the history. For a fractional remainder *f*, each item of one more drawn period is kept with probability *f* (binomial thinning). The result is the empirical distribution of the trial sums. It needs no distributional assumption, but it can never forecast a period larger than the largest one observed. It also gives no weight to recency.
+2. **Bayesian Gamma-Poisson** (`gamma-poisson`). Weekly counts are modelled as *x*ᵢ ~ Poisson(λ) with prior λ ~ Gamma(α₀, β₀) (shape, rate). The conjugate update after *n* periods with total *s* gives the posterior Gamma(α₀ + *s*, β₀ + *n*). The posterior predictive total over *t* periods is **negative binomial** with *r* = α₀ + *s* and *p* = (β₀ + *n*)/(β₀ + *n* + *t*):
+
+   P(K = *k*) = Γ(*k* + *r*) / (*k*! Γ(*r*)) · *p*^*r* (1 − *p*)^*k*, with mean *r*(1 − *p*)/*p* = *t*(α₀ + *s*)/(β₀ + *n*).
+
+   It is computed exactly, not sampled. The pmf starts at the mode, uses the ratio P(*k*+1)/P(*k*) = (*k* + *r*)/(*k* + 1)·(1 − *p*) in both directions, and is normalised. Tails are truncated once a term falls below 10⁻¹⁷ of the modal probability, so the lost mass is about 10⁻¹⁵. Starting at the mode keeps every term ≤ 1, so there is no underflow even for means in the thousands. The default prior is α₀ = β₀ = 0.5: a mean of one item per period, weighted as half an observed period. Both are configurable.
+3. **Exponentially weighted Poisson** (`ewma-poisson`). The rate is the weighted mean λ̂ = Σ *w*ᵢ*x*ᵢ / Σ *w*ᵢ with *w*ᵢ = *d*^(*n*−1−*i*) and *d* = 0.5^(1/*h*). The default half-life is *h* = 4 periods. The forecast is Poisson(λ̂·*t*), computed exactly the same way. It reacts quickly to level shifts, but it treats λ̂ as known, so its intervals are too narrow when data are scarce or over-dispersed.
+
+### Derived answers (`ForecastAnswers`)
+
+- **(a) Completion date for *N* items** at confidence *c* ∈ {50, 85, 95 %}: the first day *d* with P(*S*(*d*) ≥ *N*) ≥ *c*, where *S*(*d*) is the predictive total for *d* days. The search doubles *d*, then bisects. The answer is empty when even five years are not enough. For the bootstrap model, Monte Carlo noise can move the answer by about one day near the threshold.
+- **(b) Items by a date** at confidence *c*: the largest *x* with P(*S* ≥ *x*) ≥ *c*. Higher confidence never gives more items.
+- **(c) Probability to reach a target** of *m* items in the remaining *d* days: P(*S*(*d*) ≥ *m*) = 1 − *F*(*m* − 1).
+
+### Backtesting (`Backtester`) and model selection
+
+**Rolling origin.** At each origin *o* = *m*, *m* + 1, …, *n* − *h*, a model sees only periods [0, *o*). It forecasts the total of the next *h* periods, and the forecast is scored against what actually happened. The defaults are *m* = 8 training periods and *h* = 2. Each origin produces the following:
+
+- **CRPS**, the continuous ranked probability score: CRPS(*F*, *y*) = ∫ (*F*(*x*) − 𝟙{*x* ≥ *y*})² d*x*. For an integer-valued forecast *F* is a step function with unit steps, so the integral is exactly Σₖ (*F*(*k*) − 𝟙{*k* ≥ *y*})² over the integers between the support and *y*. It equals E|*X* − *y*| − ½E|*X* − *X*′|, is ≥ 0 and is in item units. It is 0 only for a point forecast that hits *y*, and it reduces to the absolute error for any point forecast. Lower is better.
+- **Interval coverage**: the share of observations inside the central interval [*q*((1−*c*)/2), *q*((1+*c*)/2)] for *c* = 50/85/95 %. *q* is the left-continuous quantile (the smallest *x* with *F*(*x*) ≥ *p*). On the integers these intervals contain at least *c* of the mass, so a well-calibrated model covers slightly **more** often than nominal.
+- **PIT histogram**: the non-randomised PIT for count data (Czado, Gneiting & Held, 2009). For each case, *F*(*u* | *y*) is 0 below *F*(*y*−1), 1 above *F*(*y*), and linear between them. The 10 bins are the averaged increments of *F*(*u* | *y*) and sum to one. A calibrated model gives a flat histogram. A U shape means the intervals are too narrow, and a hump means they are too wide. Mass at one end indicates bias.
+- **MAE**: the mean absolute error of the forecast median.
+
+**Selection.** The candidate with the lowest mean CRPS wins, and ties keep the earlier candidate (Gamma-Poisson, EWMA, bootstrap). CRPS is a proper score, so it rewards calibration and sharpness together. Coverage, PIT and MAE are kept in every report to explain the choice. **Minimum-data rule:** selection requires at least 6 origins, that is *m* + *h* + 5 = 15 periods with the defaults. Below that, the result is `InsufficientHistory(available, required)`, and callers should show no model choice (or fall back to the Gamma-Poisson model, which degrades gracefully to its prior).
+
+### Limitations
+
+- All three models assume periods are exchangeable apart from EWMA's recency weighting. Seasonality, holidays, team changes and scope changes are not modelled.
+- Rolling-origin windows overlap when *h* > 1, so the per-origin scores are correlated. With short histories, differences in mean CRPS between models can be noise.
+- The Poisson-type models treat items as independent arrivals. Batch completions (many items closed on one day) are over-dispersed, so the EWMA intervals will be too narrow. Gamma-Poisson only partly absorbs this through parameter uncertainty, which vanishes as history grows.
+- Velocity in story points is not a count of independent events. The Poisson models only approximate it, so prefer item throughput when both are available.
+- The forecast covers future throughput, not scope. The *N* items remaining are taken as given.
+
+## Late-task risk (C3)
+
+The risk model estimates, for a task in the active sprint, the probability that it is **not done when the sprint ends**. The algorithmic core lives in the `risk` module (pure Java, no persistence); scheduling, storage and the UI are later C3 steps. See [ADR 0012](adr/0012-late-task-risk-model.md).
+
+### Features
+
+All features describe the work item, its column or the sprint. Every value is finite and non-negative (`RiskFeatures`).
+
+| Feature | Definition |
+| --- | --- |
+| Age vs column p85 | Hours in the current column divided by the 85th percentile (linear interpolation, Hyndman–Fan type 7) of the hours earlier tasks spent in that column. The reference is at least one hour; without history the ratio is 1. |
+| Times blocked | Number of times the task has been marked blocked. |
+| Reassignments | Number of assignee changes (only the count). |
+| Comments, last 7 days | Comments on the task in the last seven days. |
+| Story points | Current estimate; unestimated tasks use 0. |
+| Dependency depth | Length of the longest chain of unfinished tasks the task depends on. |
+| Remaining sprint days | Calendar days until the sprint ends; 0 once the end has passed. |
+| Column WIP | Tasks currently in the task's column, including itself. |
+
+**Fairness.** No feature identifies a person: assignee, reporter, commenter identity, team membership and similar attributes are deliberately excluded, so the model cannot learn that particular people are "risky". Reassignments and comments are counted, never attributed. A unit test guards the feature record against identity fields. Indirect proxies remain possible (for example, a person who always takes large tasks); risk is a property of the task to be discussed by the team, not a performance measure of individuals.
+
+### Model
+
+- **Standardisation.** Each feature is transformed to `z = (x − mean) / sd` with the mean and population standard deviation of the *training* data only. Constant columns get `sd = 1` (so `z = 0`).
+- **Logistic regression.** `p = σ(b + Σ wⱼ zⱼ)`. The parameters minimise the mean log loss plus `(λ/2)‖w‖²` (default `λ = 0.01`; the intercept is not penalised). The optimiser is Newton's method (IRLS) with an Armijo backtracking line search. It stops when the largest absolute gradient component is at most `10⁻⁸`, or after 100 steps. Training uses no randomness and is bit-for-bit reproducible.
+- **Cold start.** A model is trained only when both outcomes (late and on time) have at least **80 examples** each: ten events per feature (Peduzzi et al., 1996). Below that threshold a heuristic with fixed expert weights on fixed reference scales is used. Its intercept is calibrated so that the mean predicted probability over the available examples equals the observed late rate, shrunk towards a 25 % prior by a Beta(1, 3) prior: `(late + 1) / (n + 4)`. With no history at all, a typical task gets 25 %. Predictions report which of the two sources produced them.
+- **Probabilities** are clamped to `[10⁻⁹, 1 − 10⁻⁹]` so they are always strictly between 0 and 1.
+
+### Explanation
+
+The log-odds are an exact sum of the intercept and one term per feature, `wⱼ · zⱼ` (coefficient × standardised value). A prediction lists the **three terms with the largest absolute value** (ties in feature order; zero terms are omitted). A positive term raises the risk compared with an average task in the training data; a negative term lowers it.
+
+### Evaluation
+
+- **Time-based split.** Examples are sorted by observation time; the earliest share trains, the rest tests. Examples sharing the boundary timestamp all go to the test set, so every training example is strictly older than every test example.
+- **ROC AUC** is computed exactly from the Mann–Whitney statistic with mid-ranks. Tied scores count one half, and only the order of the scores matters.
+- **Brier score** is the mean squared difference between probability and outcome (0 is perfect; a constant 0.5 scores 0.25).
+- **Calibration curve:** equal-width probability bins with count, mean prediction and observed late rate; empty bins are omitted.
+
+### Limitations
+
+- A linear-logistic model cannot represent interactions between features (for example, many points *and* few days left) unless such terms are added explicitly.
+- The labels describe history: changes to process, team size or sprint length shift the base rate, which nightly retraining only partly absorbs. The cold-start weights are judgements, not estimates.
+- Coefficients are associations, not causes; "top 3 reasons" explain the model, not the task.
+- The 80-per-class threshold is a rule of thumb, and λ is not yet chosen by cross-validation. Results on the Jira dataset still have to be reported in `docs/evaluation/`.

@@ -77,6 +77,11 @@ export const projectsText = defineLexicon({
     trashEmpty: 'Your recycle bin is empty',
     trashEmptyHelp:
       'Deleted work appears here until you restore or permanently remove it.',
+    projectKey: 'Project key',
+    projectKeyChangeHelp: ({ key }: { key: string }) =>
+      `2–10 letters. Changing the key renames every task ID, for example ${key}-12.`,
+    projectKeyNewHelp: ({ key }: { key: string }) =>
+      `2–10 letters that start every task ID, for example ${key}-1. Leave empty to use the suggestion.`,
   },
   SV: {
     confirmMoveToTrash: ({ name }) =>
@@ -150,5 +155,10 @@ export const projectsText = defineLexicon({
     trashEmpty: 'Papperskorgen är tom',
     trashEmptyHelp:
       'Borttaget innehåll visas här tills du återställer eller raderar det permanent.',
+    projectKey: 'Projektnyckel',
+    projectKeyChangeHelp: ({ key }) =>
+      `2–10 bokstäver. Om du byter nyckel får alla uppgifter nya id, till exempel ${key}-12.`,
+    projectKeyNewHelp: ({ key }) =>
+      `2–10 bokstäver som inleder uppgifternas id, till exempel ${key}-1. Lämna tomt för att använda förslaget.`,
   },
 });

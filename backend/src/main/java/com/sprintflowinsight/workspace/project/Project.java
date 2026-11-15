@@ -24,6 +24,10 @@ public class Project {
 
   private String description;
 
+  /** Unique 2–10 letter key, e.g. {@code SF}; prefixes task identifiers such as SF-123. */
+  @Column(name = "key", nullable = false, unique = true, length = ProjectKeys.MAX_LENGTH)
+  private String projectKey;
+
   @Email(message = "Owner email must be valid.")
   @Column(nullable = false)
   private String ownerEmail;
@@ -33,6 +37,11 @@ public class Project {
   public Project() {}
 
   public Project(String name, String description, String ownerEmail) {
+    this(name, description, ownerEmail, null);
+  }
+
+  public Project(String name, String description, String ownerEmail, String key) {
+    this.projectKey = key;
     this.name = name;
     this.description = description;
     this.ownerEmail = ownerEmail;
@@ -52,6 +61,15 @@ public class Project {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  /** Serialised as {@code key}; the attribute avoids the JPQL keyword KEY. */
+  public String getKey() {
+    return projectKey;
+  }
+
+  public void setKey(String key) {
+    this.projectKey = key;
   }
 
   public String getDescription() {

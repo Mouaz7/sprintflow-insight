@@ -1,6 +1,8 @@
 package com.sprintflowinsight.common.error;
 
+import java.sql.SQLTransactionRollbackException;
 import java.sql.SQLTransientException;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.transaction.CannotCreateTransactionException;
@@ -11,7 +13,23 @@ public final class DatabaseFailures {
 
   public static final String DETAIL = "The database is temporarily unavailable. Try again shortly.";
 
+  public static final String CONFLICT_DETAIL =
+      "The resource was changed concurrently. Reload and try again.";
+
+  /**
+   * True when the database answered but refused the work because of a competing transaction: a
+   * lock that could not be acquired, a deadlock, a serialization failure or a stale optimistic
+   * version. That is a conflict for the client to retry, not an outage.
+   */
+  public static boolean isConcurrencyConflict(Throwable failure) {
+    for (Throwable cause = failure; cause != null; cause = cause.getCause())
+      if (cause instanceof ConcurrencyFailureException
+          || cause instanceof SQLTransactionRollbackException) return true;
+    return false;
+  }
+
   public static boolean isDatabaseUnavailable(Throwable failure) {
+    if (isConcurrencyConflict(failure)) return false;
     for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
       if (cause instanceof DataAccessResourceFailureException
           || cause instanceof TransientDataAccessException

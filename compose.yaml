@@ -1,7 +1,8 @@
 name: sprintflow-insight
 services:
   postgres:
-    image: postgres:16
+    # Pinned by digest; Dependabot (docker-compose ecosystem) proposes updates.
+    image: postgres:16.16@sha256:dd2bf3ce2dc83a81674cf7f217fcfd8a5009a4b325dda5b843bfee82a06cff6f
     environment:
       POSTGRES_DB: sprintflow
       POSTGRES_USER: sprintflow
@@ -17,11 +18,15 @@ services:
       retries: 20
   app:
     build: .
+    # CI builds the image once and starts it with --no-build under this name.
+    image: ${SPRINTFLOW_APP_IMAGE:-sprintflow-insight-app:local}
     user: "${SPRINTFLOW_CONTAINER_UID:-1000}:${SPRINTFLOW_CONTAINER_GID:-1000}"
     environment:
       SPRINTFLOW_DB_URL: jdbc:postgresql://postgres:5432/sprintflow
       SPRINTFLOW_DB_USER: sprintflow
       SPRINTFLOW_DB_PASSWORD: ${SPRINTFLOW_DB_PASSWORD:?Set SPRINTFLOW_DB_PASSWORD in .env}
+      SPRINTFLOW_ENCRYPTION_KEY: ${SPRINTFLOW_ENCRYPTION_KEY:?Set SPRINTFLOW_ENCRYPTION_KEY in .env}
+      SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS: ${SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS:-}
       SPRINTFLOW_COOKIE_SECURE: ${SPRINTFLOW_COOKIE_SECURE:-false}
       SPRINTFLOW_PUBLIC_URL: ${SPRINTFLOW_PUBLIC_URL:-http://localhost:8081}
       SPRINTFLOW_GOOGLE_CLIENT_ID: ${SPRINTFLOW_GOOGLE_CLIENT_ID:-}
