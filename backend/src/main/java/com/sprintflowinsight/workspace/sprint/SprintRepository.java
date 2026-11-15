@@ -17,13 +17,13 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
       select sprint from Sprint sprint, com.sprintflowinsight.workspace.project.Project project
       where sprint.projectId = project.id
         and sprint.trashedAt is null and project.trashedAt is null
-        and (lower(project.ownerEmail) = lower(:email) or exists (
+        and exists (
           select member.id from com.sprintflowinsight.workspace.project.ProjectMember member
-          where member.projectId = project.id and lower(member.email) = lower(:email)))
+          where member.projectId = project.id and member.userId = :userId)
       order by sprint.id
       """)
   List<Sprint> findVisibleTo(
-      @org.springframework.data.repository.query.Param("email") String email);
+      @org.springframework.data.repository.query.Param("userId") Long userId);
 
   void deleteByProjectId(Long projectId);
 

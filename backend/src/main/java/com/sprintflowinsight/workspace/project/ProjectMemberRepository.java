@@ -18,4 +18,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
   void deleteByEmailIgnoreCase(String email);
 
   void deleteByProjectId(Long projectId);
+
+  Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
+
+  void deleteByProjectIdAndUserId(Long projectId, Long userId);
 }

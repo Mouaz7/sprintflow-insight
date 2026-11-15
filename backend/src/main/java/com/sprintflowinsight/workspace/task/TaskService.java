@@ -22,6 +22,7 @@ public class TaskService {
   private final NotificationRequests notifications;
   private final ProjectMutationService mutations;
   private final FileDeletionService deletions;
+  private final TaskNumberAllocator numbers;
 
   private final TaskRepository taskRepository;
   private final TaskStatusHistoryRepository historyRepository;
@@ -39,7 +40,9 @@ public class TaskService {
       TaskAttachmentRepository attachmentsRepository,
       NotificationRequests notifications,
       ProjectMutationService mutations,
-      FileDeletionService deletions) {
+      FileDeletionService deletions,
+      TaskNumberAllocator numbers) {
+    this.numbers = numbers;
     this.events = events;
     this.notifications = notifications;
     this.mutations = mutations;
@@ -67,6 +70,9 @@ public class TaskService {
     task.setStartedAt(null);
     task.setCompletedAt(null);
     applyWorkflowTimestamps(task, task.getStatus(), now);
+    TaskNumberAllocator.Allocation number = numbers.next(task.getProjectId());
+    task.setNumber(number.number());
+    task.setProjectKey(number.projectKey());
     Task saved = taskRepository.save(task);
     recordHistory(saved, saved.getStatus(), now, actorEmail);
     notifications.notifyRecipient(
@@ -155,6 +161,10 @@ public class TaskService {
       taskRepository.save(task);
       recordHistory(task, task.getStatus(), now, actorEmail);
     }
+  }
+
+  public Optional<Task> findByNumber(Long projectId, int number) {
+    return taskRepository.findByProjectIdAndNumber(projectId, number);
   }
 
   public Optional<Task> gettaskById(long id) {

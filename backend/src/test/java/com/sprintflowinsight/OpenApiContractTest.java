@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import com.sprintflowinsight.workspace.project.ProjectKeys;
+import com.sprintflowinsight.workspace.project.ProjectRequest;
 import org.yaml.snakeyaml.Yaml;
 
 class OpenApiContractTest {
@@ -100,6 +102,27 @@ class OpenApiContractTest {
                         .map(java.lang.reflect.RecordComponent::getName)
                         .toList());
           });
+
+      // B0: task identifiers and project keys are part of the response contract.
+      assertThat(paths).containsKey("/api/tasks/by-key/{key}");
+      Map<String, Object> byKey =
+          (Map<String, Object>)
+              ((Map<String, Object>) paths.get("/api/tasks/by-key/{key}")).get("get");
+      assertThat(((Map<String, Object>) byKey.get("responses")).keySet())
+          .contains("200", "401", "404");
+      Map<String, Object> task =
+          (Map<String, Object>) ((Map<String, Object>) schemas.get("Task")).get("properties");
+      assertThat(task).containsKeys("number", "projectKey", "key");
+      Map<String, Object> project =
+          (Map<String, Object>) ((Map<String, Object>) schemas.get("Project")).get("properties");
+      Map<String, Object> projectKey = (Map<String, Object>) project.get("key");
+      assertThat(projectKey).containsEntry("pattern", "^" + ProjectKeys.REGEX + "$");
+      Map<String, Object> requestKey =
+          (Map<String, Object>)
+              ((Map<String, Object>)
+                      ((Map<String, Object>) schemas.get("ProjectRequest")).get("properties"))
+                  .get("key");
+      assertThat(requestKey).containsEntry("pattern", "^" + ProjectRequest.KEY_INPUT + "$");
     }
   }
 }

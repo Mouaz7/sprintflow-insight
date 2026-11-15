@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 
 /** Recycle-bin cascades are set-based: their cost does not grow with the amount of work moved. */
 class LifecycleBulkIntegrationTest extends ApiIntegrationTest {
+  @Autowired private com.sprintflowinsight.workspace.task.TaskNumberAllocator numbers;
   @Autowired private SprintRepository sprints;
   @Autowired private UserStoryRepository stories;
   @Autowired private TaskRepository tasks;
@@ -117,6 +118,7 @@ class LifecycleBulkIntegrationTest extends ApiIntegrationTest {
   private Task task(Project project, Sprint sprint, UserStory story) {
     Task task = new Task("Task", null, "To Do");
     task.setProjectId(project.getId());
+    task.setNumber(numbers.next(project.getId()).number());
     if (sprint != null) task.setSprintId(sprint.getId());
     if (story != null) task.setStoryId(story.getId());
     return tasks.save(task);

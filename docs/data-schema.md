@@ -5,9 +5,11 @@ PostgreSQL is the system of record. The authoritative, executable schema is the 
 ## Logical relationships
 
 - `users` stores normalized unique email addresses, BCrypt password hashes, profile fields, and hashed recovery codes.
-- `projects` has one owner email. `project_member` stores project membership and the supported roles `Owner`, `Admin`, `Member`, and `Viewer`; the current owner is also represented in membership data.
+- `projects` has one owner email and a unique `key` (2–10 upper-case letters, check constraint `projects_key_format`, unique `projects_key_unique`) that prefixes task identifiers such as `SF-123`.
+- `project_member` stores project membership and the supported roles `Owner`, `Admin`, `Member`, and `Viewer`. Since V15 every row references its account through `user_id` (`users.id`, `ON DELETE CASCADE`, unique per project). Access checks match on `user_id` only; `email` is a display copy that follows the account's address. The owner always has an `Owner` row, which is what grants owner access.
 - `sprint` belongs to a project and stores lifecycle state, planned points, schedule dates, and completion time.
 - `user_stories` belongs to a project and can be assigned to one sprint in that same project. Story points are restricted to 1, 2, 3, 5, or 8; business value is optional and ranges from 1 to 5.
+- `task` has a per-project `number` (unique with `project_id`, positive, never changed after creation). `project_task_counter(project_id, last_number)` holds the last number handed out; creation increments it with one `INSERT … ON CONFLICT DO UPDATE … RETURNING`, which locks the counter row, so concurrent creators never collide and numbers are never reused.
 - `task` belongs to a project and can reference a same-project story and sprint and an assigned project member. Normal deletion preserves references in the recycle bin. Permanently purging a story clears its task references; permanently purging a task removes its associated comments and attachments.
 - `task_status_history`, `activity_event`, `task_comment`, `task_attachment`, and `notification` are project-scoped supporting records. Status history stores actor and timestamp for workflow changes and state snapshots when points or sprint assignments change.
 - `password_reset_tokens` references its account and stores only a SHA-256 hash of the one-time token.
@@ -15,6 +17,10 @@ PostgreSQL is the system of record. The authoritative, executable schema is the 
 - `user_preferences` references its account with cascading removal. Saved filters are private to that account.
 - `retrospective_entry` is project/sprint scoped. Account removal anonymizes its author; permanent project removal deletes the entries.
 - `shared_report` stores a hash of the random link token and a limited snapshot with creation/expiry times. Account removal revokes links created by that account; project removal deletes all project reports.
+
+Migration V15 backfills the B0 building blocks without changing row versions. Project keys are derived from names (initials of up to four words, otherwise the first four letters, accents folded, `PRJ` when fewer than two letters remain); collisions get the suffix A, B, …, Z, AA in project-id order. Existing tasks are numbered in id order per project, and counters start at each project's highest number. Membership rows get `user_id` by case-insensitive email match. Rows without an account are removed, case-variant duplicates collapse to the most privileged row, a missing owner row is added, and stale `Owner` rows of former owners become `Member`.
+
+Encrypted columns (none yet; later phases add them) store `EncryptionService` envelopes `sf1:<keyId>:<base64url(iv|ciphertext|tag)>` in a text column. The key id makes key rotation possible; see [ADR 0011](adr/0011-encryption-and-key-rotation.md).
 
 Migration V13 adds the Spring Session tables `spring_session` and `spring_session_attributes`. `principal_name` holds `user:<id>`, which lets the server find and revoke all of an account's sessions.
 

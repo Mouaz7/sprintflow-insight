@@ -33,6 +33,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
   List<Task> findAllByProjectIdAndStoryId(Long projectId, Long storyId);
 
+  java.util.Optional<Task> findByProjectIdAndNumber(Long projectId, Integer number);
+
   List<Task> findAllByProjectIdAndAssigneeEmailIgnoreCase(Long projectId, String email);
 
   List<Task> findByAssigneeEmailIgnoreCase(String assigneeEmail);

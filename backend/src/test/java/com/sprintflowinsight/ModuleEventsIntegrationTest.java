@@ -58,6 +58,7 @@ class ModuleEventsIntegrationTest {
     Project project = new Project();
     project.setName("Events " + UUID.randomUUID());
     project.setOwnerEmail(user.getEmail());
+    project.setKey(com.sprintflowinsight.support.ApiIntegrationTest.uniqueKeyForTests());
     return projects.save(project);
   }
 

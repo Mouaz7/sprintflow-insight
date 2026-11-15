@@ -34,12 +34,11 @@ public class SprintApplicationService {
   private final ProjectAccessService access;
 
   public List<Sprint> getAllSprints(Long projectId, HttpSession session) {
-    String email = access.email(session);
     if (projectId != null) {
       access.read(projectId, session);
       return sprintService.getSprintsForProject(projectId);
     }
-    return sprintService.getSprintsVisibleTo(email);
+    return sprintService.getSprintsVisibleTo(access.userId(session));
   }
 
   public ResponseEntity<?> createSprint(SprintRequest request, HttpSession session) {

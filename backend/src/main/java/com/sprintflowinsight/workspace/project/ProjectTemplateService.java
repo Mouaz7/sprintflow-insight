@@ -56,6 +56,7 @@ public class ProjectTemplateService {
             name,
             request.description(),
             email,
+            request.normalizedKey(),
             "Created project “" + name + "” from " + request.template() + " template.");
     Long sprintId = null, storyId = null;
     if (request.template().equals("Scrum")) {

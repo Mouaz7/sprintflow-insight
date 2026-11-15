@@ -25,14 +25,14 @@ System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags
 
 }
 
-Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
-Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
-Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
-Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Auth, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes
