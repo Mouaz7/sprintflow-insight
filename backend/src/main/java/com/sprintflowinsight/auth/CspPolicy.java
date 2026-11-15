@@ -70,6 +70,10 @@ public final class CspPolicy implements HeaderWriter, ResourceTransformer {
             + " img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/;"
             + " frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none';"
             + " form-action 'self'; frame-ancestors 'none'; require-trusted-types-for 'script';"
-            + " trusted-types sprintflow-google goog#html");
+            // Google Identity Services creates its Closure goog#html policy itself and may do so
+            // again (for example when its loader runs twice). Without 'allow-duplicates' that
+            // second createPolicy throws and breaks sign-in. Only the two named policies remain
+            // allowed; enforcement and the sink checks are unchanged.
+            + " trusted-types sprintflow-google goog#html 'allow-duplicates'");
   }
 }

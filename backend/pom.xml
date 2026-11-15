@@ -40,6 +40,8 @@
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-webmvc-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-resttestclient</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-starter-jdbc</artifactId></dependency>
+        <!-- EventPublicationMaintenance gives up expired publications through the registry API. -->
+        <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-events-core</artifactId></dependency>
         <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-starter-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.apache.tika</groupId><artifactId>tika-core</artifactId><version>4.1.0</version></dependency>
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>

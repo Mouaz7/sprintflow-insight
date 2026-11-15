@@ -80,10 +80,17 @@ public final class LogisticRegression {
         return result(theta, iteration, false, norm);
       }
       double[] direction = Matrices.solveSpd(hessian(x, theta, options.lambda()), gradient);
-      if (direction == null) {
+      boolean newton = direction != null;
+      if (!newton) {
         direction = gradient;
       }
       double slope = dot(gradient, direction);
+      if (newton && atMachinePrecision(slope, objective)) {
+        // The Newton decrement g·H⁻¹g bounds the remaining improvement by slope / 2; once that is
+        // below what a double can resolve in the objective, no step can make measurable progress
+        // and the iterate is the optimum to working precision.
+        return result(theta, iteration, true, norm);
+      }
       double step = 1.0;
       double[] candidate = null;
       double candidateObjective = objective;
@@ -96,14 +103,22 @@ public final class LogisticRegression {
         step /= 2;
       }
       if (step < MIN_STEP) {
-        // No descent is possible at machine precision: the optimum has been reached as far as
-        // doubles allow.
-        return result(theta, iteration, false, norm);
+        // No descent is possible at machine precision. That is convergence only when the Newton
+        // decrement says the remaining improvement is negligible.
+        return result(theta, iteration, newton && atMachinePrecision(slope, objective), norm);
       }
       theta = candidate;
       objective = candidateObjective;
       iteration++;
     }
+  }
+
+  /**
+   * Whether the predicted improvement {@code slope / 2} of a Newton step is below the resolution
+   * of the objective in double precision (a relative 1e-14, i.e. about 100 ulps).
+   */
+  static boolean atMachinePrecision(double slope, double objective) {
+    return slope / 2 <= 1e-14 * Math.max(1.0, Math.abs(objective));
   }
 
   /** Numerically stable logistic function. */

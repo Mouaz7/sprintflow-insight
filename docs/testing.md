@@ -70,6 +70,20 @@ Frontend verification currently exposes `npm run check` (Vitest, TypeScript and 
 
 For A2 acceptance, the packaged app was also started with a separate disposable PostgreSQL database and checked with `scripts/verification/business-rules.ts` (real browser/database role and workflow checks). A temporary axe-core 4.14.0 scan covers sign-in and the empty overview in light/dark themes; all three scans reported zero violations after the profile-button fix. The audit browser allows axe script injection past CSP and uses reduced motion to inspect settled colours; application CSP is unchanged. This targeted scan does not claim a full WCAG audit. Permanent Playwright/axe wiring and `npm run e2e` remain the explicit scope of A8 (#9).
 
+## Content Security Policy and Trusted Types in a real browser
+
+The CSP enforces Trusted Types (`require-trusted-types-for 'script'`) with only two policies: the app's `sprintflow-google` script-URL policy and Google Identity Services' own `goog#html`. `'allow-duplicates'` is included so GIS can create `goog#html` again without throwing. `CspPolicyTest` and `SecurityConfigurationTest` pin the header text. `scripts/verification/trusted-types.ts` checks the behaviour in Chromium: it loads the sign-in page of a running, built app under the app's own header and fails on any `securitypolicyviolation` event or Trusted Types console error.
+
+```sh
+cd scripts
+npm ci && npx playwright install chromium   # once
+# App running on SPRINTFLOW_QA_URL (default http://localhost:8081), for example via ./start.sh:
+npm run trusted-types              # also loads GIS and renders its button; needs accounts.google.com
+npm run trusted-types -- --offline # app only; Google requests are blocked
+```
+
+No account is used and nothing is written. The script answers the Google config request with a placeholder client id, so the server does not need `SPRINTFLOW_GOOGLE_CLIENT_ID`; set `SPRINTFLOW_TT_GOOGLE_CLIENT_ID` to render a real client's button. Because the default mode needs network access to Google, it is not part of required CI. Run it after changing the CSP, `googleScriptUrl.ts`, the GIS loader or the Google sign-in component.
+
 ## Module structure and event delivery (A3)
 
 `ModuleArchitectureTest` runs Spring Modulith verification, rejects controller/repository coupling and field injection, and generates `docs/architecture/` (C4 PlantUML and module canvases). `ModuleEventsIntegrationTest` uses PostgreSQL, the actual JDBC publication registry, asynchronous application-module listeners and Scenario. It checks typed task movement, comment deduplication, publication/domain rollback, failed delivery, retry and duplicate replay. The simulated listener-outage log is expected in that test; its assertions require recovery and an empty publication entry afterwards.

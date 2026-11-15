@@ -194,4 +194,28 @@ class LogisticRegressionTest {
     fit.weights()[1] = 9;
     assertThat(fit.weights()).containsExactly(1, 2);
   }
+
+  @Test
+  void newtonDecrementBelowObjectiveResolutionCountsAsConverged() {
+    assertThat(LogisticRegression.atMachinePrecision(0, 0.5)).isTrue();
+    assertThat(LogisticRegression.atMachinePrecision(1.9e-14, 0.5)).isTrue();
+    assertThat(LogisticRegression.atMachinePrecision(2.1e-14, 0.5)).isFalse();
+    assertThat(LogisticRegression.atMachinePrecision(1.9e-12, 100)).isTrue();
+    assertThat(LogisticRegression.atMachinePrecision(2.1e-12, 100)).isFalse();
+  }
+
+  @Test
+  void everyFitOfTheRegularisationSweepConverges() {
+    // Regression: near the optimum the line search can no longer measure progress while the
+    // gradient is still just above the tolerance; this used to be reported as non-convergence.
+    for (long seed = 0; seed < 300; seed++) {
+      Fixtures.Data data = Fixtures.logistic(150, 0.2, new double[] {1.5, -1, 0.5}, seed);
+      for (double lambda : new double[] {0.01, 0.05, 0.2, 1, 5, 20}) {
+        var fit =
+            LogisticRegression.fit(
+                data.x(), data.y(), new LogisticRegression.Options(lambda, 100, 1e-8));
+        assertThat(fit.converged()).as("seed %d, lambda %s", seed, lambda).isTrue();
+      }
+    }
+  }
 }

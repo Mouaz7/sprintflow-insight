@@ -18,13 +18,16 @@ public class CollaborationService {
   private final org.springframework.context.ApplicationEventPublisher events;
   private final ActivityService activity;
   private final ProjectAccessService access;
+  private final com.sprintflowinsight.workspace.NotificationRequests notifications;
 
   public CollaborationService(
       TaskService tasks,
       TaskCommentRepository comments,
       org.springframework.context.ApplicationEventPublisher events,
       ActivityService activity,
-      ProjectAccessService access) {
+      ProjectAccessService access,
+      com.sprintflowinsight.workspace.NotificationRequests notifications) {
+    this.notifications = notifications;
     this.tasks = tasks;
     this.comments = comments;
     this.events = events;
@@ -60,12 +63,12 @@ public class CollaborationService {
         new com.sprintflowinsight.workspace.events.CommentAdded(
             java.util.UUID.randomUUID(),
             task.getProjectId(),
-            actor,
+            notifications.userId(actor),
             Instant.now(),
             taskId,
             saved.getId(),
             task.getTitle(),
-            task.getAssigneeEmail()));
+            notifications.userId(task.getAssigneeEmail())));
     return ResponseEntity.ok(saved);
   }
 
