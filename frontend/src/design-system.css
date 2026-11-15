@@ -1656,6 +1656,24 @@ input[type='file']::file-selector-button {
 .task-board article.is-overdue > strong {
   color: var(--danger-text);
 }
+/* B0: task identifiers (SF-123) and project keys use tabular monospace so they align and scan. */
+.task-board .task-key,
+.project-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.project-key {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  vertical-align: middle;
+}
 .task-status-control {
   color: var(--muted);
   font-size: var(--text-small);

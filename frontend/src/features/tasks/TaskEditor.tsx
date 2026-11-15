@@ -47,9 +47,7 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
     <Drawer
       title={
         editing
-          ? sv
-            ? 'Redigera uppgift'
-            : 'Edit task'
+          ? `${sv ? 'Redigera uppgift' : 'Edit task'}${editing.key ? ` · ${editing.key}` : ''}`
           : sv
             ? 'Ny uppgift'
             : 'New task'

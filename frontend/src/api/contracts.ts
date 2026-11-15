@@ -10,6 +10,8 @@ export type Project = {
   id: number;
   name: string;
   description?: string;
+  /** Unique 2–10 letter key, e.g. SF; prefixes task identifiers. */
+  key?: string;
   ownerEmail: string;
   version?: number;
   archivedAt?: string;
@@ -22,6 +24,11 @@ export type Task = {
   description?: string;
   status: TaskStatus;
   projectId: number;
+  /** Per-project sequence number allocated by the server. */
+  number?: number;
+  projectKey?: string;
+  /** Human identifier such as SF-123. */
+  key?: string;
   storyPoints: number;
   dueAt?: string;
   sprintId?: number;
