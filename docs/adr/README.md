@@ -12,3 +12,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0006](0006-modulith-and-transactional-events.md) | Feature services and durable module events | Accepted |
 | [0007](0007-boot4-java25.md) | Spring Boot 4 and Java 25 | Accepted |
 | [0008](0008-frontend-feature-folders-and-lint.md) | Frontend feature folders, import boundaries and lint gate | Accepted |
+| [0010](0010-probabilistic-forecast-models.md) | Probabilistic forecast models selected by backtested CRPS | Accepted |
