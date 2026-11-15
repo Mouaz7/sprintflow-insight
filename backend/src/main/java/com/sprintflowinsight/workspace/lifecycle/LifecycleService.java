@@ -11,9 +11,11 @@ import com.sprintflowinsight.workspace.story.UserStoryRepository;
 import com.sprintflowinsight.workspace.task.Task;
 import com.sprintflowinsight.workspace.task.TaskRepository;
 import com.sprintflowinsight.workspace.task.TaskService;
+import com.sprintflowinsight.workspace.events.TaskDeleted;
 import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class LifecycleService {
   private final ProjectMutationService mutations;
   private final ActivityService activity;
   private final TaskService taskService;
+  private final ApplicationEventPublisher events;
 
   public LifecycleService(
       TaskRepository tasks,
@@ -39,7 +42,9 @@ public class LifecycleService {
       ProjectAccessService access,
       ProjectMutationService mutations,
       ActivityService activity,
-      TaskService taskService) {
+      TaskService taskService,
+      ApplicationEventPublisher events) {
+    this.events = events;
     this.tasks = tasks;
     this.sprints = sprints;
     this.stories = stories;
@@ -63,7 +68,11 @@ public class LifecycleService {
       if (restore) ensureParents(task.getStoryId(), task.getSprintId());
       task.setTrashedAt(restore ? null : now);
       task.setDeletionBatchId(restore ? null : batch);
-      tasks.save(task);
+      Task saved = tasks.saveAndFlush(task);
+      Long actorId = access.userId(session);
+      if (restore) taskService.updated(saved, actorId, now);
+      else
+        events.publishEvent(new TaskDeleted(UUID.randomUUID(), projectId, actorId, now, id));
     } else if (kind.equals("story")) {
       UserStory story = stories.findById(id).orElseThrow(this::missing);
       requireState(story.getTrashedAt(), restore);
