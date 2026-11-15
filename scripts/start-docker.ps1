@@ -27,6 +27,17 @@ if ($settings -notmatch '(?m)^SPRINTFLOW_DB_PASSWORD=[^\r\n]+\r?$') {
     [IO.File]::WriteAllText($environmentFile, $settings, [Text.UTF8Encoding]::new($false))
     Write-Host 'Generated a private database password in .env. Keep this file for future starts.'
 }
+# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0015).
+if ($settings -notmatch '(?m)^SPRINTFLOW_ENCRYPTION_KEY=[^\r\n]+\r?$') {
+    $keyLine = 'SPRINTFLOW_ENCRYPTION_KEY=' + (New-LocalDatabasePassword)
+    if ($settings -match '(?m)^SPRINTFLOW_ENCRYPTION_KEY=\r?$') {
+        $settings = $settings -replace '(?m)^SPRINTFLOW_ENCRYPTION_KEY=\r?$', $keyLine
+    } else {
+        $settings = $settings.TrimEnd() + "`n" + $keyLine + "`n"
+    }
+    [IO.File]::WriteAllText($environmentFile, $settings, [Text.UTF8Encoding]::new($false))
+    Write-Host 'Generated a private encryption key in .env. Keep this file (and a backup of it) for future starts.'
+}
 $docker = (Get-Command docker.exe -ErrorAction SilentlyContinue).Source
 if (-not $docker) { $docker = 'C:\Program Files\Docker\Docker\resources\bin\docker.exe' }
 if (-not (Test-Path -LiteralPath $docker)) { throw 'Install Docker Desktop, enable Linux containers, then run .\start.cmd again.' }

@@ -41,13 +41,15 @@ public class ProjectService {
 
   public List<Project> getAllProjects(HttpSession session, Integer page, int size) {
     return projects.findVisibleTo(
-        access.email(session), com.sprintflowinsight.OptionalPage.of(page, size));
+        access.userId(session), com.sprintflowinsight.OptionalPage.of(page, size));
   }
 
   @Transactional
   public ResponseEntity<?> createProject(ProjectRequest request, HttpSession session) {
     String email = access.email(session);
-    return ResponseEntity.ok(factory.create(request.trimmedName(), request.description(), email));
+    return ResponseEntity.ok(
+        factory.create(
+            request.trimmedName(), request.description(), email, request.normalizedKey(), null));
   }
 
   public Project getProject(Long id, HttpSession session) {
@@ -67,6 +69,8 @@ public class ProjectService {
         .map(
             p -> {
               com.sprintflowinsight.VersionPrecondition.require(ifMatch, p.getVersion());
+              String key = details.normalizedKey();
+              if (key != null && !key.equals(p.getKey())) p.setKey(factory.requireFreeKey(key));
               p.setName(details.trimmedName());
               p.setDescription(details.description());
               Project saved = projects.save(p);
@@ -98,10 +102,12 @@ public class ProjectService {
   public ResponseEntity<?> addMember(Long id, MemberRequest request, HttpSession session) {
     AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
     String email = request.email().trim().toLowerCase();
-    if (users.findByEmail(email).isEmpty())
+    var account = users.findByEmail(email);
+    if (account.isEmpty())
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
           "Create an account for this email before inviting it.");
+    Long userId = account.get().getId();
     if (!Set.of("Admin", "Member", "Viewer").contains(request.role()))
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
@@ -112,12 +118,13 @@ public class ProjectService {
           org.springframework.http.HttpStatus.CONFLICT,
           "Transfer ownership before changing the owner role.");
     ProjectMember member =
-        members.findByProjectIdAndEmailIgnoreCase(id, email).orElseGet(ProjectMember::new);
+        members.findByProjectIdAndUserId(id, userId).orElseGet(ProjectMember::new);
     requireMayManage(caller, member.getId() == null ? null : member.getRole(), email);
     if (caller.role() != ProjectRole.OWNER
         && ProjectRole.fromLabel(request.role()) == ProjectRole.ADMIN)
       throw ApiException.forbidden("Only the project owner can appoint admins.");
     member.setProjectId(id);
+    member.setUserId(userId);
     member.setEmail(email);
     member.setRole(request.role());
     ProjectMember saved = members.save(member);
@@ -134,11 +141,14 @@ public class ProjectService {
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.CONFLICT,
           "Transfer ownership before removing the owner.");
-    var existing = members.findByProjectIdAndEmailIgnoreCase(id, email);
+    var existing =
+        users
+            .findByEmail(email.trim().toLowerCase(Locale.ROOT))
+            .flatMap(account -> members.findByProjectIdAndUserId(id, account.getId()));
     if (existing.isEmpty()) return ResponseEntity.noContent().build();
     requireMayManage(caller, existing.get().getRole(), email);
-    tasks.unassignInProject(id, email);
-    members.deleteByProjectIdAndEmailIgnoreCase(id, email);
+    tasks.unassignInProject(id, existing.get().getEmail());
+    members.delete(existing.get());
     activity.record(
         id, "MEMBER_REMOVED", "Removed project member " + email + ".", access.email(session));
     return ResponseEntity.noContent().build();
@@ -149,20 +159,24 @@ public class ProjectService {
       Long id, OwnershipRequest request, HttpSession session) {
     access.owner(id, session);
     String nextOwner = request.email().trim().toLowerCase();
-    if (users.findByEmail(nextOwner).isEmpty())
+    var nextAccount = users.findByEmail(nextOwner);
+    if (nextAccount.isEmpty())
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST, "The new owner must have an account.");
     Project project = projects.findById(id).orElseThrow();
     if (project.getOwnerEmail().equalsIgnoreCase(nextOwner)) return ResponseEntity.ok(project);
-    ProjectMember target = members.findByProjectIdAndEmailIgnoreCase(id, nextOwner).orElse(null);
+    ProjectMember target =
+        members.findByProjectIdAndUserId(id, nextAccount.get().getId()).orElse(null);
     if (target == null)
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.BAD_REQUEST,
           "The new owner must already be a project member.");
     String previousOwner = project.getOwnerEmail();
+    Long previousOwnerId = access.userId(session);
     ProjectMember previous =
-        members.findByProjectIdAndEmailIgnoreCase(id, previousOwner).orElseGet(ProjectMember::new);
+        members.findByProjectIdAndUserId(id, previousOwnerId).orElseGet(ProjectMember::new);
     previous.setProjectId(id);
+    previous.setUserId(previousOwnerId);
     previous.setEmail(previousOwner);
     previous.setRole("Member");
     target.setRole("Owner");

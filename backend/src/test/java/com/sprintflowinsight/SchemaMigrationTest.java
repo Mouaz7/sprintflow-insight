@@ -93,6 +93,122 @@ class SchemaMigrationTest {
   }
 
   @Test
+  void v15BackfillsKeysTaskNumbersAndMembershipByAccount() throws Exception {
+    try (var db = new MigrationFixture()) {
+      db.migrateTo("14");
+      try (Statement sql = db.connection().createStatement()) {
+        sql.executeUpdate(
+            "insert into users(id,email,password) values (1,'owner@example.com','h'),"
+                + " (2,'member@example.com','h'), (3,'second@example.com','h')");
+        sql.executeUpdate(
+            "insert into projects(id,name,owner_email,version) values"
+                + " (1,'Sprint Flow','owner@example.com',4), (2,'Space Force','owner@example.com',0),"
+                + " (3,'2026','Owner@Example.com',0), (4,'Åre Östra','second@example.com',0),"
+                + " (5,'Ghost','gone@example.com',0)");
+        sql.executeUpdate(
+            "insert into project_member(id,project_id,email,role) values"
+                // project 1: owner row present, member in two spellings, an orphan address
+                + " (1,1,'owner@example.com','Owner'), (2,1,'member@example.com','Viewer'),"
+                + " (3,1,'MEMBER@example.com','Admin'), (4,1,'nobody@example.com','Member'),"
+                // project 2: owner row missing, a stale Owner row from an old transfer
+                + " (5,2,'second@example.com','Owner'),"
+                // project 3: owner present with the wrong role
+                + " (6,3,'owner@example.com','Member')");
+        sql.executeUpdate(
+            "insert into task(id,title,status,is_blocked,project_id,story_points,version) values"
+                + " (10,'a','To Do',false,1,1,7), (11,'b','To Do',false,2,1,0),"
+                + " (12,'c','To Do',false,1,1,0), (13,'d','Done',false,1,1,0)");
+
+        db.migrateTo(null);
+        db.flyway().validate();
+
+        try (var rows = sql.executeQuery("select id, key, version from projects order by id")) {
+          String[] keys = {"SF", "SFA", "PRJ", "AO", "GHOS"};
+          for (String key : keys) {
+            assertThat(rows.next()).isTrue();
+            assertThat(rows.getString("key")).isEqualTo(key);
+          }
+        }
+        try (var rows = sql.executeQuery("select version from projects where id = 1")) {
+          rows.next();
+          assertThat(rows.getLong(1)).as("backfill keeps row versions").isEqualTo(4);
+        }
+        try (var rows =
+            sql.executeQuery("select id, number, version from task order by project_id, id")) {
+          long[][] expected = {{10, 1, 7}, {12, 2, 0}, {13, 3, 0}, {11, 1, 0}};
+          for (long[] row : expected) {
+            assertThat(rows.next()).isTrue();
+            assertThat(new long[] {rows.getLong(1), rows.getLong(2), rows.getLong(3)})
+                .containsExactly(row);
+          }
+        }
+        try (var rows =
+            sql.executeQuery(
+                "select project_id, last_number from project_task_counter order by project_id")) {
+          long[][] expected = {{1, 3}, {2, 1}, {3, 0}, {4, 0}, {5, 0}};
+          for (long[] row : expected) {
+            assertThat(rows.next()).isTrue();
+            assertThat(new long[] {rows.getLong(1), rows.getLong(2)}).containsExactly(row);
+          }
+        }
+        try (var rows =
+            sql.executeQuery(
+                "select project_id, user_id, email, role from project_member"
+                    + " order by project_id, user_id")) {
+          Object[][] expected = {
+            {1L, 1L, "owner@example.com", "Owner"},
+            {1L, 2L, "member@example.com", "Admin"},
+            {2L, 1L, "owner@example.com", "Owner"},
+            {2L, 3L, "second@example.com", "Member"},
+            {3L, 1L, "owner@example.com", "Owner"},
+            {4L, 3L, "second@example.com", "Owner"}
+          };
+          for (Object[] row : expected) {
+            assertThat(rows.next()).isTrue();
+            assertThat(
+                    new Object[] {
+                      rows.getLong(1), rows.getLong(2), rows.getString(3), rows.getString(4)
+                    })
+                .containsExactly(row);
+          }
+          assertThat(rows.next()).as("orphan and duplicate rows removed").isFalse();
+        }
+
+        // New constraints hold on the real engine.
+        assertThatThrownBy(
+                () ->
+                    sql.executeUpdate(
+                        "insert into projects(id,name,owner_email,version,key) values"
+                            + " (100,'Lower','o@example.com',0,'sf')"))
+            .hasMessageContaining("projects_key_format");
+        assertThatThrownBy(
+                () ->
+                    sql.executeUpdate(
+                        "insert into projects(id,name,owner_email,version,key) values"
+                            + " (101,'Copy','o@example.com',0,'SF')"))
+            .hasMessageContaining("projects_key_unique");
+        assertThatThrownBy(
+                () ->
+                    sql.executeUpdate(
+                        "insert into task(id,title,status,is_blocked,project_id,story_points,number)"
+                            + " values (100,'dup','To Do',false,1,1,2)"))
+            .hasMessageContaining("task_project_number_unique");
+        assertThatThrownBy(
+                () ->
+                    sql.executeUpdate(
+                        "insert into project_member(id,project_id,email,role,user_id) values"
+                            + " (100,1,'x@example.com','Member',999)"))
+            .hasMessageContaining("project_member_user_fk");
+        sql.executeUpdate("delete from users where id = 2");
+        try (var rows = sql.executeQuery("select count(*) from project_member where user_id = 2")) {
+          rows.next();
+          assertThat(rows.getLong(1)).as("account removal cascades").isZero();
+        }
+      }
+    }
+  }
+
+  @Test
   void addingManualOrderPreservesExistingStoriesAndVersions() throws Exception {
     try (var db = new MigrationFixture()) {
       db.migrateTo("11");
@@ -147,8 +263,8 @@ class SchemaMigrationTest {
       db.migrateTo(null);
       try (Statement sql = db.connection().createStatement()) {
         sql.executeUpdate(
-            "insert into projects(id,name,owner_email,version) values (1,'P','o@example.com',0),"
-                + " (2,'Q','o@example.com',0)");
+            "insert into projects(id,name,owner_email,version,key) values"
+                + " (1,'P','o@example.com',0,'PP'), (2,'Q','o@example.com',0,'QQ')");
         sql.executeUpdate(
             "insert into sprint(id,name,status,total_story_points,project_id,version,trashed_at)"
                 + " values (1,'A','Active',0,1,0,null), (2,'Old','Active',0,1,0,now()),"

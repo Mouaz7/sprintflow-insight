@@ -3,6 +3,13 @@
 |Base package
 |`com.sprintflowinsight.common`
 |Spring components
-|* `c.s.c.EventPublicationMaintenance`
+|_Services_
+
+* `c.s.c.crypto.EncryptionService`
+
+_Others_
+
+* `c.s.c.EventPublicationMaintenance`
 * `c.s.c.HttpClientConfiguration`
+* `c.s.c.crypto.ReEncryptionJob`
 |===

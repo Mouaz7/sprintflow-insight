@@ -19,6 +19,11 @@ public class TaskController {
     return service.getAllTasks(projectId, session);
   }
 
+  @GetMapping("/by-key/{key}")
+  public Task getTaskByKey(@PathVariable String key, HttpSession session) {
+    return service.getTaskByKey(key, session);
+  }
+
   @GetMapping("/{id}")
   public Task getTask(@PathVariable Long id, HttpSession session) {
     return service.getTask(id, session);

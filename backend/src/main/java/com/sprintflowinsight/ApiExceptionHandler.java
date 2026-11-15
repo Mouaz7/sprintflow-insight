@@ -77,7 +77,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           "task_points_range",
           "Story points must be between 0 and 1000.",
           "sprint_points_nonnegative",
-          "Story points cannot be negative.");
+          "Story points cannot be negative.",
+          "projects_key_unique",
+          "This project key is already in use.");
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ProblemDetail> handleIntegrityViolation(

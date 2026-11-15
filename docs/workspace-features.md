@@ -64,6 +64,16 @@ See [ADR 0006](adr/0006-modulith-and-transactional-events.md) and the [generated
 
 The app uses Spring Boot 4 with virtual request and asynchronous delivery threads. Existing API URLs, permissions, JSON columns and PostgreSQL event publications remain compatible. Google verification retains Google's checks and now uses explicit outbound connection/read timeouts. Local development and container/CI builds require Java 25. Upgrade and reproducible performance-check details are in [ADR 0007](adr/0007-boot4-java25.md).
 
+## Projektnycklar, uppgifts-id och medlemskap (B0)
+
+Varje projekt har en unik nyckel på 2–10 bokstäver, till exempel `SF`. Nyckeln föreslås automatiskt från projektnamnet (initialer, annars de fyra första bokstäverna) och kan väljas när projektet skapas eller ändras av ägare och administratörer under **Projekt → Redigera**. Varje uppgift får ett löpande nummer per projekt, och tillsammans blir de ett id som `SF-123`. Id:t visas på uppgiftskorten och i uppgiftsredigeraren. Numren delas ut säkert även när flera skapar uppgifter samtidigt och återanvänds aldrig. Byter projektet nyckel följer alla id med (`SF-12` blir `NY-12`).
+
+`GET /api/tasks/by-key/SF-123` hämtar en uppgift via id. Den som saknar läsbehörighet får samma 404 som för ett id som inte finns.
+
+Medlemskap knyts nu till kontots oföränderliga id i stället för e-postadressen. Ett byte av e-postadress kan därför varken ge eller ta bort åtkomst. Migreringen V15 tar bort medlemsrader utan konto, så att den som senare registrerar den adressen inte ärver åtkomst.
+
+Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln `SPRINTFLOW_ENCRYPTION_KEY` skapas av startskripten i `.env`. Säkerhetskopiera `.env`, för utan nyckeln går krypterade värden inte att läsa. Nyckelrotation beskrivs i [ADR 0015](adr/0015-encryption-and-key-rotation.md).
+
 ## Optimerad sprintplanering (C1, under arbete)
 
 "Föreslå sprint" ska välja de stories som ger mest affärsvärde inom teamets kapacitet. Funktionens kärna finns nu i backend. API och knapp i sprintplaneringen kommer i ett senare steg.

@@ -52,6 +52,18 @@ public class Task {
   private Instant dueAt;
   @Version private Long version;
 
+  /** Per-project sequence number, allocated once at creation; the {@code 123} in SF-123. */
+  @jakarta.persistence.Column(nullable = false, updatable = false)
+  @com.fasterxml.jackson.annotation.JsonProperty(
+      access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+  private Integer number;
+
+  /** Read in the same select as the task, so lists stay a single query. */
+  @org.hibernate.annotations.Formula("(select p.key from projects p where p.id = project_id)")
+  @com.fasterxml.jackson.annotation.JsonProperty(
+      access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+  private String projectKey;
+
   // Constructors
   public Task() {}
 
@@ -64,6 +76,30 @@ public class Task {
   }
 
   // Getters and Setters
+  public Integer getNumber() {
+    return number;
+  }
+
+  public void setNumber(Integer number) {
+    this.number = number;
+  }
+
+  public String getProjectKey() {
+    return projectKey;
+  }
+
+  public void setProjectKey(String projectKey) {
+    this.projectKey = projectKey;
+  }
+
+  /** The human identifier, e.g. {@code SF-123}; {@code null} before the task is created. */
+  @com.fasterxml.jackson.annotation.JsonProperty(
+      value = "key",
+      access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+  public String getKey() {
+    return projectKey == null || number == null ? null : projectKey + "-" + number;
+  }
+
   public Long getId() {
     return id;
   }
