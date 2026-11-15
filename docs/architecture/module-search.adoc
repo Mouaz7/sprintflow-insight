@@ -1,0 +1,19 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.search`
+|Spring components
+|_Controllers_
+
+* `c.s.s.SearchController`
+
+_Services_
+
+* `c.s.s.SearchService`
+
+_Repositories_
+
+* `c.s.s.SearchRepository`
+|Bean references
+|* `c.s.w.project.ProjectAccessService` (in Workspace)
+|===
