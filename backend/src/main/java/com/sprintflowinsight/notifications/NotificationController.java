@@ -23,7 +23,8 @@ public class NotificationController {
       HttpSession session,
       @RequestParam(required = false) Integer page,
       @RequestParam(defaultValue = "100") int size) {
-    return notifications.forRecipient(user.email(session), OptionalPage.of(page, size));
+    return notifications.forRecipient(
+        user.id(session), user.email(session), OptionalPage.of(page, size));
   }
 
   @PutMapping("/notifications/{id}/read")

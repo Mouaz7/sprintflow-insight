@@ -122,12 +122,9 @@ public class NotificationService {
     repository.save(notification);
   }
 
-  public List<Notification> forRecipient(String email) {
-    return forRecipient(email, Pageable.unpaged());
-  }
-
-  public List<Notification> forRecipient(String email, Pageable pageable) {
-    return repository.findVisibleTo(email.trim().toLowerCase(Locale.ROOT), pageable);
+  /** Notifications addressed to the account's current email, for projects it is a member of. */
+  public List<Notification> forRecipient(Long userId, String email, Pageable pageable) {
+    return repository.findVisibleTo(userId, email.trim().toLowerCase(Locale.ROOT), pageable);
   }
 
   public void markRead(Long id, String email) {
