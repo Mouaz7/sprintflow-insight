@@ -155,6 +155,12 @@
             </resource>
         </resources>
         <plugins>
+            <!-- CycloneDX SBOM (version and execution managed by the Boot parent): written to
+                 target/classes/META-INF/sbom/application.cdx.json and shipped inside the jar. -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

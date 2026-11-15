@@ -10,9 +10,11 @@
     "creation-visibility": "node verification/creation-visibility.ts",
     "business-rules": "node verification/business-rules.ts",
     "guidance": "node verification/guidance.ts",
-    "trusted-types": "node verification/trusted-types.ts"
+    "trusted-types": "node verification/trusted-types.ts",
+    "sbom": "cyclonedx-npm --omit dev --package-lock-only --output-reproducible --output-format JSON --output-file ../artifacts/sbom/frontend.cdx.json ../frontend/package.json"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "7.0.1",
     "@types/node": "24",
     "playwright": "1.55.1",
     "typescript": "5.7.2"
