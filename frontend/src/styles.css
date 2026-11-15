@@ -196,3 +196,31 @@ h1[tabindex='-1']:focus-visible {
 h1[tabindex='-1']:focus:not(:focus-visible) {
   outline: none;
 }
+/* Long boards and backlogs scroll inside a bounded region (TanStack Virtual). */
+.virtual-scroll {
+  max-height: min(75vh, 1400px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.virtual-scroll:focus-visible {
+  outline: 3px solid var(--accent, #bf4b2b);
+  outline-offset: 2px;
+}
+.virtual-scroll-content {
+  position: relative;
+  width: 100%;
+}
+.virtual-scroll-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: 12px;
+}
+.task-board .virtual-scroll-item article {
+  margin-bottom: 0;
+}
+.virtual-spacer td {
+  padding: 0;
+  border: 0;
+}
