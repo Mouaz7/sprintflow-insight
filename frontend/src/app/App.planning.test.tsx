@@ -1,3 +1,4 @@
+import { HttpResponse } from 'msw';
 import {
   fireEvent,
   render,
@@ -7,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { mockApi } from '../test/api';
 import { projects } from './appTestFixtures';
 describe('App.planning', () => {
   beforeEach(() => {
@@ -40,55 +42,40 @@ describe('App.planning', () => {
       version: 0,
     };
 
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockImplementation(
-          async (input: RequestInfo | URL, init: RequestInit = {}) => {
-            const url = String(input);
-            const method = init.method ?? 'GET';
-            requests.push({
-              url,
-              method,
-              body: init.body as string | undefined,
-            });
-            let payload: unknown = [];
-            if (url.endsWith('/auth/me'))
-              payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
-            else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
-            else if (url.includes('/stories/project/1'))
-              payload = story ? [story] : [];
-            else if (url.endsWith('/sprints?projectId=1'))
-              payload = sprint ? [sprint] : [];
-            else if (url.endsWith('/auth/csrf'))
-              payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
-            else if (url.endsWith('/stories/9') && method === 'PUT') {
-              story = { ...story, ...JSON.parse(String(init.body)) };
-              payload = story;
-            } else if (
-              url.endsWith('/workspace/trash/story/9') &&
-              method === 'PUT'
-            )
-              story = undefined;
-            else if (url.endsWith('/sprints/4') && method === 'PUT') {
-              sprint = { ...sprint, ...JSON.parse(String(init.body)) };
-              payload = sprint;
-            } else if (
-              url.endsWith('/workspace/trash/sprint/4') &&
-              method === 'PUT'
-            )
-              sprint = undefined;
-            return {
-              ok: true,
-              status: method === 'DELETE' ? 204 : 200,
-              json: async () => payload,
-            };
-          },
-        ),
-    );
+    mockApi(async (input, init) => {
+      const url = String(input);
+      const method = init.method ?? 'GET';
+      requests.push({
+        url,
+        method,
+        body: init.body,
+      });
+      let payload: unknown = [];
+      if (url.endsWith('/auth/me'))
+        payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
+      else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
+      else if (url.includes('/stories/project/1'))
+        payload = story ? [story] : [];
+      else if (url.endsWith('/sprints?projectId=1'))
+        payload = sprint ? [sprint] : [];
+      else if (url.endsWith('/auth/csrf'))
+        payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
+      else if (url.endsWith('/stories/9') && method === 'PUT') {
+        story = { ...story, ...JSON.parse(String(init.body)) };
+        payload = story;
+      } else if (url.endsWith('/workspace/trash/story/9') && method === 'PUT')
+        story = undefined;
+      else if (url.endsWith('/sprints/4') && method === 'PUT') {
+        sprint = { ...sprint, ...JSON.parse(String(init.body)) };
+        payload = sprint;
+      } else if (url.endsWith('/workspace/trash/sprint/4') && method === 'PUT')
+        sprint = undefined;
+      return method === 'DELETE'
+        ? new HttpResponse(null, { status: 204 })
+        : payload;
+    });
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Backlog' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Backlog' }));
     expect(
       await screen.findByRole('heading', { name: 'Write acceptance criteria' }),
     ).toBeInTheDocument();
@@ -153,7 +140,7 @@ describe('App.planning', () => {
       ).toBe(true),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sprints' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Sprints' }));
     expect(
       await screen.findByRole('heading', { name: 'Sprint 4' }),
     ).toBeInTheDocument();

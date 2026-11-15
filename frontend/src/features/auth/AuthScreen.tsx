@@ -1,8 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { useMatch, useNavigate, useSearchParams } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../../api/client';
-import type { Language, User } from '../../api/contracts';
+import type { User } from '../../api/contracts';
 import { fieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
+import { useLanguage } from '../../shared/i18n/LanguageProvider';
+import { useTheme } from '../../shared/theme/ThemeProvider';
 import { LanguageSelector } from '../../shared/ui/LanguageSelector';
 import { Notice } from '../../shared/ui/ui';
 import { GoogleSignIn } from './GoogleSignIn';
@@ -15,50 +18,29 @@ export function AuthScreen({
   onSignedIn: (user: User) => Promise<void>;
   initialError: string;
 }) {
+  const navigate = useNavigate();
+  const resetRoute = useMatch('/reset-password');
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>(() =>
-    new URLSearchParams(window.location.search).has('resetToken')
-      ? 'new-password'
-      : 'login',
+    resetRoute ? 'new-password' : 'login',
   );
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetToken] = useState(
-    () => new URLSearchParams(window.location.search).get('resetToken') ?? '',
-  );
+  const [resetToken] = useState(() => searchParams.get('token') ?? '');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(initialError);
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('sprintflow-theme') === 'dark',
-  );
-  const [language, setLanguage] = useState<Language>(() =>
-    localStorage.getItem('sprintflow-language') === 'SV' ? 'SV' : 'EN',
-  );
+  const { theme, setTheme } = useTheme();
+  const darkMode = theme === 'dark';
+  const setDarkMode = (dark: boolean) => setTheme(dark ? 'dark' : 'light');
+  const { language, setLanguage } = useLanguage();
   const sv = language === 'SV';
-  useEffect(() => {
-    localStorage.setItem('sprintflow-theme', darkMode ? 'dark' : 'light');
-    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', darkMode ? '#151D2A' : '#FAF8F5');
-  }, [darkMode]);
-  useEffect(() => {
-    localStorage.setItem('sprintflow-language', language);
-    document.documentElement.lang = sv ? 'sv' : 'en';
-  }, [language, sv]);
   function changeMode(next: AuthMode) {
     if (busy) return;
-    if (mode === 'new-password') {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('resetToken');
-      window.history.replaceState(
-        null,
-        '',
-        url.pathname + url.search + url.hash,
-      );
-    }
+    // The reset token leaves the address bar once the reset form is left.
+    if (resetRoute) void navigate('/', { replace: true });
     setMode(next);
     setNotice('');
     setError('');
@@ -252,7 +234,7 @@ export function AuthScreen({
                       ? 'Switch to light mode'
                       : 'Switch to dark mode'
                 }
-                onClick={() => setDarkMode((value) => !value)}
+                onClick={() => setDarkMode(!darkMode)}
               >
                 <InterfaceIcon name={darkMode ? 'sun' : 'moon'} />
               </button>
