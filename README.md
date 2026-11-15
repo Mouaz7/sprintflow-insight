@@ -98,6 +98,8 @@ All private settings belong in local `.env`, which is excluded from Git and Dock
 | `SPRINTFLOW_SMTP_USERNAME`, `SPRINTFLOW_SMTP_PASSWORD` | Optional Gmail sender address and 16-character app password |
 | `SPRINTFLOW_SMTP_HOST`, `SPRINTFLOW_SMTP_PORT` | SMTP server, default `smtp.gmail.com:587` with STARTTLS |
 | `SPRINTFLOW_CONTAINER_UID`, `SPRINTFLOW_CONTAINER_GID` | Linux upload directory ownership; default `1000:1000` |
+| `SPRINTFLOW_DB_POOL_SIZE` | Database connection pool size, default `10`; keep it well above the four concurrent event listeners |
+| `SPRINTFLOW_EVENTS_MAX_RETRY_AGE` | How long failed event deliveries are retried before they are logged and dropped, default `PT24H` |
 | `SPRINTFLOW_APP_PORT`, `SPRINTFLOW_DB_PORT` | Optional localhost host ports, default `8081` and `5432`; update `SPRINTFLOW_PUBLIC_URL` when changing the app port |
 
 Run `.\configure-account-services.ps1` to enter Gmail credentials without showing the password. For Google sign-in, authorize `http://localhost:8081` as a JavaScript origin and add your account as a test user while the Google app is in testing. This integration verifies Google ID tokens on the server and does not require storing a client secret. See [account services](docs/account-services.md).

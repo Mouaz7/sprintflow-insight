@@ -5,7 +5,7 @@ This file tracks how SprintFlow meets OWASP ASVS 5.0 level 2, chapter by chapter
 | ASVS chapter | Control in SprintFlow | Evidence |
 |---|---|---|
 | V2 Validation and Business Logic | Request records with Bean Validation; server-owned fields cannot be mass-assigned; business rules (one active sprint, story points) enforced by the service and database constraints | `RequestContractIntegrationTest`, `ProjectAccessIntegrationTest` |
-| V3 Web Frontend Security | CSP (`default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`), Permissions-Policy, CORP, Trusted Types in report-only mode | `SecurityConfigurationTest` |
+| V3 Web Frontend Security | CSP (`default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`), Permissions-Policy, CORP, enforced Trusted Types (`sprintflow-google`, `goog#html`, `'allow-duplicates'`) | `SecurityConfigurationTest`, `CspPolicyTest`, `scripts/verification/trusted-types.ts` |
 | V4 API and Web Service | RFC 9457 errors, If-Match on every mutation (428/412), rate limits with `Retry-After` | `ApiExceptionHandlerTest`, `RateLimitFilterTest` |
 | V6 Authentication | BCrypt (cost 12); recovery reset does not reveal whether an account exists or has a code; credential routes rate-limited per address | `AccountSecurityIntegrationTest`, `RateLimitHttpTest` |
 | V7 Session Management | Server-side sessions in PostgreSQL; id rotation at sign-in and password change; other sessions revoked on credential change | `AccountSecurityIntegrationTest` |

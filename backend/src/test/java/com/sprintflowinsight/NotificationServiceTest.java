@@ -68,4 +68,64 @@ class NotificationServiceTest {
     verify(users, times(1)).findByEmail("owner@example.com");
     verify(notices, times(201)).save(any());
   }
+
+  @Test
+  void deliversToTheRecipientsCurrentEmailAndSkipsDeletedUsersQuietly() {
+    var notices = mock(NotificationRepository.class);
+    var projects = mock(ProjectRepository.class);
+    var users = mock(UserRepository.class);
+    var preferences = mock(UserPreferencesRepository.class);
+    var service =
+        new NotificationService(
+            notices,
+            projects,
+            mock(ProjectMemberRepository.class),
+            mock(TaskRepository.class),
+            preferences,
+            users);
+    var project = mock(Project.class);
+    when(projects.findById(1L)).thenReturn(java.util.Optional.of(project));
+    var recipient = new com.sprintflowinsight.auth.User();
+    recipient.setId(7L);
+    recipient.setEmail("Renamed@Example.com");
+    when(users.findById(7L)).thenReturn(java.util.Optional.of(recipient));
+    when(users.findById(8L)).thenReturn(java.util.Optional.empty());
+    var event = java.util.UUID.randomUUID();
+
+    service.notifyRecipient(1L, 7L, 3L, "Hello", event);
+    service.notifyRecipient(1L, 8L, 3L, "Hello", java.util.UUID.randomUUID());
+    service.notifyRecipient(1L, 7L, 7L, "Own change", java.util.UUID.randomUUID());
+
+    var saved = ArgumentCaptor.forClass(com.sprintflowinsight.notifications.Notification.class);
+    verify(notices, times(1)).save(saved.capture());
+    assertThat(saved.getValue().getRecipientEmail()).isEqualTo("renamed@example.com");
+    assertThat(saved.getValue().getSourceEventId()).isEqualTo(event);
+  }
+
+  @Test
+  void projectOwnerIsResolvedAtDeliveryAndNotNotifiedOfTheirOwnAction() {
+    var notices = mock(NotificationRepository.class);
+    var projects = mock(ProjectRepository.class);
+    var users = mock(UserRepository.class);
+    var service =
+        new NotificationService(
+            notices,
+            projects,
+            mock(ProjectMemberRepository.class),
+            mock(TaskRepository.class),
+            mock(UserPreferencesRepository.class),
+            users);
+    var project = mock(Project.class);
+    when(project.getOwnerEmail()).thenReturn("owner@example.com");
+    when(projects.findById(1L)).thenReturn(java.util.Optional.of(project));
+    var owner = new com.sprintflowinsight.auth.User();
+    owner.setId(5L);
+    owner.setEmail("owner@example.com");
+    when(users.findByEmail("owner@example.com")).thenReturn(java.util.Optional.of(owner));
+
+    service.notifyProjectOwner(1L, 5L, "Own move", java.util.UUID.randomUUID());
+    verify(notices, never()).save(any());
+    service.notifyProjectOwner(1L, null, "Legacy event", java.util.UUID.randomUUID());
+    verify(notices, times(1)).save(any());
+  }
 }

@@ -111,7 +111,7 @@ public class TaskService {
           new com.sprintflowinsight.workspace.events.TaskMoved(
               java.util.UUID.randomUUID(),
               task.getProjectId(),
-              actorEmail,
+              notifications.userId(actorEmail),
               now,
               task.getId(),
               task.getTitle(),

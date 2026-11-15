@@ -9,7 +9,8 @@
     "responsive": "node verification/responsive.ts",
     "creation-visibility": "node verification/creation-visibility.ts",
     "business-rules": "node verification/business-rules.ts",
-    "guidance": "node verification/guidance.ts"
+    "guidance": "node verification/guidance.ts",
+    "trusted-types": "node verification/trusted-types.ts"
   },
   "devDependencies": {
     "@types/node": "24",
