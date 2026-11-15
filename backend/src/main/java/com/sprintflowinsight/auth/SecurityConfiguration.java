@@ -32,9 +32,14 @@ public class SecurityConfiguration {
   private static final org.slf4j.Logger SECURITY_LOG =
       org.slf4j.LoggerFactory.getLogger("security.events");
 
-  @org.springframework.beans.factory.annotation.Value(
-      "${app.password-reset.base-url:http://localhost:8081}")
-  private String publicUrl;
+  private final String publicUrl;
+
+  public SecurityConfiguration(
+      @org.springframework.beans.factory.annotation.Value(
+              "${app.password-reset.base-url:http://localhost:8081}")
+          String publicUrl) {
+    this.publicUrl = publicUrl;
+  }
 
   @Bean
   PasswordEncoder passwordEncoder() {

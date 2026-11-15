@@ -1,6 +1,5 @@
 package com.sprintflowinsight.workspace.project;
 
-
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.workspace.activity.ActivityService;

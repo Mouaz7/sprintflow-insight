@@ -1,6 +1,6 @@
 package com.sprintflowinsight.workspace.activity;
 
-import com.sprintflowinsight.notifications.NotificationService;
+import com.sprintflowinsight.workspace.NotificationRequests;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -11,9 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ActivityService {
   private final ActivityEventRepository repository;
-  private final NotificationService notifications;
+  private final NotificationRequests notifications;
 
-  public ActivityService(ActivityEventRepository repository, NotificationService notifications) {
+  public ActivityService(ActivityEventRepository repository, NotificationRequests notifications) {
     this.repository = repository;
     this.notifications = notifications;
   }
@@ -49,8 +49,7 @@ public class ActivityService {
     event.setEntityId(entityId);
     event.setCreatedAt(timestamp);
     repository.save(event);
-    if ("TASK_STATUS".equals(type)
-        || "TASK_BLOCKED".equals(type)
+    if ("TASK_BLOCKED".equals(type)
         || "TASK_UNBLOCKED".equals(type)
         || "SPRINT_STATUS".equals(type)) {
       notifications.notifyProjectOwner(projectId, actorEmail, summary);

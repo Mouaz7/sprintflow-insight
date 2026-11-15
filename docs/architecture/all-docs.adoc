@@ -1,0 +1,23 @@
+== SprintFlowApplication
+plantuml::components.puml[,,format=svg]
+
+== Common
+plantuml::module-common.puml[,,format=svg]
+include::module-common.adoc[]
+
+== Auth
+plantuml::module-auth.puml[,,format=svg]
+include::module-auth.adoc[]
+
+== Workspace
+plantuml::module-workspace.puml[,,format=svg]
+include::module-workspace.adoc[]
+
+== Notifications
+plantuml::module-notifications.puml[,,format=svg]
+include::module-notifications.adoc[]
+
+== Reporting
+plantuml::module-reporting.puml[,,format=svg]
+include::module-reporting.adoc[]
+

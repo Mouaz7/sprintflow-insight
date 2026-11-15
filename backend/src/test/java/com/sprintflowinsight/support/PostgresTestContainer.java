@@ -1,16 +1,16 @@
 package com.sprintflowinsight.support;
 
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * One PostgreSQL container for the whole test JVM, wired into every Spring test context through
- * {@link ServiceConnection}. Tests therefore run against the same engine, version and SQL dialect
- * as production. Contexts share the database, so tests create uniquely named data and never assume
- * an empty table.
+ * {@link JdbcConnectionDetails}. Tests therefore run against the same engine, version and SQL
+ * dialect as production. Contexts share the database, so tests create uniquely named data and never
+ * assume an empty table.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestContainer {
@@ -36,10 +36,33 @@ public class PostgresTestContainer {
     POSTGRES.start(); // stopped by the Testcontainers reaper when the JVM exits
   }
 
-  /** Never stopped by a closing context: other cached contexts still use it. */
-  @Bean(destroyMethod = "")
-  @ServiceConnection
-  PostgreSQLContainer<?> postgres() {
-    return POSTGRES;
+  /**
+   * Expose connection details instead of a container bean. Boot manages container beans even with
+   * destroyMethod="", which would stop this shared singleton when the first cached context closes.
+   * The JUnit shutdown listener closes all contexts first; Ryuk then removes the container at exit.
+   */
+  @Bean
+  JdbcConnectionDetails postgresConnectionDetails() {
+    return new JdbcConnectionDetails() {
+      @Override
+      public String getJdbcUrl() {
+        return POSTGRES.getJdbcUrl();
+      }
+
+      @Override
+      public String getUsername() {
+        return POSTGRES.getUsername();
+      }
+
+      @Override
+      public String getPassword() {
+        return POSTGRES.getPassword();
+      }
+
+      @Override
+      public String getDriverClassName() {
+        return POSTGRES.getDriverClassName();
+      }
+    };
   }
 }

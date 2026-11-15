@@ -1,6 +1,5 @@
 package com.sprintflowinsight.workspace.project;
 
-
 import java.time.Instant;
 
 /**

@@ -1,8 +1,5 @@
 package com.sprintflowinsight.workspace.project;
 
-
-import com.sprintflowinsight.notifications.NotificationRepository;
-import com.sprintflowinsight.reporting.SharedReportRepository;
 import com.sprintflowinsight.workspace.activity.ActivityEventRepository;
 import com.sprintflowinsight.workspace.attachment.TaskAttachment;
 import com.sprintflowinsight.workspace.attachment.TaskAttachmentRepository;
@@ -23,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProjectDeletionService {
   private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProjectDeletionService.class);
+  private final org.springframework.context.ApplicationEventPublisher events;
   private final ProjectAccessService access;
   private final ProjectRepository projects;
   private final ProjectMemberRepository members;
@@ -33,12 +31,11 @@ public class ProjectDeletionService {
   private final TaskAttachmentRepository attachments;
   private final TaskStatusHistoryRepository history;
   private final ActivityEventRepository activities;
-  private final NotificationRepository notifications;
   private final RetrospectiveRepository retrospectives;
-  private final SharedReportRepository reports;
   private final com.sprintflowinsight.workspace.attachment.FileDeletionService deletions;
 
   public ProjectDeletionService(
+      org.springframework.context.ApplicationEventPublisher events,
       ProjectAccessService access,
       ProjectRepository projects,
       ProjectMemberRepository members,
@@ -49,12 +46,10 @@ public class ProjectDeletionService {
       TaskAttachmentRepository attachments,
       TaskStatusHistoryRepository history,
       ActivityEventRepository activities,
-      NotificationRepository notifications,
       RetrospectiveRepository retrospectives,
-      SharedReportRepository reports,
       com.sprintflowinsight.workspace.attachment.FileDeletionService deletions) {
+    this.events = events;
     this.retrospectives = retrospectives;
-    this.reports = reports;
     this.deletions = deletions;
 
     this.access = access;
@@ -67,7 +62,6 @@ public class ProjectDeletionService {
     this.attachments = attachments;
     this.history = history;
     this.activities = activities;
-    this.notifications = notifications;
   }
 
   @Transactional
@@ -93,10 +87,10 @@ public class ProjectDeletionService {
     stories.deleteByProjectId(projectId);
     sprints.deleteByProjectId(projectId);
     activities.deleteByProjectId(projectId);
-    notifications.deleteByProjectId(projectId);
+    events.publishEvent(new com.sprintflowinsight.workspace.events.ProjectDeleting(projectId));
     members.deleteByProjectId(projectId);
     retrospectives.deleteByProjectId(projectId);
-    reports.deleteByProjectId(projectId);
+
     projects.deleteById(projectId);
     deletions.enqueue(storageKeys);
   }

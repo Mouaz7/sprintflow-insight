@@ -1,6 +1,5 @@
 package com.sprintflowinsight.workspace.project;
 
-
 import java.util.Locale;
 
 /** Project roles from most to least privileged. Stored and serialised by {@link #label()}. */

@@ -4,6 +4,9 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+  boolean existsBySourceEventIdAndRecipientEmail(
+      java.util.UUID sourceEventId, String recipientEmail);
+
   @org.springframework.data.jpa.repository.Query(
       """
       select notification from Notification notification

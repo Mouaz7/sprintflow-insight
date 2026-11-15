@@ -68,3 +68,17 @@ Open `backend/target/pit-reports/index.html` (XML is in the same directory). CI 
 Frontend verification currently exposes `npm run check` (Vitest, TypeScript and Vite); there is no `npm run e2e` script. Existing Playwright workflow checks live under `scripts/verification`, and CI's Docker job exercises account/workspace behaviour, uploads and persistence across a restart. A2 adds no views or endpoints. Its accessibility acceptance check aligns the profile button’s accessible name with its visible avatar initial and account name, including when the account name is hidden at narrow widths.
 
 For A2 acceptance, the packaged app was also started with a separate disposable PostgreSQL database and checked with `scripts/verification/business-rules.ts` (real browser/database role and workflow checks). A temporary axe-core 4.14.0 scan covers sign-in and the empty overview in light/dark themes; all three scans reported zero violations after the profile-button fix. The audit browser allows axe script injection past CSP and uses reduced motion to inspect settled colours; application CSP is unchanged. This targeted scan does not claim a full WCAG audit. Permanent Playwright/axe wiring and `npm run e2e` remain the explicit scope of A8 (#9).
+
+## Module structure and event delivery (A3)
+
+`ModuleArchitectureTest` runs Spring Modulith verification, rejects controller/repository coupling and field injection, and generates `docs/architecture/` (C4 PlantUML and module canvases). `ModuleEventsIntegrationTest` uses PostgreSQL, the actual JDBC publication registry, asynchronous application-module listeners and Scenario. It checks typed task movement, comment deduplication, publication/domain rollback, failed delivery, retry and duplicate replay. The simulated listener-outage log is expected in that test; its assertions require recovery and an empty publication entry afterwards.
+
+```sh
+cd backend
+./mvnw -Dtest=ModuleArchitectureTest,ModuleEventsIntegrationTest test
+./mvnw clean verify
+```
+
+Always use `clean` after moving Java packages; stale class files otherwise remain in `target/classes` and inflate JaCoCo's uncovered-class count. A3 preserves the 90% line/65% branch floors and the existing mutation scope, including the security-filter types moved from `common` into `auth/filter`. Frontend `npm run check` and the existing Playwright verification scripts remain the available UI checks; adding the permanent `npm run e2e` entry point remains A8's scope.
+
+`TestContextShutdown` closes cached Spring contexts when the JUnit test plan finishes, before the JVM starts Testcontainers cleanup. Modulith checks outstanding publications during context shutdown, so PostgreSQL must still be available then. The test listener is registered only under `src/test/resources`; production lifecycle is unchanged. Do not run a dependency scanner that invokes Maven concurrently with verification after editing sources, because recompilation during a JaCoCo run invalidates class fingerprints.

@@ -8,6 +8,17 @@ import java.time.Instant;
 
 @Entity
 public class Notification {
+  private java.util.UUID sourceEventId;
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  public java.util.UUID getSourceEventId() {
+    return sourceEventId;
+  }
+
+  public void setSourceEventId(java.util.UUID id) {
+    this.sourceEventId = id;
+  }
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

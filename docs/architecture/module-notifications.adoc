@@ -1,0 +1,37 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.notifications`
+|Spring components
+|_Controllers_
+
+* `c.s.n.NotificationController`
+
+_Services_
+
+* `c.s.n.NotificationService`
+
+_Repositories_
+
+* `c.s.n.NotificationRepository`
+
+_Event listeners_
+
+* `c.s.n.NotificationEventListener`
+|Bean references
+|* `c.s.a.SessionUser` (in Auth)
+* `c.s.w.project.ProjectRepository` (in Workspace)
+* `c.s.w.project.ProjectMemberRepository` (in Workspace)
+* `c.s.w.task.TaskRepository` (in Workspace)
+* `c.s.a.UserPreferencesRepository` (in Auth)
+* `c.s.a.UserRepository` (in Auth)
+|Aggregate roots
+|* `c.s.n.Notification`
+|Events listened to
+|* `c.s.w.events.CommentAdded` (async) 
+* `c.s.w.events.ProjectDeleting` 
+* `c.s.a.AccountDeleting` 
+* `c.s.a.UserEmailChanged` 
+* `c.s.w.events.TaskMoved` (async) 
+* `c.s.w.events.NotificationRequested` (async) 
+|===

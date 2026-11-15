@@ -1,13 +1,13 @@
 package com.sprintflowinsight.workspace.task;
 
-import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import com.sprintflowinsight.common.error.ApiException;
-import com.sprintflowinsight.notifications.NotificationService;
+import com.sprintflowinsight.workspace.NotificationRequests;
 import com.sprintflowinsight.workspace.activity.ActivityService;
 import com.sprintflowinsight.workspace.attachment.FileDeletionService;
 import com.sprintflowinsight.workspace.attachment.TaskAttachment;
 import com.sprintflowinsight.workspace.attachment.TaskAttachmentRepository;
 import com.sprintflowinsight.workspace.collaboration.TaskCommentRepository;
+import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TaskService {
-  private final NotificationService notifications;
+  private final org.springframework.context.ApplicationEventPublisher events;
+  private final NotificationRequests notifications;
   private final ProjectMutationService mutations;
   private final FileDeletionService deletions;
 
@@ -30,14 +31,16 @@ public class TaskService {
 
   @Autowired
   public TaskService(
+      org.springframework.context.ApplicationEventPublisher events,
       TaskRepository taskRepository,
       TaskStatusHistoryRepository historyRepository,
       ActivityService activityService,
       TaskCommentRepository commentsRepository,
       TaskAttachmentRepository attachmentsRepository,
-      NotificationService notifications,
+      NotificationRequests notifications,
       ProjectMutationService mutations,
       FileDeletionService deletions) {
+    this.events = events;
     this.notifications = notifications;
     this.mutations = mutations;
     this.deletions = deletions;
@@ -104,6 +107,16 @@ public class TaskService {
     task.setBlockReason(changes.getBlockReason());
     if (changes.getStatus() != null && !changes.getStatus().equals(previousStatus)) {
       task.setStatus(changes.getStatus());
+      events.publishEvent(
+          new com.sprintflowinsight.workspace.events.TaskMoved(
+              java.util.UUID.randomUUID(),
+              task.getProjectId(),
+              actorEmail,
+              now,
+              task.getId(),
+              task.getTitle(),
+              previousStatus,
+              changes.getStatus()));
       applyWorkflowTimestamps(task, changes.getStatus(), now);
 
       activityService.record(

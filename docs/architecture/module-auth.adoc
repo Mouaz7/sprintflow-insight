@@ -1,0 +1,36 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.auth`
+|Spring components
+|_Controllers_
+
+* `c.s.a.AuthController`
+* `c.s.a.PreferencesController`
+
+_Services_
+
+* `c.s.a.AccountService`
+* `c.s.a.GoogleLoginService`
+* `c.s.a.PasswordResetService`
+* `c.s.a.PreferencesService`
+* `c.s.a.SessionAuthenticationService`
+* `c.s.a.UserEmailService`
+* `c.s.a.UserSessions` -- Per-user session control on top of Spring Session. Sessions are indexed by the immutable account id (`user:<id>`), never by email, so revocation still works after an email change.
+
+_Repositories_
+
+* `c.s.a.PasswordResetTokenRepository`
+* `c.s.a.UserPreferencesRepository`
+* `c.s.a.UserRepository`
+
+_Others_
+
+* `c.s.a.GoogleTokenVerifier` -- Verifies Google ID tokens. One HTTP transport and one verifier per client id are reused, so Google's signing keys are cached between sign-ins instead of being fetched on every request. A separate bean so tests can replace it without network access.
+* `c.s.a.SecurityConfiguration`
+* `c.s.a.SessionUser`
+|Aggregate roots
+|* `c.s.a.PasswordResetToken`
+* `c.s.a.User`
+* `c.s.a.UserPreferences`
+|===

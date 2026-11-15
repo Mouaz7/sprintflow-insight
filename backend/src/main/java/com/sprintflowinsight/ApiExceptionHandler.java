@@ -113,7 +113,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<ProblemDetail> response =
         respond(
             ErrorCode.SERVICE_UNAVAILABLE,
-            com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter.DETAIL,
+            com.sprintflowinsight.common.error.DatabaseFailures.DETAIL,
             request);
     return ResponseEntity.status(response.getStatusCode())
         .headers(response.getHeaders())
@@ -167,8 +167,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleUnexpected(Exception exception, WebRequest request)
       throws Exception {
-    if (com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter.isDatabaseUnavailable(
-        exception)) return handleDatabaseUnavailable(exception, request);
+    if (com.sprintflowinsight.common.error.DatabaseFailures.isDatabaseUnavailable(exception))
+      return handleDatabaseUnavailable(exception, request);
     // Binding and proxies wrap deliberate client errors (e.g. a constructor rejecting a filter).
     for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {
       if (cause instanceof ResponseStatusException clientError)
