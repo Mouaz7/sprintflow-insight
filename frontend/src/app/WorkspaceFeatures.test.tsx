@@ -7,15 +7,15 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { TaskDiscussion, TaskMetadata } from './TaskCollaboration';
+import { TaskDiscussion, TaskMetadata } from '../features/tasks/TaskCollaboration';
 import { NotificationBell } from './NotificationBell';
-import { SavedFilters } from './SavedFilters';
-import { TrashView } from './TrashView';
-import { PreferencesPanel } from './PreferencesPanel';
-import { CalendarView } from './CalendarView';
-import { RetrospectiveView } from './RetrospectiveView';
-import { ShareReportCard, PublicReportView } from './SharedReports';
-import { Onboarding } from './Onboarding';
+import { SavedFilters } from '../features/tasks/SavedFilters';
+import { TrashView } from '../features/projects/TrashView';
+import { PreferencesPanel } from '../features/profile/PreferencesPanel';
+import { CalendarView } from '../features/planning/CalendarView';
+import { RetrospectiveView } from '../features/planning/RetrospectiveView';
+import { ShareReportCard, PublicReportView } from '../features/insights/SharedReports';
+import { Onboarding } from '../features/onboarding/Onboarding';
 import type { Task, Preferences } from '../api/contracts';
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 const task: Task = {

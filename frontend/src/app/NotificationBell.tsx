@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { Language, Notification } from '../api/contracts';
-import { Notice } from './ui';
-import { localizeMessage } from './messages';
+import { Notice } from '../shared/ui/ui';
+import { localizeMessage } from '../shared/i18n/messages';
 
 export function NotificationBell({
   language,

@@ -1,13 +1,13 @@
-import { localizeMessage } from './messages';
+import { localizeMessage } from '../shared/i18n/messages';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Story, Sprint, Activity } from '../api/contracts';
-import { PageHeader } from './ui';
-import { ShareReportCard } from './SharedReports';
-import { MetricsCards } from './MetricsView';
-import { BacklogManager } from './BacklogView';
-import { SprintManager } from './SprintView';
-import { ActivityTimeline } from './ActivityTimeline';
+import { PageHeader } from '../shared/ui/ui';
+import { ShareReportCard } from '../features/insights/SharedReports';
+import { MetricsCards } from '../features/insights/MetricsView';
+import { BacklogManager } from '../features/planning/BacklogView';
+import { SprintManager } from '../features/planning/SprintView';
+import { ActivityTimeline } from '../features/insights/ActivityTimeline';
 
 type InsightView = 'backlog' | 'sprints' | 'metrics' | 'updates';
 export function ProjectInsightView({

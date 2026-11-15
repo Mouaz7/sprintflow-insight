@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Session, User, WorkspaceView } from '../api/contracts';
-import { ConfirmProvider, EditorProjectContext, useModalFocus } from './ui';
-import { DraftProjectsContext } from './useDraftProject';
-import { InterfaceIcon } from './InterfaceIcons';
-import { ProfileView } from './ProfileView';
-import { TasksView } from './TasksView';
+import { ConfirmProvider, EditorProjectContext, useModalFocus } from '../shared/ui/ui';
+import { DraftProjectsContext } from '../shared/lib/useDraftProject';
+import { InterfaceIcon } from '../shared/ui/InterfaceIcons';
+import { ProfileView } from '../features/profile/ProfileView';
+import { TasksView } from '../features/tasks/TasksView';
 import { ProjectInsightView } from './ProjectInsights';
-import { ProjectsView } from './ProjectsView';
-import { OverviewView } from './OverviewView';
-import { LanguageSelector } from './LanguageSelector';
+import { ProjectsView } from '../features/projects/ProjectsView';
+import { OverviewView } from '../features/insights/OverviewView';
+import { LanguageSelector } from '../shared/ui/LanguageSelector';
 import { NotificationBell } from './NotificationBell';
 import { api } from '../api/client';
 import type { Preferences } from '../api/contracts';
-import { Notice } from './ui';
-import { CalendarView } from './CalendarView';
-import { RetrospectiveView } from './RetrospectiveView';
-import { TrashView } from './TrashView';
-import { Onboarding } from './Onboarding';
+import { Notice } from '../shared/ui/ui';
+import { CalendarView } from '../features/planning/CalendarView';
+import { RetrospectiveView } from '../features/planning/RetrospectiveView';
+import { TrashView } from '../features/projects/TrashView';
+import { Onboarding } from '../features/onboarding/Onboarding';
 
 type Props = {
   session: Session;

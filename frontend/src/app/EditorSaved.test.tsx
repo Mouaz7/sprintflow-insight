@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { useState } from 'react';
-import { ProjectsView } from './ProjectsView';
+import { ProjectsView } from '../features/projects/ProjectsView';
 import { api } from '../api/client';
 import { ProjectInsightView } from './ProjectInsights';
-import { TasksView } from './TasksView';
+import { TasksView } from '../features/tasks/TasksView';
 
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 beforeEach(() => { vi.mocked(api).mockReset(); });
