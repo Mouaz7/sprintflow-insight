@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { api } from '../../api/client';
-import type { Language, Sprint, Task } from '../../api/contracts';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import type { Language } from '../../api/contracts';
+import { sprintsQuery, tasksQuery } from '../../api/queries';
 import { Notice, PageHeader } from '../../shared/ui/ui';
 
 export function CalendarView({
@@ -15,38 +16,14 @@ export function CalendarView({
   const [month, setMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    let live = true;
-    setTasks([]);
-    setSprints([]);
-    setError('');
-    if (projectId) {
-      setLoading(true);
-      Promise.all([
-        api<Task[]>(`/tasks?projectId=${projectId}`),
-        api<Sprint[]>(`/sprints?projectId=${projectId}`),
-      ])
-        .then(([t, s]) => {
-          if (live) {
-            setTasks(t);
-            setSprints(s);
-          }
-        })
-        .catch((cause) => {
-          if (live) setError(cause.message);
-        })
-        .finally(() => {
-          if (live) setLoading(false);
-        });
-    }
-    return () => {
-      live = false;
-    };
-  }, [projectId]);
+  const enabled = !!projectId;
+  const taskList = useQuery({ ...tasksQuery(projectId ?? 0), enabled });
+  const sprintList = useQuery({ ...sprintsQuery(projectId ?? 0), enabled });
+  const error = taskList.error?.message ?? sprintList.error?.message ?? '';
+  const loading = enabled && (taskList.isPending || sprintList.isPending);
+  // Like the former combined request, one failed list hides both.
+  const tasks = error ? [] : (taskList.data ?? []);
+  const sprints = error ? [] : (sprintList.data ?? []);
   const count = new Date(
     month.getFullYear(),
     month.getMonth() + 1,

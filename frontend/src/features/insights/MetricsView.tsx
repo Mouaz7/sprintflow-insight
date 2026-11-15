@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { api } from '../../api/client';
-import type { Metrics, Sprint } from '../../api/contracts';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { sprintsQuery } from '../../api/queries';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { FlowAnalysis } from './FlowAnalysis';
 import { MetricsHistory } from './MetricsHistory';
 import { metricsPresentation } from './metricsPresentation';
+import { metricsQuery } from './queries';
 import { SprintAnalysis } from './SprintAnalysis';
 
 export function MetricsCards({
@@ -15,39 +16,12 @@ export function MetricsCards({
   language: 'EN' | 'SV';
 }) {
   const sv = language === 'SV';
-  const [metrics, setMetrics] = useState<Metrics>();
-  const [sprints, setSprints] = useState<Sprint[]>([]);
   const [sprintId, setSprintId] = useState('');
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let cancelled = false;
-    api<Sprint[]>(`/sprints?projectId=${projectId}`)
-      .then((result) => {
-        if (!cancelled) setSprints(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
-  useEffect(() => {
-    let cancelled = false;
-    setMetrics(undefined);
-    setError('');
-    const suffix = sprintId ? `?sprintId=${sprintId}` : '';
-    api<Metrics>(`/projects/${projectId}/metrics${suffix}`)
-      .then((result) => {
-        if (!cancelled) setMetrics(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, sprintId]);
+  const sprintList = useQuery(sprintsQuery(projectId));
+  const metricsResult = useQuery(metricsQuery(projectId, sprintId));
+  const sprints = sprintList.data ?? [];
+  const metrics = metricsResult.data;
+  const error = metricsResult.error?.message ?? sprintList.error?.message ?? '';
   if (!metrics)
     return (
       <>

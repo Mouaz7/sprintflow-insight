@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type {
   ChecklistStep,
@@ -8,6 +9,7 @@ import type {
 } from '../../api/contracts';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
+import { commentsQuery } from './queries';
 
 export function TaskMetadata({
   task,
@@ -246,29 +248,22 @@ export function TaskDiscussion({
   onClose: () => void;
 }) {
   const sv = language === 'SV';
-  const [comments, setComments] = useState<TaskComment[]>([]);
+  const queryClient = useQueryClient();
+  const commentList = useQuery(commentsQuery(task.id));
+  const comments = commentList.data ?? [];
+  const loading = commentList.isPending;
+  function setComments(update: (items: TaskComment[]) => TaskComment[]) {
+    queryClient.setQueryData(commentsQuery(task.id).queryKey, (items) =>
+      update(items ?? []),
+    );
+  }
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState<TaskComment>();
-  const [error, setError] = useState('');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionError, setError] = useState<string>();
+  const error = actionError ?? commentList.error?.message ?? '';
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    api<TaskComment[]>(`/tasks/${task.id}/comments`)
-      .then((items) => {
-        if (live) setComments(items);
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      })
-      .finally(() => {
-        if (live) setLoading(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [task.id]);
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy || !message.trim()) return;

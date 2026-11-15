@@ -84,9 +84,6 @@ export default tseslint.config(
       ],
       ...reactHooks.configs['recommended-latest'].rules,
       'react-hooks/exhaustive-deps': 'error',
-      // Views still reset loading/error state before fetching in effects. That
-      // behaviour is kept unchanged in A5 and moves to query hooks later.
-      'react-hooks/set-state-in-effect': 'off',
       ...jsxA11y.flatConfigs.recommended.rules,
       'jsx-a11y/label-has-associated-control': [
         'error',

@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api } from '../../api/client';
+import { roleQuery } from '../../api/queries';
 import type { Language } from '../../api/contracts';
 import { Notice, useConfirm } from '../../shared/ui/ui';
+import { publicReportQuery, reportsQuery, type SharedReport } from './queries';
 
 export function ShareReportCard({
   projectId,
@@ -11,37 +14,24 @@ export function ShareReportCard({
   language: Language;
 }) {
   const sv = language === 'SV';
-  const [items, setItems] = useState<
-    { id: number; createdAt: string; expiresAt: string }[]
-  >([]);
-  const [role, setRole] = useState('Viewer');
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const roleResult = useQuery(roleQuery(projectId));
+  const role = roleResult.data?.role ?? 'Viewer';
+  const manager = ['Owner', 'Admin'].includes(role);
+  const reports = useQuery({ ...reportsQuery(projectId), enabled: manager });
+  const items = reports.data ?? [];
+  const [actionError, setError] = useState('');
+  const error =
+    actionError || roleResult.error?.message || reports.error?.message || '';
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    setRole('Viewer');
-    setItems([]);
-    setLink('');
-    api<{ role: string }>(`/projects/${projectId}/role`)
-      .then(async (value) => {
-        if (live) setRole(value.role);
-        if (['Owner', 'Admin'].includes(value.role)) {
-          const list = await api<typeof items>(
-            `/projects/${projectId}/reports`,
-          );
-          if (live) setItems(list);
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [projectId]);
+  const setItems = (update: (current: SharedReport[]) => SharedReport[]) =>
+    queryClient.setQueryData<SharedReport[]>(
+      reportsQuery(projectId).queryKey,
+      (current = []) => update(current),
+    );
   if (!['Owner', 'Admin'].includes(role)) return null;
   async function create() {
     if (
@@ -158,24 +148,12 @@ export function ShareReportCard({
 }
 
 export function PublicReportView({ token }: { token: string }) {
-  const [data, setData] = useState<Record<string, unknown>>();
-  const [error, setError] = useState('');
+  const report = useQuery(publicReportQuery(token));
+  const data = report.data;
+  const error = report.error?.message ?? '';
   const [sv, setSv] = useState(
     localStorage.getItem('sprintflow-language') === 'SV',
   );
-  useEffect(() => {
-    let live = true;
-    api<Record<string, unknown>>(`/shared-reports/${encodeURIComponent(token)}`)
-      .then((value) => {
-        if (live) setData(value);
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [token]);
   return (
     <main className="public-report page" data-theme="light">
       <header className="page-heading">

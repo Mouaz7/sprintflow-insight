@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api } from '../../api/client';
 import type { Language, Project, TrashItem } from '../../api/contracts';
 import { Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
+import { trashQuery } from './queries';
 export function TrashView({
   language,
   projects,
@@ -14,29 +16,13 @@ export function TrashView({
   onChanged: () => Promise<void>;
 }) {
   const sv = language === 'SV';
-  const [items, setItems] = useState<TrashItem[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [writeError, setError] = useState('');
   const [busy, setBusy] = useState('');
-  const [revision, setRevision] = useState(0);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    setLoading(true);
-    api<TrashItem[]>('/workspace/trash')
-      .then((data) => {
-        if (live) setItems(Array.isArray(data) ? data : []);
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      })
-      .finally(() => {
-        if (live) setLoading(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [revision]);
+  const trash = useQuery(trashQuery);
+  const items = Array.isArray(trash.data) ? trash.data : [];
+  const loading = trash.isPending || trash.isFetching;
+  const error = writeError || trash.error?.message || '';
   async function change(item: TrashItem, purge = false) {
     if (busy) return;
     if (
@@ -62,7 +48,7 @@ export function TrashView({
         },
       );
       await onChanged();
-      setRevision((value) => value + 1);
+      await trash.refetch();
     } catch (cause) {
       setError((cause as Error).message);
     } finally {

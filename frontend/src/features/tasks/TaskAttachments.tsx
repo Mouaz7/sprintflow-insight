@@ -1,10 +1,10 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../../api/client';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { FormGuide } from '../../shared/ui/Guidance';
-
-type Attachment = { id: number; name: string; url: string; createdAt: string };
+import { attachmentsQuery } from './queries';
 export function TaskAttachments({
   taskId,
   language,
@@ -13,28 +13,19 @@ export function TaskAttachments({
   language: 'EN' | 'SV';
 }) {
   const sv = language === 'SV';
-  const [items, setItems] = useState<Attachment[]>([]);
+  const queryClient = useQueryClient();
+  const attachments = useQuery(attachmentsQuery(taskId));
+  const items = attachments.data ?? [];
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File>();
-  const [message, setMessage] = useState('');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionMessage, setMessage] = useState<string>();
+  const message = actionMessage ?? attachments.error?.message ?? '';
   async function refresh() {
-    setItems(await api<Attachment[]>(`/tasks/${taskId}/attachments`));
+    await queryClient.refetchQueries({
+      queryKey: attachmentsQuery(taskId).queryKey,
+    });
   }
-  useEffect(() => {
-    let cancelled = false;
-    setItems([]);
-    setMessage('');
-    api<Attachment[]>(`/tasks/${taskId}/attachments`)
-      .then((attachments) => {
-        if (!cancelled) setItems(attachments);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setMessage(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId]);
   async function addLink(event: FormEvent) {
     event.preventDefault();
     setMessage('');

@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from '../../test/render';
 import { api } from '../../api/client';
 import { ActivityTimeline } from './ActivityTimeline';
 import { OverviewView } from './OverviewView';
@@ -31,7 +32,9 @@ describe('Activity presentation', () => {
       canManage: false,
       onChanged: vi.fn(),
     };
-    const { rerender } = render(<ActivityTimeline {...props} language="SV" />);
+    const { rerender } = renderWithProviders(
+      <ActivityTimeline {...props} language="SV" />,
+    );
     expect(
       screen.getByRole('heading', {
         name: 'Skapade projektet “Mobilkontroll”.',
@@ -66,7 +69,9 @@ describe('Activity presentation', () => {
       onNavigate: vi.fn(),
       onNewTask: vi.fn(),
     };
-    const { rerender } = render(<OverviewView {...props} language="SV" />);
+    const { rerender } = renderWithProviders(
+      <OverviewView {...props} language="SV" />,
+    );
     expect(
       await screen.findByText('Skapade projektet “Mobilkontroll”.'),
     ).toBeInTheDocument();

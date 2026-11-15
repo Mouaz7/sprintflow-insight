@@ -1,8 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Language, RetrospectiveEntry, Sprint } from '../../api/contracts';
+import type { Language, RetrospectiveEntry } from '../../api/contracts';
+import { afterProjectWrite, roleQuery, sprintsQuery } from '../../api/queries';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
+import { retrospectiveQuery } from './queries';
 
 export function RetrospectiveView({
   projectId,
@@ -14,73 +17,45 @@ export function RetrospectiveView({
   userEmail: string;
 }) {
   const sv = language === 'SV';
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [sprintId, setSprintId] = useState('');
-  const [items, setItems] = useState<RetrospectiveEntry[]>([]);
-  const [role, setRole] = useState('Viewer');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const enabled = !!projectId;
+  const sprintList = useQuery({ ...sprintsQuery(projectId ?? 0), enabled });
+  const roleResult = useQuery({ ...roleQuery(projectId ?? 0), enabled });
+  const setupError =
+    sprintList.error?.message ?? roleResult.error?.message ?? '';
+  // Like the former combined request, one failed read hides both.
+  const ready = !setupError && !!sprintList.data && !!roleResult.data;
+  const sprints = ready ? (sprintList.data ?? []) : [];
+  const role = ready ? (roleResult.data?.role ?? 'Viewer') : 'Viewer';
+  const [chosenSprintId, setSprintId] = useState<string>();
+  const sprintId =
+    chosenSprintId ??
+    String(
+      sprints.find((item) => item.status === 'Completed')?.id ??
+        sprints[0]?.id ??
+        '',
+    );
+  const entries = useQuery({
+    ...retrospectiveQuery(projectId ?? 0, sprintId),
+    enabled: enabled && !!sprintId,
+  });
+  const items = entries.data ?? [];
+  const loading = entries.isFetching && !entries.data;
+  const [actionError, setError] = useState('');
+  const error = actionError || setupError || entries.error?.message || '';
   const [editor, setEditor] = useState<{ entry?: RetrospectiveEntry }>();
   const [message, setMessage] = useState('');
   const [category, setCategory] =
     useState<RetrospectiveEntry['category']>('well');
   const [busy, setBusy] = useState(false);
-  const [revision, setRevision] = useState(0);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    setSprints([]);
-    setItems([]);
-    setSprintId('');
-    setRole('Viewer');
-    setError('');
-    if (projectId)
-      Promise.all([
-        api<Sprint[]>(`/sprints?projectId=${projectId}`),
-        api<{ role: string }>(`/projects/${projectId}/role`),
-      ])
-        .then(([s, r]) => {
-          if (live) {
-            setSprints(s);
-            setSprintId(
-              String(
-                s.find((item) => item.status === 'Completed')?.id ??
-                  s[0]?.id ??
-                  '',
-              ),
-            );
-            setRole(r.role);
-          }
-        })
-        .catch((cause) => {
-          if (live) setError(cause.message);
-        });
-    return () => {
-      live = false;
-    };
-  }, [projectId]);
-  useEffect(() => {
-    let live = true;
-    setItems([]);
-    if (projectId && sprintId) {
-      setLoading(true);
-      api<RetrospectiveEntry[]>(
-        `/projects/${projectId}/retrospective?sprintId=${sprintId}`,
-      )
-        .then((data) => {
-          if (live) setItems(data);
-        })
-        .catch((cause) => {
-          if (live) setError(cause.message);
-        })
-        .finally(() => {
-          if (live) setLoading(false);
-        });
-    }
-    return () => {
-      live = false;
-    };
-  }, [projectId, sprintId, revision]);
+  const reload = () =>
+    projectId &&
+    afterProjectWrite(
+      queryClient,
+      projectId,
+      retrospectiveQuery(projectId, sprintId).queryKey,
+    );
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -100,7 +75,7 @@ export function RetrospectiveView({
         },
       );
       setEditor(undefined);
-      setRevision((value) => value + 1);
+      await reload();
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -114,7 +89,7 @@ export function RetrospectiveView({
       await api(`/projects/${projectId}/retrospective/${entry.id}`, {
         method: 'DELETE',
       });
-      setRevision((value) => value + 1);
+      await reload();
     } catch (cause) {
       setError((cause as Error).message);
     }

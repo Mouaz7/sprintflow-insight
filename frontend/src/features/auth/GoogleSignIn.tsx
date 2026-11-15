@@ -1,8 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { api, clearCsrfToken } from '../../api/client';
 import type { Language, User } from '../../api/contracts';
 import { Notice } from '../../shared/ui/ui';
 import { googleScriptUrl } from './googleScriptUrl';
+import { googleConfigQuery } from './queries';
 type GoogleIdentity = {
   accounts: {
     id: {
@@ -76,33 +78,46 @@ export function GoogleSignIn({
   });
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
-  const failure = useRef('Google sign-in is not configured yet.');
+  const config = useQuery(googleConfigQuery);
+  const clientId = config.data?.clientId ?? '';
+  // One attempt per configuration, language, theme and retry. Its outcome and
+  // errors only count for that attempt, so a new attempt starts clean.
+  const attempt = `${clientId}|${language}|${darkMode}|${revision}`;
+  const [outcome, setOutcome] = useState<{
+    attempt: string;
+    ready: boolean;
+    failure?: string;
+  }>();
+  const [shownError, setShownError] = useState<{
+    attempt: string;
+    text: string;
+  }>();
+  const error = shownError?.attempt === attempt ? shownError.text : '';
+  const setError = (text: string) => setShownError({ attempt, text });
+  const settled = outcome?.attempt === attempt;
+  const ready = settled && outcome.ready;
+  const loading = config.isPending || (!!clientId && !settled);
+  const notConfigured = 'Google sign-in is not configured yet.';
+  const failure = config.isError
+    ? config.error.message
+    : !clientId
+      ? notConfigured
+      : ((settled ? outcome.failure : undefined) ?? notConfigured);
   useEffect(() => {
-    let live = true;
-    setReady(false);
-    setLoading(true);
-    setError('');
+    if (!clientId) return;
+    const run = new AbortController();
     async function initialize() {
       try {
-        const config = await api<{ clientId: string }>('/auth/google/config');
-        if (!live) return;
-        if (!config.clientId) {
-          failure.current = 'Google sign-in is not configured yet.';
-          return;
-        }
         await loadGoogle();
-        if (!live || !root.current || !window.google) return;
+        if (run.signal.aborted || !root.current || !window.google) return;
         window.google.accounts.id.initialize({
-          client_id: config.clientId,
+          client_id: clientId,
           callback: async ({ credential }) => {
-            if (busyRef.current || !live) return;
+            if (busyRef.current || run.signal.aborted) return;
             busyRef.current = true;
             setBusy(true);
-            setError('');
+            setShownError(undefined);
             try {
               const user = await api<User>('/auth/google', {
                 method: 'POST',
@@ -111,10 +126,11 @@ export function GoogleSignIn({
               clearCsrfToken();
               await latestSignedIn.current(user);
             } catch (cause) {
-              if (live) setError((cause as Error).message);
+              if (!run.signal.aborted)
+                setShownError({ attempt, text: (cause as Error).message });
             } finally {
               busyRef.current = false;
-              if (live) setBusy(false);
+              setBusy(false);
             }
           },
         });
@@ -132,18 +148,19 @@ export function GoogleSignIn({
           ),
           locale: sv ? 'sv' : 'en',
         });
-        setReady(true);
+        setOutcome({ attempt, ready: true });
       } catch (cause) {
-        failure.current = (cause as Error).message;
-      } finally {
-        if (live) setLoading(false);
+        if (!run.signal.aborted)
+          setOutcome({
+            attempt,
+            ready: false,
+            failure: (cause as Error).message,
+          });
       }
     }
     void initialize();
-    return () => {
-      live = false;
-    };
-  }, [language, darkMode, revision, sv]);
+    return () => run.abort();
+  }, [attempt, clientId, darkMode, sv]);
   return (
     <div className="google-sign-in">
       <div
@@ -158,11 +175,10 @@ export function GoogleSignIn({
           type="button"
           disabled={loading || busy}
           onClick={() => {
-            if (failure.current === 'Google sign-in is not configured yet.')
-              setError(failure.current);
-            else {
-              setError(failure.current);
+            setError(failure);
+            if (failure !== notConfigured) {
               setRevision((value) => value + 1);
+              if (config.isError) void config.refetch();
             }
           }}
         >

@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
+import { renderWithProviders } from '../../test/render';
 import { api } from '../../api/client';
 import { BacklogManager } from './BacklogView';
 
@@ -15,7 +16,7 @@ it('shows the selected sprint backlog separately from unplanned stories', async 
     storyPoints: 3,
     priorityId: 2,
   };
-  render(
+  renderWithProviders(
     <BacklogManager
       projectId={1}
       language="EN"
@@ -78,7 +79,7 @@ it('sends the complete versioned manual order and keeps an error visible when or
       );
     return [];
   });
-  render(
+  renderWithProviders(
     <BacklogManager
       projectId={1}
       language="EN"

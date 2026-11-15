@@ -1,6 +1,15 @@
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import type { ProjectMember, Sprint, Story, Task } from '../../api/contracts';
+import type { Task } from '../../api/contracts';
+import {
+  afterProjectWrite,
+  membersQuery,
+  roleQuery,
+  sprintsQuery,
+  storiesQuery,
+  tasksQuery,
+} from '../../api/queries';
 import { localizeMessage } from '../../shared/i18n/messages';
 import {
   DATE_ERROR,
@@ -32,18 +41,44 @@ export function useTaskBoard({
   const draft = useDraftProject(projectId, language);
   const [panelOpen, setPanelOpen] = useState(false);
   const [savedTitle, setSavedTitle] = useState('');
-  const [loading, setLoading] = useState(true);
+  // A "new task" request from another view opens the editor once per request.
+  const [handledRequest, setHandledRequest] = useState(0);
+  if (openRequest !== handledRequest) {
+    setHandledRequest(openRequest);
+    if (openRequest) setPanelOpen(true);
+  }
   useEffect(() => {
-    if (openRequest) {
-      setPanelOpen(true);
-      onRequestHandled?.();
-    }
+    if (openRequest) onRequestHandled?.();
   }, [openRequest, onRequestHandled]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [projectRole, setProjectRole] = useState('');
+  const queryClient = useQueryClient();
+  const board = useQueries({
+    queries: [
+      { ...tasksQuery(projectId ?? 0), enabled: !!projectId },
+      { ...storiesQuery(projectId ?? 0), enabled: !!projectId },
+      { ...sprintsQuery(projectId ?? 0), enabled: !!projectId },
+      { ...membersQuery(projectId ?? 0), enabled: !!projectId },
+      { ...roleQuery(projectId ?? 0), enabled: !!projectId },
+    ],
+  });
+  const [taskResult, storyResult, sprintResult, memberResult, roleResult] =
+    board;
+  // As before, one failed request leaves the whole board empty with its message.
+  const loadError = board.find((result) => result.isError)?.error;
+  const loaded = !!projectId && !loadError;
+  const loading = !!projectId && board.some((result) => result.isPending);
+  const tasks = (loaded && taskResult.data) || [];
+  const stories = (loaded && storyResult.data) || [];
+  const sprints = (loaded && sprintResult.data) || [];
+  const members = (loaded && memberResult.data) || [];
+  const projectRole = (loaded && roleResult.data?.role) || '';
+  function setTasks(update: (items: Task[]) => Task[]) {
+    if (!projectId) return;
+    queryClient.setQueryData(tasksQuery(projectId).queryKey, (items) =>
+      update(items ?? []),
+    );
+    // Other views of the project reload when they open.
+    void afterProjectWrite(queryClient, projectId);
+  }
   const [blocking, setBlocking] = useState<Task>();
   const [discussion, setDiscussion] = useState<Task>();
   const role =
@@ -54,48 +89,31 @@ export function useTaskBoard({
   const canWrite = !readOnly && role !== 'Viewer';
   const [editing, setEditing] = useState<Task>();
   const foreignDraft = panelOpen && !editing && draft.id !== projectId;
-  const [draftLinks, setDraftLinks] = useState<{
-    id: number | undefined;
-    stories: Story[];
-    sprints: Sprint[];
-    members: ProjectMember[];
-  }>();
-  const [draftLinksError, setDraftLinksError] = useState('');
-  useEffect(() => {
-    if (!foreignDraft || !draft.id) return;
-    let live = true;
-    setDraftLinks(undefined);
-    setDraftLinksError('');
-    Promise.all([
-      api<Story[]>(`/stories/project/${draft.id}`),
-      api<Sprint[]>(`/sprints?projectId=${draft.id}`),
-      api<ProjectMember[]>(`/projects/${draft.id}/members`),
-    ])
-      .then(([stories, sprints, members]) => {
-        if (live) setDraftLinks({ id: draft.id, stories, sprints, members });
-      })
-      .catch((cause: Error) => {
-        if (live) setDraftLinksError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [foreignDraft, draft.id]);
-  const draftLinksLoading = foreignDraft && draftLinks?.id !== draft.id;
+  // Choices for a new task saved into another project than the board's.
+  const draftEnabled = foreignDraft && !!draft.id;
+  const draftLinks = useQueries({
+    queries: [
+      { ...storiesQuery(draft.id ?? 0), enabled: draftEnabled },
+      { ...sprintsQuery(draft.id ?? 0), enabled: draftEnabled },
+      { ...membersQuery(draft.id ?? 0), enabled: draftEnabled },
+    ],
+  });
+  const [draftStories, draftSprints, draftMembers] = draftLinks;
+  const draftLinksError =
+    (draftEnabled &&
+      draftLinks.find((result) => result.isError)?.error?.message) ||
+    '';
+  const draftLinksReady =
+    draftEnabled && draftLinks.every((result) => result.isSuccess);
+  const draftLinksLoading = foreignDraft && !draftLinksReady;
   const editorStories = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.stories
-      : []
+    ? (draftLinksReady && draftStories.data) || []
     : stories;
   const editorSprints = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.sprints
-      : []
+    ? (draftLinksReady && draftSprints.data) || []
     : sprints;
   const editorMembers = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.members
-      : []
+    ? (draftLinksReady && draftMembers.data) || []
     : members;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -112,7 +130,9 @@ export function useTaskBoard({
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [labelFilter, setLabelFilter] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<number>();
-  const [message, setMessage] = useState('');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionMessage, setMessage] = useState<string>();
+  const message = actionMessage ?? loadError?.message ?? '';
   const [saving, setSaving] = useState(false);
   const pendingTasks = useRef(new Set<number>());
   const [busyTasks, setBusyTasks] = useState(new Set<number>());
@@ -127,47 +147,6 @@ export function useTaskBoard({
     setBusyTasks(new Set(pendingTasks.current));
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setTasks([]);
-    setStories([]);
-    setSprints([]);
-    setMembers([]);
-    setProjectRole('');
-    setMessage('');
-    if (!projectId) {
-      setLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-    Promise.all([
-      api<Task[]>(`/tasks?projectId=${projectId}`),
-      api<Story[]>(`/stories/project/${projectId}`),
-      api<Sprint[]>(`/sprints?projectId=${projectId}`),
-      api<ProjectMember[]>(`/projects/${projectId}/members`),
-      api<{ role: string }>(`/projects/${projectId}/role`),
-    ])
-      .then(([taskItems, storyItems, sprintItems, memberItems, roleValue]) => {
-        if (!cancelled) {
-          setTasks(taskItems);
-          setStories(storyItems);
-          setSprints(sprintItems);
-          setMembers(memberItems);
-          setProjectRole(roleValue?.role ?? '');
-        }
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setMessage(cause.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
   function clearForm() {
     draft.reset();
     setSavedTitle('');
@@ -246,6 +225,8 @@ export function useTaskBoard({
           body: JSON.stringify(body),
         },
       );
+      if (saved.projectId !== projectId)
+        void afterProjectWrite(queryClient, saved.projectId);
       if (!draft.reveal(saved.projectId))
         setTasks((current) =>
           editing
@@ -414,17 +395,12 @@ export function useTaskBoard({
     savedTitle,
     setSavedTitle,
     loading,
-    setLoading,
     tasks,
     setTasks,
     stories,
-    setStories,
     sprints,
-    setSprints,
     members,
-    setMembers,
     projectRole,
-    setProjectRole,
     blocking,
     setBlocking,
     discussion,
@@ -435,9 +411,7 @@ export function useTaskBoard({
     setEditing,
     foreignDraft,
     draftLinks,
-    setDraftLinks,
     draftLinksError,
-    setDraftLinksError,
     draftLinksLoading,
     editorStories,
     editorSprints,

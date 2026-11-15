@@ -1,10 +1,6 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+// Feature components need the query client and language providers.
+import { renderWithProviders as render } from '../test/render';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
 import type { Preferences, Task } from '../api/contracts';

@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
+import { renderWithProviders } from '../../test/render';
 import { MemberManager } from './MemberManager';
 
 vi.mock('../../api/client', () => ({ api: vi.fn() }));
@@ -13,7 +14,7 @@ beforeEach(() => {
   ]);
 });
 it('allows an admin to manage membership while reserving ownership transfer for the owner', async () => {
-  render(
+  renderWithProviders(
     <MemberManager
       project={project}
       userEmail="admin@example.com"
@@ -30,7 +31,7 @@ it('allows an admin to manage membership while reserving ownership transfer for 
   ).not.toBeInTheDocument();
 });
 it('shows ownership transfer to the owner', async () => {
-  render(
+  renderWithProviders(
     <MemberManager
       project={project}
       userEmail="owner@example.com"

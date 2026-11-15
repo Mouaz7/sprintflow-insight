@@ -1,6 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Language, Preferences } from '../../api/contracts';
+import { preferencesQuery } from '../../api/queries';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 export type TaskFilters = {
@@ -18,6 +20,19 @@ type SavedFilter = {
   projectId: number;
   criteria: TaskFilters;
 };
+function parseFilters(preferences: Preferences | undefined): {
+  items: SavedFilter[];
+  failed: boolean;
+} {
+  if (!preferences) return { items: [], failed: false };
+  try {
+    const data: unknown = JSON.parse(preferences.savedFilters ?? '[]');
+    return { items: Array.isArray(data) ? data : [], failed: false };
+  } catch {
+    return { items: [], failed: true };
+  }
+}
+
 export function SavedFilters({
   projectId,
   language,
@@ -32,37 +47,27 @@ export function SavedFilters({
   onApply: (value: TaskFilters) => void;
 }) {
   const sv = language === 'SV';
-  const [items, setItems] = useState<SavedFilter[]>([]);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const preferences = useQuery(preferencesQuery);
+  const stored = parseFilters(preferences.data);
+  // Filters saved in this view replace the loaded list until the next load.
+  const [savedItems, setItems] = useState<SavedFilter[]>();
+  const items = savedItems ?? stored.items;
+  const loadError =
+    preferences.error?.message ??
+    (stored.failed
+      ? sv
+        ? 'Sparade filter kunde inte läsas.'
+        : 'Saved filters could not load.'
+      : '');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionError, setError] = useState<string>();
+  const error = actionError ?? loadError;
   const [selected, setSelected] = useState('');
   const [editor, setEditor] = useState<{ item?: SavedFilter }>();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    api<Preferences>('/auth/preferences')
-      .then((value) => {
-        if (live) {
-          try {
-            const data = JSON.parse(value.savedFilters ?? '[]');
-            setItems(Array.isArray(data) ? data : []);
-          } catch {
-            setError(
-              sv
-                ? 'Sparade filter kunde inte läsas.'
-                : 'Saved filters could not load.',
-            );
-          }
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [projectId, sv]);
   async function persist(values: SavedFilter[]) {
     setBusy(true);
     setError('');
@@ -72,6 +77,10 @@ export function SavedFilters({
         body: JSON.stringify({ savedFilters: JSON.stringify(values) }),
       });
       setItems(values);
+      await queryClient.invalidateQueries({
+        queryKey: preferencesQuery.queryKey,
+        refetchType: 'none',
+      });
       return true;
     } catch (cause) {
       setError((cause as Error).message);

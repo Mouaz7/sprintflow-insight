@@ -1,7 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Language, Preferences } from '../../api/contracts';
+import { preferencesQuery } from '../../api/queries';
 import { Notice } from '../../shared/ui/ui';
+import { integrationsQuery } from './queries';
 export function PreferencesPanel({
   language,
   onAppearance,
@@ -13,44 +16,31 @@ export function PreferencesPanel({
   onReplay?: (() => void) | undefined;
 }) {
   const sv = language === 'SV';
-  const [settings, setSettings] = useState<Preferences>({
+  const queryClient = useQueryClient();
+  const preferences = useQuery(preferencesQuery);
+  const integrations = useQuery(integrationsQuery).data;
+  const [fallback] = useState<Preferences>(() => ({
     language,
     theme:
       localStorage.getItem('sprintflow-theme') === 'dark' ? 'dark' : 'light',
     notifications: true,
     onboardingCompleted: false,
     savedFilters: '[]',
-  });
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState('');
+  }));
+  // Unsaved edits; until the first edit the form shows the saved settings.
+  const [draft, setDraft] = useState<Preferences>();
+  const saved =
+    preferences.data && ['EN', 'SV'].includes(preferences.data.language)
+      ? preferences.data
+      : fallback;
+  const settings = draft ?? saved;
+  const setSettings = (update: (value: Preferences) => Preferences) =>
+    setDraft(update(settings));
+  const ready = preferences.isSuccess;
+  const [writeError, setError] = useState('');
+  const error = writeError || preferences.error?.message || '';
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
-  const [integrations, setIntegrations] = useState<{
-    gmailReady: boolean;
-    googleReady: boolean;
-  }>();
-  useEffect(() => {
-    let live = true;
-    api<Preferences>('/auth/preferences')
-      .then((value) => {
-        if (live) {
-          if (value && ['EN', 'SV'].includes(value.language))
-            setSettings(value);
-          setReady(true);
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    api<{ gmailReady: boolean; googleReady: boolean }>('/auth/integrations')
-      .then((value) => {
-        if (live) setIntegrations(value);
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -66,7 +56,9 @@ export function PreferencesPanel({
           notifications: settings.notifications,
         }),
       });
-      setSettings(value);
+      // The workspace shell applies saved appearance from this cache entry.
+      queryClient.setQueryData(preferencesQuery.queryKey, value);
+      setDraft(undefined);
       localStorage.setItem('sprintflow-language', value.language);
       localStorage.setItem('sprintflow-theme', value.theme);
       onAppearance?.(value.language, value.theme);

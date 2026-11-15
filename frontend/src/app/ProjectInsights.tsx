@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { Activity, Sprint, Story } from '../api/contracts';
+import { afterProjectWrite, queryKeys, roleQuery } from '../api/queries';
 import { ActivityTimeline } from '../features/insights/ActivityTimeline';
 import { MetricsCards } from '../features/insights/MetricsView';
+import { activityQuery } from '../features/insights/queries';
 import { ShareReportCard } from '../features/insights/SharedReports';
 import { BacklogManager } from '../features/planning/BacklogView';
 import { SprintManager } from '../features/planning/SprintView';
@@ -10,6 +12,29 @@ import { localizeMessage } from '../shared/i18n/messages';
 import { PageHeader } from '../shared/ui/ui';
 
 type InsightView = 'backlog' | 'sprints' | 'metrics' | 'updates';
+
+type InsightList = Story[] | Sprint[] | Activity[];
+
+/** The list shown by an insight view (same keys as other views); metrics loads its own data. */
+function insightQuery(view: InsightView, projectId: number) {
+  const path =
+    view === 'backlog'
+      ? `/stories/project/${projectId}`
+      : view === 'sprints'
+        ? `/sprints?projectId=${projectId}`
+        : `/projects/${projectId}/activity`;
+  if (view === 'metrics') return undefined;
+  return {
+    queryKey:
+      view === 'backlog'
+        ? queryKeys.stories(projectId)
+        : view === 'sprints'
+          ? queryKeys.sprints(projectId)
+          : activityQuery(projectId).queryKey,
+    queryFn: () => api<InsightList>(path),
+  };
+}
+
 export function ProjectInsightView({
   view,
   projectId,
@@ -22,55 +47,21 @@ export function ProjectInsightView({
   language: 'EN' | 'SV';
 }) {
   const sv = language === 'SV';
-  const [data, setData] = useState<Story[] | Sprint[] | Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [refresh, setRefresh] = useState(0);
-  const [canManage, setCanManage] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    setData([]);
-    setError('');
-    setLoading(true);
-    if (!projectId || view === 'metrics') {
-      setLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-    const path =
-      view === 'backlog'
-        ? `/stories/project/${projectId}`
-        : view === 'sprints'
-          ? `/sprints?projectId=${projectId}`
-          : `/projects/${projectId}/activity`;
-    api<Story[] | Sprint[] | Activity[]>(path)
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((cause) => {
-        if (!cancelled) setError(cause.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, view, refresh]);
-  useEffect(() => {
-    let cancelled = false;
-    setCanManage(false);
-    if (projectId && view === 'updates')
-      api<{ role: string }>(`/projects/${projectId}/role`)
-        .then(({ role }) => {
-          if (!cancelled) setCanManage(role === 'Owner' || role === 'Admin');
-        })
-        .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, view]);
+  const queryClient = useQueryClient();
+  const listQuery = projectId ? insightQuery(view, projectId) : undefined;
+  const list = useQuery<InsightList>({
+    queryKey: listQuery?.queryKey ?? ['project', 0, view],
+    queryFn: listQuery?.queryFn ?? (() => Promise.resolve([])),
+    enabled: !!listQuery,
+  });
+  const role = useQuery({
+    ...roleQuery(projectId ?? 0),
+    enabled: !!projectId && view === 'updates',
+  });
+  const canManage = role.data?.role === 'Owner' || role.data?.role === 'Admin';
+  const data = list.data ?? [];
+  const loading = !!listQuery && list.isPending;
+  const error = list.error?.message ?? '';
   const title = (
     sv
       ? {
@@ -101,7 +92,19 @@ export function ProjectInsightView({
           updates: 'Your project’s story, one step at a time.',
         }
   )[view];
-  const onChanged = () => setRefresh((n) => n + 1);
+  const onChanged = () => {
+    if (!projectId || !listQuery) return;
+    void afterProjectWrite(queryClient, projectId, listQuery.queryKey);
+  };
+  function merge<T extends { id: number }>(saved: T) {
+    if (!projectId || !listQuery) return;
+    queryClient.setQueryData<T[]>(listQuery.queryKey, (current = []) =>
+      current.some((item) => item.id === saved.id)
+        ? current.map((item) => (item.id === saved.id ? saved : item))
+        : [...current, saved],
+    );
+    void afterProjectWrite(queryClient, projectId);
+  }
   return (
     <section className={'page ' + view + '-page'}>
       <PageHeader
@@ -148,16 +151,7 @@ export function ProjectInsightView({
               projectId={projectId}
               items={data as Story[]}
               language={language}
-              onChanged={(saved) => {
-                if (!saved) return onChanged();
-                setError('');
-                setData((current) => {
-                  const items = current as Story[];
-                  return items.some((item) => item.id === saved.id)
-                    ? items.map((item) => (item.id === saved.id ? saved : item))
-                    : [...items, saved];
-                });
-              }}
+              onChanged={(saved) => (saved ? merge(saved) : onChanged())}
             />
           ) : view === 'sprints' ? (
             <SprintManager
@@ -165,16 +159,7 @@ export function ProjectInsightView({
               projectId={projectId}
               items={data as Sprint[]}
               language={language}
-              onChanged={(saved) => {
-                if (!saved) return onChanged();
-                setError('');
-                setData((current) => {
-                  const items = current as Sprint[];
-                  return items.some((item) => item.id === saved.id)
-                    ? items.map((item) => (item.id === saved.id ? saved : item))
-                    : [...items, saved];
-                });
-              }}
+              onChanged={(saved) => (saved ? merge(saved) : onChanged())}
             />
           ) : (
             <ActivityTimeline

@@ -44,12 +44,22 @@ export function useProfile({
     bio !== (user.bio || '') ||
     avatarImage !== (user.avatarImage || '');
 
-  useEffect(() => {
+  // When the saved account changes, the form follows it (adjusted while
+  // rendering instead of in an effect).
+  const savedUser = [
+    user.displayName,
+    user.jobTitle,
+    user.bio,
+    user.avatarImage,
+  ].join('\u0000');
+  const [syncedUser, setSyncedUser] = useState(savedUser);
+  if (syncedUser !== savedUser) {
+    setSyncedUser(savedUser);
     setDisplayName(user.displayName || '');
     setJobTitle(user.jobTitle || '');
     setBio(user.bio || '');
     setAvatarImage(user.avatarImage || '');
-  }, [user.displayName, user.jobTitle, user.bio, user.avatarImage]);
+  }
 
   useEffect(
     () => () => {

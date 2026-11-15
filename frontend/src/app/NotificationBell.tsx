@@ -1,8 +1,11 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { Language, Notification } from '../api/contracts';
 import { localizeMessage } from '../shared/i18n/messages';
 import { Notice } from '../shared/ui/ui';
+
+const notificationsKey = ['notifications'];
 
 export function NotificationBell({
   language,
@@ -12,38 +15,38 @@ export function NotificationBell({
   onProject: (id: number) => void;
 }) {
   const sv = language === 'SV';
-  const [items, setItems] = useState<Notification[]>([]);
+  const client = useQueryClient();
+  const notifications = useQuery({
+    queryKey: notificationsKey,
+    queryFn: () => api<Notification[]>('/notifications'),
+    select: (data) => (Array.isArray(data) ? data : []),
+    // Polls only while the page is visible, as before.
+    refetchInterval: 60000,
+  });
+  const items = notifications.data ?? [];
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState('');
+  const [markError, setMarkError] = useState<{ message: string; at: number }>();
   const [busy, setBusy] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
+  // A later successful load clears an earlier marking error.
+  const error =
+    markError && markError.at > notifications.dataUpdatedAt
+      ? markError.message
+      : notifications.isError
+        ? notifications.error.message
+        : '';
   useEffect(() => {
-    let live = true;
-    async function load() {
-      try {
-        const data = await api<Notification[]>('/notifications');
-        if (live) {
-          setItems(Array.isArray(data) ? data : []);
-          setError('');
-        }
-      } catch (cause) {
-        if (live) setError((cause as Error).message);
-      }
-    }
-    void load();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') void load();
-    }, 60000);
-    window.addEventListener('sprintflow:notifications', load);
-    window.addEventListener('focus', load);
-    return () => {
-      live = false;
-      clearInterval(interval);
-      window.removeEventListener('sprintflow:notifications', load);
-      window.removeEventListener('focus', load);
+    const reload = () => {
+      void client.refetchQueries({ queryKey: notificationsKey });
     };
-  }, []);
+    window.addEventListener('sprintflow:notifications', reload);
+    window.addEventListener('focus', reload);
+    return () => {
+      window.removeEventListener('sprintflow:notifications', reload);
+      window.removeEventListener('focus', reload);
+    };
+  }, [client]);
   useEffect(() => {
     if (!open) return;
     function outside(event: MouseEvent) {
@@ -70,13 +73,13 @@ export function NotificationBell({
         item ? `/notifications/${item.id}/read` : '/notifications/read',
         { method: 'PUT' },
       );
-      setItems((current) =>
-        current.map((value) =>
+      client.setQueryData<Notification[]>(notificationsKey, (current) =>
+        current?.map((value) =>
           !item || item.id === value.id ? { ...value, read: true } : value,
         ),
       );
     } catch (cause) {
-      setError((cause as Error).message);
+      setMarkError({ message: (cause as Error).message, at: Date.now() });
     } finally {
       setBusy(false);
     }

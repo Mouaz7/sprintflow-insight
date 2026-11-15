@@ -1,4 +1,8 @@
-import { QueryClient, queryOptions } from '@tanstack/react-query';
+import {
+  QueryClient,
+  queryOptions,
+  type QueryKey,
+} from '@tanstack/react-query';
 import { api, ApiError } from './client';
 import type {
   Preferences,
@@ -12,7 +16,9 @@ import type {
 
 /**
  * Behaviour matches the former effect-based loading: no automatic retries or
- * focus refetches; views refresh explicitly after their own writes.
+ * focus refetches, and a view refetches when it mounts. The short stale time
+ * only merges the duplicate requests of components mounting together; every
+ * write calls `afterProjectWrite` (or invalidates its own keys).
  */
 export function createQueryClient() {
   return new QueryClient({
@@ -21,7 +27,7 @@ export function createQueryClient() {
         retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        staleTime: 30_000,
+        staleTime: 5_000,
       },
       mutations: { retry: false },
     },
@@ -95,3 +101,21 @@ export const tasksQuery = (projectId: number) =>
 
 /** Every query for one project, so a write can refresh all views of it. */
 export const projectScope = (projectId: number) => ['project', projectId];
+
+/**
+ * After a write in a project: refetch the listed queries now and mark every
+ * other query of that project stale, so other views reload when they open.
+ */
+export async function afterProjectWrite(
+  client: QueryClient,
+  projectId: number,
+  ...refresh: QueryKey[]
+) {
+  await Promise.all(
+    refresh.map((queryKey) => client.refetchQueries({ queryKey })),
+  );
+  await client.invalidateQueries({
+    queryKey: projectScope(projectId),
+    refetchType: 'none',
+  });
+}

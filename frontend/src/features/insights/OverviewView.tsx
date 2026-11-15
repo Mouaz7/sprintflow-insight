@@ -1,17 +1,10 @@
-import { useEffect, useState } from 'react';
-import { api } from '../../api/client';
-import type {
-  Activity,
-  Language,
-  Metrics,
-  Project,
-  Sprint,
-  Task,
-  WorkspaceView,
-} from '../../api/contracts';
+import { useQuery } from '@tanstack/react-query';
+import type { Language, Project, WorkspaceView } from '../../api/contracts';
+import { sprintsQuery, tasksQuery } from '../../api/queries';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { PageHeader } from '../../shared/ui/ui';
 import { activitySummary } from './activityText';
+import { activityQuery, metricsQuery } from './queries';
 
 export function OverviewView({
   project,
@@ -25,40 +18,26 @@ export function OverviewView({
   onNewTask: () => void;
 }) {
   const sv = language === 'SV';
-  const [metrics, setMetrics] = useState<Metrics>();
-  const [tasks, setTasks] = useState<Task[]>();
-  const [sprints, setSprints] = useState<Sprint[]>();
-  const [activity, setActivity] = useState<Activity[]>();
-  const [failed, setFailed] = useState<string[]>([]);
   const id = project?.id;
-  useEffect(() => {
-    let cancelled = false;
-    setMetrics(undefined);
-    setTasks(undefined);
-    setSprints(undefined);
-    setActivity(undefined);
-    setFailed([]);
-    if (!id)
-      return () => {
-        cancelled = true;
-      };
-    function load<T>(path: string, update: (value: T) => void) {
-      void api<T>(path)
-        .then((result) => {
-          if (!cancelled) update(result);
-        })
-        .catch(() => {
-          if (!cancelled) setFailed((current) => [...current, path]);
-        });
-    }
-    load<Metrics>(`/projects/${id}/metrics`, setMetrics);
-    load<Task[]>(`/tasks?projectId=${id}`, setTasks);
-    load<Sprint[]>(`/sprints?projectId=${id}`, setSprints);
-    load<Activity[]>(`/projects/${id}/activity`, setActivity);
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const enabled = id !== undefined;
+  const projectId = id ?? 0;
+  const metricsResult = useQuery({
+    ...metricsQuery(projectId, ''),
+    enabled,
+  });
+  const tasksResult = useQuery({ ...tasksQuery(projectId), enabled });
+  const sprintsResult = useQuery({ ...sprintsQuery(projectId), enabled });
+  const activityResult = useQuery({ ...activityQuery(projectId), enabled });
+  const metrics = metricsResult.data;
+  const tasks = tasksResult.data;
+  const sprints = sprintsResult.data;
+  const activity = activityResult.data;
+  const failed = [
+    metricsResult.isError && `/projects/${id}/metrics`,
+    tasksResult.isError && `/tasks?projectId=${id}`,
+    sprintsResult.isError && `/sprints?projectId=${id}`,
+    activityResult.isError && `/projects/${id}/activity`,
+  ].filter((path): path is string => !!path);
   if (!project)
     return (
       <section className="page">

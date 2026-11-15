@@ -1,6 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { FormEvent, useState } from 'react';
 import { api } from '../../api/client';
-import type { Sprint, Story } from '../../api/contracts';
+import type { Story } from '../../api/contracts';
+import { sprintsQuery } from '../../api/queries';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
 import { useConfirm } from '../../shared/ui/ui';
 export type BacklogManagerProps = {
@@ -20,29 +22,14 @@ export function useBacklog({
   const [panelOpen, setPanelOpen] = useState(false);
   const draft = useDraftProject(projectId, language);
   const [editing, setEditing] = useState<Story>();
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [sprintLoading, setSprintLoading] = useState(true);
-  const [sprintError, setSprintError] = useState('');
   const sprintProjectId = panelOpen && !editing ? draft.id : projectId;
-  useEffect(() => {
-    let live = true;
-    setSprints([]);
-    setSprintLoading(true);
-    setSprintError('');
-    api<Sprint[]>(`/sprints?projectId=${sprintProjectId}`)
-      .then((items) => {
-        if (live) setSprints(items);
-      })
-      .catch((cause: Error) => {
-        if (live) setSprintError(cause.message);
-      })
-      .finally(() => {
-        if (live) setSprintLoading(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [sprintProjectId]);
+  const sprintList = useQuery({
+    ...sprintsQuery(sprintProjectId ?? 0),
+    enabled: sprintProjectId !== undefined,
+  });
+  const sprints = sprintList.data ?? [];
+  const sprintLoading = sprintList.isPending;
+  const sprintError = sprintList.error?.message ?? '';
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [criteria, setCriteria] = useState('');
@@ -206,11 +193,8 @@ export function useBacklog({
     editing,
     setEditing,
     sprints,
-    setSprints,
     sprintLoading,
-    setSprintLoading,
     sprintError,
-    setSprintError,
     sprintProjectId,
     title,
     setTitle,

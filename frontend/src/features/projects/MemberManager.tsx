@@ -1,6 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FormEvent, useState } from 'react';
 import { api } from '../../api/client';
 import type { Project, ProjectMember } from '../../api/contracts';
+import { membersQuery, queryKeys } from '../../api/queries';
 import { localizeMessage, roleLabel } from '../../shared/i18n/messages';
 import { FormGuide } from '../../shared/ui/Guidance';
 import { useConfirm } from '../../shared/ui/ui';
@@ -18,30 +20,31 @@ export function MemberManager({
 }) {
   const confirm = useConfirm();
   const sv = language === 'SV';
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'Admin' | 'Member' | 'Viewer'>('Member');
-  const [error, setError] = useState('');
+  // Write errors belong to the project they happened in.
+  const [writeError, setWriteError] = useState<{ id: number; text: string }>();
   const projectId = project?.id;
-  useEffect(() => {
-    let cancelled = false;
-    setMembers([]);
-    setError('');
-    if (!projectId)
-      return () => {
-        cancelled = true;
-      };
-    api<ProjectMember[]>(`/projects/${projectId}/members`)
-      .then((result) => {
-        if (!cancelled) setMembers(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
+  const membersResult = useQuery({
+    ...membersQuery(projectId ?? 0),
+    enabled: !!projectId,
+  });
+  const members = membersResult.data ?? [];
+  const error =
+    (writeError?.id === projectId ? writeError?.text : '') ||
+    membersResult.error?.message ||
+    '';
+  function setError(text: string) {
+    setWriteError(projectId ? { id: projectId, text } : undefined);
+  }
+  function setMembers(update: (items: ProjectMember[]) => ProjectMember[]) {
+    if (!projectId) return;
+    queryClient.setQueryData<ProjectMember[]>(
+      queryKeys.members(projectId),
+      (items) => update(items ?? []),
+    );
+  }
   if (
     !project ||
     (project.ownerEmail.toLowerCase() !== userEmail.toLowerCase() &&
