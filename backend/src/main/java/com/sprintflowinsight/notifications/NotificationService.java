@@ -1,5 +1,6 @@
 package com.sprintflowinsight.notifications;
 
+import com.sprintflowinsight.auth.User;
 import com.sprintflowinsight.auth.UserPreferences;
 import com.sprintflowinsight.auth.UserPreferencesRepository;
 import com.sprintflowinsight.auth.UserRepository;
@@ -51,43 +52,58 @@ public class NotificationService {
     this.users = users;
   }
 
-  public void notifyProjectOwner(Long projectId, String actorEmail, String message) {
-    notifyProjectOwner(projectId, actorEmail, message, null);
-  }
-
+  /**
+   * Notifies the project owner, resolved now so a changed owner email is honoured. Skips quietly
+   * when the owner has no account, is the actor, or turned notifications off.
+   */
   public void notifyProjectOwner(
-      Long projectId, String actorEmail, String message, java.util.UUID sourceEventId) {
+      Long projectId, Long actorUserId, String message, java.util.UUID sourceEventId) {
     if (projectId == null) return;
     projects
         .findById(projectId)
+        .map(project -> project.getOwnerEmail())
+        .flatMap(email -> users.findByEmail(email.trim().toLowerCase(Locale.ROOT)))
+        .filter(owner -> !owner.getId().equals(actorUserId))
+        .ifPresent(owner -> deliver(projectId, owner, message, sourceEventId));
+  }
+
+  /**
+   * Notifies a user by id, resolving the current email at delivery time. A user deleted since the
+   * event was published is skipped quietly.
+   */
+  public void notifyRecipient(
+      Long projectId,
+      Long recipientUserId,
+      Long actorUserId,
+      String message,
+      java.util.UUID sourceEventId) {
+    if (projectId == null || recipientUserId == null || recipientUserId.equals(actorUserId))
+      return;
+    users
+        .findById(recipientUserId)
         .ifPresent(
-            project -> {
-              String recipient = project.getOwnerEmail();
-              if (recipient != null
-                  && enabled(recipient)
-                  && !recipient.equalsIgnoreCase(actorEmail == null ? "" : actorEmail)) {
-                saveNotification(projectId, recipient, message, sourceEventId);
-              }
+            recipient -> {
+              if (repository.existsByProjectIdAndRecipientEmailAndMessageAndCreatedAtAfter(
+                  projectId, normalize(recipient.getEmail()), message, Instant.now().minusSeconds(5)))
+                return;
+              deliver(projectId, recipient, message, sourceEventId);
             });
   }
 
-  public void notifyRecipient(Long projectId, String recipient, String actor, String message) {
-    notifyRecipient(projectId, recipient, actor, message, null);
+  private void deliver(Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
+    String email = normalize(recipient.getEmail());
+    if (!preferences
+        .findById(recipient.getId())
+        .map(UserPreferences::isNotifications)
+        .orElse(true)) return;
+    if (projects.findById(projectId).isEmpty()) return;
+    if (sourceEventId != null
+        && repository.existsBySourceEventIdAndRecipientEmail(sourceEventId, email)) return;
+    saveNotification(projectId, email, message, sourceEventId);
   }
 
-  public void notifyRecipient(
-      Long projectId,
-      String recipient,
-      String actor,
-      String message,
-      java.util.UUID sourceEventId) {
-    if (recipient == null
-        || recipient.equalsIgnoreCase(actor == null ? "" : actor)
-        || !enabled(recipient)) return;
-    recipient = recipient.trim().toLowerCase(Locale.ROOT);
-    if (repository.existsByProjectIdAndRecipientEmailAndMessageAndCreatedAtAfter(
-        projectId, recipient, message, Instant.now().minusSeconds(5))) return;
-    saveNotification(projectId, recipient, message, sourceEventId);
+  private static String normalize(String email) {
+    return email.trim().toLowerCase(Locale.ROOT);
   }
 
   private void saveNotification(Long projectId, String recipient, String message) {
@@ -96,17 +112,10 @@ public class NotificationService {
 
   private void saveNotification(
       Long projectId, String recipient, String message, java.util.UUID sourceEventId) {
-    if (sourceEventId != null
-        && (users.findByEmail(recipient.trim().toLowerCase(Locale.ROOT)).isEmpty()
-            || projects.findById(projectId).isEmpty())) return;
-    if (sourceEventId != null
-        && repository.existsBySourceEventIdAndRecipientEmail(
-            sourceEventId, recipient.trim().toLowerCase(Locale.ROOT))) return;
-
     Notification notification = new Notification();
     notification.setSourceEventId(sourceEventId);
     notification.setProjectId(projectId);
-    notification.setRecipientEmail(recipient.trim().toLowerCase(Locale.ROOT));
+    notification.setRecipientEmail(normalize(recipient));
     notification.setMessage(message);
     notification.setCreatedAt(Instant.now());
     notification.setRead(false);

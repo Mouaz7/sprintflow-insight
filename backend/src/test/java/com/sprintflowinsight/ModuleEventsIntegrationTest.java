@@ -61,6 +61,10 @@ class ModuleEventsIntegrationTest {
     return projects.save(project);
   }
 
+  private Long ownerId(Project project) {
+    return users.findByEmail(project.getOwnerEmail()).orElseThrow().getId();
+  }
+
   private long pending(UUID id) {
     return jdbc.queryForObject(
         "select count(*) from event_publication where serialized_event like ?",
@@ -109,12 +113,12 @@ class ModuleEventsIntegrationTest {
             new CommentAdded(
                 id,
                 project.getId(),
-                "member@example.com",
+                null,
                 Instant.now(),
                 42L,
                 43L,
                 "A task",
-                project.getOwnerEmail()))
+                ownerId(project)))
         .andWaitForStateChange(() -> delivered(id), count -> count == 1)
         .andVerify(count -> assertThat(count).isEqualTo(1));
     await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(pending(id)).isZero());
@@ -136,7 +140,7 @@ class ModuleEventsIntegrationTest {
                               new NotificationRequested(
                                   id,
                                   project.getId(),
-                                  "member@example.com",
+                                  null,
                                   Instant.now(),
                                   null,
                                   "Rolled back",
@@ -158,11 +162,11 @@ class ModuleEventsIntegrationTest {
     UUID id = UUID.randomUUID();
     doThrow(new IllegalStateException("simulated listener outage"))
         .when(delivery)
-        .notifyProjectOwner(eq(project.getId()), anyString(), eq("Retry me"), eq(id));
+        .notifyProjectOwner(eq(project.getId()), isNull(), eq("Retry me"), eq(id));
     scenario
         .publish(
             new NotificationRequested(
-                id, project.getId(), "member@example.com", Instant.now(), null, "Retry me", true))
+                id, project.getId(), null, Instant.now(), null, "Retry me", true))
         .andWaitForStateChange(() -> pending(id), count -> count == 1)
         .andVerify(count -> assertThat(delivered(id)).isZero());
     await()
@@ -170,14 +174,14 @@ class ModuleEventsIntegrationTest {
         .untilAsserted(
             () ->
                 verify(delivery)
-                    .notifyProjectOwner(project.getId(), "member@example.com", "Retry me", id));
+                    .notifyProjectOwner(project.getId(), null, "Retry me", id));
     // Ensure the failing attempt has returned before retrying it.
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> assertThat(pending(id)).isEqualTo(1));
     doCallRealMethod()
         .when(delivery)
-        .notifyProjectOwner(eq(project.getId()), anyString(), eq("Retry me"), eq(id));
+        .notifyProjectOwner(eq(project.getId()), isNull(), eq("Retry me"), eq(id));
     publications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
     await()
         .atMost(Duration.ofSeconds(10))
@@ -191,7 +195,7 @@ class ModuleEventsIntegrationTest {
     scenario
         .publish(
             new NotificationRequested(
-                id, project.getId(), "member@example.com", Instant.now(), null, "Retry me", true))
+                id, project.getId(), null, Instant.now(), null, "Retry me", true))
         .andWaitForStateChange(() -> pending(id), count -> count == 0)
         .andVerify(count -> assertThat(delivered(id)).isEqualTo(1));
   }
@@ -208,7 +212,7 @@ class ModuleEventsIntegrationTest {
                       new NotificationRequested(
                           eventId,
                           project.getId(),
-                          "member@example.com",
+                          null,
                           Instant.now(),
                           null,
                           "Pre-upgrade publication",
@@ -221,7 +225,9 @@ class ModuleEventsIntegrationTest {
                   tx.setRollbackOnly();
                   return target;
                 });
-    // Literal Jackson 2 record JSON as written by A3, persisted before the runtime upgrade.
+    // Literal Jackson 2 record JSON as written by A3, persisted before the runtime upgrade and
+    // before events referenced users by id. The email fields are ignored on replay and the
+    // project-owner notification is still delivered.
     String previousJson =
         """
 {"eventId":"%s","projectId":%d,"actorEmail":"member@example.com","occurredAt":"2026-01-01T10:00:00Z","recipientEmail":null,"message":"Pre-upgrade publication","projectOwner":true}
@@ -243,5 +249,90 @@ class ModuleEventsIntegrationTest {
               assertThat(delivered(eventId)).isEqualTo(1);
               assertThat(pending(eventId)).isZero();
             });
+  }
+
+  @Test
+  void recipientIsResolvedAtDeliverySoAnEmailChangeBeforeDeliveryStillArrives() {
+    Project project = project();
+    User member = new User();
+    member.setEmail("member-" + UUID.randomUUID() + "@example.com");
+    member.setDisplayName("Member");
+    member.setPassword("not-used-in-this-test");
+    users.save(member);
+    UUID id = UUID.randomUUID();
+    String changedEmail = "renamed-" + UUID.randomUUID() + "@example.com";
+    new TransactionTemplate(manager)
+        .executeWithoutResult(
+            tx -> {
+              events.publishEvent(
+                  new NotificationRequested(
+                      id, project.getId(), null, Instant.now(), member.getId(), "Hello", false));
+              User managed = users.findById(member.getId()).orElseThrow();
+              managed.setEmail(changedEmail);
+              users.save(managed);
+            });
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              assertThat(delivered(id)).isEqualTo(1);
+              assertThat(pending(id)).isZero();
+            });
+    assertThat(
+            jdbc.queryForObject(
+                "select recipient_email from notification where source_event_id=?",
+                String.class,
+                id))
+        .isEqualTo(changedEmail);
+  }
+
+  @Test
+  void deletingAnAccountRemovesOnlyItsUndeliverableRequests() {
+    Project project = project();
+    String listenerId =
+        new TransactionTemplate(manager)
+            .execute(
+                tx -> {
+                  UUID probe = UUID.randomUUID();
+                  events.publishEvent(
+                      new NotificationRequested(
+                          probe, project.getId(), null, Instant.now(), 1L, "probe", false));
+                  String target =
+                      jdbc.queryForObject(
+                          "select listener_id from event_publication where serialized_event like ?",
+                          String.class,
+                          "%" + probe + "%");
+                  tx.setRollbackOnly();
+                  return target;
+                });
+    UUID forDeleted = UUID.randomUUID(), forOther = UUID.randomUUID();
+    insertPending(listenerId, forDeleted, project.getId(), 900_000_001L);
+    insertPending(listenerId, forOther, project.getId(), 9_000_000_011L);
+    new TransactionTemplate(manager)
+        .executeWithoutResult(
+            tx ->
+                events.publishEvent(
+                    new com.sprintflowinsight.auth.AccountDeleting(
+                        900_000_001L, "gone-" + UUID.randomUUID() + "@example.com")));
+    assertThat(pending(forDeleted)).isZero();
+    assertThat(pending(forOther))
+        .as("an id that merely starts with the deleted id is another user")
+        .isEqualTo(1);
+    jdbc.update("delete from event_publication where serialized_event like ?", "%" + forOther + "%");
+  }
+
+  private void insertPending(String listenerId, UUID eventId, Long projectId, Long recipient) {
+    jdbc.update(
+        "insert into event_publication(id,listener_id,event_type,serialized_event,publication_date)"
+            + " values (?,?,?,?,?)",
+        UUID.randomUUID(),
+        listenerId,
+        NotificationRequested.class.getName(),
+        """
+{"eventId":"%s","projectId":%d,"actorUserId":null,"occurredAt":"2026-01-01T10:00:00Z","recipientUserId":%d,"message":"Pending","projectOwner":false}
+"""
+            .strip()
+            .formatted(eventId, projectId, recipient),
+        java.sql.Timestamp.from(Instant.now()));
   }
 }
