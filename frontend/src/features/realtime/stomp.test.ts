@@ -40,4 +40,11 @@ describe('STOMP frames', () => {
       { command: 'RECEIPT', headers: {}, body: '' },
     ]);
   });
+
+  it('ignores prototype header names', () => {
+    const { frames } = parseFrames('MESSAGE\n__proto__:x\nconstructor:y\n\n\0');
+    expect(Object.getPrototypeOf({})).not.toHaveProperty('x');
+    expect(frames[0]?.headers['__proto__']).toBeUndefined();
+    expect(frames[0]?.headers.constructor).toBe('y');
+  });
 });

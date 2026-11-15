@@ -16,10 +16,7 @@ export default defineConfig({
       '/ws': {
         target: 'ws://localhost:8081',
         ws: true,
-        configure: (proxy) =>
-          proxy.on('proxyReqWs', (request) =>
-            request.setHeader('origin', 'http://localhost:8081'),
-          ),
+        headers: { origin: 'http://localhost:8081' },
       },
     },
   },

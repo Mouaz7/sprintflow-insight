@@ -61,13 +61,14 @@ export function parseFrames(buffer: string): {
     const head = split < 0 ? raw : raw.slice(0, split);
     const body = split < 0 ? '' : raw.slice(split).replace(/^\r?\n\r?\n/, '');
     const [command = '', ...lines] = head.split(/\r?\n/);
-    const headers: Record<string, string> = {};
+    // No prototype: a header named "__proto__" cannot reach Object.prototype.
+    const headers: Record<string, string> = Object.create(null);
     for (const line of lines) {
       const colon = line.indexOf(':');
       if (colon <= 0) continue;
       const name = unescapeHeader(line.slice(0, colon));
       // The first occurrence of a repeated header wins (STOMP 1.2).
-      if (!(name in headers))
+      if (!Object.hasOwn(headers, name) && name !== '__proto__')
         headers[name] = unescapeHeader(line.slice(colon + 1));
     }
     frames.push({ command, headers, body });
