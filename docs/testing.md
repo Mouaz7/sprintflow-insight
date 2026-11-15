@@ -92,7 +92,7 @@ Tests use Java 25, Boot 4 MVC/client test autoconfiguration and Testcontainers 2
 The k6 comparison uses the same fixture/load and JVM/database limits before/after; its raw points are excluded from Git and measured-only summaries are committed under `docs/evaluation/`. To repeat against a disposable app (never production):
 
 ```sh
-BASE_URL=http://127.0.0.1:18084 k6 run --summary-export artifacts/perf-summary.json --out json=artifacts/perf-raw.json scripts/verification/performance.ts
+BASE_URL=http://127.0.0.1:18084 k6 run --summary-export artifacts/perf-summary.json --out json=artifacts/perf-raw.json scripts/performance/workspace-read.k6.js
 node scripts/verification/summarize-performance.ts artifacts/perf-raw.json artifacts/perf-measured.json 'runtime and commit'
 ```
 
