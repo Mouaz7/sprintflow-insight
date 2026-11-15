@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import type { Language, TrashItem, Project } from '../../api/contracts';
+import type { Language, Project, TrashItem } from '../../api/contracts';
 import { Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
 export function TrashView({
   language,

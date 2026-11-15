@@ -57,7 +57,9 @@ export function TaskMetadata({
                 aria-label={`${sv ? 'Ta bort etikett' : 'Remove label'} ${item}`}
                 onClick={() =>
                   save({
-                    labels: task.labels?.filter((value) => value !== item),
+                    labels: (task.labels ?? []).filter(
+                      (value) => value !== item,
+                    ),
                   })
                 }
               >

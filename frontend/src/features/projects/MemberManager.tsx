@@ -1,8 +1,8 @@
-import { FormGuide } from '../../shared/ui/Guidance';
-import { localizeMessage, roleLabel } from '../../shared/i18n/messages';
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { Project, ProjectMember } from '../../api/contracts';
+import { localizeMessage, roleLabel } from '../../shared/i18n/messages';
+import { FormGuide } from '../../shared/ui/Guidance';
 import { useConfirm } from '../../shared/ui/ui';
 
 export function MemberManager({
@@ -11,7 +11,7 @@ export function MemberManager({
   language,
   onChanged,
 }: {
-  project?: Project;
+  project?: Project | undefined;
   userEmail: string;
   language: 'EN' | 'SV';
   onChanged: () => Promise<void>;
@@ -22,15 +22,16 @@ export function MemberManager({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'Admin' | 'Member' | 'Viewer'>('Member');
   const [error, setError] = useState('');
+  const projectId = project?.id;
   useEffect(() => {
     let cancelled = false;
     setMembers([]);
     setError('');
-    if (!project)
+    if (!projectId)
       return () => {
         cancelled = true;
       };
-    api<ProjectMember[]>(`/projects/${project.id}/members`)
+    api<ProjectMember[]>(`/projects/${projectId}/members`)
       .then((result) => {
         if (!cancelled) setMembers(result);
       })
@@ -40,7 +41,7 @@ export function MemberManager({
     return () => {
       cancelled = true;
     };
-  }, [project?.id]);
+  }, [projectId]);
   if (
     !project ||
     (project.ownerEmail.toLowerCase() !== userEmail.toLowerCase() &&
@@ -51,12 +52,13 @@ export function MemberManager({
       ))
   )
     return null;
+  const activeProject = project;
   async function invite(event: FormEvent) {
     event.preventDefault();
     setError('');
     try {
       const saved = await api<ProjectMember>(
-        `/projects/${project!.id}/members`,
+        `/projects/${activeProject.id}/members`,
         { method: 'POST', body: JSON.stringify({ email, role }) },
       );
       setMembers((items) => [
@@ -82,8 +84,8 @@ export function MemberManager({
     )
       return;
     try {
-      await api<void>(
-        `/projects/${project!.id}/members/${encodeURIComponent(member.email)}`,
+      await api<unknown>(
+        `/projects/${activeProject.id}/members/${encodeURIComponent(member.email)}`,
         { method: 'DELETE' },
       );
       setMembers((items) => items.filter((item) => item.id !== member.id));
@@ -103,7 +105,7 @@ export function MemberManager({
     )
       return;
     try {
-      await api<Project>(`/projects/${project!.id}/owner`, {
+      await api<Project>(`/projects/${activeProject.id}/owner`, {
         method: 'PUT',
         body: JSON.stringify({ email: member.email }),
       });
@@ -171,7 +173,8 @@ export function MemberManager({
             <b>{roleLabel(member.role, language)}</b>
             {member.role !== 'Owner' && (
               <>
-                {project.ownerEmail.toLowerCase() === userEmail.toLowerCase() && (
+                {project.ownerEmail.toLowerCase() ===
+                  userEmail.toLowerCase() && (
                   <button type="button" onClick={() => transfer(member)}>
                     {sv ? 'Gör till ägare' : 'Make owner'}
                   </button>

@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
 import { GoogleSignIn } from './GoogleSignIn';
 vi.mock('../../api/client', () => ({ api: vi.fn(), clearCsrfToken: vi.fn() }));
@@ -14,7 +14,9 @@ describe('Google Identity integration', () => {
   afterEach(() => {
     delete window.google;
     document.querySelector('meta[property="csp-nonce"]')?.remove();
-    document.querySelector('script[src="https://accounts.google.com/gsi/client"]')?.remove();
+    document
+      .querySelector('script[src="https://accounts.google.com/gsi/client"]')
+      ?.remove();
   });
   it('explains missing configuration without loading an external script', async () => {
     vi.mocked(api).mockResolvedValue({ clientId: '' });
@@ -37,13 +39,29 @@ describe('Google Identity integration', () => {
     meta.setAttribute('property', 'csp-nonce');
     meta.nonce = 'per-document-test-nonce';
     document.head.append(meta);
-    vi.mocked(api).mockResolvedValue({ clientId: 'test.apps.googleusercontent.com' });
-    render(<GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />);
-    await waitFor(() => expect(document.querySelector('script[src="https://accounts.google.com/gsi/client"]')).not.toBeNull());
-    const script = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]')!;
+    vi.mocked(api).mockResolvedValue({
+      clientId: 'test.apps.googleusercontent.com',
+    });
+    render(
+      <GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />,
+    );
+    await waitFor(() =>
+      expect(
+        document.querySelector(
+          'script[src="https://accounts.google.com/gsi/client"]',
+        ),
+      ).not.toBeNull(),
+    );
+    const script = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    )!;
     expect(script.nonce).toBe('per-document-test-nonce');
-    window.google = { accounts: { id: { initialize: vi.fn(), renderButton: vi.fn() } } };
-    await act(async () => { script.dispatchEvent(new Event('load')); });
+    window.google = {
+      accounts: { id: { initialize: vi.fn(), renderButton: vi.fn() } },
+    };
+    await act(async () => {
+      script.dispatchEvent(new Event('load'));
+    });
   });
   it('renders the official button and exchanges the credential for a server session', async () => {
     const initialize = vi.fn(),
@@ -58,13 +76,13 @@ describe('Google Identity integration', () => {
     const onSignedIn = vi.fn().mockResolvedValue(undefined);
     render(<GoogleSignIn language="EN" darkMode onSignedIn={onSignedIn} />);
     await waitFor(() => expect(renderButton).toHaveBeenCalled());
-    expect(renderButton.mock.calls[0][1]).toMatchObject({
+    expect(renderButton.mock.calls[0]![1]).toMatchObject({
       theme: 'filled_black',
       locale: 'en',
       text: 'continue_with',
     });
     await act(async () => {
-      await initialize.mock.calls[0][0].callback({
+      await initialize.mock.calls[0]![0].callback({
         credential: 'provider-token',
       });
     });
@@ -86,7 +104,7 @@ describe('Google Identity integration', () => {
       <GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />,
     );
     await waitFor(() => expect(initialize).toHaveBeenCalled());
-    const callback = initialize.mock.calls[0][0].callback;
+    const callback = initialize.mock.calls[0]![0].callback;
     await act(async () => {
       await Promise.all([
         callback({ credential: 'invalid' }),

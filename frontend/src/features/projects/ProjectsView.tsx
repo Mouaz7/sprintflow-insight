@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Project, User, Language } from '../../api/contracts';
+import type { Language, Project, User } from '../../api/contracts';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
-import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
+import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
 import { MemberManager } from './MemberManager';
 
 export function ProjectsView({
@@ -15,7 +15,7 @@ export function ProjectsView({
   onSelect,
 }: {
   projects: Project[];
-  project?: Project;
+  project?: Project | undefined;
   user: User;
   language: Language;
   onChanged: () => Promise<void>;
@@ -23,7 +23,7 @@ export function ProjectsView({
 }) {
   const sv = language === 'SV';
   const confirm = useConfirm();
-  const [editor, setEditor] = useState<{ project?: Project }>();
+  const [editor, setEditor] = useState<{ project?: Project | undefined }>();
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
@@ -272,7 +272,7 @@ function ProjectEditor({
   onClose,
   onSaved,
 }: {
-  project?: Project;
+  project?: Project | undefined;
   language: Language;
   onClose: () => void;
   onSaved: (saved: Project) => Promise<void>;
@@ -313,9 +313,9 @@ function ProjectEditor({
               : '/projects/templates',
           {
             method: persisted ? 'PUT' : 'POST',
-            headers: persisted
-              ? { 'If-Match': `"${persisted.version}"` }
-              : undefined,
+            ...(persisted
+              ? { headers: { 'If-Match': `"${persisted.version}"` } }
+              : {}),
             body: JSON.stringify({
               ...persisted,
               template,

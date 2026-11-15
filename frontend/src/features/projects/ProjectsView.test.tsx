@@ -2,13 +2,13 @@ import {
   fireEvent,
   render,
   screen,
-  within,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
-import { ProjectsView } from './ProjectsView';
 import { ConfirmProvider } from '../../shared/ui/ui';
+import { ProjectsView } from './ProjectsView';
 
 vi.mock('../../api/client', () => ({ api: vi.fn() }));
 const props = {

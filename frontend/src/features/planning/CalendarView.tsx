@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import type { Language, Task, Sprint } from '../../api/contracts';
+import type { Language, Sprint, Task } from '../../api/contracts';
 import { Notice, PageHeader } from '../../shared/ui/ui';
 
 export function CalendarView({
   projectId,
   language,
 }: {
-  projectId?: number;
+  projectId?: number | undefined;
   language: Language;
 }) {
   const sv = language === 'SV',

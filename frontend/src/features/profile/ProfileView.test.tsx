@@ -78,7 +78,7 @@ describe('Profile settings', () => {
     fireEvent.submit(screen.getByRole('form', { name: 'Personal details' }));
     expect(api).toHaveBeenCalledTimes(1);
     expect(
-      JSON.parse(vi.mocked(api).mock.calls[0][1]!.body as string),
+      JSON.parse(vi.mocked(api).mock.calls[0]![1]!.body as string),
     ).toMatchObject({ displayName: 'Leo Updated', email: user.email });
     finishSave({ ...user, displayName: 'Leo Updated' });
     expect(await screen.findByRole('status')).toHaveTextContent(
@@ -183,7 +183,7 @@ describe('Profile settings', () => {
       'Profile saved.',
     );
     expect(
-      JSON.parse(vi.mocked(api).mock.calls[0][1]!.body as string).avatarImage,
+      JSON.parse(vi.mocked(api).mock.calls[0]![1]!.body as string).avatarImage,
     ).toBe('');
   });
 

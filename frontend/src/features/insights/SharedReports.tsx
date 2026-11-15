@@ -215,15 +215,17 @@ export function PublicReportView({ token }: { token: string }) {
           </p>
           {!!data.sprintName && <h2>{String(data.sprintName)}</h2>}
           <div className="metric-grid">
-            {[
-              ['taskCount', sv ? 'Uppgifter' : 'Tasks'],
-              ['completionRate', sv ? 'Klart (%)' : 'Completed (%)'],
+            {(
               [
-                'velocityStoryPoints',
-                sv ? 'Levererade poäng' : 'Delivered points',
-              ],
-              ['cycleTimeHours', sv ? 'Cykeltid (h)' : 'Cycle time (h)'],
-            ].map(([key, label]) => (
+                ['taskCount', sv ? 'Uppgifter' : 'Tasks'],
+                ['completionRate', sv ? 'Klart (%)' : 'Completed (%)'],
+                [
+                  'velocityStoryPoints',
+                  sv ? 'Levererade poäng' : 'Delivered points',
+                ],
+                ['cycleTimeHours', sv ? 'Cykeltid (h)' : 'Cycle time (h)'],
+              ] as const
+            ).map(([key, label]) => (
               <article className="analysis-card" key={key}>
                 <h2>{label}</h2>
                 <strong>{data[key] == null ? '—' : String(data[key])}</strong>

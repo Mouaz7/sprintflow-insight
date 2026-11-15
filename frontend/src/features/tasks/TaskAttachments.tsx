@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import { FormGuide } from '../../shared/ui/Guidance';
 import { localizeMessage } from '../../shared/i18n/messages';
+import { FormGuide } from '../../shared/ui/Guidance';
 
 type Attachment = { id: number; name: string; url: string; createdAt: string };
 export function TaskAttachments({

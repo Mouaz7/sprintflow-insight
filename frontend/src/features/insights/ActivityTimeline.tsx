@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Activity, Language } from '../../api/contracts';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
-import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
+import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 import { activitySummary } from './activityText';
 
 export function ActivityTimeline({

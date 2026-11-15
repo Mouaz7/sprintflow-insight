@@ -35,7 +35,9 @@ function loadGoogle() {
     scriptPromise = new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = googleScriptUrl();
-      const nonce = document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]')?.nonce;
+      const nonce = document.querySelector<HTMLMetaElement>(
+        'meta[property="csp-nonce"]',
+      )?.nonce;
       if (nonce) script.nonce = nonce;
       script.async = true;
       const timeout = setTimeout(() => {
@@ -69,7 +71,9 @@ export function GoogleSignIn({
   const sv = language === 'SV';
   const root = useRef<HTMLDivElement>(null);
   const latestSignedIn = useRef(onSignedIn);
-  latestSignedIn.current = onSignedIn;
+  useEffect(() => {
+    latestSignedIn.current = onSignedIn;
+  });
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
@@ -139,7 +143,7 @@ export function GoogleSignIn({
     return () => {
       live = false;
     };
-  }, [language, darkMode, revision]);
+  }, [language, darkMode, revision, sv]);
   return (
     <div className="google-sign-in">
       <div

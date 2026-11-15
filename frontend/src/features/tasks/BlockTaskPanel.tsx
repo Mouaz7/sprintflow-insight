@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useState } from 'react';
 import { api } from '../../api/client';
-import type { Task, Language } from '../../api/contracts';
+import type { Language, Task } from '../../api/contracts';
+import { localizeMessage } from '../../shared/i18n/messages';
 import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
 import { Drawer } from '../../shared/ui/ui';
-import { localizeMessage } from '../../shared/i18n/messages';
 
 export function BlockTaskPanel({
   task,

@@ -1,18 +1,18 @@
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
-import { DateInput } from '../../shared/ui/DateInput';
-import {
-  MIN_DATE,
-  MAX_DATE,
-  DATE_ERROR,
-  validDate,
-  normalizePoints,
-  validPoints,
-} from '../../shared/lib/formValues';
-import { useDraftProject } from '../../shared/lib/useDraftProject';
-import { localizeMessage } from '../../shared/i18n/messages';
 import { FormEvent, useState } from 'react';
 import { api } from '../../api/client';
 import type { Sprint } from '../../api/contracts';
+import { localizeMessage } from '../../shared/i18n/messages';
+import {
+  DATE_ERROR,
+  MAX_DATE,
+  MIN_DATE,
+  normalizePoints,
+  validDate,
+  validPoints,
+} from '../../shared/lib/formValues';
+import { useDraftProject } from '../../shared/lib/useDraftProject';
+import { DateInput } from '../../shared/ui/DateInput';
+import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
 import { Drawer, useConfirm } from '../../shared/ui/ui';
 
 export function SprintManager({
@@ -94,11 +94,16 @@ export function SprintManager({
       projectId: editing ? projectId : draft.id,
     };
     try {
-      const saved = await api<Sprint>(editing ? `/sprints/${editing.id}` : '/sprints', {
-        method: editing ? 'PUT' : 'POST',
-        headers: editing ? { 'If-Match': `"${editing.version}"` } : undefined,
-        body: JSON.stringify(body),
-      });
+      const saved = await api<Sprint>(
+        editing ? `/sprints/${editing.id}` : '/sprints',
+        {
+          method: editing ? 'PUT' : 'POST',
+          ...(editing
+            ? { headers: { 'If-Match': `"${editing.version}"` } }
+            : {}),
+          body: JSON.stringify(body),
+        },
+      );
       if (!draft.reveal(saved.projectId)) onChanged(saved);
       setSavedTitle(saved.name);
       setPanelOpen(false);
@@ -120,7 +125,7 @@ export function SprintManager({
     )
       return;
     try {
-      await api<void>(`/workspace/trash/sprint/${sprint.id}`, {
+      await api<unknown>(`/workspace/trash/sprint/${sprint.id}`, {
         method: 'PUT',
         headers: { 'If-Match': `"${sprint.version}"` },
         body: JSON.stringify({ restore: false }),
@@ -153,7 +158,9 @@ export function SprintManager({
       </div>
       {!panelOpen && savedTitle && (
         <p className="form-message success" role="status">
-          {sv ? `Sprinten ”${savedTitle}” har sparats.` : `Sprint “${savedTitle}” saved.`}
+          {sv
+            ? `Sprinten ”${savedTitle}” har sparats.`
+            : `Sprint “${savedTitle}” saved.`}
         </p>
       )}
       {!panelOpen && error && (
@@ -173,13 +180,19 @@ export function SprintManager({
                 : 'New sprint'
           }
           language={language}
-          projectSelection={!editing && draft.projects ? {
-            projects: draft.projects, value: draft.id, disabled: saving,
-            onChange: (id) => {
-              draft.change(id);
-              setError('');
-            },
-          } : undefined}
+          projectSelection={
+            !editing && draft.projects
+              ? {
+                  projects: draft.projects,
+                  value: draft.id,
+                  disabled: saving,
+                  onChange: (id) => {
+                    draft.change(id);
+                    setError('');
+                  },
+                }
+              : undefined
+          }
           onClose={() => setPanelOpen(false)}
           busy={saving}
           dirty={
@@ -284,14 +297,21 @@ export function SprintManager({
                 </label>
               </div>
             </fieldset>
-            {!editing && draft.error && <p className="form-message error" role="alert">{localizeMessage(draft.error, language)}</p>}
+            {!editing && draft.error && (
+              <p className="form-message error" role="alert">
+                {localizeMessage(draft.error, language)}
+              </p>
+            )}
             {error && (
               <p className="form-message error" role="alert">
                 {localizeMessage(error, sv ? 'SV' : 'EN')}
               </p>
             )}
             <div className="form-actions">
-              <button className="primary-action" disabled={saving || (!editing && draft.blocked)}>
+              <button
+                className="primary-action"
+                disabled={saving || (!editing && draft.blocked)}
+              >
                 {saving
                   ? sv
                     ? 'Sparar…'

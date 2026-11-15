@@ -13,12 +13,32 @@ beforeEach(() => {
   ]);
 });
 it('allows an admin to manage membership while reserving ownership transfer for the owner', async () => {
-  render(<MemberManager project={project} userEmail="admin@example.com" language="EN" onChanged={vi.fn()} />);
-  expect(await screen.findByRole('button', { name: 'Add member' })).toBeEnabled();
+  render(
+    <MemberManager
+      project={project}
+      userEmail="admin@example.com"
+      language="EN"
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(
+    await screen.findByRole('button', { name: 'Add member' }),
+  ).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Remove' })).toBeEnabled();
-  expect(screen.queryByRole('button', { name: 'Make owner' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Make owner' }),
+  ).not.toBeInTheDocument();
 });
 it('shows ownership transfer to the owner', async () => {
-  render(<MemberManager project={project} userEmail="owner@example.com" language="EN" onChanged={vi.fn()} />);
-  expect(await screen.findByRole('button', { name: 'Make owner' })).toBeEnabled();
+  render(
+    <MemberManager
+      project={project}
+      userEmail="owner@example.com"
+      language="EN"
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(
+    await screen.findByRole('button', { name: 'Make owner' }),
+  ).toBeEnabled();
 });

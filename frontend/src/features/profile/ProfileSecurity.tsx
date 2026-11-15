@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useState } from 'react';
 import { api } from '../../api/client';
 import { useConfirm } from '../../shared/ui/ui';
-import { SettingsIcon, Feedback } from './ProfileFeedback';
+import { Feedback, SettingsIcon } from './ProfileFeedback';
 
 export function PasswordSettings({
   email,
@@ -86,7 +86,11 @@ export function PasswordSettings({
             type={visible ? 'text' : 'password'}
             autoComplete="current-password"
             value={currentPassword}
-            placeholder={sv ? 'Ditt nuvarande inloggningslösenord' : 'Your current sign-in password'}
+            placeholder={
+              sv
+                ? 'Ditt nuvarande inloggningslösenord'
+                : 'Your current sign-in password'
+            }
             onChange={(event) => {
               setCurrentPassword(event.target.value);
               clearFeedback();
@@ -102,7 +106,11 @@ export function PasswordSettings({
             type={visible ? 'text' : 'password'}
             autoComplete="new-password"
             value={newPassword}
-            placeholder={sv ? 'Välj ett eget lösenord med 8–72 tecken' : 'Choose your own password with 8–72 characters'}
+            placeholder={
+              sv
+                ? 'Välj ett eget lösenord med 8–72 tecken'
+                : 'Choose your own password with 8–72 characters'
+            }
             onChange={(event) => {
               setNewPassword(event.target.value);
               clearFeedback();
@@ -124,7 +132,11 @@ export function PasswordSettings({
             type={visible ? 'text' : 'password'}
             autoComplete="new-password"
             value={confirmation}
-            placeholder={sv ? 'Skriv samma nya lösenord igen' : 'Enter the same new password again'}
+            placeholder={
+              sv
+                ? 'Skriv samma nya lösenord igen'
+                : 'Enter the same new password again'
+            }
             onChange={(event) => {
               setConfirmation(event.target.value);
               clearFeedback();
@@ -235,7 +247,11 @@ export function DeleteAccountSettings({
             type="password"
             autoComplete="current-password"
             value={password}
-            placeholder={sv ? 'Ditt nuvarande lösenord bekräftar borttagningen' : 'Your current password confirms deletion'}
+            placeholder={
+              sv
+                ? 'Ditt nuvarande lösenord bekräftar borttagningen'
+                : 'Your current password confirms deletion'
+            }
             onChange={(event) => {
               setPassword(event.target.value);
               setError('');

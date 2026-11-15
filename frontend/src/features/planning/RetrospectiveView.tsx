@@ -9,7 +9,7 @@ export function RetrospectiveView({
   language,
   userEmail,
 }: {
-  projectId?: number;
+  projectId?: number | undefined;
   language: Language;
   userEmail: string;
 }) {

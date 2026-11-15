@@ -11,13 +11,15 @@ const policies = new WeakMap<TrustedTypesFactory, ScriptUrlPolicy>();
 
 /** The application's only script-URL policy accepts exactly the official live GIS loader. */
 export function googleScriptUrl(): string {
-  const factory = (window as Window & { trustedTypes?: TrustedTypesFactory }).trustedTypes;
+  const factory = (window as Window & { trustedTypes?: TrustedTypesFactory })
+    .trustedTypes;
   if (!factory) return GOOGLE_CLIENT;
   let policy = policies.get(factory);
   if (!policy) {
     policy = factory.createPolicy('sprintflow-google', {
       createScriptURL: (value) => {
-        if (value !== GOOGLE_CLIENT) throw new TypeError('Unapproved Google script URL.');
+        if (value !== GOOGLE_CLIENT)
+          throw new TypeError('Unapproved Google script URL.');
         return value;
       },
     });

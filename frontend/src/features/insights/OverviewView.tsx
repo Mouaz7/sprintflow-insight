@@ -9,8 +9,8 @@ import type {
   Task,
   WorkspaceView,
 } from '../../api/contracts';
-import { PageHeader } from '../../shared/ui/ui';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
+import { PageHeader } from '../../shared/ui/ui';
 import { activitySummary } from './activityText';
 
 export function OverviewView({
@@ -19,7 +19,7 @@ export function OverviewView({
   onNavigate,
   onNewTask,
 }: {
-  project?: Project;
+  project?: Project | undefined;
   language: Language;
   onNavigate: (view: WorkspaceView) => void;
   onNewTask: () => void;

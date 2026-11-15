@@ -62,7 +62,7 @@ export function SavedFilters({
     return () => {
       live = false;
     };
-  }, [projectId]);
+  }, [projectId, sv]);
   async function persist(values: SavedFilter[]) {
     setBusy(true);
     setError('');
@@ -122,16 +122,22 @@ export function SavedFilters({
     blocked: false,
     label: '',
   };
-  const selectedCriteria = selected === 'mine'
-    ? { ...empty, assignee: userEmail }
-    : selected === 'blocked'
-      ? { ...empty, blocked: true }
-      : items.find((item) => item.id === selected && item.projectId === projectId)?.criteria;
+  const selectedCriteria =
+    selected === 'mine'
+      ? { ...empty, assignee: userEmail }
+      : selected === 'blocked'
+        ? { ...empty, blocked: true }
+        : items.find(
+            (item) => item.id === selected && item.projectId === projectId,
+          )?.criteria;
   const criteria = { ...empty, ...selectedCriteria };
-  const selectedValue = selectedCriteria &&
+  const selectedValue =
+    selectedCriteria &&
     (Object.keys(empty) as (keyof TaskFilters)[]).every(
       (key) => current[key] === criteria[key],
-    ) ? selected : '';
+    )
+      ? selected
+      : '';
   return (
     <div className="saved-filter-controls">
       <label>
@@ -179,7 +185,8 @@ export function SavedFilters({
           <button
             disabled={busy}
             onClick={() => {
-              const item = items.find((value) => value.id === selectedValue)!;
+              const item = items.find((value) => value.id === selectedValue);
+              if (!item) return;
               setName(item.name);
               setEditor({ item });
             }}

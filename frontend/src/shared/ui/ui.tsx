@@ -8,45 +8,53 @@ import {
   type ReactNode,
 } from 'react';
 import type { Language, Project, WorkspaceView } from '../../api/contracts';
-import { PageGuide } from './Guidance';
 import { localizeMessage } from '../i18n/messages';
+import { PageGuide } from './Guidance';
 
-export const EditorProjectContext =
-  createContext<Pick<Project, 'id' | 'name'> | undefined>(undefined);
+export const EditorProjectContext = createContext<
+  Pick<Project, 'id' | 'name'> | undefined
+>(undefined);
 
 const ConfirmContext = createContext<(message: string) => Promise<boolean>>(
   async (message) => window.confirm(message),
 );
 export const useConfirm = () => useContext(ConfirmContext);
 
+// Hide and disable the background at every level, including nested dialogs.
+function inertBackground(node: HTMLElement | null | undefined): HTMLElement[] {
+  const background: HTMLElement[] = [];
+  let branch: HTMLElement | null = node?.parentElement ?? null;
+  while (branch?.parentElement) {
+    for (const sibling of branch.parentElement.children) {
+      if (
+        sibling !== branch &&
+        sibling instanceof HTMLElement &&
+        !sibling.inert
+      ) {
+        sibling.inert = true;
+        background.push(sibling);
+      }
+    }
+    if (branch.parentElement === document.body) break;
+    branch = branch.parentElement;
+  }
+  return background;
+}
+
 export function useModalFocus(
   close: () => void,
-  root: React.RefObject<HTMLDivElement>,
+  root: React.RefObject<HTMLDivElement | null>,
 ) {
   const latestClose = useRef(close);
-  latestClose.current = close;
+  useEffect(() => {
+    latestClose.current = close;
+  });
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const node = root.current;
-    // Hide and disable the background at every level, including nested dialogs.
-    const background: HTMLElement[] = [];
-    let branch: HTMLElement | null = node?.parentElement ?? null;
-    while (branch?.parentElement) {
-      for (const sibling of branch.parentElement.children) {
-        if (
-          sibling !== branch &&
-          sibling instanceof HTMLElement &&
-          !sibling.inert
-        ) {
-          sibling.inert = true;
-          background.push(sibling);
-        }
-      }
-      if (branch.parentElement === document.body) break;
-      branch = branch.parentElement;
-    }
+    const background = inertBackground(node);
     const focusable = () =>
       [
         ...(node?.querySelectorAll<HTMLElement>(
@@ -80,7 +88,7 @@ export function useModalFocus(
             !node?.contains(document.activeElement))
         ) {
           event.preventDefault();
-          first.focus();
+          first?.focus();
         }
       }
     };
@@ -101,13 +109,13 @@ export function ConfirmProvider({
   language = 'EN',
 }: {
   children: ReactNode;
-  language?: Language;
+  language?: Language | undefined;
 }) {
   const [request, setRequest] = useState<{
     message: string;
     resolve: (value: boolean) => void;
   }>();
-  const pending = useRef<typeof request>();
+  const pending = useRef<typeof request>(undefined);
   const confirm = (message: string) =>
     new Promise<boolean>((resolve) => {
       pending.current?.resolve(false);
@@ -159,6 +167,7 @@ function Confirmation({
       data-theme={
         localStorage.getItem('sprintflow-theme') === 'dark' ? 'dark' : 'light'
       }
+      role="presentation"
       className="modal-backdrop confirmation-backdrop"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onFinish(false);
@@ -211,15 +220,17 @@ export function Drawer({
   title: string;
   children: ReactNode;
   onClose: () => void;
-  dirty?: boolean;
-  busy?: boolean;
-  language?: Language;
-  projectSelection?: {
-    projects: Project[];
-    value?: number;
-    disabled: boolean;
-    onChange: (id: number) => void;
-  };
+  dirty?: boolean | undefined;
+  busy?: boolean | undefined;
+  language?: Language | undefined;
+  projectSelection?:
+    | {
+        projects: Project[];
+        value?: number | undefined;
+        disabled: boolean;
+        onChange: (id: number) => void;
+      }
+    | undefined;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -248,6 +259,7 @@ export function Drawer({
   useModalFocus(close, root);
   return (
     <div
+      role="presentation"
       className="modal-backdrop drawer-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) void close();
@@ -286,22 +298,40 @@ export function Drawer({
               <select
                 aria-label={sv ? 'Projekt' : 'Project'}
                 aria-describedby={projectHelpId}
-                value={projectSelection.projects.some(item => item.id === projectSelection.value) ? projectSelection.value : ''}
+                value={
+                  projectSelection.projects.some(
+                    (item) => item.id === projectSelection.value,
+                  )
+                    ? projectSelection.value
+                    : ''
+                }
                 disabled={projectSelection.disabled}
-                onChange={event => projectSelection.onChange(Number(event.target.value))}
+                onChange={(event) =>
+                  projectSelection.onChange(Number(event.target.value))
+                }
               >
-                <option value="" disabled>{sv ? 'Välj projekt' : 'Choose project'}</option>
-                {projectSelection.projects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                <option value="" disabled>
+                  {sv ? 'Välj projekt' : 'Choose project'}
+                </option>
+                {projectSelection.projects.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
               </select>
-              <small id={projectHelpId}>{sv
-                ? 'Här sparas det du skapar. Välj projekt innan du väljer sprint eller berättelse.'
-                : 'New work is saved here. Choose the project before selecting a sprint or story.'}</small>
+              <small id={projectHelpId}>
+                {sv
+                  ? 'Här sparas det du skapar. Välj projekt innan du väljer sprint eller berättelse.'
+                  : 'New work is saved here. Choose the project before selecting a sprint or story.'}
+              </small>
             </label>
-          ) : project && (
-            <p className="editor-project">
-              <span>{sv ? 'Projekt' : 'Project'}:</span>
-              <strong>{project.name}</strong>
-            </p>
+          ) : (
+            project && (
+              <p className="editor-project">
+                <span>{sv ? 'Projekt' : 'Project'}:</span>
+                <strong>{project.name}</strong>
+              </p>
+            )
           )}
           {children}
         </div>
@@ -320,10 +350,10 @@ export function PageHeader({
 }: {
   eyebrow: string;
   title: string;
-  description?: string;
-  action?: ReactNode;
-  guide?: WorkspaceView;
-  language?: Language;
+  description?: string | undefined;
+  action?: ReactNode | undefined;
+  guide?: WorkspaceView | undefined;
+  language?: Language | undefined;
 }) {
   return (
     <header className="page-heading">
@@ -343,9 +373,9 @@ export function Notice({
   success,
   language = 'EN',
 }: {
-  error?: string;
-  success?: string;
-  language?: Language;
+  error?: string | undefined;
+  success?: string | undefined;
+  language?: Language | undefined;
 }) {
   return error ? (
     <p className="form-message error" role="alert">

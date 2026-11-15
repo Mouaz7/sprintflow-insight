@@ -103,7 +103,6 @@ describe('Form panels', () => {
   });
 });
 
-
 it('labels the current project in Swedish inside a project-scoped panel', () => {
   render(
     <EditorProjectContext.Provider value={{ id: 2, name: 'Test' }}>
@@ -112,5 +111,7 @@ it('labels the current project in Swedish inside a project-scoped panel', () => 
       </Drawer>
     </EditorProjectContext.Provider>,
   );
-  expect(screen.getByRole('dialog').querySelector('.editor-project')).toHaveTextContent('Projekt:Test');
+  expect(
+    screen.getByRole('dialog').querySelector('.editor-project'),
+  ).toHaveTextContent('Projekt:Test');
 });

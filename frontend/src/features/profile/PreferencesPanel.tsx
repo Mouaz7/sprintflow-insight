@@ -8,8 +8,9 @@ export function PreferencesPanel({
   onReplay,
 }: {
   language: Language;
-  onAppearance?: (language: Language, theme: 'light' | 'dark') => void;
-  onReplay?: () => void;
+  onAppearance?:
+    ((language: Language, theme: 'light' | 'dark') => void) | undefined;
+  onReplay?: (() => void) | undefined;
 }) {
   const sv = language === 'SV';
   const [settings, setSettings] = useState<Preferences>({

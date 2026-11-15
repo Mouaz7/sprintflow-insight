@@ -1,7 +1,8 @@
 import type { Language, WorkspaceView } from '../../api/contracts';
 
 type Copy = readonly [sv: string, en: string];
-const text = (copy: Copy, language: Language) => copy[language === 'SV' ? 0 : 1];
+const text = (copy: Copy, language: Language) =>
+  copy[language === 'SV' ? 0 : 1];
 
 const examples = {
   projectName: ['Inloggning till kundportalen', 'Customer portal login'],
@@ -25,7 +26,10 @@ const examples = {
   ],
   taskTitle: ['Bygg inloggningsformuläret', 'Build the login form'],
   taskDescription: ['E-post och lösenord', 'Email and password fields'],
-  blockReason: ['Väntar på API. Följ upp på fredag.', 'Waiting for the API. Follow up on Friday.'],
+  blockReason: [
+    'Väntar på API. Följ upp på fredag.',
+    'Waiting for the API. Follow up on Friday.',
+  ],
   update: [
     'Inloggningsformuläret är byggt och redo för granskning.',
     'The login form is built and ready for review.',
@@ -79,14 +83,8 @@ const formGuides = {
       'A project brings the team and its work together around a goal. Describe what you want to build and why.',
     ],
     fields: [
-      [
-        ['Projektnamn', 'Project name'],
-        examples.projectName,
-      ],
-      [
-        ['Beskrivning', 'Description'],
-        examples.projectDescription,
-      ],
+      [['Projektnamn', 'Project name'], examples.projectName],
+      [['Beskrivning', 'Description'], examples.projectDescription],
       [
         ['Projektmall', 'Project template'],
         [
@@ -221,24 +219,14 @@ const formGuides = {
       'Förklara vad som hindrar arbetet och vad som behövs för att komma vidare.',
       'Explain what is stopping the work and what is needed to continue.',
     ],
-    fields: [
-      [
-        ['Orsak till blockering', 'Block reason'],
-        examples.blockReason,
-      ],
-    ],
+    fields: [[['Orsak till blockering', 'Block reason'], examples.blockReason]],
   },
   activity: {
     intro: [
       'Skriv en kort, saklig beskrivning av vad som hände i projektet.',
       'Write a brief, factual description of what happened in the project.',
     ],
-    fields: [
-      [
-        ['Uppdateringstext', 'Update summary'],
-        examples.update,
-      ],
-    ],
+    fields: [[['Uppdateringstext', 'Update summary'], examples.update]],
   },
   retro: {
     intro: [
@@ -253,10 +241,7 @@ const formGuides = {
           'Choose what went well, what could improve, or a concrete action to follow up.',
         ],
       ],
-      [
-        ['Anteckning', 'Note'],
-        examples.retro,
-      ],
+      [['Anteckning', 'Note'], examples.retro],
     ],
   },
   filter: {
@@ -279,12 +264,7 @@ const formGuides = {
       'Skriv en fråga, återkoppling eller information som hjälper teamet med just den här uppgiften.',
       'Write a question, feedback or information that helps the team with this task.',
     ],
-    fields: [
-      [
-        ['Kommentar', 'Comment'],
-        examples.comment,
-      ],
-    ],
+    fields: [[['Kommentar', 'Comment'], examples.comment]],
   },
   member: {
     intro: [
@@ -343,21 +323,31 @@ const formGuides = {
           'Example: Alex Morgan, frontend developer. This role describes your work and does not change project permissions.',
         ],
       ],
-      [
-        ['Om dig', 'About you'],
-        examples.bio,
-      ],
+      [['Om dig', 'About you'], examples.bio],
     ],
   },
 } satisfies Record<string, Guide>;
 
-export function FormGuide({ topic, language }: { topic: keyof typeof formGuides; language: Language }) {
+export function FormGuide({
+  topic,
+  language,
+}: {
+  topic: keyof typeof formGuides;
+  language: Language;
+}) {
   const guide: Guide = formGuides[topic];
   return (
-    <aside className="form-guide" aria-label={language === 'SV' ? 'Hjälp med formuläret' : 'Form help'}>
+    <aside
+      className="form-guide"
+      aria-label={language === 'SV' ? 'Hjälp med formuläret' : 'Form help'}
+    >
       <p>{text(guide.intro, language)}</p>
       <details className="guidance">
-        <summary>{language === 'SV' ? 'Förklaringar och exempel' : 'Explanations and examples'}</summary>
+        <summary>
+          {language === 'SV'
+            ? 'Förklaringar och exempel'
+            : 'Explanations and examples'}
+        </summary>
         <dl>
           {guide.fields.map(([label, description]) => (
             <div key={label[1]}>
@@ -418,10 +408,18 @@ const pageGuides = {
   ],
 } satisfies Record<WorkspaceView, Copy>;
 
-export function PageGuide({ view, language }: { view: WorkspaceView; language: Language }) {
+export function PageGuide({
+  view,
+  language,
+}: {
+  view: WorkspaceView;
+  language: Language;
+}) {
   return (
     <details className="guidance page-guide">
-      <summary>{language === 'SV' ? 'Så fungerar sidan' : 'How this page works'}</summary>
+      <summary>
+        {language === 'SV' ? 'Så fungerar sidan' : 'How this page works'}
+      </summary>
       <p>{text(pageGuides[view], language)}</p>
     </details>
   );

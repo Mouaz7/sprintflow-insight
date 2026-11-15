@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
-import { DateInput } from './DateInput';
 import { normalizePoints, validDate, validPoints } from '../lib/formValues';
+import { DateInput } from './DateInput';
 
 function DateEditor() {
   const [date, setDate] = useState('');

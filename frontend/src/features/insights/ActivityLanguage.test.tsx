@@ -20,15 +20,34 @@ describe('Activity presentation', () => {
   });
 
   it('switches the timeline language without changing stored or custom summaries', () => {
-    const custom = { ...event, id: 2, summary: 'Customer approved the release.' };
-    const props = { projectId: 1, items: [event, custom], canManage: false, onChanged: vi.fn() };
+    const custom = {
+      ...event,
+      id: 2,
+      summary: 'Customer approved the release.',
+    };
+    const props = {
+      projectId: 1,
+      items: [event, custom],
+      canManage: false,
+      onChanged: vi.fn(),
+    };
     const { rerender } = render(<ActivityTimeline {...props} language="SV" />);
-    expect(screen.getByRole('heading', { name: 'Skapade projektet “Mobilkontroll”.' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: custom.summary })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Skapade projektet “Mobilkontroll”.',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: custom.summary }),
+    ).toBeInTheDocument();
 
     rerender(<ActivityTimeline {...props} language="EN" />);
-    expect(screen.getByRole('heading', { name: event.summary })).toBeInTheDocument();
-    expect(screen.queryByText('Skapade projektet “Mobilkontroll”.')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: event.summary }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Skapade projektet “Mobilkontroll”.'),
+    ).not.toBeInTheDocument();
   });
 
   it('uses the same translation for recent activity on the overview', async () => {
@@ -38,11 +57,19 @@ describe('Activity presentation', () => {
       return [];
     });
     const props = {
-      project: { id: 1, name: 'Mobilkontroll', description: '', ownerEmail: 'owner@example.test' },
-      onNavigate: vi.fn(), onNewTask: vi.fn(),
+      project: {
+        id: 1,
+        name: 'Mobilkontroll',
+        description: '',
+        ownerEmail: 'owner@example.test',
+      },
+      onNavigate: vi.fn(),
+      onNewTask: vi.fn(),
     };
     const { rerender } = render(<OverviewView {...props} language="SV" />);
-    expect(await screen.findByText('Skapade projektet “Mobilkontroll”.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Skapade projektet “Mobilkontroll”.'),
+    ).toBeInTheDocument();
 
     rerender(<OverviewView {...props} language="EN" />);
     expect(await screen.findByText(event.summary)).toBeInTheDocument();

@@ -1,7 +1,12 @@
 import { useRef } from 'react';
 import type { Language } from '../../api/contracts';
+import {
+  MAX_DATE,
+  MIN_DATE,
+  normalizeDate,
+  validDate,
+} from '../lib/formValues';
 import { InterfaceIcon } from './InterfaceIcons';
-import { MAX_DATE, MIN_DATE, normalizeDate, validDate } from '../lib/formValues';
 
 export function DateInput({
   value,

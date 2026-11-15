@@ -3,8 +3,8 @@ import { api, ApiError, clearCsrfToken } from '../../api/client';
 import type { Language, User } from '../../api/contracts';
 import { fieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
-import { Notice } from '../../shared/ui/ui';
 import { LanguageSelector } from '../../shared/ui/LanguageSelector';
+import { Notice } from '../../shared/ui/ui';
 import { GoogleSignIn } from './GoogleSignIn';
 
 type AuthMode = 'login' | 'register' | 'reset' | 'new-password';
@@ -313,8 +313,12 @@ export function AuthScreen({
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={
                         mode === 'login'
-                          ? sv ? 'Ditt befintliga lösenord' : 'Your existing password'
-                          : sv ? 'Välj ett eget lösenord, minst 6 tecken' : 'Choose your own password, at least 6 characters'
+                          ? sv
+                            ? 'Ditt befintliga lösenord'
+                            : 'Your existing password'
+                          : sv
+                            ? 'Välj ett eget lösenord, minst 6 tecken'
+                            : 'Choose your own password, at least 6 characters'
                       }
                     />
                   </label>
@@ -329,7 +333,11 @@ export function AuthScreen({
                       type="password"
                       autoComplete="new-password"
                       value={confirmPassword}
-                      placeholder={sv ? 'Skriv samma nya lösenord igen' : 'Enter the same new password again'}
+                      placeholder={
+                        sv
+                          ? 'Skriv samma nya lösenord igen'
+                          : 'Enter the same new password again'
+                      }
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </label>
