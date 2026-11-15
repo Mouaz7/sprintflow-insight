@@ -4,9 +4,14 @@ import com.sprintflowinsight.auth.UserRepository;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.workspace.activity.ActivityService;
+import java.util.Locale;
+import java.util.function.Supplier;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The single way a project comes into existence: unique name and key, owner membership, activity.
@@ -14,20 +19,57 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ProjectFactory {
   public static final String KEY_IN_USE = "This project key is already in use.";
+  /** Attempts for a creation whose derived key a concurrent creator keeps taking first. */
+  static final int DERIVED_KEY_ATTEMPTS = 3;
+
+  private static final String KEY_CONSTRAINT = "projects_key_unique";
   private final ProjectRepository projects;
   private final ProjectMemberRepository members;
   private final ActivityService activity;
   private final UserRepository users;
+  private final TransactionTemplate transactions;
 
   public ProjectFactory(
       ProjectRepository projects,
       ProjectMemberRepository members,
       ActivityService activity,
-      UserRepository users) {
+      UserRepository users,
+      PlatformTransactionManager transactionManager) {
     this.projects = projects;
     this.members = members;
     this.activity = activity;
     this.users = users;
+    this.transactions = new TransactionTemplate(transactionManager);
+  }
+
+  /**
+   * Runs a project creation, which calls {@link #create}, in its own transaction. Two concurrent
+   * creations can derive the same free key; the later insert then violates the unique key
+   * constraint. When the caller did not request a key, that is not the client's conflict: the whole
+   * transaction is retried, so the key is derived again from the now committed state, up to {@value
+   * #DERIVED_KEY_ATTEMPTS} attempts. A requested key keeps its 409. Must be called outside a
+   * transaction, otherwise the retry would join the failed one.
+   */
+  public <T> T inTransactionRetryingDerivedKey(String requestedKey, Supplier<T> creation) {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        return transactions.execute(status -> creation.get());
+      } catch (DataIntegrityViolationException conflict) {
+        if (requestedKey != null || attempt >= DERIVED_KEY_ATTEMPTS || !isKeyConflict(conflict))
+          throw conflict;
+      }
+    }
+  }
+
+  static boolean isKeyConflict(Throwable exception) {
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof org.hibernate.exception.ConstraintViolationException hibernate
+          && hibernate.getConstraintName() != null)
+        return hibernate.getConstraintName().toLowerCase(Locale.ROOT).contains(KEY_CONSTRAINT);
+      if (cause.getMessage() != null
+          && cause.getMessage().toLowerCase(Locale.ROOT).contains(KEY_CONSTRAINT)) return true;
+    }
+    return false;
   }
 
   @Transactional(propagation = Propagation.MANDATORY)

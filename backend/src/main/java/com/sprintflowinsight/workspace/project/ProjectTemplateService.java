@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @org.springframework.stereotype.Service
@@ -44,12 +43,17 @@ public class ProjectTemplateService {
     this.activity = activity;
   }
 
-  @Transactional
+  /** Runs in its own transaction, retried when a concurrent creation took the derived key. */
   public Project create(TemplateRequest request, HttpSession session) {
     if (!Set.of("Blank", "Scrum", "Kanban").contains(request.template()))
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a valid project template.");
-    boolean sv = "SV".equals(request.language());
     String email = access.email(session);
+    return factory.inTransactionRetryingDerivedKey(
+        request.normalizedKey(), () -> createOnce(request, email));
+  }
+
+  private Project createOnce(TemplateRequest request, String email) {
+    boolean sv = "SV".equals(request.language());
     String name = request.name().trim();
     Project project =
         factory.create(
