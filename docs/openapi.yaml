@@ -4,9 +4,11 @@ info:
   version: 1.0.0
   description: >-
     Same-origin REST API for the React and TypeScript client. Authenticated requests use a
-    server-managed JSESSIONID session. State-changing requests also require the CSRF header
+    server-managed SPRINTFLOW_SESSION session. State-changing requests also require the CSRF header
     returned by GET /api/auth/csrf. Authentication and recovery POST requests are limited
     per client IP and endpoint over one minute. A rejected request returns 429 and Retry-After.
+    Database connection failures before the response is committed return a 503 SERVICE_UNAVAILABLE
+    problem with Retry-After set to 5 seconds, including failures loading or saving the JDBC session.
 servers:
   - url: http://localhost:8081
 security:
@@ -634,7 +636,7 @@ components:
     sessionCookie:
       type: apiKey
       in: cookie
-      name: JSESSIONID
+      name: SPRINTFLOW_SESSION
   parameters:
     exportStatus:
       in: query
@@ -716,6 +718,10 @@ components:
     Error:
       description: >-
         RFC 9457 problem document. Branch on `code` (or `type`), never on the human-readable text.
+      headers:
+        Retry-After:
+          description: Present for SERVICE_UNAVAILABLE database failures; seconds before retrying.
+          schema: { type: integer, minimum: 1, example: 5 }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }

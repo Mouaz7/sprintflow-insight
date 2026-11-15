@@ -4,6 +4,7 @@ import type { Activity, Language } from '../api/contracts';
 import { FormGuide, fieldExample } from './Guidance';
 import { Drawer, Notice, useConfirm } from './ui';
 import { InterfaceIcon } from './InterfaceIcons';
+import { activitySummary } from './activityText';
 
 export function ActivityTimeline({
   projectId,
@@ -115,7 +116,7 @@ export function ActivityTimeline({
                           { hour: '2-digit', minute: '2-digit' },
                         )}
                       </time>
-                      <h3>{item.summary}</h3>
+                      <h3>{activitySummary(item, language)}</h3>
                       <small>{item.actorEmail}</small>
                     </div>
                     {canManage && (

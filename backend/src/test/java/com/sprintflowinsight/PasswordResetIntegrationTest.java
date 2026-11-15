@@ -15,18 +15,16 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
+@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     properties = {
       "app.security.auth-rate-limit.enabled=false",
-      "spring.datasource.url=${SPRINTFLOW_TEST_DB_URL:jdbc:h2:mem:reset-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}",
-      "spring.datasource.driver-class-name=${SPRINTFLOW_TEST_DB_DRIVER:org.h2.Driver}",
-      "spring.jpa.hibernate.ddl-auto=validate",
       "app.password-reset.from=qa@example.com"
     })
 @AutoConfigureMockMvc
@@ -35,7 +33,7 @@ class PasswordResetIntegrationTest {
   @Autowired ObjectMapper json;
   @Autowired UserRepository users;
   @Autowired PasswordEncoder passwords;
-  @MockBean JavaMailSender mail;
+  @MockitoBean JavaMailSender mail;
 
   @Test
   void resetLinkUpdatesTheHashAndCannotBeReused() throws Exception {

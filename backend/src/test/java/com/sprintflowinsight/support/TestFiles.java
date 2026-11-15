@@ -1,7 +1,7 @@
-package com.sprintflowinsight;
+package com.sprintflowinsight.support;
 
-final class TestFiles {
-  static final byte[] PDF = pdf();
+public final class TestFiles {
+  public static final byte[] PDF = pdf();
 
   private TestFiles() {}
 

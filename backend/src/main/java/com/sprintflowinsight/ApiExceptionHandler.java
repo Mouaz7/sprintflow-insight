@@ -37,8 +37,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Turns every failure into one RFC 9457 problem shape (see {@link Problems}). Spring MVC's own
  * exceptions (unreadable body, missing or mistyped parameters, unsupported media type, upload too
- * large, ...) are covered by {@link ResponseEntityExceptionHandler}; this class adds catalogue codes,
- * domain exceptions and a safe fallback that never leaks internals.
+ * large, ...) are covered by {@link ResponseEntityExceptionHandler}; this class adds catalogue
+ * codes, domain exceptions and a safe fallback that never leaks internals.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -46,7 +46,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
   @ExceptionHandler(MailException.class)
-  public ResponseEntity<ProblemDetail> handleMailFailure(MailException exception, WebRequest request) {
+  public ResponseEntity<ProblemDetail> handleMailFailure(
+      MailException exception, WebRequest request) {
     LOG.warn("Mail delivery failed: {}", exception.getMessage());
     return respond(
         ErrorCode.SERVICE_UNAVAILABLE,
@@ -86,7 +87,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         constraint == null
             ? null
             : CONSTRAINT_MESSAGES.entrySet().stream()
-                .filter(entry -> constraint.toLowerCase(java.util.Locale.ROOT).contains(entry.getKey()))
+                .filter(
+                    entry -> constraint.toLowerCase(java.util.Locale.ROOT).contains(entry.getKey()))
                 .map(java.util.Map.Entry::getValue)
                 .findFirst()
                 .orElse(null);
@@ -94,6 +96,29 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode.CONFLICT,
         message == null ? "This record conflicts with existing data." : message,
         request);
+  }
+
+  /**
+   * The database is unreachable, overloaded or timed out. That is temporary and not the client's
+   * fault: answer 503 with a retry hint and never expose driver messages.
+   */
+  @ExceptionHandler({
+    org.springframework.dao.DataAccessResourceFailureException.class,
+    org.springframework.dao.TransientDataAccessException.class,
+    org.springframework.transaction.CannotCreateTransactionException.class
+  })
+  public ResponseEntity<ProblemDetail> handleDatabaseUnavailable(
+      Exception exception, WebRequest request) {
+    LOG.warn("Database unavailable on {}: {}", path(request), exception.getClass().getSimpleName());
+    ResponseEntity<ProblemDetail> response =
+        respond(
+            ErrorCode.SERVICE_UNAVAILABLE,
+            com.sprintflowinsight.common.error.DatabaseUnavailableFilter.DETAIL,
+            request);
+    return ResponseEntity.status(response.getStatusCode())
+        .headers(response.getHeaders())
+        .header(HttpHeaders.RETRY_AFTER, "5")
+        .body(response.getBody());
   }
 
   @ExceptionHandler(java.util.NoSuchElementException.class)
@@ -142,6 +167,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleUnexpected(Exception exception, WebRequest request)
       throws Exception {
+    if (com.sprintflowinsight.common.error.DatabaseUnavailableFilter.isDatabaseUnavailable(
+        exception)) return handleDatabaseUnavailable(exception, request);
     // Binding and proxies wrap deliberate client errors (e.g. a constructor rejecting a filter).
     for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {
       if (cause instanceof ResponseStatusException clientError)

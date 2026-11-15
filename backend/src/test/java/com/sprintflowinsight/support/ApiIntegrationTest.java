@@ -27,14 +27,11 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  * created directly through repositories, and callers authenticated without a login round trip.
  * All subclasses share one Spring context.
  */
+@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     properties = {
       "app.security.auth-rate-limit.enabled=false",
-      "spring.datasource.url=${SPRINTFLOW_TEST_DB_URL:jdbc:h2:mem:api-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}",
-      "spring.datasource.driver-class-name=${SPRINTFLOW_TEST_DB_DRIVER:org.h2.Driver}",
-      "spring.jpa.hibernate.ddl-auto=validate",
-      "spring.jpa.properties.hibernate.generate_statistics=true",
-      "spring.flyway.enabled=true"
+      "spring.jpa.properties.hibernate.generate_statistics=true"
     })
 @AutoConfigureMockMvc
 public abstract class ApiIntegrationTest {

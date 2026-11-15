@@ -12,15 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-      "app.security.auth-rate-limit.enabled=false",
-      "spring.datasource.url=jdbc:h2:mem:security-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-      "spring.datasource.driver-class-name=org.h2.Driver",
-      "spring.jpa.hibernate.ddl-auto=create-drop",
-      "spring.flyway.enabled=false",
-      "spring.session.jdbc.initialize-schema=always"
+      "app.security.auth-rate-limit.enabled=false"
     })
 @ActiveProfiles("dev")
 @org.junit.jupiter.api.extension.ExtendWith(

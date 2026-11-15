@@ -26,6 +26,20 @@ type Props = {
   onAccountDeleted: () => void;
 };
 const projectStorage = 'sprintflow-active-project';
+const workspaceViews: readonly WorkspaceView[] = [
+  'overview', 'projects', 'backlog', 'sprints', 'tasks', 'metrics',
+  'updates', 'profile', 'calendar', 'retrospective', 'trash',
+];
+const viewStorage = (userId: number) => `sprintflow-view-v1:${userId}`;
+
+function restoreView(userId: number): WorkspaceView {
+  try {
+    const saved = sessionStorage.getItem(viewStorage(userId));
+    return workspaceViews.find((view) => view === saved) ?? 'overview';
+  } catch {
+    return 'overview';
+  }
+}
 
 export function Workspace(props: Props) {
   const [language, setLanguage] = useState<Language>(() =>
@@ -51,7 +65,7 @@ function WorkspaceContent({
   language,
   setLanguage,
 }: Props & { language: Language; setLanguage: (value: Language) => void }) {
-  const [view, setView] = useState<WorkspaceView>('overview');
+  const [view, setView] = useState<WorkspaceView>(() => restoreView(session.user.id));
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideAvailable, setGuideAvailable] = useState(false);
   const [preferenceError, setPreferenceError] = useState('');
@@ -68,6 +82,8 @@ function WorkspaceContent({
   const menuButton = useRef<HTMLButtonElement>(null);
   const [taskRequest, setTaskRequest] = useState(0);
   const sv = language === 'SV';
+  const accountName = session.user.displayName || session.user.email;
+  const accountInitial = accountName.slice(0, 1).toUpperCase();
   const activeProject = session.projects.find((p) => p.id === activeProjectId);
   const draftProjects = useMemo(() => ({ projects: session.projects, onSelect: setActiveProjectId }), [session.projects]);
   const labels = sv
@@ -149,6 +165,11 @@ function WorkspaceContent({
   }
   function selectView(next: WorkspaceView) {
     setView(next);
+    try {
+      sessionStorage.setItem(viewStorage(session.user.id), next);
+    } catch {
+      // Navigation remains usable when browser storage is unavailable.
+    }
     setMenuOpen(false);
   }
   const nav = (mobile = false) => (
@@ -241,20 +262,19 @@ function WorkspaceContent({
             <button
               className="account-profile"
               type="button"
-              aria-label={`${session.user.displayName || session.user.email} · ${labels.profile}`}
+              aria-label={`${session.user.avatarImage ? '' : `${accountInitial} `}${accountName} · ${labels.profile}`}
               onClick={() => selectView('profile')}
             >
               <span className="avatar">
                 {session.user.avatarImage ? (
                   <img src={session.user.avatarImage} alt="" />
                 ) : (
-                  (session.user.displayName || session.user.email)
-                    .slice(0, 1)
-                    .toUpperCase()
+                  accountInitial
                 )}
               </span>
+              {' '}
               <span className="account-name">
-                {session.user.displayName || session.user.email}
+                {accountName}
               </span>
             </button>
             <button

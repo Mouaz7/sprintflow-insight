@@ -25,15 +25,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * account out elsewhere, recovery does not leak account state, and Google sign-in trusts only
  * the verifier's verdict.
  */
+@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "app.security.auth-rate-limit.enabled=false",
-      "app.google.client-id=test-client.apps.googleusercontent.com",
-      "spring.datasource.url=jdbc:h2:mem:account-security;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-      "spring.datasource.driver-class-name=org.h2.Driver",
-      "spring.jpa.hibernate.ddl-auto=validate",
-      "spring.flyway.enabled=true"
+      "app.google.client-id=test-client.apps.googleusercontent.com"
     })
 class AccountSecurityIntegrationTest {
   private static final String PASSWORD = "first-password";

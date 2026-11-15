@@ -23,6 +23,17 @@
         <tomcat.version>10.1.61</tomcat.version>
         <log4j2.version>2.26.1</log4j2.version>
         <postgresql.version>42.7.14</postgresql.version>
+        <!-- Commons Compress requires the CVE-2025-48924 fix, above Boot's managed 3.17.0. -->
+        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <jqwik.version>1.10.1</jqwik.version>
+        <coverage.minimum.lines>0.90</coverage.minimum.lines>
+        <coverage.minimum.branches>0.65</coverage.minimum.branches>
+        <mutation.threshold>50</mutation.threshold>
+        <jacoco.version>0.8.15</jacoco.version>
+        <pitest.version>1.30.1</pitest.version>
+        <pitest-junit5.version>1.2.2</pitest-junit5.version>
+        <!-- Pinned PostgreSQL image for tests; keep in step with compose.yaml. -->
+        <postgres.test.image>postgres:16.10-alpine</postgres.test.image>
     </properties>
 
     <dependencies>
@@ -79,7 +90,6 @@
         <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency>
         <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency>
         <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>
-        <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-test</artifactId><scope>test</scope></dependency>
 
         <!-- Spring Boot Test -->
@@ -88,14 +98,41 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Tests run against the production database engine, never an in-memory imitation. -->
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-testcontainers</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.testcontainers</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.testcontainers</groupId><artifactId>postgresql</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.testcontainers</groupId><artifactId>toxiproxy</artifactId><scope>test</scope></dependency>
+        <!-- Property-based tests for algorithms and parsers. -->
+        <dependency><groupId>net.jqwik</groupId><artifactId>jqwik</artifactId><version>${jqwik.version}</version><scope>test</scope></dependency>
     </dependencies>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Testcontainers 1.21.4 brings Compress 1.24.0 (CVE-2024-25710/26308).
+                 Keep its test-only transitive dependency on the patched release. -->
+            <dependency><groupId>org.apache.commons</groupId><artifactId>commons-compress</artifactId><version>1.28.0</version></dependency>
             <!-- google-api-client pulls Guava 33.1.0, affected by GHSA-xxph-c9ww-hj94 (fixed in 33.7.2). -->
             <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.8.0-jre</version></dependency>
         </dependencies>
     </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <id>mutation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <executions>
+                            <execution><id>mutation</id><phase>verify</phase><goals><goal>mutationCoverage</goal></goals></execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <build>
         <!-- The React build is copied into Spring Boot's static web root for production. -->
@@ -113,6 +150,95 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- Operator-only migration commands; never run repair during application startup. -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <configuration>
+                    <url>${env.SPRINTFLOW_DB_URL}</url>
+                    <user>${env.SPRINTFLOW_DB_USER}</user>
+                    <password>${env.SPRINTFLOW_DB_PASSWORD}</password>
+                    <locations><location>filesystem:src/main/resources/db/migration</location></locations>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                        <include>**/*Properties.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <postgres.test.image>${postgres.test.image}</postgres.test.image>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <!-- Coverage: report on every verify, written to target/site/jacoco. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution><id>prepare-agent</id><goals><goal>prepare-agent</goal></goals></execution>
+                    <execution><id>report</id><phase>verify</phase><goals><goal>report</goal></goals></execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>${coverage.minimum.lines}</minimum></limit>
+                                        <limit><counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>${coverage.minimum.branches}</minimum></limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Mutation testing on pure logic: ./mvnw -Pmutation verify (report in target/pit-reports). -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>${pitest.version}</version>
+                <dependencies>
+                    <dependency><groupId>org.pitest</groupId><artifactId>pitest-junit5-plugin</artifactId><version>${pitest-junit5.version}</version></dependency>
+                </dependencies>
+                <configuration>
+                    <targetClasses>
+                        <param>com.sprintflowinsight.common.*</param>
+                        <param>com.sprintflowinsight.service.MetricsService</param>
+                        <param>com.sprintflowinsight.service.TaskExportFilter</param>
+                        <param>com.sprintflowinsight.service.UploadValidator</param>
+                        <param>com.sprintflowinsight.service.PdfReportWriter</param>
+                        <param>com.sprintflowinsight.CsvCell</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.sprintflowinsight.*Test</param>
+                        <param>com.sprintflowinsight.*Properties</param>
+                    </targetTests>
+                    <excludedTestClasses>
+                        <param>com.sprintflowinsight.*IntegrationTest</param>
+                        <param>com.sprintflowinsight.*FlowTest</param>
+                        <param>com.sprintflowinsight.*HttpTest</param>
+                        <param>com.sprintflowinsight.SecurityConfigurationTest</param>
+                        <param>com.sprintflowinsight.*MigrationTest</param>
+                        <param>com.sprintflowinsight.*ResilienceTest</param>
+                    </excludedTestClasses>
+                    <mutators><mutator>STRONGER</mutator></mutators>
+                    <outputFormats><param>HTML</param><param>XML</param></outputFormats>
+                    <timestampedReports>false</timestampedReports>
+                    <mutationThreshold>${mutation.threshold}</mutationThreshold>
+                </configuration>
             </plugin>
         </plugins>
     </build>
