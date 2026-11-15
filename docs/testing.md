@@ -66,9 +66,9 @@ The initial A2 PIT baseline detected 376 of 707 mutants (53.2%, including four t
 
 Open `backend/target/pit-reports/index.html` (XML is in the same directory). CI runs normal verification and mutation testing as separate jobs, and uploads `backend-test-reports` and `backend-mutation-report` artifacts for seven days. Changing a floor is a reviewed change: explain the change in scope or new baseline rather than overriding the property to bypass a failing build.
 
-Frontend verification currently exposes `npm run check` (Vitest, TypeScript and Vite); there is no `npm run e2e` script. Existing Playwright workflow checks live under `scripts/verification`, and CI's Docker job exercises account/workspace behaviour, uploads and persistence across a restart. A2 adds no views or endpoints. Its accessibility acceptance check aligns the profile button’s accessible name with its visible avatar initial and account name, including when the account name is hidden at narrow widths.
+Frontend verification exposes `npm run check` (Vitest, TypeScript and Vite) and, since A8, `npm run e2e` ([end-to-end tests](#end-to-end-tests-a8)). CI's Docker job exercises account/workspace behaviour, uploads and persistence across a restart. A2 adds no views or endpoints. Its accessibility acceptance check aligns the profile button’s accessible name with its visible avatar initial and account name, including when the account name is hidden at narrow widths.
 
-For A2 acceptance, the packaged app was also started with a separate disposable PostgreSQL database and checked with `scripts/verification/business-rules.ts` (real browser/database role and workflow checks). A temporary axe-core 4.14.0 scan covers sign-in and the empty overview in light/dark themes; all three scans reported zero violations after the profile-button fix. The audit browser allows axe script injection past CSP and uses reduced motion to inspect settled colours; application CSP is unchanged. This targeted scan does not claim a full WCAG audit. Permanent Playwright/axe wiring and `npm run e2e` remain the explicit scope of A8 (#9).
+For A2 acceptance, the packaged app was also started with a separate disposable PostgreSQL database and checked with `scripts/verification/business-rules.ts` (real browser/database role and workflow checks; A8 ported it to `frontend/e2e/tests/roles.e2e.ts`). A temporary axe-core 4.14.0 scan covers sign-in and the empty overview in light/dark themes; all three scans reported zero violations after the profile-button fix. The audit browser allows axe script injection past CSP and uses reduced motion to inspect settled colours; application CSP is unchanged. This targeted scan does not claim a full WCAG audit. A8 made Playwright/axe permanent in `npm run e2e`.
 
 ## Content Security Policy and Trusted Types in a real browser
 
@@ -82,7 +82,7 @@ npm run trusted-types              # also loads GIS and renders its button; need
 npm run trusted-types -- --offline # app only; Google requests are blocked
 ```
 
-No account is used and nothing is written. The script answers the Google config request with a placeholder client id, so the server does not need `SPRINTFLOW_GOOGLE_CLIENT_ID`; set `SPRINTFLOW_TT_GOOGLE_CLIENT_ID` to render a real client's button. Because the default mode needs network access to Google, it is not part of required CI. Run it after changing the CSP, `googleScriptUrl.ts`, the GIS loader or the Google sign-in component.
+No account is used and nothing is written. The script answers the Google config request with a placeholder client id, so the server does not need `SPRINTFLOW_GOOGLE_CLIENT_ID`; set `SPRINTFLOW_TT_GOOGLE_CLIENT_ID` to render a real client's button. Because the default mode needs network access to Google, it is not part of required CI. Run it after changing the CSP, `googleScriptUrl.ts`, the GIS loader or the Google sign-in component. Its offline mode is also part of the e2e suite (`security-headers.e2e.ts`), and every e2e flow fails on a CSP or Trusted Types violation raised by the app.
 
 ## Module structure and event delivery (A3)
 
@@ -94,7 +94,7 @@ cd backend
 ./mvnw clean verify
 ```
 
-Always use `clean` after moving Java packages; stale class files otherwise remain in `target/classes` and inflate JaCoCo's uncovered-class count. A3 preserves the 90% line/65% branch floors and the existing mutation scope, including the security-filter types moved from `common` into `auth/filter`. Frontend `npm run check` and the existing Playwright verification scripts remain the available UI checks; adding the permanent `npm run e2e` entry point remains A8's scope.
+Always use `clean` after moving Java packages; stale class files otherwise remain in `target/classes` and inflate JaCoCo's uncovered-class count. A3 preserves the 90% line/65% branch floors and the existing mutation scope, including the security-filter types moved from `common` into `auth/filter`. Frontend `npm run check` and the Playwright verification scripts were the available UI checks at the time; A8 added `npm run e2e`.
 
 `TestContextShutdown` closes cached Spring contexts when the JUnit test plan finishes, before the JVM starts Testcontainers cleanup. Modulith checks outstanding publications during context shutdown, so PostgreSQL must still be available then. The test listener is registered only under `src/test/resources`; production lifecycle is unchanged. Do not run a dependency scanner that invokes Maven concurrently with verification after editing sources, because recompilation during a JaCoCo run invalidates class fingerprints.
 
@@ -125,3 +125,77 @@ npm ci
 npm run check
 npx vitest run src/features/tasks   # one feature
 ```
+
+## End-to-end tests (A8)
+
+`frontend/e2e` is a separate npm package with its own lockfile (Playwright 1.65, `@axe-core/playwright` 4.14, Lighthouse CI). The production build and the Docker image never install it. The suite runs against a real app and PostgreSQL; it never starts or mocks the backend.
+
+```sh
+./start.sh                                    # or any running app with a database
+npm ci --prefix frontend/e2e
+npx --prefix frontend/e2e playwright install chromium
+E2E_BASE_URL=http://127.0.0.1:8081 npm run e2e --prefix frontend
+```
+
+| Test | Covers |
+|---|---|
+| `auth.e2e.ts` | Sign-up through the UI, sign-out (session gone: `/api/auth/me` is 401), wrong password shows an alert, sign-in, session survives reload |
+| `workspace.e2e.ts` | Create a project, sprint, story and task through the dialogs; API confirms each lands in the right project; persistence after reload; planning the story into the sprint moves its task (sprint inheritance) |
+| `roles.e2e.ts` | Owner/Admin/Member/Viewer/Outsider matrix, cross-project isolation, one active sprint, invalid associations (400), admin UI cannot transfer ownership, ownership transfer and back |
+| `security-headers.e2e.ts` | Sign-in page under the enforced CSP and Trusted Types (offline counterpart of `trusted-types.ts`) and security headers |
+
+Every test checks, through auto fixtures, that the page raised no uncaught errors and no CSP or Trusted Types violations. A violation counts only when it comes from the app's own documents or scripts: code injected through the DevTools protocol (axe-core) has no source file and is ignored. `expectAccessible` runs axe-core with WCAG 2.0/2.1/2.2 A and AA tags. It fails on **serious or critical** findings, attaches the full list (including minor and moderate findings) to the HTML report, and asserts that axe actually evaluated rules. It scans the sign-in page and backlog in light and dark mode, and the overview, projects, sprints, backlog and tasks views in light mode. Accounts are disposable (`e2e-<label>-<timestamp>@example.com`) and each test deletes its projects and accounts, even on failure. With one worker the suite needs about 20 seconds.
+
+Selectors use roles, labels and visible English text. `navigationItem` accepts a navigation button or a router link, so route-based navigation does not break the suite. **Visual regression** (screenshots in light, dark and mobile) is deliberately not here: it comes with the design system and Storybook in A7, so baselines are captured from the final components.
+
+### What happened to `scripts/verification`
+
+| Script | Status |
+|---|---|
+| `business-rules.ts` | Ported to `roles.e2e.ts` (role matrix, isolation, ownership) and `workspace.e2e.ts` (story to sprint with task inheritance); removed |
+| `creation-visibility.ts` | Ported to `workspace.e2e.ts` (creation and persistence of all four entity types); removed. Choosing a destination project inside the forms is covered by Vitest (`ProjectDestination.test.tsx`, `EditorProject.test.tsx`); the injected post-save refresh failure was not ported |
+| `version-headers.ts` | Moved into `frontend/e2e/support/api.ts`; removed |
+| `trusted-types.ts` | Kept for the online mode, which renders Google Identity Services and needs network access to Google; the offline mode is in the suite |
+| `responsive.ts`, `guidance.ts`, `responsive-fixtures.ts` | Kept until A7: layout matrices at ten widths with screenshots belong with visual regression |
+| `container-smoke.ts` | Kept: it checks the container (non-root uploads, persistence across a Compose restart) in the required `docker` job |
+| `repository-check.ts`, `summarize-performance.ts` | Kept: repository rules and k6 summaries, not browser tests |
+
+## CI pipeline (A8)
+
+`.github/workflows/quality.yml` keeps the four required jobs (`quality`, `docker`, `security`, `mutation`) and adds jobs that reuse the image built by `docker`:
+
+| Job | What it does | Blocking |
+|---|---|---|
+| `quality` | Repository check, tooling type-check, frontend `npm run check`, e2e type-check, the pipeline's only `mvn verify`, CycloneDX SBOMs (backend from the jar, frontend from `cyclonedx-npm`) | Required |
+| `docker` | Buildx build with a GHA layer cache, checks that the image has no curl or wget, Compose smoke test and restart, uploads the image tar | Required |
+| `security` | gitleaks over history, osv-scanner over all lockfiles and `pom.xml` | Required |
+| `mutation` | PIT on pure logic | Required |
+| `e2e` | Compose with the built image, Playwright with axe | Not required yet |
+| `image-scan` | Trivy image SBOM, HIGH/CRITICAL SARIF to code scanning, fails on fixable CRITICAL | Not required yet |
+| `zap-baseline` | OWASP ZAP passive baseline with the AJAX spider; rules in `.zap/rules.tsv` | Not required yet |
+| `k6-smoke` | `K6_PROFILE=smoke` workspace reads: 2 VUs for 10 s, no failed requests, p95 < 500 ms | Not required yet |
+| `lighthouse` | Lighthouse CI budgets, below | Informational |
+| `publish` | `main` pushes only: GHCR push, cosign signature, SLSA provenance and SBOM attestations | Runs after merge |
+
+Maven, npm and Playwright browser downloads are cached. `codeql.yml` (actions, java-kotlin, javascript-typescript; no build) and `scorecard.yml` (OpenSSF Scorecard on `main`) are separate workflows. Supply-chain decisions are in [ADR 0014](adr/0014-ci-supply-chain.md) and [docs/security/supply-chain.md](security/supply-chain.md).
+
+### Lighthouse budgets
+
+`npm run lighthouse --prefix frontend/e2e` (`frontend/e2e/lighthouse.ts`) runs Lighthouse CI three times per profile against `E2E_BASE_URL` and judges the median run:
+
+| Metric | Budget | Note |
+|---|---|---|
+| Largest Contentful Paint | < 2.5 s | |
+| Total Blocking Time | < 200 ms | Lab proxy for INP < 200 ms, because INP needs real interactions |
+| Cumulative Layout Shift | < 0.1 | |
+| Transferred script | < 175 kB | `size-limit` guards 150 kB gzip at build time |
+
+The desktop profile fails the job. The mobile profile (simulated slow 4G, 4x CPU slowdown) reports the same budgets as warnings: its median LCP on the sign-in page was 2.9–3.0 s locally and in CI, because the page renders only after the SPA bundle and Google Fonts load. Lighthouse also showed that the 449 kB bundle was served uncompressed. A8 enables gzip for JavaScript, CSS and SVG (about 141 kB), but not for HTML or JSON, so no compression side channel exposes CSRF tokens or nonces. Self-hosted fonts and a lighter first render are A7 work.
+
+### k6 smoke
+
+```sh
+BASE_URL=http://127.0.0.1:8081 K6_PROFILE=smoke k6 run scripts/performance/workspace-read.k6.ts
+```
+
+The smoke profile reuses the A4 fixture (disposable account, 23-task project, cleanup in `teardown`) with three warm-up iterations and two virtual users for ten seconds. It is a regression tripwire, not a capacity measurement. The full profile (no `K6_PROFILE`) is unchanged.
