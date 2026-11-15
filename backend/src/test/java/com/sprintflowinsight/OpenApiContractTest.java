@@ -123,6 +123,46 @@ class OpenApiContractTest {
                       ((Map<String, Object>) schemas.get("ProjectRequest")).get("properties"))
                   .get("key");
       assertThat(requestKey).containsEntry("pattern", "^" + ProjectRequest.KEY_INPUT + "$");
+
+      // B9: search parameters and result shapes follow the request and response records.
+      Map<String, Object> search =
+          (Map<String, Object>) ((Map<String, Object>) paths.get("/api/search")).get("get");
+      assertThat(
+              ((java.util.List<Map<String, Object>>) search.get("parameters"))
+                  .stream()
+                  .map(parameter -> parameter.get("name")))
+          .containsExactlyInAnyOrderElementsOf(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.search.SearchRequest.class.getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName)
+                  .toList());
+      assertThat(((Map<String, Object>) search.get("responses")).keySet())
+          .contains("200", "400", "401", "403", "404");
+      Map<String, Class<? extends Record>> results =
+          Map.of(
+              "SearchResponse", com.sprintflowinsight.search.SearchResponse.class,
+              "SearchHit", com.sprintflowinsight.search.SearchHit.class,
+              "SearchSegment", com.sprintflowinsight.search.SearchHit.Segment.class);
+      results.forEach(
+          (name, type) ->
+              assertThat(
+                      ((Map<String, Object>) ((Map<String, Object>) schemas.get(name)).get("properties"))
+                          .keySet())
+                  .as(name + " properties")
+                  .containsExactlyInAnyOrderElementsOf(
+                      java.util.Arrays.stream(type.getRecordComponents())
+                          .map(java.lang.reflect.RecordComponent::getName)
+                          .toList()));
+      Map<String, Object> hitType =
+          (Map<String, Object>)
+              ((Map<String, Object>)
+                      ((Map<String, Object>) schemas.get("SearchHit")).get("properties"))
+                  .get("type");
+      assertThat((java.util.List<String>) hitType.get("enum"))
+          .containsExactlyElementsOf(
+              java.util.Arrays.stream(com.sprintflowinsight.search.SearchType.values())
+                  .map(com.sprintflowinsight.search.SearchType::wire)
+                  .toList());
     }
   }
 }
