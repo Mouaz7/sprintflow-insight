@@ -1,1 +1,2 @@
 org.springframework.test.context.TestExecutionListener=com.sprintflowinsight.support.TestContextShutdown
+org.springframework.boot.EnvironmentPostProcessor=com.sprintflowinsight.support.TestEncryptionKey

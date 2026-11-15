@@ -44,6 +44,14 @@ if [[ -z "$(read_setting SPRINTFLOW_DB_PASSWORD '')" ]]; then
   printf 'Generated a private database password in .env. Keep this file for future starts.\n'
 fi
 
+# The data-encryption key is generated once, like the password, and never replaced automatically:
+# a new key would make existing encrypted values unreadable (rotation: docs/adr/0011).
+if [[ -z "$(read_setting SPRINTFLOW_ENCRYPTION_KEY '')" ]]; then
+  key="$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
+  write_setting SPRINTFLOW_ENCRYPTION_KEY "$key"
+  printf 'Generated a private encryption key in .env. Keep this file (and a backup of it) for future starts.\n'
+fi
+
 is_wsl() {
   grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null
 }

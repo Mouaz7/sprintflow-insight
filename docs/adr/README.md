@@ -15,3 +15,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0010](0010-probabilistic-forecast-models.md) | Probabilistic forecast models selected by backtested CRPS | Accepted |
 | [0011](0011-cp-sat-sprint-optimisation.md) | CP-SAT for sprint optimisation with greedy and DP baselines | Accepted |
 | [0012](0012-late-task-risk-model.md) | Hand-written regularised logistic regression for late-task risk | Accepted |
+| [0011](0011-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |

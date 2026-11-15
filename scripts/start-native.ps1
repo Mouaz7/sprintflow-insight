@@ -28,6 +28,21 @@ if (-not (Test-Path -LiteralPath $environmentFile)) {
     [IO.File]::WriteAllText($environmentFile, $template, [Text.UTF8Encoding]::new($false))
     Write-Host 'Created .env with a local PostgreSQL password.'
 }
+# Generated once, never replaced: a new key would make existing encrypted values unreadable (ADR 0011).
+$settings = [IO.File]::ReadAllText($environmentFile)
+if ($settings -notmatch '(?m)^SPRINTFLOW_ENCRYPTION_KEY=[^\r\n]+\r?$') {
+    $bytes = New-Object byte[] 32
+    $random = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $random.GetBytes($bytes) } finally { $random.Dispose() }
+    $keyLine = 'SPRINTFLOW_ENCRYPTION_KEY=' + [Convert]::ToBase64String($bytes)
+    if ($settings -match '(?m)^SPRINTFLOW_ENCRYPTION_KEY=\r?$') {
+        $settings = $settings -replace '(?m)^SPRINTFLOW_ENCRYPTION_KEY=\r?$', $keyLine
+    } else {
+        $settings = $settings.TrimEnd() + "`n" + $keyLine + "`n"
+    }
+    [IO.File]::WriteAllText($environmentFile, $settings, [Text.UTF8Encoding]::new($false))
+    Write-Host 'Generated a private encryption key in .env. Keep this file (and a backup of it) for future starts.'
+}
 Import-EnvironmentFile $environmentFile
 
 $npmCommand = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
