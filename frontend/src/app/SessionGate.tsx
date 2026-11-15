@@ -1,11 +1,18 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { Outlet, useMatch, useOutletContext } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../api/client';
 import type { Session, User } from '../api/contracts';
 import { meQuery, projectsQuery } from '../api/queries';
-import { AuthScreen } from '../features/auth/AuthScreen';
 import { useT } from '../shared/i18n/LanguageProvider';
 import { appText } from './i18n';
+
+// Signed-in visits never download the sign-in page.
+const AuthScreen = lazy(() =>
+  import('../features/auth/AuthScreen').then((module) => ({
+    default: module.AuthScreen,
+  })),
+);
 
 export type SessionContext = {
   session: Session;
@@ -48,12 +55,12 @@ export function SessionGate() {
     forgetAccountData();
   }
 
-  if (me.isPending || (user && projects.isPending))
-    return (
-      <main className="app-loading" role="status">
-        {t('loadingApp')}
-      </main>
-    );
+  const loading = (
+    <main className="app-loading" role="status">
+      {t('loadingApp')}
+    </main>
+  );
+  if (me.isPending || (user && projects.isPending)) return loading;
   const failed =
     me.isError ||
     (user &&
@@ -61,10 +68,12 @@ export function SessionGate() {
       !(projects.error instanceof ApiError && projects.error.status === 401));
   if (!user || !projects.data || resetPassword)
     return (
-      <AuthScreen
-        onSignedIn={signedIn}
-        initialError={failed ? t('workspaceFailed') : ''}
-      />
+      <Suspense fallback={loading}>
+        <AuthScreen
+          onSignedIn={signedIn}
+          initialError={failed ? t('workspaceFailed') : ''}
+        />
+      </Suspense>
     );
   const context: SessionContext = {
     session: { user, projects: projects.data },

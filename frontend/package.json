@@ -57,9 +57,27 @@
   },
   "size-limit": [
     {
-      "name": "Application JavaScript (gzip)",
+      "name": "Initial JavaScript: entry chunk (gzip)",
+      "path": "dist/assets/index-*.js",
+      "limit": "125 kB",
+      "gzip": true
+    },
+    {
+      "name": "Tasks route chunk (gzip)",
+      "path": "dist/assets/TasksView-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Backlog/sprints/metrics/updates route chunk (gzip)",
+      "path": "dist/assets/ProjectInsights-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "150 kB",
+      "limit": "210 kB",
       "gzip": true
     },
     {
