@@ -65,3 +65,49 @@ All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteD
 - The Poisson-type models treat items as independent arrivals. Batch completions (many items closed on one day) are over-dispersed, so the EWMA intervals will be too narrow. Gamma-Poisson only partly absorbs this through parameter uncertainty, which vanishes as history grows.
 - Velocity in story points is not a count of independent events. The Poisson models only approximate it, so prefer item throughput when both are available.
 - The forecast covers future throughput, not scope. The *N* items remaining are taken as given.
+
+## Late-task risk (C3)
+
+The risk model estimates, for a task in the active sprint, the probability that it is **not done when the sprint ends**. The algorithmic core lives in the `risk` module (pure Java, no persistence); scheduling, storage and the UI are later C3 steps. See [ADR 0012](adr/0012-late-task-risk-model.md).
+
+### Features
+
+All features describe the work item, its column or the sprint. Every value is finite and non-negative (`RiskFeatures`).
+
+| Feature | Definition |
+| --- | --- |
+| Age vs column p85 | Hours in the current column divided by the 85th percentile (linear interpolation, Hyndman–Fan type 7) of the hours earlier tasks spent in that column. The reference is at least one hour; without history the ratio is 1. |
+| Times blocked | Number of times the task has been marked blocked. |
+| Reassignments | Number of assignee changes (only the count). |
+| Comments, last 7 days | Comments on the task in the last seven days. |
+| Story points | Current estimate; unestimated tasks use 0. |
+| Dependency depth | Length of the longest chain of unfinished tasks the task depends on. |
+| Remaining sprint days | Calendar days until the sprint ends; 0 once the end has passed. |
+| Column WIP | Tasks currently in the task's column, including itself. |
+
+**Fairness.** No feature identifies a person: assignee, reporter, commenter identity, team membership and similar attributes are deliberately excluded, so the model cannot learn that particular people are "risky". Reassignments and comments are counted, never attributed. A unit test guards the feature record against identity fields. Indirect proxies remain possible (for example, a person who always takes large tasks); risk is a property of the task to be discussed by the team, not a performance measure of individuals.
+
+### Model
+
+- **Standardisation.** Each feature is transformed to `z = (x − mean) / sd` with the mean and population standard deviation of the *training* data only. Constant columns get `sd = 1` (so `z = 0`).
+- **Logistic regression.** `p = σ(b + Σ wⱼ zⱼ)`. The parameters minimise the mean log loss plus `(λ/2)‖w‖²` (default `λ = 0.01`; the intercept is not penalised). The optimiser is Newton's method (IRLS) with an Armijo backtracking line search. It stops when the largest absolute gradient component is at most `10⁻⁸`, or after 100 steps. Training uses no randomness and is bit-for-bit reproducible.
+- **Cold start.** A model is trained only when both outcomes (late and on time) have at least **80 examples** each: ten events per feature (Peduzzi et al., 1996). Below that threshold a heuristic with fixed expert weights on fixed reference scales is used. Its intercept is calibrated so that the mean predicted probability over the available examples equals the observed late rate, shrunk towards a 25 % prior by a Beta(1, 3) prior: `(late + 1) / (n + 4)`. With no history at all, a typical task gets 25 %. Predictions report which of the two sources produced them.
+- **Probabilities** are clamped to `[10⁻⁹, 1 − 10⁻⁹]` so they are always strictly between 0 and 1.
+
+### Explanation
+
+The log-odds are an exact sum of the intercept and one term per feature, `wⱼ · zⱼ` (coefficient × standardised value). A prediction lists the **three terms with the largest absolute value** (ties in feature order; zero terms are omitted). A positive term raises the risk compared with an average task in the training data; a negative term lowers it.
+
+### Evaluation
+
+- **Time-based split.** Examples are sorted by observation time; the earliest share trains, the rest tests. Examples sharing the boundary timestamp all go to the test set, so every training example is strictly older than every test example.
+- **ROC AUC** is computed exactly from the Mann–Whitney statistic with mid-ranks. Tied scores count one half, and only the order of the scores matters.
+- **Brier score** is the mean squared difference between probability and outcome (0 is perfect; a constant 0.5 scores 0.25).
+- **Calibration curve:** equal-width probability bins with count, mean prediction and observed late rate; empty bins are omitted.
+
+### Limitations
+
+- A linear-logistic model cannot represent interactions between features (for example, many points *and* few days left) unless such terms are added explicitly.
+- The labels describe history: changes to process, team size or sprint length shift the base rate, which nightly retraining only partly absorbs. The cold-start weights are judgements, not estimates.
+- Coefficients are associations, not causes; "top 3 reasons" explain the model, not the task.
+- The 80-per-class threshold is a rule of thumb, and λ is not yet chosen by cross-validation. Results on the Jira dataset still have to be reported in `docs/evaluation/`.
