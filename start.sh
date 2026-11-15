@@ -2,55 +2,10 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$ROOT_DIR/.env"
-die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
-umask 077
-
-# Portable on GNU/Linux and macOS; never evaluate .env as shell code.
-write_setting() {
-  local key="$1" value="$2" temporary
-  temporary="$(mktemp "$ROOT_DIR/.env.XXXXXX")"
-  if awk -v key="$key" -v value="$value" '
-    { sub(/\r$/, "") }
-    index($0, key "=") == 1 { print key "=" value; found=1; next }
-    { print }
-    END { if (!found) print key "=" value }
-  ' "$ENV_FILE" > "$temporary"; then
-    mv -- "$temporary" "$ENV_FILE"
-  else
-    rm -f -- "$temporary"
-    die 'Could not update .env.'
-  fi
-}
-
-read_setting() {
-  local key="$1" fallback="$2" value
-  value="$(sed -n "s/^${key}=//p" "$ENV_FILE" | tr -d '\r' | tail -n 1)"
-  printf '%s' "${value:-$fallback}"
-}
-
-if [[ ! -f "$ENV_FILE" ]]; then
-  [[ -f "$ROOT_DIR/.env.example" ]] || die '.env.example is missing.'
-  # Local starts serve plain HTTP on localhost, so the template's secure-cookie default must be relaxed.
-  sed 's/^SPRINTFLOW_COOKIE_SECURE=.*/SPRINTFLOW_COOKIE_SECURE=false/' "$ROOT_DIR/.env.example" >"$ENV_FILE"
-  printf 'Created private .env settings. Keep this file for future starts.\n'
-fi
-
-# A pre-existing .env copied from .env.example may still have the blank template value.
-# Fill only that blank value; preserve any configured password and all other settings.
-if [[ -z "$(read_setting SPRINTFLOW_DB_PASSWORD '')" ]]; then
-  password="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
-  write_setting SPRINTFLOW_DB_PASSWORD "$password"
-  printf 'Generated a private database password in .env. Keep this file for future starts.\n'
-fi
-
-# The data-encryption key is generated once, like the password, and never replaced automatically:
-# a new key would make existing encrypted values unreadable (rotation: docs/adr/0015).
-if [[ -z "$(read_setting SPRINTFLOW_ENCRYPTION_KEY '')" ]]; then
-  key="$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
-  write_setting SPRINTFLOW_ENCRYPTION_KEY "$key"
-  printf 'Generated a private encryption key in .env. Keep this file (and a backup of it) for future starts.\n'
-fi
+export SPRINTFLOW_ROOT="$ROOT_DIR"
+# shellcheck source=scripts/env-bootstrap.sh
+source "$ROOT_DIR/scripts/env-bootstrap.sh"
+bootstrap_env
 
 is_wsl() {
   grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null
@@ -68,19 +23,7 @@ start_with_windows_docker() {
   exit "$result"
 }
 
-read_port() {
-  local key="$1" fallback="$2" value
-  value="$(read_setting "$key" "$fallback")"
-  [[ "$value" =~ ^[0-9]{1,5}$ ]] && (( 10#$value >= 1 && 10#$value <= 65535 )) || die "$key must be between 1 and 65535."
-  printf '%s' "$value"
-}
 app_port="$(read_port SPRINTFLOW_APP_PORT 8081)"
-read_port SPRINTFLOW_DB_PORT 5432 >/dev/null
-
-# Prepare permissions before the WSL fallback as well as direct Docker startup.
-mkdir -p "$ROOT_DIR/backend/data"
-[[ "$(read_setting SPRINTFLOW_CONTAINER_UID 1000)" != 1000 ]] || write_setting SPRINTFLOW_CONTAINER_UID "$(id -u)"
-[[ "$(read_setting SPRINTFLOW_CONTAINER_GID 1000)" != 1000 ]] || write_setting SPRINTFLOW_CONTAINER_GID "$(id -g)"
 
 if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null 2>&1; then
   if is_wsl; then
