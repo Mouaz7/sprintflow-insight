@@ -1,0 +1,2 @@
+# OWASP ZAP baseline rule overrides: <rule id> TAB <IGNORE|INFO|WARN|FAIL> TAB <reason>.
+# Every override needs a reason; see docs/security/supply-chain.md.

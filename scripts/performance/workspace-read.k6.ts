@@ -1,15 +1,19 @@
 // k6 load script (runs in k6, not Node): measures authenticated workspace reads.
 // Usage: BASE_URL=http://127.0.0.1:18084 k6 run scripts/performance/workspace-read.k6.ts
+// CI smoke: K6_PROFILE=smoke runs a short, low-load pass with latency budgets as a
+// regression tripwire. It is not a capacity measurement.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
+const smoke = __ENV.K6_PROFILE === 'smoke';
+
 export const options = {
   scenarios: {
-    warmup: { executor: 'shared-iterations', vus: 1, iterations: 10, exec: 'readWorkspace' },
+    warmup: { executor: 'shared-iterations', vus: 1, iterations: smoke ? 3 : 10, exec: 'readWorkspace' },
     measure: {
       executor: 'constant-vus',
-      vus: 5,
-      duration: '20s',
+      vus: smoke ? 2 : 5,
+      duration: smoke ? '10s' : '20s',
       startTime: '3s',
       exec: 'readWorkspace',
     },
@@ -17,6 +21,7 @@ export const options = {
   thresholds: {
     'http_req_failed{scenario:measure}': ['rate<0.01'],
     checks: ['rate==1'],
+    ...(smoke ? { 'http_req_duration{scenario:measure}': ['p(95)<500'] } : {}),
   },
 };
 
