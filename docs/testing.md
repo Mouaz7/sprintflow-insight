@@ -110,3 +110,17 @@ npm ci
 npm run check
 npx vitest run src/features/tasks   # one feature
 ```
+
+## Frontend routes, data and accessibility (A6)
+
+`npm run check` is unchanged in order; ESLint now also enforces `react-hooks/set-state-in-effect`, and size-limit checks several budgets instead of one: the entry chunk (125 kB gzip), the tasks and backlog/sprints/metrics/updates route chunks (20 kB each), all JavaScript together (210 kB) and CSS (15 kB). See [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
+
+- **MSW.** `src/test/setup.ts` starts one MSW server for every test file and fails on unhandled requests. Tests answer API calls with `mockApi((path, request) => payload | HttpResponse)` from `src/test/api.ts`, so they go through the real `fetch` and REST client (CSRF, error mapping). Component tests that mock the `api` module at module level remain where they test a single component.
+- **Providers.** `renderWithProviders` (`src/test/render.tsx`) adds the query client, language, theme and a memory router; `renderWorkspace` (`src/app/testWorkspace.tsx`) renders the workspace routes for a fixed session. Views are lazy chunks, so the Testing Library wait time is raised to five seconds for their first import.
+- **Routing.** `App.routing.test.tsx` covers the old `?report=`/`?resetToken=` redirects, deep links, the signed-out deep link, unknown paths, one `<main>`, the skip link and focus on the page heading after navigation.
+- **Lexicon.** `shared/i18n/lexicon.test.ts` checks plurals, locale dates and numbers, and uses `@ts-expect-error` to prove that an unknown key, a missing Swedish key and a missing argument do not compile.
+- **Accessibility.** `App.a11y.test.tsx` runs axe-core (WCAG 2.0–2.2 A/AA tags) on sign-in in both languages with the dark theme, password reset, overview, tasks, backlog, projects, profile, the mobile menu and a shared report, and fails on serious or critical findings. `src/test/axe.test.ts` proves the helper catches violations. jsdom has no layout, so colour contrast and target size are left to the browser checks below.
+- **Virtualization.** `app/Virtualization.test.tsx` renders 5,000 tasks and 5,000 stories with a simulated viewport (jsdom has no layout). The board renders 28 cards and about 1,500 DOM nodes, only rendered cards request attachments, and the backlog renders a bounded window of rows with `aria-rowcount=5001`.
+
+For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. `business-rules.ts` and `creation-visibility.ts` need the real backend and database and were updated for link navigation but not run locally.
+
