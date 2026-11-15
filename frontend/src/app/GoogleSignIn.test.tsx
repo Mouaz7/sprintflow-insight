@@ -13,6 +13,8 @@ describe('Google Identity integration', () => {
   beforeEach(() => vi.mocked(api).mockReset());
   afterEach(() => {
     delete window.google;
+    document.querySelector('meta[property="csp-nonce"]')?.remove();
+    document.querySelector('script[src="https://accounts.google.com/gsi/client"]')?.remove();
   });
   it('explains missing configuration without loading an external script', async () => {
     vi.mocked(api).mockResolvedValue({ clientId: '' });
@@ -29,6 +31,19 @@ describe('Google Identity integration', () => {
     expect(
       document.querySelector('script[src*="accounts.google.com"]'),
     ).toBeNull();
+  });
+  it('copies the document nonce onto the official loader', async () => {
+    const meta = document.createElement('meta');
+    meta.setAttribute('property', 'csp-nonce');
+    meta.nonce = 'per-document-test-nonce';
+    document.head.append(meta);
+    vi.mocked(api).mockResolvedValue({ clientId: 'test.apps.googleusercontent.com' });
+    render(<GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />);
+    await waitFor(() => expect(document.querySelector('script[src="https://accounts.google.com/gsi/client"]')).not.toBeNull());
+    const script = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]')!;
+    expect(script.nonce).toBe('per-document-test-nonce');
+    window.google = { accounts: { id: { initialize: vi.fn(), renderButton: vi.fn() } } };
+    await act(async () => { script.dispatchEvent(new Event('load')); });
   });
   it('renders the official button and exchanges the credential for a server session', async () => {
     const initialize = vi.fn(),

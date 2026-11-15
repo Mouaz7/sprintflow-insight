@@ -89,7 +89,8 @@ public class SecurityConfiguration {
       HttpSecurity http,
       SecurityContextRepository contexts,
       HttpSessionCsrfTokenRepository csrf,
-      ObjectMapper json)
+      ObjectMapper json,
+      CspPolicy cspPolicy)
       throws Exception {
     http.securityContext(
             context -> context.securityContextRepository(contexts).requireExplicitSave(true))
@@ -97,17 +98,7 @@ public class SecurityConfiguration {
         .headers(
             headers ->
                 headers
-                    .contentSecurityPolicy(
-                        csp ->
-                            csp.policyDirectives(
-                                "default-src 'self'; script-src 'self' https://accounts.google.com;"
-                                    + " style-src 'self' 'unsafe-inline'"
-                                    + " https://fonts.googleapis.com"
-                                    + " https://accounts.google.com/gsi/style; font-src 'self'"
-                                    + " https://fonts.gstatic.com; img-src 'self' data: https:;"
-                                    + " connect-src 'self' https://accounts.google.com; frame-src"
-                                    + " https://accounts.google.com; object-src 'none'; base-uri"
-                                    + " 'self'; form-action 'self'; frame-ancestors 'none'"))
+                    .addHeaderWriter(cspPolicy)
                     .addHeaderWriter(
                         (request, response) -> {
                           String forwardedUri =
@@ -144,14 +135,7 @@ public class SecurityConfiguration {
                             "camera=(), microphone=(), geolocation=(), payment=(), usb=(),"
                                 + " serial=(), browsing-topics=()"))
                     .addHeaderWriter(
-                        new StaticHeadersWriter("Cross-Origin-Resource-Policy", "same-origin"))
-                    // Staged rollout: Trusted Types are reported, not yet enforced, until the
-                    // browser
-                    // suite has proven that React and Google Identity Services never sink raw HTML.
-                    .addHeaderWriter(
-                        new StaticHeadersWriter(
-                            "Content-Security-Policy-Report-Only",
-                            "require-trusted-types-for 'script'")))
+                        new StaticHeadersWriter("Cross-Origin-Resource-Policy", "same-origin")))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/actuator/health")
