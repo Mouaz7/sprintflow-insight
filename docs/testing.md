@@ -37,6 +37,7 @@ Surefire explicitly includes both `*Test` and `*Properties`, so a normal verific
 - PDF: wrapping fits the requested width and preserves visible text order.
 - Rate limiting: arbitrary request timings obey a 30-attempt fixed refill window.
 - Risk model (`risk/*Properties`): probabilities strictly in (0, 1), explanations are the largest log-odds terms, regularisation never increases the weight norm, training is deterministic; AUC equals the pairwise definition, is 1/0 for perfect/reversed rankers and invariant under increasing transforms; Brier is 0 for perfect predictions; calibration bins partition the predictions.
+- Search (`search/SearchQueryProperties`, a jqwik fuzz of the parser until the Jazzer harness in C7): any text yields a well-formed, bounded `to_tsquery` argument of quoted prefix terms with no user-supplied operators, terms come from the input words, task keys are recognised in any case, cursors round-trip and arbitrary cursor text fails only as a 400 problem.
 
 jqwik reports the seed and a shrunk counterexample on failure. To replay it, temporarily set `seed = "<reported-seed>"` on the failing `@Property`, then run `./mvnw -Dtest=CsvCellProperties test` (substitute the affected class). Remove the fixed seed after diagnosis. See the [jqwik guide](https://jqwik.net/docs/1.10.1/user-guide.html#optional-property-attributes). The local `.jqwik-database` is ignored by Git.
 
@@ -199,3 +200,11 @@ BASE_URL=http://127.0.0.1:8081 K6_PROFILE=smoke k6 run scripts/performance/works
 ```
 
 The smoke profile reuses the A4 fixture (disposable account, 23-task project, cleanup in `teardown`) with three warm-up iterations and two virtual users for ten seconds. It is a regression tripwire, not a capacity measurement. The full profile (no `K6_PROFILE`) is unchanged.
+
+## Search (B9)
+
+`SearchIntegrationTest` runs `GET /api/search` against PostgreSQL with V16: Owner, Admin, Member and Viewer find hits in their project; an outsider gets no hits (and 403 with `projectId`), also not for an exact task key; archived projects stay searchable, trashed projects, trashed tasks and their comments do not appear. It also covers Swedish and English stemming, prefixes, a trigram typo, the type filter, highlight segments, the exact-key-first rule, keyset pages that return every hit exactly once, parameter validation as problems, and the query count: one statement for any number of projects and hits (three with `projectId`: user, access row, search). `SearchQueryTest`, `SearchCursorTest`, `SearchSupportTest` and `SearchQueryProperties` need no database; `SearchQuery`, `SearchCursor` and `SearchType` are in PIT's target classes.
+
+```sh
+./mvnw -Dtest='SearchIntegrationTest,Search*Test,SearchQueryProperties' test
+```

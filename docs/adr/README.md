@@ -17,3 +17,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0012](0012-late-task-risk-model.md) | Hand-written regularised logistic regression for late-task risk | Accepted |
 | [0014](0014-ci-supply-chain.md) | CI pipeline and software supply chain: one build, SBOMs, keyless signing, provenance | Accepted |
 | [0015](0015-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |
+| [0016](0016-postgresql-full-text-search.md) | PostgreSQL full-text search with trigram fallback and in-statement access filtering | Accepted |
