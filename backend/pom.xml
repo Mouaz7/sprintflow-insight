@@ -224,6 +224,8 @@
                         <param>com.sprintflowinsight.workspace.attachment.UploadValidator</param>
                         <param>com.sprintflowinsight.reporting.PdfReportWriter</param>
                         <param>com.sprintflowinsight.CsvCell</param>
+                        <param>com.sprintflowinsight.forecast.*</param>
+                        <param>com.sprintflowinsight.risk.*</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.sprintflowinsight.*Test</param>

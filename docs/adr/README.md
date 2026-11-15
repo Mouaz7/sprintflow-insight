@@ -9,3 +9,8 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0003](0003-token-bucket-rate-limiting.md) | Token-bucket rate limiting per address and per account | Accepted |
 | [0004](0004-single-query-access-context.md) | Single-query access context with declared needs | Accepted |
 | [0005](0005-postgresql-tests-and-sql-migrations.md) | PostgreSQL tests and SQL-only Flyway migrations | Accepted |
+| [0006](0006-modulith-and-transactional-events.md) | Feature services and durable module events | Accepted |
+| [0007](0007-boot4-java25.md) | Spring Boot 4 and Java 25 | Accepted |
+| [0008](0008-frontend-feature-folders-and-lint.md) | Frontend feature folders, import boundaries and lint gate | Accepted |
+| [0010](0010-probabilistic-forecast-models.md) | Probabilistic forecast models selected by backtested CRPS | Accepted |
+| [0012](0012-late-task-risk-model.md) | Hand-written regularised logistic regression for late-task risk | Accepted |

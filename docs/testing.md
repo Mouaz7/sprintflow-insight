@@ -31,11 +31,12 @@ Run a feature or migration suite:
 
 ## Property and fault tests
 
-Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Three classes contain four properties, generating 4,800 examples per full run:
+Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Five classes contain fourteen properties:
 
 - CSV: quoted-cell round trips and formula neutralisation, including invisible prefixes.
 - PDF: wrapping fits the requested width and preserves visible text order.
 - Rate limiting: arbitrary request timings obey a 30-attempt fixed refill window.
+- Risk model (`risk/*Properties`): probabilities strictly in (0, 1), explanations are the largest log-odds terms, regularisation never increases the weight norm, training is deterministic; AUC equals the pairwise definition, is 1/0 for perfect/reversed rankers and invariant under increasing transforms; Brier is 0 for perfect predictions; calibration bins partition the predictions.
 
 jqwik reports the seed and a shrunk counterexample on failure. To replay it, temporarily set `seed = "<reported-seed>"` on the failing `@Property`, then run `./mvnw -Dtest=CsvCellProperties test` (substitute the affected class). Remove the fixed seed after diagnosis. See the [jqwik guide](https://jqwik.net/docs/1.10.1/user-guide.html#optional-property-attributes). The local `.jqwik-database` is ignored by Git.
 
@@ -111,3 +112,16 @@ node scripts/verification/summarize-performance.ts artifacts/perf-raw.json artif
 ```
 
 The fixture cleans up its own account/project on normal completion. Local measurements include uncontrolled host and cache effects; they validate the workload and provide evaluation data, not a production SLA or proof of scalability.
+
+## Frontend checks (A5)
+
+`npm run check` in `frontend` runs, in order: ESLint (`typescript-eslint` strict, `react-hooks` including the React Compiler rules, `jsx-a11y`, feature import boundaries; zero warnings) plus the boundary probe `scripts/check-boundaries.ts`, Prettier `--check`, `tsc --noEmit` (with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`), Vitest, the Vite production build and `size-limit` (150 kB gzip JavaScript, 15 kB gzip CSS). `npm run format` rewrites formatting. The structure and rules are described in [ADR 0008](adr/0008-frontend-feature-folders-and-lint.md).
+
+Tests sit next to the code they cover. Feature tests live in `src/features/<name>/`; App-level flows are split per area in `src/app/App.<area>.test.tsx` and share fixtures from `src/app/appTestFixtures.ts`. A5 moved and split files without behaviour changes: the existing tests only had their imports adapted.
+
+```sh
+cd frontend
+npm ci
+npm run check
+npx vitest run src/features/tasks   # one feature
+```

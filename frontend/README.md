@@ -10,7 +10,7 @@ npm run dev
 npm run check
 ```
 
-The development server proxies API requests to Spring Boot on port 8081. `npm run check` runs tests and builds `dist`, which Maven includes in the server package. Do not commit `node_modules` or `dist`.
+The development server proxies API requests to Spring Boot on port 8081. `npm run check` runs ESLint, Prettier, the TypeScript check, Vitest, the production build of `dist` (which Maven includes in the server package) and the bundle size limits; `npm run format` fixes formatting. Code is organised in `src/app`, `src/features/<name>`, `src/shared` and `src/api` ([ADR 0008](../docs/adr/0008-frontend-feature-folders-and-lint.md)). Do not commit `node_modules` or `dist`.
 
 ### Responsive layout verification
 

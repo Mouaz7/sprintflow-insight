@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { BacklogManager } from './BacklogView';
-import { SprintManager } from './SprintView';
-import { TasksView } from './TasksView';
-import { ActivityTimeline } from './ActivityTimeline';
+import { ActivityTimeline } from '../features/insights/ActivityTimeline';
+import { BacklogManager } from '../features/planning/BacklogView';
+import { SprintManager } from '../features/planning/SprintView';
+import { TasksView } from '../features/tasks/TasksView';
 
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 describe('Failed editor requests', () => {
@@ -163,7 +163,7 @@ it('exports exactly the current board filters including unscheduled and unassign
     ['Filter assignee', 'unassigned'],
     ['Filter due date', 'overdue'],
     ['Filter label', 'Bug'],
-  ])
+  ] as const)
     fireEvent.change(screen.getByRole('combobox', { name }), {
       target: { value },
     });
