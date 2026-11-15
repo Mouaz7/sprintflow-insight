@@ -205,6 +205,8 @@ The smoke profile reuses the A4 fixture (disposable account, 23-task project, cl
 
 `SearchIntegrationTest` runs `GET /api/search` against PostgreSQL with V16: Owner, Admin, Member and Viewer find hits in their project; an outsider gets no hits (and 403 with `projectId`), also not for an exact task key; archived projects stay searchable, trashed projects, trashed tasks and their comments do not appear. It also covers Swedish and English stemming, prefixes, a trigram typo, the type filter, highlight segments, the exact-key-first rule, keyset pages that return every hit exactly once, parameter validation as problems, and the query count: one statement for any number of projects and hits (three with `projectId`: user, access row, search). `SearchQueryTest`, `SearchCursorTest`, `SearchSupportTest` and `SearchQueryProperties` need no database; `SearchQuery`, `SearchCursor` and `SearchType` are in PIT's target classes.
 
+In the frontend, `features/search/*.test.tsx` cover the palette (combobox ARIA, debounced and aborted requests, highlights rendered as text, keyset "show more", exact task key on Enter, commands), the shortcut listener (ignored while typing or behind a dialog) and the help dialog's focus trap in English and Swedish; `app/App.search.test.tsx` covers navigation from a hit to the board narrowed to its task.
+
 ```sh
 ./mvnw -Dtest='SearchIntegrationTest,Search*Test,SearchQueryProperties' test
 ```
