@@ -162,6 +162,9 @@ public class SecurityConfiguration {
                     .denyAll()
                     .requestMatchers("/api/**")
                     .authenticated()
+                    // The realtime handshake (B1) only upgrades an existing signed-in session.
+                    .requestMatchers("/ws", "/ws/**")
+                    .authenticated()
                     .anyRequest()
                     .permitAll())
         .exceptionHandling(

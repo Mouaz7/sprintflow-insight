@@ -8,12 +8,14 @@ include::module-common.adoc[]
 == Forecast
 plantuml::module-forecast.puml[,,format=svg]
 include::module-forecast.adoc[]
-== Risk
-plantuml::module-risk.puml[,,format=svg]
-include::module-risk.adoc[]
+
 == Planning
 plantuml::module-planning.puml[,,format=svg]
 include::module-planning.adoc[]
+
+== Risk
+plantuml::module-risk.puml[,,format=svg]
+include::module-risk.adoc[]
 
 == Auth
 plantuml::module-auth.puml[,,format=svg]
@@ -26,6 +28,10 @@ include::module-workspace.adoc[]
 == Notifications
 plantuml::module-notifications.puml[,,format=svg]
 include::module-notifications.adoc[]
+
+== Realtime
+plantuml::module-realtime.puml[,,format=svg]
+include::module-realtime.adoc[]
 
 == Reporting
 plantuml::module-reporting.puml[,,format=svg]

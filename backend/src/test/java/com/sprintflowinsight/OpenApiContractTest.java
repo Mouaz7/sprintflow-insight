@@ -36,7 +36,8 @@ class OpenApiContractTest {
               "/api/workspace/trash/{kind}/{id}",
               "/api/projects/templates",
               "/api/projects/{projectId}/retrospective",
-              "/api/shared-reports/{token}");
+              "/api/shared-reports/{token}",
+              "/api/projects/{projectId}/events");
 
       Map<String, Object> metricsPath =
           (Map<String, Object>) paths.get("/api/projects/{projectId}/metrics");
@@ -73,6 +74,14 @@ class OpenApiContractTest {
 
       Map<String, Object> schemas =
           (Map<String, Object>) ((Map<String, Object>) document.get("components")).get("schemas");
+      Map<String, Object> realtime =
+          (Map<String, Object>)
+              ((Map<String, Object>) schemas.get("RealtimeMessage")).get("properties");
+      assertThat(realtime).containsOnlyKeys("projectId", "seq", "type", "entityId", "version");
+      assertThat(
+              (Map<String, Object>)
+                  ((Map<String, Object>) schemas.get("RealtimeEventPage")).get("properties"))
+          .containsOnlyKeys("projectId", "latestSeq", "resync", "events");
       Map<String, Object> problem = (Map<String, Object>) schemas.get("Problem");
       Map<String, Object> code =
           (Map<String, Object>) ((Map<String, Object>) problem.get("properties")).get("code");

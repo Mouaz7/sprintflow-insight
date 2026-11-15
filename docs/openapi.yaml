@@ -423,6 +423,32 @@ paths:
       summary: Mark a notification as read
       parameters: [{ $ref: '#/components/parameters/id' }]
       responses: { '204': { description: Notification updated } }
+  /api/projects/{projectId}/events:
+    get:
+      summary: Realtime messages after a sequence number, for filling gaps after a reconnect
+      description: >-
+        Any project member (archived projects included). Live messages arrive over STOMP at /ws
+        on /topic/projects/{projectId}; each carries the per-project sequence number seq. A client
+        that sees a jump in seq, or reconnects, asks for the messages after the last seq it applied.
+        The log keeps 7 days and at most 1000 messages per project. When the range is no longer
+        complete or longer than 200 messages, resync is true, events is empty and the client
+        reloads the project, then continues from latestSeq.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: after
+          description: Last sequence number the client applied; 0 for none
+          schema: { type: integer, format: int64, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Missed messages in sequence order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RealtimeEventPage' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/metrics:
     get:
       summary: Calculate project metrics or selected sprint metrics
@@ -866,6 +892,28 @@ components:
           type: string
           maxLength: 30000
           description: JSON array (max 30) of objects with non-blank `id` and `name` (max 80 characters).
+    RealtimeMessage:
+      type: object
+      description: Names what changed, never its content. Clients reload the entity through the REST API.
+      required: [projectId, seq, type]
+      properties:
+        projectId: { type: integer, format: int64 }
+        seq: { type: integer, format: int64, description: Strictly increasing per project }
+        type:
+          type: string
+          enum: [TaskCreated, TaskMoved, TaskUpdated, TaskDeleted, CommentAdded, SprintStatusChanged]
+        entityId: { type: integer, format: int64, nullable: true, description: Task or sprint id; the commented task for CommentAdded }
+        version: { type: integer, format: int64, nullable: true, description: Entity version after the change; null when deleted or unknown }
+    RealtimeEventPage:
+      type: object
+      required: [projectId, latestSeq, resync, events]
+      properties:
+        projectId: { type: integer, format: int64 }
+        latestSeq: { type: integer, format: int64, description: Newest sequence number, 0 before the first message }
+        resync: { type: boolean, description: The range is incomplete; reload the project and continue from latestSeq }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/RealtimeMessage' }
     Problem:
       type: object
       required: [type, title, status, detail, code, message]
