@@ -14,6 +14,10 @@ import { RetrospectiveView } from '../features/planning/RetrospectiveView';
 import { ProfileView } from '../features/profile/ProfileView';
 import { ProjectsView } from '../features/projects/ProjectsView';
 import { TrashView } from '../features/projects/TrashView';
+import {
+  CommandCenter,
+  type SearchTarget,
+} from '../features/search/CommandCenter';
 import { TasksView } from '../features/tasks/TasksView';
 import { DraftProjectsContext } from '../shared/lib/useDraftProject';
 import { InterfaceIcon } from '../shared/ui/InterfaceIcons';
@@ -101,6 +105,7 @@ function WorkspaceContent({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const [taskRequest, setTaskRequest] = useState(0);
+  const [focusTaskKey, setFocusTaskKey] = useState<string>();
   const sv = language === 'SV';
   const accountName = session.user.displayName || session.user.email;
   const accountInitial = accountName.slice(0, 1).toUpperCase();
@@ -188,12 +193,22 @@ function WorkspaceContent({
   }
   function selectView(next: WorkspaceView) {
     setView(next);
+    setFocusTaskKey(undefined);
     try {
       sessionStorage.setItem(viewStorage(session.user.id), next);
     } catch {
       // Navigation remains usable when browser storage is unavailable.
     }
     setMenuOpen(false);
+  }
+  function openSearchTarget(target: SearchTarget) {
+    if (target.projectId !== undefined) setActiveProjectId(target.projectId);
+    selectView(target.view);
+    setFocusTaskKey(target.taskKey);
+  }
+  function requestNewTask() {
+    setTaskRequest((n) => n + 1);
+    selectView('tasks');
   }
   const nav = (mobile = false) => (
     <nav
@@ -240,6 +255,11 @@ function WorkspaceContent({
             <strong>SprintFlow</strong>
           </button>
           <div className="header-controls">
+            <CommandCenter
+              language={language}
+              onNavigate={openSearchTarget}
+              onNewTask={requestNewTask}
+            />
             <label className="project-control">
               <span>{sv ? 'Projekt' : 'Project'}</span>
               <select
@@ -421,10 +441,7 @@ function WorkspaceContent({
                 project={activeProject}
                 language={language}
                 onNavigate={selectView}
-                onNewTask={() => {
-                  setTaskRequest((n) => n + 1);
-                  selectView('tasks');
-                }}
+                onNewTask={requestNewTask}
               />
             )}
             {view === 'projects' && (
@@ -439,7 +456,8 @@ function WorkspaceContent({
             )}
             {view === 'tasks' && (
               <TasksView
-                key={activeProjectId}
+                key={`${activeProjectId}:${focusTaskKey ?? ''}`}
+                focusTaskKey={focusTaskKey}
                 hasProjects={session.projects.length > 0}
                 projectId={activeProjectId}
                 language={language}

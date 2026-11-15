@@ -17,6 +17,8 @@ export type TasksViewProps = {
   language: 'EN' | 'SV';
   openRequest?: number;
   onRequestHandled?: () => void;
+  /** Opens the board filtered to this task key, e.g. from search. */
+  focusTaskKey?: string | undefined;
 };
 export function useTaskBoard({
   hasProjects,
@@ -26,6 +28,7 @@ export function useTaskBoard({
   onRequestHandled,
   userEmail = '',
   readOnly = false,
+  focusTaskKey = '',
 }: TasksViewProps) {
   const confirm = useConfirm();
   const sv = language === 'SV';
@@ -104,7 +107,7 @@ export function useTaskBoard({
   const [storyId, setStoryId] = useState('');
   const [sprintId, setSprintId] = useState('');
   const [assigneeEmail, setAssigneeEmail] = useState('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(focusTaskKey);
   const [statusFilter, setStatusFilter] = useState('');
   const [sprintFilter, setSprintFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');
