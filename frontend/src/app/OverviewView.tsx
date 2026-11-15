@@ -11,6 +11,7 @@ import type {
 } from '../api/contracts';
 import { PageHeader } from './ui';
 import { InterfaceIcon } from './InterfaceIcons';
+import { activitySummary } from './activityText';
 
 export function OverviewView({
   project,
@@ -304,7 +305,7 @@ export function OverviewView({
                 <article key={item.id}>
                   <span className="event-dot" />
                   <div>
-                    <strong>{item.summary}</strong>
+                    <strong>{activitySummary(item, language)}</strong>
                     <small>
                       {item.actorEmail} ·{' '}
                       {new Date(item.createdAt).toLocaleString(

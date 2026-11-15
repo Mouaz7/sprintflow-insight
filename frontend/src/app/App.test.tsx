@@ -51,7 +51,44 @@ function mockSignedIn(projectList = projects) {
 describe('App', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     vi.unstubAllGlobals();
+  });
+
+  it('keeps the current view and selected project when the workspace is reloaded', async () => {
+    mockSignedIn();
+    const first = render(<App />);
+    const navigation = await screen.findByRole('navigation', { name: 'Main navigation' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Project' }), {
+      target: { value: '2' },
+    });
+    fireEvent.click(within(navigation).getByRole('button', { name: 'Tasks' }));
+    await screen.findByRole('heading', { name: 'Tasks' });
+    first.unmount();
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Tasks' });
+    expect(screen.getByRole('combobox', { name: 'Project' })).toHaveValue('2');
+    expect(within(screen.getByRole('navigation', { name: 'Main navigation' }))
+      .getByRole('button', { name: 'Tasks' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it.each(['not-a-view', 'constructor'])('ignores an invalid remembered view: %s', async (saved) => {
+    sessionStorage.setItem('sprintflow-view-v1:1', saved);
+    mockSignedIn();
+    render(<App />);
+    const navigation = await screen.findByRole('navigation', { name: 'Main navigation' });
+    expect(within(navigation).getByRole('button', { name: 'Overview' }))
+      .toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not restore the remembered view of another account', async () => {
+    sessionStorage.setItem('sprintflow-view-v1:2', 'profile');
+    mockSignedIn();
+    render(<App />);
+    const navigation = await screen.findByRole('navigation', { name: 'Main navigation' });
+    expect(within(navigation).getByRole('button', { name: 'Overview' }))
+      .toHaveAttribute('aria-current', 'page');
   });
 
   it('shows the sign-in page when the server reports no active session', async () => {

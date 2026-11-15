@@ -126,6 +126,7 @@ export type Sprint = {
 };
 export type Activity = {
   id: number;
+  eventType?: string;
   summary: string;
   actorEmail: string;
   createdAt: string;
