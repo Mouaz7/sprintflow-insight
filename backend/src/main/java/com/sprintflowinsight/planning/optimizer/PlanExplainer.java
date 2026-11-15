@@ -10,30 +10,31 @@ import java.util.Set;
 
 /**
  * Derives the explanation from a selection. An excluded story is judged together with the
- * unselected predecessors it would need ("bundle"):
+ * unselected predecessors it would need (its <em>excluded bundle</em>):
  *
  * <ul>
- *   <li>bundle does not fit: {@code CAPACITY} or, when its value density is no higher than that of
- *       every freely chosen story, {@code LOWER_VALUE_DENSITY};
+ *   <li>bundle does not fit: {@code LOWER_VALUE_DENSITY} when its value density is no higher than
+ *       that of every <em>chosen bundle</em>, otherwise {@code CAPACITY}. Without any chosen
+ *       bundle (nothing was freely chosen, for example because locked-in work fills the sprint)
+ *       the reason is always {@code CAPACITY};
  *   <li>bundle fits: {@code NO_ADDED_VALUE} when it is worth nothing, otherwise {@code
  *       NOT_REACHED} (only possible when the solver stopped early).
  * </ul>
  *
- * A resource is binding when it is among the exceeded resources of at least one excluded bundle.
+ * <p>Chosen bundles mirror excluded ones. Each selected, non-forced story that is not itself a
+ * predecessor of another selected, non-forced story forms one chosen bundle together with all its
+ * selected, non-forced predecessors (transitively). Forced stories (locked-in stories and their
+ * predecessors) never belong to a chosen bundle, a predecessor that was only chosen to enable a
+ * successor is judged with that successor, and bundles worth nothing do not count.
+ *
+ * <p>A resource is binding when it is among the exceeded resources of at least one excluded bundle.
  */
 final class PlanExplainer {
   private PlanExplainer() {}
 
   static PlanExplanation explain(ProblemAnalysis analysis, boolean[] selected) {
     long[] used = analysis.usage(selected);
-    double lowestChosenDensity = Double.POSITIVE_INFINITY;
-    for (int i = 0; i < analysis.size; i++) {
-      if (selected[i] && !analysis.forced[i]) {
-        CandidateStory story = analysis.stories.get(i);
-        lowestChosenDensity =
-            Math.min(lowestChosenDensity, ProblemAnalysis.density(story.value(), story.points()));
-      }
-    }
+    double lowestChosenDensity = lowestChosenDensity(analysis, selected);
     Set<String> binding = new HashSet<>();
     List<ExcludedStory> excluded = new ArrayList<>();
     for (int i = 0; i < analysis.size; i++) {
@@ -75,6 +76,58 @@ final class PlanExplainer {
           new ResourceUsage(resource, used[r], analysis.capacities[r], binding.contains(resource)));
     }
     return new PlanExplanation(usages, excluded, List.of());
+  }
+
+  /**
+   * Lowest value density among the chosen bundles (see the class comment), or {@code NaN} when
+   * there is none, so that every comparison with it is false.
+   */
+  static double lowestChosenDensity(ProblemAnalysis analysis, boolean[] selected) {
+    boolean[] free = new boolean[analysis.size];
+    for (int i = 0; i < analysis.size; i++) {
+      free[i] = selected[i] && !analysis.forced[i];
+    }
+    boolean[] enabler = new boolean[analysis.size];
+    for (int i = 0; i < analysis.size; i++) {
+      if (free[i]) {
+        for (int p : analysis.predecessors[i]) {
+          enabler[p] |= free[p];
+        }
+      }
+    }
+    double lowest = Double.NaN;
+    for (int i = 0; i < analysis.size; i++) {
+      if (!free[i] || enabler[i]) {
+        continue;
+      }
+      boolean[] bundle = new boolean[analysis.size];
+      collect(analysis, i, free, bundle);
+      long value = 0;
+      long points = 0;
+      for (int b = 0; b < analysis.size; b++) {
+        if (bundle[b]) {
+          value += analysis.stories.get(b).value();
+          points += analysis.stories.get(b).points();
+        }
+      }
+      if (value > 0) {
+        double density = ProblemAnalysis.density(value, points);
+        lowest = Double.isNaN(lowest) ? density : Math.min(lowest, density);
+      }
+    }
+    return lowest;
+  }
+
+  private static void collect(ProblemAnalysis analysis, int story, boolean[] free, boolean[] marks) {
+    if (marks[story]) {
+      return;
+    }
+    marks[story] = true;
+    for (int p : analysis.predecessors[story]) {
+      if (free[p]) {
+        collect(analysis, p, free, marks);
+      }
+    }
   }
 
   static PlanExplanation explainInfeasible(ProblemAnalysis analysis) {

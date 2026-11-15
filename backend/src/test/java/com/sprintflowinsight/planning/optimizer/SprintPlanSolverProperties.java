@@ -77,6 +77,82 @@ class SprintPlanSolverProperties {
     }
   }
 
+  @Property(tries = 300)
+  void cpSatNeverChoosesAStoryWithoutValueThatNoValuableSuccessorNeeds(
+      @ForAll long seed,
+      @ForAll @IntRange(min = 0, max = 30) int stories,
+      @ForAll @IntRange(min = 0, max = 3) int members) {
+    PlanningProblem problem = RandomBacklogs.generate(seed, Shape.general(stories, members));
+    SprintPlan plan = CP_SAT.solve(problem);
+    if (plan.status() != SolveStatus.OPTIMAL) {
+      return;
+    }
+    var analysis = new ProblemAnalysis(problem);
+    boolean[] selected = new boolean[analysis.size];
+    for (int i = 0; i < analysis.size; i++) {
+      selected[i] = plan.selectedStoryIds().contains(analysis.stories.get(i).id());
+    }
+    // needed[p]: p is a (transitive) predecessor of a selected story with value.
+    boolean[] needed = new boolean[analysis.size];
+    for (int i = 0; i < analysis.size; i++) {
+      if (selected[i] && analysis.stories.get(i).value() > 0) {
+        markPredecessors(analysis, i, needed);
+      }
+    }
+    for (int i = 0; i < analysis.size; i++) {
+      if (selected[i] && analysis.stories.get(i).value() == 0) {
+        assertThat(analysis.forced[i] || needed[i])
+            .as("story %s without value", analysis.stories.get(i).id())
+            .isTrue();
+      }
+    }
+  }
+
+  @Property(tries = 300)
+  void cpSatChoosesTheSameStoriesAsTheDynamicProgramWhenTheOptimumIsUnique(
+      @ForAll long seed, @ForAll @IntRange(min = 0, max = 28) int stories) {
+    PlanningProblem problem =
+        distinctSubsetValues(seed, RandomBacklogs.generate(seed, Shape.singleCapacity(stories)));
+    assertThat(CP_SAT.solve(problem).selectedStoryIds())
+        .isEqualTo(DP.solve(problem).selectedStoryIds());
+  }
+
+  /**
+   * The same backlog with every positive value replaced by a distinct power of two, so that no two
+   * sets of valuable stories are worth the same: the optimum is unique up to stories without value.
+   */
+  private static PlanningProblem distinctSubsetValues(long seed, PlanningProblem problem) {
+    List<Integer> exponents = new ArrayList<>();
+    for (int k = 0; k < problem.stories().size(); k++) {
+      exponents.add(k);
+    }
+    java.util.Collections.shuffle(exponents, new java.util.Random(seed));
+    List<CandidateStory> stories = new ArrayList<>();
+    for (int i = 0; i < problem.stories().size(); i++) {
+      CandidateStory story = problem.stories().get(i);
+      long value = story.value() == 0 ? 0 : 1L << exponents.get(i);
+      stories.add(
+          new CandidateStory(
+              story.id(),
+              value,
+              story.points(),
+              story.effortByMember(),
+              story.predecessorIds(),
+              story.lock()));
+    }
+    return new PlanningProblem(
+        stories, problem.doneStoryIds(), problem.totalCapacity(), problem.memberCapacities());
+  }
+
+  private static void markPredecessors(ProblemAnalysis analysis, int story, boolean[] marks) {
+    for (int p : analysis.predecessors[story]) {
+      if (!marks[p]) {
+        marks[p] = true;
+        markPredecessors(analysis, p, marks);
+      }
+    }
+  }
+
   @Property(tries = 200)
   void cpSatMatchesBruteForceOnTinyProblems(
       @ForAll long seed,

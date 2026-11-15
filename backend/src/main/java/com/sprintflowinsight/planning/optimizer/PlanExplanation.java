@@ -58,10 +58,14 @@ public record PlanExplanation(
     MISSING_DEPENDENCY,
     /**
      * Does not fit in the remaining capacity, although its value density is higher than that of
-     * some chosen story: swapping would not raise the total value.
+     * some freely chosen bundle (or nothing was freely chosen): swapping would not raise the total
+     * value. Bundles are defined in {@code PlanExplainer}.
      */
     CAPACITY,
-    /** Does not fit, and its value per point is no higher than any freely chosen story. */
+    /**
+     * Does not fit, and its value per point (with the predecessors it needs) is no higher than that
+     * of any freely chosen bundle.
+     */
     LOWER_VALUE_DENSITY,
     /** Would fit but adds no business value. */
     NO_ADDED_VALUE,
