@@ -1,5 +1,5 @@
 // k6 load script (runs in k6, not Node): measures authenticated workspace reads.
-// Usage: BASE_URL=http://127.0.0.1:18084 k6 run scripts/performance/workspace-read.k6.js
+// Usage: BASE_URL=http://127.0.0.1:18084 k6 run scripts/performance/workspace-read.k6.ts
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
