@@ -14,6 +14,8 @@ import { RetrospectiveView } from '../features/planning/RetrospectiveView';
 import { ProfileView } from '../features/profile/ProfileView';
 import { ProjectsView } from '../features/projects/ProjectsView';
 import { TrashView } from '../features/projects/TrashView';
+import { PresenceAvatars } from '../features/realtime/PresenceAvatars';
+import { useProjectRealtime } from '../features/realtime/useProjectRealtime';
 import { TasksView } from '../features/tasks/TasksView';
 import { DraftProjectsContext } from '../shared/lib/useDraftProject';
 import { InterfaceIcon } from '../shared/ui/InterfaceIcons';
@@ -105,6 +107,8 @@ function WorkspaceContent({
   const accountName = session.user.displayName || session.user.email;
   const accountInitial = accountName.slice(0, 1).toUpperCase();
   const activeProject = session.projects.find((p) => p.id === activeProjectId);
+  // Query invalidation replaces the refresh signal once A6 lands.
+  const realtime = useProjectRealtime(activeProject?.id);
   const draftProjects = useMemo(
     () => ({ projects: session.projects, onSelect: setActiveProjectId }),
     [session.projects],
@@ -258,6 +262,14 @@ function WorkspaceContent({
                 ))}
               </select>
             </label>
+            {activeProject && (
+              <PresenceAvatars
+                viewers={realtime.viewers}
+                selfId={session.user.id}
+                status={realtime.status}
+                language={language}
+              />
+            )}
             <LanguageSelector language={language} onChange={changeLanguage} />
             <button
               className="theme-toggle"
@@ -447,6 +459,7 @@ function WorkspaceContent({
                 userEmail={session.user.email}
                 readOnly={!!activeProject?.archivedAt}
                 onRequestHandled={() => setTaskRequest(0)}
+                refreshSignal={realtime.revision}
               />
             )}
             {(view === 'backlog' ||

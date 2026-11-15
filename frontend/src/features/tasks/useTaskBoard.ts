@@ -16,6 +16,8 @@ export type TasksViewProps = {
   projectId?: number | undefined;
   language: 'EN' | 'SV';
   openRequest?: number;
+  /** Changes when the project changed elsewhere (realtime); reloads quietly. */
+  refreshSignal?: number;
   onRequestHandled?: () => void;
 };
 export function useTaskBoard({
@@ -23,6 +25,7 @@ export function useTaskBoard({
   projectId,
   language,
   openRequest = 0,
+  refreshSignal = 0,
   onRequestHandled,
   userEmail = '',
   readOnly = false,
@@ -168,6 +171,26 @@ export function useTaskBoard({
       cancelled = true;
     };
   }, [projectId]);
+  useEffect(() => {
+    if (!refreshSignal || !projectId) return;
+    let live = true;
+    Promise.all([
+      api<Task[]>(`/tasks?projectId=${projectId}`),
+      api<Story[]>(`/stories/project/${projectId}`),
+      api<Sprint[]>(`/sprints?projectId=${projectId}`),
+    ])
+      .then(([taskItems, storyItems, sprintItems]) => {
+        if (!live) return;
+        setTasks(taskItems);
+        setStories(storyItems);
+        setSprints(sprintItems);
+      })
+      // A failed background refresh keeps the current board; the next change retries.
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [refreshSignal, projectId]);
   function clearForm() {
     draft.reset();
     setSavedTitle('');
