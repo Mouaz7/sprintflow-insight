@@ -87,6 +87,52 @@ class RiskEvaluationTest {
   }
 
   @Test
+  void binBoundariesAreExactForDecimalProbabilities() {
+    assertThat(RiskEvaluation.binOf(0.7, 10)).isEqualTo(7);
+    assertThat(RiskEvaluation.binOf(Math.nextDown(0.7), 10)).isEqualTo(6);
+    assertThat(RiskEvaluation.binOf(0.3, 10)).isEqualTo(3);
+    assertThat(RiskEvaluation.binOf(Math.nextDown(0.3), 10)).isEqualTo(2);
+    assertThat(RiskEvaluation.binOf(1.0, 10)).isEqualTo(9);
+    assertThat(RiskEvaluation.binOf(0.0, 10)).isZero();
+    assertThat(RiskEvaluation.binOf(Math.nextDown(1.0), 10)).isEqualTo(9);
+    assertThat(RiskEvaluation.binOf(0.5, 1)).isZero();
+    for (int bins = 1; bins <= 50; bins++) {
+      for (int b = 0; b < bins; b++) {
+        double lower = (double) b / bins;
+        assertThat(RiskEvaluation.binOf(lower, bins)).isEqualTo(b);
+        if (b > 0) {
+          assertThat(RiskEvaluation.binOf(Math.nextDown(lower), bins)).isEqualTo(b - 1);
+        }
+      }
+    }
+  }
+
+  @Test
+  void meanPredictionStaysInsideItsBinDespiteRounding() {
+    // Shrunk counterexample from CI (seed -3294350553674341294): 35 × 0.0 and 3 × 0.7.
+    double[] p = new double[38];
+    boolean[] y = new boolean[38];
+    for (int i = 35; i < 38; i++) {
+      p[i] = 0.7;
+    }
+    y[0] = true;
+
+    var curve = RiskEvaluation.calibrationCurve(p, y, 10);
+
+    assertThat(curve).hasSize(2);
+    assertThat(curve.get(1).lower()).isEqualTo(0.7);
+    assertThat(curve.get(1).count()).isEqualTo(3);
+    assertThat(curve.get(1).meanPredicted()).isEqualTo(0.7);
+    assertThat(curve.get(0).meanPredicted()).isZero();
+    var third = RiskEvaluation.calibrationCurve(new double[] {0.3, 0.3, 0.3}, new boolean[3], 10);
+    assertThat(third).containsExactly(new RiskEvaluation.CalibrationBin(0.3, 0.4, 3, 0.3, 0));
+    var top = RiskEvaluation.calibrationCurve(new double[] {1.0, 0.95}, new boolean[] {true, true}, 10);
+    assertThat(top.get(0).lower()).isEqualTo(0.9);
+    assertThat(top.get(0).count()).isEqualTo(2);
+    assertThat(top.get(0).meanPredicted()).isCloseTo(0.975, within(1e-12));
+  }
+
+  @Test
   void timeSplitTrainsOnThePastAndTestsOnTheFuture() {
     List<LabelledExample> history = Fixtures.history(10, 1);
     List<LabelledExample> shuffled =

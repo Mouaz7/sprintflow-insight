@@ -31,7 +31,7 @@ Run a feature or migration suite:
 
 ## Property and fault tests
 
-Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Five classes contain thirteen properties:
+Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Five classes contain fourteen properties:
 
 - CSV: quoted-cell round trips and formula neutralisation, including invisible prefixes.
 - PDF: wrapping fits the requested width and preserves visible text order.

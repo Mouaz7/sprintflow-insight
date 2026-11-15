@@ -92,12 +92,17 @@ public final class RiskEvaluation {
     }
     int[] count = new int[bins];
     double[] predicted = new double[bins];
+    double[] smallest = new double[bins];
+    double[] largest = new double[bins];
     int[] positives = new int[bins];
     for (int i = 0; i < probabilities.length; i++) {
-      requireProbability(probabilities[i]);
-      int bin = Math.min(bins - 1, (int) (probabilities[i] * bins));
+      double p = probabilities[i];
+      requireProbability(p);
+      int bin = binOf(p, bins);
+      smallest[bin] = count[bin] == 0 ? p : Math.min(smallest[bin], p);
+      largest[bin] = count[bin] == 0 ? p : Math.max(largest[bin], p);
       count[bin]++;
-      predicted[bin] += probabilities[i];
+      predicted[bin] += p;
       if (outcomes[i]) {
         positives[bin]++;
       }
@@ -107,14 +112,35 @@ public final class RiskEvaluation {
       if (count[b] > 0) {
         curve.add(
             new CalibrationBin(
-                (double) b / bins,
-                (double) (b + 1) / bins,
+                lowerBound(b, bins),
+                lowerBound(b + 1, bins),
                 count[b],
-                predicted[b] / count[b],
+                // A rounded sum can put the mean just outside the values (3 × 0.7 / 3 <
+                // 0.7); the exact mean always lies between the smallest and largest value.
+                Math.clamp(predicted[b] / count[b], smallest[b], largest[b]),
                 (double) positives[b] / count[b]));
       }
     }
     return curve;
+  }
+
+  /**
+   * The bin {@code b} with {@code b/bins <= p < (b+1)/bins} (the last bin also holds 1). {@code
+   * p * bins} can round across a boundary, for example {@code Math.nextDown(0.7) * 10 == 7.0}, so
+   * the candidate is checked against the same bounds that are reported.
+   */
+  static int binOf(double p, int bins) {
+    int bin = Math.min(bins - 1, (int) Math.floor(p * bins));
+    if (bin > 0 && p < lowerBound(bin, bins)) {
+      bin--;
+    } else if (bin < bins - 1 && p >= lowerBound(bin + 1, bins)) {
+      bin++;
+    }
+    return bin;
+  }
+
+  private static double lowerBound(int bin, int bins) {
+    return (double) bin / bins;
   }
 
   /** Training and test sets of a time-based split. */

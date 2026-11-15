@@ -81,6 +81,17 @@ class RiskEvaluationProperties {
   @Property(tries = 300)
   void calibrationBinsPartitionThePredictions(
       @ForAll("labelled") Tuple2<double[], boolean[]> d, @ForAll("binCounts") int bins) {
+    assertBinsPartition(d, bins);
+  }
+
+  /** Replays the CI seed that exposed a rounded bin mean below its lower bound. */
+  @Property(tries = 300, seed = "-3294350553674341294")
+  void calibrationBinsPartitionThePredictionsForTheRegressionSeed(
+      @ForAll("labelled") Tuple2<double[], boolean[]> d, @ForAll("binCounts") int bins) {
+    assertBinsPartition(d, bins);
+  }
+
+  private static void assertBinsPartition(Tuple2<double[], boolean[]> d, int bins) {
     var curve = RiskEvaluation.calibrationCurve(d.get1(), d.get2(), bins);
     assertThat(curve.stream().mapToInt(RiskEvaluation.CalibrationBin::count).sum())
         .isEqualTo(d.get1().length);
