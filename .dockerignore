@@ -15,3 +15,4 @@ docs/design/preview
 scripts/node_modules
 backups
 artifacts
+frontend/e2e

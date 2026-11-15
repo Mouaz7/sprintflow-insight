@@ -27,16 +27,25 @@ touch targets, menus, keyboard focus, panels, notifications and login.
 Screenshots and JSON results are written to `artifacts/responsive/`.
 After a Docker build, rerun against port 8081 to verify the served production assets.
 
-### Save visibility verification
+### End-to-end tests
 
-Run `npm run creation-visibility --prefix scripts` from the repository root with the
-local app running. `SPRINTFLOW_QA_URL` and `PLAYWRIGHT_EXECUTABLE_PATH` work as above.
-This check uses the real backend/database: it creates a disposable account and two
-projects, verifies project/story/sprint/task creation, choosing destination projects
-inside the forms, preservation of draft text, clearing old project relationships,
-visibility despite filters and persistence after reload, then removes only its own
-test projects and account.
-Screenshots are written to `artifacts/creation-visibility/`.
+`e2e/` is a separate Playwright package (its own lockfile, so the production build
+and Docker image never install test tooling). With the app and database running
+(`./start.sh`, or Docker Compose as in CI):
+
+```sh
+npm ci --prefix e2e
+npx --prefix e2e playwright install chromium
+E2E_BASE_URL=http://127.0.0.1:8081 npm run e2e
+```
+
+The suite registers disposable accounts against the real backend and database, covers
+sign-up, sign-out and sign-in, project/sprint/story/task creation with persistence after
+reload, planning a story into a sprint, the project role matrix and ownership transfer,
+and runs axe-core on each visited view in light and dark mode. Serious or critical axe
+findings fail the test. Every test removes the accounts and projects it created.
+The HTML report is written to `e2e/playwright-report/`. See
+[the testing guide](../docs/testing.md#end-to-end-tests-a8).
 
 ### Examples and guidance
 

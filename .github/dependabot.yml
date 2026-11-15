@@ -1,0 +1,38 @@
+version: 2
+
+# Weekly, grouped updates. The cooldown leaves new releases a week to be yanked
+# or flagged before they are proposed, which limits exposure to hijacked packages.
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      maven-minor-and-patch:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: npm
+    directories: [ /frontend, /frontend/e2e, /scripts ]
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      npm-minor-and-patch:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: github-actions
+    directories: [ /, /.github/actions/start-app ]
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      github-actions:
+        patterns: [ '*' ]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }

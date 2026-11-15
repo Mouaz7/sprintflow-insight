@@ -1,0 +1,20 @@
+{
+  "name": "sprintflow-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lighthouse": "node lighthouse.ts"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@lhci/cli": "0.16.1",
+    "@playwright/test": "1.65.1",
+    "@types/node": "24.19.2",
+    "typescript": "5.7.2"
+  },
+  "overrides": {
+    "basic-ftp": "6.2.6"
+  }
+}

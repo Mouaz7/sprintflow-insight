@@ -26,8 +26,27 @@ for (const file of files) {
 }
 assert.deepEqual(missing, [], 'Broken relative documentation links.');
 const workflows = readdirSync(join(root, '.github/workflows')).filter(name => name.endsWith('.yml'));
-for (const file of ['Dockerfile', 'backend/mvnw', ...workflows.map(name => `.github/workflows/${name}`)]) {
+const actionDirectory = join(root, '.github/actions');
+const actions = existsSync(actionDirectory)
+  ? readdirSync(actionDirectory).map(name => `.github/actions/${name}/action.yml`).filter(path => existsSync(join(root, path)))
+  : [];
+const automation = [...workflows.map(name => `.github/workflows/${name}`), ...actions, '.github/dependabot.yml'];
+for (const file of ['Dockerfile', 'backend/mvnw', 'start.sh', 'scripts/env-bootstrap.sh', ...automation]) {
   assert.ok(!readFileSync(join(root, file)).includes(13), `Use LF line endings: ${file}`);
+}
+// Third-party actions must be pinned to a full commit SHA with a version comment.
+const unpinned: string[] = [];
+for (const file of [...workflows.map(name => `.github/workflows/${name}`), ...actions]) {
+  for (const [index, line] of readFileSync(join(root, file), 'utf8').split('\n').entries()) {
+    const use = /^\s*(?:-\s*)?uses:\s*(\S+)(.*)$/.exec(line);
+    if (!use || use[1].startsWith('./')) continue;
+    if (!/^[\w.-]+\/[\w./-]+@[0-9a-f]{40}$/.test(use[1]) || !/#\s*v?\d/.test(use[2])) unpinned.push(`${file}:${index + 1}: ${use[1]}`);
+  }
+}
+assert.deepEqual(unpinned, [], 'Pin actions to a commit SHA with a version comment.');
+// Base images are pinned by digest.
+for (const line of readFileSync(join(root, 'Dockerfile'), 'utf8').split('\n').filter(line => /^FROM\s/i.test(line))) {
+  assert.match(line, /@sha256:[0-9a-f]{64}\b/, `Pin base images by digest: ${line}`);
 }
 const tracked = execFileSync(git, ['-C', root, 'ls-files', '-z'], { encoding: 'utf8' }).split('\0');
 for (const name of tracked) {
@@ -35,4 +54,4 @@ for (const name of tracked) {
   assert.ok(!basename(name).startsWith('client_secret'), name);
   assert.ok(!/\.(?:py|js|cjs|mjs)$/.test(name), "Use TypeScript for tracked verification/source code: " + name);
 }
-console.log('PASS: relative documentation links, Linux line endings, private/runtime file exclusions.');
+console.log('PASS: relative documentation links, Linux line endings, private/runtime file exclusions, pinned actions and base images.');

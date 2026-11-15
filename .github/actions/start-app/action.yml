@@ -1,0 +1,31 @@
+name: Start SprintFlow from the CI image
+description: >-
+  Loads the image built by the docker job, bootstraps .env with the same script
+  as start.sh and starts the app and PostgreSQL with Docker Compose.
+inputs:
+  project:
+    description: Compose project name.
+    default: sprintflow-ci
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: sprintflow-image
+        path: ${{ runner.temp }}/sprintflow-image
+    - name: Load the tested image
+      shell: bash
+      run: docker load --input "$RUNNER_TEMP/sprintflow-image/sprintflow-image.tar"
+    - name: Bootstrap .env
+      shell: bash
+      run: scripts/env-bootstrap.sh
+    - name: Start app and PostgreSQL
+      shell: bash
+      env:
+        SPRINTFLOW_APP_IMAGE: sprintflow-insight-app:ci
+        COMPOSE_PROJECT: ${{ inputs.project }}
+      run: |
+        docker compose -p "$COMPOSE_PROJECT" up -d --no-build --wait --wait-timeout 180 || {
+          docker compose -p "$COMPOSE_PROJECT" logs --tail 100
+          exit 1
+        }

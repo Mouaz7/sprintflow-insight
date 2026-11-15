@@ -1,6 +1,6 @@
 # SprintFlow Insight
 
-![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) [![Quality](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Mouaz7/sprintflow-insight/badge)](https://scorecard.dev/viewer/?uri=github.com/Mouaz7/sprintflow-insight)
 
 SprintFlow helps teams turn a shared backlog into visible delivery: agree on priorities, plan a sprint, collaborate on tasks, and review progress against the sprint goal. Completed sprint history remains meaningful after tasks move into later sprints.
 
@@ -86,7 +86,7 @@ and the [metric definitions](docs/metrics-definition.md) for how delivery data i
 
 ## Configuration
 
-All private settings belong in local `.env`, which is excluded from Git and Docker's build context.
+All private settings belong in local `.env`, which is excluded from Git and Docker's build context. Every start script creates it from `.env.example` on first run through one shared bootstrap (`scripts/env-bootstrap.sh`, `scripts/env-bootstrap.ps1`): it generates a random database password and the encryption key (once; it is never replaced), sets `SPRINTFLOW_COOKIE_SECURE=false` for local HTTP and validates the ports. Run `scripts/env-bootstrap.sh` on its own to prepare `.env` without starting anything.
 
 | Variable | Purpose |
 | --- | --- |
@@ -102,7 +102,7 @@ All private settings belong in local `.env`, which is excluded from Git and Dock
 | `SPRINTFLOW_CONTAINER_UID`, `SPRINTFLOW_CONTAINER_GID` | Linux upload directory ownership; default `1000:1000` |
 | `SPRINTFLOW_DB_POOL_SIZE` | Database connection pool size, default `10`; keep it well above the four concurrent event listeners |
 | `SPRINTFLOW_EVENTS_MAX_RETRY_AGE` | How long failed event deliveries are retried before they are logged and dropped, default `PT24H` |
-| `SPRINTFLOW_APP_PORT`, `SPRINTFLOW_DB_PORT` | Optional localhost host ports, default `8081` and `5432`; update `SPRINTFLOW_PUBLIC_URL` when changing the app port |
+| `SPRINTFLOW_APP_PORT`, `SPRINTFLOW_DB_PORT` | Optional localhost host ports, default `8081` and `5432`. Native mode serves Spring Boot on `SPRINTFLOW_APP_PORT` too. Update `SPRINTFLOW_PUBLIC_URL` when changing the app port |
 
 Run `.\configure-account-services.ps1` to enter Gmail credentials without showing the password. For Google sign-in, authorize `http://localhost:8081` as a JavaScript origin and add your account as a test user while the Google app is in testing. This integration verifies Google ID tokens on the server and does not require storing a client secret. See [account services](docs/account-services.md).
 
@@ -160,36 +160,49 @@ docker compose build app
 
 `npm run check` runs frontend lint, formatting and type checks, tests, the production build and bundle size limits. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 25 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
 
+End-to-end tests run Playwright with axe-core against a running app and database (for example after `./start.sh`):
+
+```sh
+npm ci --prefix frontend/e2e
+npx --prefix frontend/e2e playwright install chromium
+E2E_BASE_URL=http://127.0.0.1:8081 npm run e2e --prefix frontend
+```
+
+They cover sign-in, project, sprint, story and task flows, the role matrix, and CSP/Trusted Types. Serious or critical accessibility findings fail them. See [end-to-end tests](docs/testing.md#end-to-end-tests-a8).
+
 All verification scripts are TypeScript and run directly with Node 24. Install tooling with `npm ci --prefix scripts`, then use:
 
 ```sh
-npm run check --prefix frontend
 npm run check --prefix scripts
 npm run repository --prefix scripts
-# Point real-database checks at a disposable test app:
-npm run business-rules --prefix scripts
-npm run creation-visibility --prefix scripts
-# Layout-only checks use simulated API responses:
+npm run sbom --prefix scripts           # CycloneDX SBOM of the shipped frontend
+# Layout-only checks use simulated API responses (until visual regression in A7):
 npm run responsive --prefix scripts
 npm run guidance --prefix scripts
+npm run trusted-types --prefix scripts  # sign-in with Google Identity Services under the CSP
 ```
 
-Browser checks use Playwright Chromium (`npx playwright install chromium` in `scripts/`) or an installed browser selected with `PLAYWRIGHT_EXECUTABLE_PATH`. `SPRINTFLOW_QA_URL` selects the app URL. Real-database checks create disposable accounts/projects and remove only their own data. Python is not required.
+Browser checks use Playwright Chromium (`npx playwright install chromium` in `scripts/`) or an installed browser selected with `PLAYWRIGHT_EXECUTABLE_PATH`. `SPRINTFLOW_QA_URL` selects the app URL. Python is not required.
 
 ## CI
 
-GitHub Actions checks pull requests and `main`: Node 24 frontend tests/build, Java 25 backend verification, packaged frontend presence, and a Docker build with an isolated container smoke check. The build artifact is retained for seven days. GitHub publication updates source code; it does not deploy a separate hosted service.
+GitHub Actions checks pull requests and `main`. The required jobs are `quality` (repository rules, frontend checks, the single Maven `verify`, SBOMs), `docker` (cached image build, container smoke test and restart), `security` (gitleaks, osv-scanner) and `mutation` (PIT). The image built by `docker` is then tested end-to-end with Playwright and axe, scanned with Trivy and an OWASP ZAP baseline, load-checked with a k6 smoke test and measured against Lighthouse budgets. CodeQL and OpenSSF Scorecard run as separate workflows, and Dependabot proposes weekly updates. Every action is pinned to a commit SHA, and base images are pinned by digest.
+
+On `main`, the tested image is published to `ghcr.io/mouaz7/sprintflow-insight`, signed with cosign (keyless) and given SLSA build provenance and an SBOM attestation. See the [testing guide](docs/testing.md#ci-pipeline-a8), [supply chain](docs/security/supply-chain.md) and [ADR 0014](docs/adr/0014-ci-supply-chain.md).
 
 ## Project structure
 
 ```text
-.github/workflows/       CI
+.github/workflows/       CI, CodeQL and Scorecard
+.github/dependabot.yml   Dependency updates
 backend/                 Spring Boot API, security, services, Flyway, tests
 frontend/                React/TypeScript application and tests
+frontend/e2e/            Playwright end-to-end tests, axe and Lighthouse CI
 docs/                    Architecture, API, schema and user guides
 scripts/                 Account configuration and native startup helpers
-scripts/verification/    Browser and container verification
-Dockerfile               Frontend/backend build and non-root Java runtime
+scripts/verification/    Container, layout and repository verification
+scripts/env-bootstrap.*  Shared .env bootstrap for the start scripts
+Dockerfile               Frontend/backend build and non-root Java runtime (digest-pinned, no curl)
 compose.yaml             App + PostgreSQL, health checks, persistent storage
 start.cmd / start.ps1    Windows entry points
 start.sh                 Linux/macOS entry point
