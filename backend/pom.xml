@@ -25,6 +25,7 @@
         <postgresql.version>42.7.14</postgresql.version>
         <!-- Commons Compress requires the CVE-2025-48924 fix, above Boot's managed 3.17.0. -->
         <commons-lang3.version>3.18.0</commons-lang3.version>
+        <spring-modulith.version>1.4.14</spring-modulith.version>
         <jqwik.version>1.10.1</jqwik.version>
         <coverage.minimum.lines>0.90</coverage.minimum.lines>
         <coverage.minimum.branches>0.65</coverage.minimum.branches>
@@ -37,6 +38,8 @@
     </properties>
 
     <dependencies>
+        <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-starter-jdbc</artifactId></dependency>
+        <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-starter-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.apache.tika</groupId><artifactId>tika-core</artifactId><version>4.1.0</version></dependency>
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>
         <dependency><groupId>com.twelvemonkeys.imageio</groupId><artifactId>imageio-webp</artifactId><version>3.15.3</version></dependency>
@@ -92,6 +95,7 @@
         <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>
         <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-test</artifactId><scope>test</scope></dependency>
 
+        <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><scope>test</scope></dependency>
         <!-- Spring Boot Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -109,6 +113,7 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-bom</artifactId><version>${spring-modulith.version}</version><type>pom</type><scope>import</scope></dependency>
             <!-- Testcontainers 1.21.4 brings Compress 1.24.0 (CVE-2024-25710/26308).
                  Keep its test-only transitive dependency on the patched release. -->
             <dependency><groupId>org.apache.commons</groupId><artifactId>commons-compress</artifactId><version>1.28.0</version></dependency>
@@ -216,10 +221,11 @@
                 <configuration>
                     <targetClasses>
                         <param>com.sprintflowinsight.common.*</param>
-                        <param>com.sprintflowinsight.service.MetricsService</param>
-                        <param>com.sprintflowinsight.service.TaskExportFilter</param>
-                        <param>com.sprintflowinsight.service.UploadValidator</param>
-                        <param>com.sprintflowinsight.service.PdfReportWriter</param>
+                        <param>com.sprintflowinsight.auth.filter.*</param>
+                        <param>com.sprintflowinsight.reporting.MetricsService</param>
+                        <param>com.sprintflowinsight.reporting.TaskExportFilter</param>
+                        <param>com.sprintflowinsight.workspace.attachment.UploadValidator</param>
+                        <param>com.sprintflowinsight.reporting.PdfReportWriter</param>
                         <param>com.sprintflowinsight.CsvCell</param>
                     </targetClasses>
                     <targetTests>

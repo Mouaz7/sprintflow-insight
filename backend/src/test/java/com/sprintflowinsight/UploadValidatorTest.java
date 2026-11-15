@@ -1,9 +1,9 @@
 package com.sprintflowinsight;
 
-import com.sprintflowinsight.support.TestFiles;
 import static org.assertj.core.api.Assertions.*;
 
-import com.sprintflowinsight.service.UploadValidator;
+import com.sprintflowinsight.support.TestFiles;
+import com.sprintflowinsight.workspace.attachment.UploadValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 

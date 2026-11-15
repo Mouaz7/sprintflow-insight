@@ -2,8 +2,8 @@ package com.sprintflowinsight;
 
 import static org.assertj.core.api.Assertions.*;
 
-import com.sprintflowinsight.model.Task;
-import com.sprintflowinsight.service.TaskExportFilter;
+import com.sprintflowinsight.reporting.TaskExportFilter;
+import com.sprintflowinsight.workspace.task.Task;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;

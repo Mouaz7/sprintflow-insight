@@ -136,7 +136,7 @@ describe('Workspace feature components', () => {
     );
     render(<NotificationBell language="EN" onProject={vi.fn()} />);
     const bell = await screen.findByRole('button', {
-      name: 'Notifications (1 unread)',
+      name: 'Notifications, 1 unread',
     });
     fireEvent.click(bell);
     fireEvent.click(screen.getByRole('button', { name: 'Mark all read' }));
@@ -152,6 +152,40 @@ describe('Workspace feature components', () => {
     ).not.toBeInTheDocument();
     expect(bell).toHaveFocus();
   });
+  it.each([
+    {
+      language: 'EN' as const, count: 2, badge: '2',
+      name: 'Notifications, 2 unread',
+    },
+    {
+      language: 'SV' as const, count: 2, badge: '2',
+      name: 'Notiser, 2 olästa',
+    },
+    {
+      language: 'EN' as const, count: 120, badge: '99+',
+      name: 'Notifications, 99+ unread (120 total)',
+    },
+    {
+      language: 'SV' as const, count: 120, badge: '99+',
+      name: 'Notiser, 99+ olästa (120 totalt)',
+    },
+  ])(
+    'includes the visible unread badge in the $language accessible name for $count notifications',
+    async ({ language, count, badge, name }) => {
+      vi.mocked(api).mockResolvedValue(
+        Array.from({ length: count }, (_, id) => ({
+          id,
+          projectId: 1,
+          message: 'Assigned QA',
+          read: false,
+          createdAt: '2026-10-12T00:00:00Z',
+        })),
+      );
+      render(<NotificationBell language={language} onProject={vi.fn()} />);
+      const bell = await screen.findByRole('button', { name });
+      expect(bell).toHaveTextContent(badge);
+    },
+  );
   it('saves project-scoped filters and retains names after a rejected save', async () => {
     vi.mocked(api)
       .mockResolvedValueOnce(preferences)

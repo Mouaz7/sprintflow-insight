@@ -9,9 +9,8 @@ import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 
 /**
- * Per-user session control on top of Spring Session. Sessions are indexed by the immutable
- * account id ({@code user:<id>}), never by email, so revocation still works after an email
- * change.
+ * Per-user session control on top of Spring Session. Sessions are indexed by the immutable account
+ * id ({@code user:<id>}), never by email, so revocation still works after an email change.
  */
 @Service
 public class UserSessions {
@@ -51,14 +50,16 @@ public class UserSessions {
 
   private int revoke(Long userId, java.util.Set<String> keep) {
     var ids =
-        sessions.findByIndexNameAndIndexValue(
+        sessions
+            .findByIndexNameAndIndexValue(
                 FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, principal(userId))
             .keySet()
             .stream()
             .filter(id -> !keep.contains(id))
             .toList();
     ids.forEach(sessions::deleteById);
-    if (!ids.isEmpty()) SECURITY_LOG.info("Revoked {} session(s) after a credential change.", ids.size());
+    if (!ids.isEmpty())
+      SECURITY_LOG.info("Revoked {} session(s) after a credential change.", ids.size());
     return ids.size();
   }
 }

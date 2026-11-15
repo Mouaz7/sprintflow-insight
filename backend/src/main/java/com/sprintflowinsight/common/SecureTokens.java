@@ -8,8 +8,8 @@ import java.util.Base64;
 import java.util.HexFormat;
 
 /**
- * Bearer secrets (password-reset links, shared-report links): 256 random bits, URL-safe, and
- * stored only as a SHA-256 digest so a database leak does not reveal working links.
+ * Bearer secrets (password-reset links, shared-report links): 256 random bits, URL-safe, and stored
+ * only as a SHA-256 digest so a database leak does not reveal working links.
  */
 public final class SecureTokens {
   private static final SecureRandom RANDOM = new SecureRandom();

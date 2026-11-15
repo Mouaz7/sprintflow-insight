@@ -4,8 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record PasswordResetConfirmRequest(
-        @NotBlank(message = "Reset link is required.") String token,
-        @NotBlank(message = "New password is required.")
+    @NotBlank(message = "Reset link is required.") String token,
+    @NotBlank(message = "New password is required.")
         @Size(min = 6, message = "New password must contain at least 6 characters.")
-        String newPassword) {
-}
+        String newPassword) {}

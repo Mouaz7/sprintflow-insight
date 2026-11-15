@@ -2,32 +2,12 @@ package com.sprintflowinsight.sprint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprintflowinsight.auth.UserRepository;
-import com.sprintflowinsight.project.ProjectRepository;
-import com.sprintflowinsight.repository.ActivityEventRepository;
-import com.sprintflowinsight.repository.TaskRepository;
-import com.sprintflowinsight.repository.TaskStatusHistoryRepository;
-import com.sprintflowinsight.service.NotificationService;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.List;
+import com.sprintflowinsight.support.HttpFlowTest;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import com.sprintflowinsight.*;
-import com.sprintflowinsight.support.HttpFlowTest;
 
 /** Sprint lifecycle, the single-active rule and completed-sprint history. */
 class SprintFlowTest extends HttpFlowTest {

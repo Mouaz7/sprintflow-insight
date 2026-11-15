@@ -1,0 +1,113 @@
+package com.sprintflowinsight.workspace.collaboration;
+
+import com.sprintflowinsight.common.error.ApiException;
+import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.project.ProjectAccessService;
+import com.sprintflowinsight.workspace.task.Task;
+import com.sprintflowinsight.workspace.task.TaskService;
+import jakarta.servlet.http.HttpSession;
+import java.time.Instant;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+
+@org.springframework.transaction.annotation.Transactional
+@org.springframework.stereotype.Service
+public class CollaborationService {
+  private final TaskService tasks;
+  private final TaskCommentRepository comments;
+  private final org.springframework.context.ApplicationEventPublisher events;
+  private final ActivityService activity;
+  private final ProjectAccessService access;
+
+  public CollaborationService(
+      TaskService tasks,
+      TaskCommentRepository comments,
+      org.springframework.context.ApplicationEventPublisher events,
+      ActivityService activity,
+      ProjectAccessService access) {
+    this.tasks = tasks;
+    this.comments = comments;
+    this.events = events;
+    this.activity = activity;
+    this.access = access;
+  }
+
+  public ResponseEntity<List<TaskComment>> comments(Long taskId, HttpSession session) {
+    Task task = tasks.gettaskById(taskId).orElse(null);
+    if (task == null) throw ApiException.notFound("Task not found.");
+    access.read(task.getProjectId(), session);
+    return ResponseEntity.ok(comments.findByTaskIdOrderByCreatedAtAsc(taskId));
+  }
+
+  public ResponseEntity<?> addComment(Long taskId, CommentRequest request, HttpSession session) {
+    Task task = tasks.gettaskById(taskId).orElse(null);
+    if (task == null) throw ApiException.notFound("Task not found.");
+    access.write(task.getProjectId(), session);
+    String actor = access.email(session);
+    TaskComment comment = new TaskComment();
+    comment.setTaskId(taskId);
+    comment.setProjectId(task.getProjectId());
+    comment.setAuthorEmail(actor.trim().toLowerCase());
+    comment.setMessage(request.message().trim());
+    comment.setCreatedAt(Instant.now());
+    TaskComment saved = comments.save(comment);
+    activity.record(
+        task.getProjectId(),
+        "COMMENT_ADDED",
+        "Commented on task “" + task.getTitle() + "”.",
+        actor);
+    events.publishEvent(
+        new com.sprintflowinsight.workspace.events.CommentAdded(
+            java.util.UUID.randomUUID(),
+            task.getProjectId(),
+            actor,
+            Instant.now(),
+            taskId,
+            saved.getId(),
+            task.getTitle(),
+            task.getAssigneeEmail()));
+    return ResponseEntity.ok(saved);
+  }
+
+  public TaskComment editComment(
+      Long taskId, Long id, CommentRequest request, HttpSession session) {
+    TaskComment comment = editable(taskId, id, session);
+    if (request.version() != null && !request.version().equals(comment.getVersion()))
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "This item was changed by someone else. Refresh and try again.");
+    comment.setMessage(request.message().trim());
+    return comments.save(comment);
+  }
+
+  public ResponseEntity<Void> deleteComment(Long taskId, Long id, HttpSession session) {
+    comments.delete(editable(taskId, id, session));
+    return ResponseEntity.noContent().build();
+  }
+
+  private TaskComment editable(Long taskId, Long id, HttpSession session) {
+    Task task =
+        tasks
+            .gettaskById(taskId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND));
+    access.write(task.getProjectId(), session);
+    TaskComment comment =
+        comments
+            .findById(id)
+            .filter(
+                c -> taskId.equals(c.getTaskId()) && task.getProjectId().equals(c.getProjectId()))
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND));
+    String role = access.role(task.getProjectId(), session);
+    if (!comment.getAuthorEmail().equalsIgnoreCase(access.email(session))
+        && !java.util.Set.of("Owner", "Admin").contains(role))
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.FORBIDDEN, "You can only edit your own comments.");
+    return comment;
+  }
+}

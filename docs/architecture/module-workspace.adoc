@@ -1,0 +1,58 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.workspace`
+|Spring components
+|_Controllers_
+
+* `c.s.w.project.ProjectController`
+* `c.s.w.project.ProjectTemplateController`
+* `c.s.w.sprint.SprintController`
+* `c.s.w.story.UserStoryController`
+* `c.s.w.task.TaskController`
+
+_Services_
+
+* `c.s.w.NotificationRequests`
+* `c.s.w.WorkspaceEmailListener` -- Moves account references in the same transaction as the profile change.
+* `c.s.w.activity.ActivityService`
+* `c.s.w.project.ProjectAccessService` -- Central project authorisation. One query loads the project and the caller's membership (`c.s.w.project.AccessContext`); the result is memoised for the rest of the HTTP request, so a handler that checks several needs still costs a single round trip.
+* `c.s.w.project.ProjectDeletionService`
+* `c.s.w.project.ProjectFactory` -- The single way a project comes into existence: unique name, owner membership, activity.
+* `c.s.w.project.ProjectMutationService`
+* `c.s.w.project.ProjectService`
+* `c.s.w.project.ProjectTemplateService`
+* `c.s.w.sprint.SprintApplicationService`
+* `c.s.w.sprint.SprintService`
+* `c.s.w.story.UserStoryService`
+* `c.s.w.task.TaskApplicationService`
+* `c.s.w.task.TaskService`
+
+_Repositories_
+
+* `c.s.w.activity.ActivityEventRepository`
+* `c.s.w.project.ProjectMemberRepository`
+* `c.s.w.project.ProjectRepository`
+* `c.s.w.sprint.SprintRepository`
+* `c.s.w.story.UserStoryRepository`
+* `c.s.w.task.TaskRepository`
+* `c.s.w.task.TaskStatusHistoryRepository`
+
+_Event listeners_
+
+* `c.s.w.WorkspaceAccountListener`
+|Bean references
+|* `c.s.a.SessionUser` (in Auth)
+* `c.s.a.UserRepository` (in Auth)
+|Aggregate roots
+|* `c.s.w.activity.ActivityEvent`
+* `c.s.w.project.Project`
+* `c.s.w.project.ProjectMember`
+* `c.s.w.sprint.Sprint`
+* `c.s.w.story.UserStory`
+* `c.s.w.task.Task`
+* `c.s.w.task.TaskStatusHistory`
+|Events listened to
+|* `c.s.a.AccountDeleting` 
+* `c.s.a.UserEmailChanged` 
+|===

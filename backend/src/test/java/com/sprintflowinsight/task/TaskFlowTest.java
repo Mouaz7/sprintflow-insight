@@ -1,22 +1,14 @@
 package com.sprintflowinsight.task;
 
-import com.sprintflowinsight.support.TestFiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprintflowinsight.auth.UserRepository;
-import com.sprintflowinsight.project.ProjectRepository;
-import com.sprintflowinsight.repository.ActivityEventRepository;
-import com.sprintflowinsight.repository.TaskRepository;
-import com.sprintflowinsight.repository.TaskStatusHistoryRepository;
-import com.sprintflowinsight.service.NotificationService;
+import com.sprintflowinsight.support.HttpFlowTest;
+import com.sprintflowinsight.support.TestFiles;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,11 +16,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import com.sprintflowinsight.*;
-import com.sprintflowinsight.support.HttpFlowTest;
 
 /** Task editing, versions, history, exports and attachments. */
 class TaskFlowTest extends HttpFlowTest {
@@ -76,8 +65,7 @@ class TaskFlowTest extends HttpFlowTest {
             new HttpEntity<>(cookieHeaders()),
             byte[].class);
     assertThat(pdf.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(pdfText(pdf.getBody()))
-        .contains("Unique export match", "Selected tasks: 1");
+    assertThat(pdfText(pdf.getBody())).contains("Unique export match", "Selected tasks: 1");
     assertThat(
             rest.exchange(
                     "/api/projects/" + projectId + "/export.csv?due=invalid",
@@ -195,7 +183,7 @@ class TaskFlowTest extends HttpFlowTest {
     var task = taskRepository.findByProjectId(projectId).get(0);
     String originalStatus = task.getStatus();
     int historyBefore = taskHistoryRepository.findByTaskIdOrderByChangedAtDesc(task.getId()).size();
-    var changes = new com.sprintflowinsight.model.Task("Changed", "", "Done");
+    var changes = new com.sprintflowinsight.workspace.task.Task("Changed", "", "Done");
     changes.setProjectId(projectId);
     changes.setStoryPoints(5);
     new org.springframework.transaction.support.TransactionTemplate(transactions)

@@ -10,17 +10,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.User;
-import com.sprintflowinsight.project.Project;
-import com.sprintflowinsight.repository.TaskRepository;
 import com.sprintflowinsight.support.ApiIntegrationTest;
+import com.sprintflowinsight.workspace.project.Project;
+import com.sprintflowinsight.workspace.task.TaskRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /**
- * Request bodies are explicit records: clients can no longer mass-assign server-owned fields,
- * and oversize or malformed input is a 400 with a field list instead of a database error.
+ * Request bodies are explicit records: clients can no longer mass-assign server-owned fields, and
+ * oversize or malformed input is a 400 with a field list instead of a database error.
  */
 class RequestContractIntegrationTest extends ApiIntegrationTest {
   @Autowired private ObjectMapper json;
@@ -37,7 +37,8 @@ class RequestContractIntegrationTest extends ApiIntegrationTest {
          "completedAt":"2000-01-02T00:00:00Z","trashedAt":"2000-01-03T00:00:00Z"}
         """
             .formatted(project.getId());
-    JsonNode created = read(mvc.perform(json(post("/api/tasks"), owner, body)).andExpect(status().isOk()));
+    JsonNode created =
+        read(mvc.perform(json(post("/api/tasks"), owner, body)).andExpect(status().isOk()));
 
     assertThat(created.get("id").asLong()).isNotEqualTo(424242);
     assertThat(created.get("version").asLong()).isZero();
@@ -94,7 +95,8 @@ class RequestContractIntegrationTest extends ApiIntegrationTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
-    String filters = "[{\\\"id\\\":\\\"a\\\",\\\"name\\\":\\\"Mine\\\",\\\"assignee\\\":\\\"me\\\"}]";
+    String filters =
+        "[{\\\"id\\\":\\\"a\\\",\\\"name\\\":\\\"Mine\\\",\\\"assignee\\\":\\\"me\\\"}]";
     mvc.perform(
             json(
                 put("/api/auth/preferences"),
@@ -127,7 +129,8 @@ class RequestContractIntegrationTest extends ApiIntegrationTest {
         .content(body);
   }
 
-  private JsonNode read(org.springframework.test.web.servlet.ResultActions result) throws Exception {
+  private JsonNode read(org.springframework.test.web.servlet.ResultActions result)
+      throws Exception {
     return json.readTree(result.andReturn().getResponse().getContentAsString());
   }
 }

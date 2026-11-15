@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter;
 import jakarta.servlet.ServletException;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;

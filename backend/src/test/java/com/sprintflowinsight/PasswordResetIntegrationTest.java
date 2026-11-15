@@ -15,13 +15,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.context.annotation.Import(
+    com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     properties = {
       "app.security.auth-rate-limit.enabled=false",

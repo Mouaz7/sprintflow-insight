@@ -1,7 +1,6 @@
 package com.sprintflowinsight.project;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,31 +10,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprintflowinsight.auth.User;
-import com.sprintflowinsight.auth.UserIdentity;
-import com.sprintflowinsight.auth.UserRepository;
-import com.sprintflowinsight.model.Sprint;
-import com.sprintflowinsight.repository.SprintRepository;
 import com.sprintflowinsight.support.ApiIntegrationTest;
-import jakarta.persistence.EntityManagerFactory;
+import com.sprintflowinsight.workspace.project.Project;
+import com.sprintflowinsight.workspace.project.ProjectMember;
+import com.sprintflowinsight.workspace.sprint.Sprint;
+import com.sprintflowinsight.workspace.sprint.SprintRepository;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
-import org.hibernate.SessionFactory;
-import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /** Authorisation rules and their query cost, exercised through the real HTTP layer. */
 class ProjectAccessIntegrationTest extends ApiIntegrationTest {
   @Autowired private SprintRepository sprints;
 
   @Test
-  void listingSprintsAcrossProjectsCostsTheSameNumberOfQueriesForAnyProjectCount() throws Exception {
+  void listingSprintsAcrossProjectsCostsTheSameNumberOfQueriesForAnyProjectCount()
+      throws Exception {
     User reader = user();
     User stranger = user();
     for (int i = 0; i < 2; i++) sprintIn(project(reader, null));
@@ -65,7 +57,11 @@ class ProjectAccessIntegrationTest extends ApiIntegrationTest {
     Project project = project(owner, null);
     long cost =
         statementsFor(
-            () -> mvc.perform(get("/api/sprints").param("projectId", project.getId().toString()).with(as(owner))));
+            () ->
+                mvc.perform(
+                    get("/api/sprints")
+                        .param("projectId", project.getId().toString())
+                        .with(as(owner))));
     // user lookup + one access row + the sprint list
     assertThat(cost).isLessThanOrEqualTo(3);
   }
@@ -145,7 +141,9 @@ class ProjectAccessIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.detail").value("Only the project owner can appoint admins."));
     mvc.perform(memberPut(project, admin, otherAdmin, "Viewer"))
         .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.detail").value("Only the project owner can change or remove another admin."));
+        .andExpect(
+            jsonPath("$.detail")
+                .value("Only the project owner can change or remove another admin."));
     mvc.perform(
             delete("/api/projects/" + project.getId() + "/members/" + otherAdmin.getEmail())
                 .with(as(admin))
@@ -167,7 +165,12 @@ class ProjectAccessIntegrationTest extends ApiIntegrationTest {
     Project project = project(owner, null);
     String path = "/api/workspace/trash/project/" + project.getId();
     String body = "{\"restore\":false}";
-    mvc.perform(put(path).with(as(owner)).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            put(path)
+                .with(as(owner))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().is(428))
         .andExpect(jsonPath("$.code").value("PRECONDITION_REQUIRED"));
     mvc.perform(

@@ -1,0 +1,7 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.common`
+|Spring components
+|* `c.s.c.EventPublicationMaintenance`
+|===
