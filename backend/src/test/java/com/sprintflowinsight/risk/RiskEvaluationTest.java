@@ -31,7 +31,7 @@ class RiskEvaluationTest {
     assertThatThrownBy(
             () -> RiskEvaluation.auc(new double[] {1, Double.NaN}, new boolean[] {true, false}))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> RiskEvaluation.auc(new double[] {1}, new boolean[] {true, false}))
+    assertThatThrownBy(() -> RiskEvaluation.auc(new double[] {1, 2}, new boolean[] {true, false, true}))
         .isInstanceOf(IllegalArgumentException.class);
   }
 

@@ -24,12 +24,12 @@ System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags
 
 }
 
-Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
-Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
-Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes
