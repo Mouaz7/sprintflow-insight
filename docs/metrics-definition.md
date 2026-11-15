@@ -18,3 +18,50 @@ Moving a story to another sprint (or back to the backlog) moves its linked tasks
 including tasks already in the recycle bin; deletion markers remain unchanged.
 Tasks linked to a story must have exactly the story's sprint, including a null sprint
 for an unplanned story. Only standalone tasks can choose a sprint independently.
+
+## Probabilistic forecasts and backtesting (C2)
+
+The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput history into a **predictive distribution** of the number of items completed in the next *t* periods. Planning answers are derived from it. The algorithms are pure Java; the REST endpoints and the UI come in a later C2 step. ADR 0010 explains the model choice.
+
+### Input
+
+- A **history** of non-negative counts per consecutive period, oldest first. The normal case is items completed per week (`ThroughputHistory.weekly`). Sprint velocity (`sprintVelocity`) uses one period per sprint and story points as the unit.
+- Calendar days become fractional periods (`days / periodDays`). The models assume completions accrue evenly within a period.
+- Randomness (the bootstrap only) comes from an injected `java.util.random.RandomGenerator`. With a fixed seed, forecasts and backtests are reproducible.
+
+### Models
+
+All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteDistribution`: a pmf on a contiguous integer range with its cdf, quantiles, mean and variance.
+
+1. **Bootstrap Monte Carlo** (`bootstrap-monte-carlo`, from B6). Each of 10 000 trials (the default) sums ⌊t⌋ periods drawn with replacement from the history. For a fractional remainder *f*, each item of one more drawn period is kept with probability *f* (binomial thinning). The result is the empirical distribution of the trial sums. It needs no distributional assumption, but it can never forecast a period larger than the largest one observed. It also gives no weight to recency.
+2. **Bayesian Gamma-Poisson** (`gamma-poisson`). Weekly counts are modelled as *x*ᵢ ~ Poisson(λ) with prior λ ~ Gamma(α₀, β₀) (shape, rate). The conjugate update after *n* periods with total *s* gives the posterior Gamma(α₀ + *s*, β₀ + *n*). The posterior predictive total over *t* periods is **negative binomial** with *r* = α₀ + *s* and *p* = (β₀ + *n*)/(β₀ + *n* + *t*):
+
+   P(K = *k*) = Γ(*k* + *r*) / (*k*! Γ(*r*)) · *p*^*r* (1 − *p*)^*k*, with mean *r*(1 − *p*)/*p* = *t*(α₀ + *s*)/(β₀ + *n*).
+
+   It is computed exactly, not sampled. The pmf starts at the mode, uses the ratio P(*k*+1)/P(*k*) = (*k* + *r*)/(*k* + 1)·(1 − *p*) in both directions, and is normalised. Tails are truncated once a term falls below 10⁻¹⁷ of the modal probability, so the lost mass is about 10⁻¹⁵. Starting at the mode keeps every term ≤ 1, so there is no underflow even for means in the thousands. The default prior is α₀ = β₀ = 0.5: a mean of one item per period, weighted as half an observed period. Both are configurable.
+3. **Exponentially weighted Poisson** (`ewma-poisson`). The rate is the weighted mean λ̂ = Σ *w*ᵢ*x*ᵢ / Σ *w*ᵢ with *w*ᵢ = *d*^(*n*−1−*i*) and *d* = 0.5^(1/*h*). The default half-life is *h* = 4 periods. The forecast is Poisson(λ̂·*t*), computed exactly the same way. It reacts quickly to level shifts, but it treats λ̂ as known, so its intervals are too narrow when data are scarce or over-dispersed.
+
+### Derived answers (`ForecastAnswers`)
+
+- **(a) Completion date for *N* items** at confidence *c* ∈ {50, 85, 95 %}: the first day *d* with P(*S*(*d*) ≥ *N*) ≥ *c*, where *S*(*d*) is the predictive total for *d* days. The search doubles *d*, then bisects. The answer is empty when even five years are not enough. For the bootstrap model, Monte Carlo noise can move the answer by about one day near the threshold.
+- **(b) Items by a date** at confidence *c*: the largest *x* with P(*S* ≥ *x*) ≥ *c*. Higher confidence never gives more items.
+- **(c) Probability to reach a target** of *m* items in the remaining *d* days: P(*S*(*d*) ≥ *m*) = 1 − *F*(*m* − 1).
+
+### Backtesting (`Backtester`) and model selection
+
+**Rolling origin.** At each origin *o* = *m*, *m* + 1, …, *n* − *h*, a model sees only periods [0, *o*). It forecasts the total of the next *h* periods, and the forecast is scored against what actually happened. The defaults are *m* = 8 training periods and *h* = 2. Each origin produces the following:
+
+- **CRPS**, the continuous ranked probability score: CRPS(*F*, *y*) = ∫ (*F*(*x*) − 𝟙{*x* ≥ *y*})² d*x*. For an integer-valued forecast *F* is a step function with unit steps, so the integral is exactly Σₖ (*F*(*k*) − 𝟙{*k* ≥ *y*})² over the integers between the support and *y*. It equals E|*X* − *y*| − ½E|*X* − *X*′|, is ≥ 0 and is in item units. It is 0 only for a point forecast that hits *y*, and it reduces to the absolute error for any point forecast. Lower is better.
+- **Interval coverage**: the share of observations inside the central interval [*q*((1−*c*)/2), *q*((1+*c*)/2)] for *c* = 50/85/95 %. *q* is the left-continuous quantile (the smallest *x* with *F*(*x*) ≥ *p*). On the integers these intervals contain at least *c* of the mass, so a well-calibrated model covers slightly **more** often than nominal.
+- **PIT histogram**: the non-randomised PIT for count data (Czado, Gneiting & Held, 2009). For each case, *F*(*u* | *y*) is 0 below *F*(*y*−1), 1 above *F*(*y*), and linear between them. The 10 bins are the averaged increments of *F*(*u* | *y*) and sum to one. A calibrated model gives a flat histogram. A U shape means the intervals are too narrow, and a hump means they are too wide. Mass at one end indicates bias.
+- **MAE**: the mean absolute error of the forecast median.
+
+**Selection.** The candidate with the lowest mean CRPS wins, and ties keep the earlier candidate (Gamma-Poisson, EWMA, bootstrap). CRPS is a proper score, so it rewards calibration and sharpness together. Coverage, PIT and MAE are kept in every report to explain the choice. **Minimum-data rule:** selection requires at least 6 origins, that is *m* + *h* + 5 = 15 periods with the defaults. Below that, the result is `InsufficientHistory(available, required)`, and callers should show no model choice (or fall back to the Gamma-Poisson model, which degrades gracefully to its prior).
+
+### Limitations
+
+- All three models assume periods are exchangeable apart from EWMA's recency weighting. Seasonality, holidays, team changes and scope changes are not modelled.
+- Rolling-origin windows overlap when *h* > 1, so the per-origin scores are correlated. With short histories, differences in mean CRPS between models can be noise.
+- The Poisson-type models treat items as independent arrivals. Batch completions (many items closed on one day) are over-dispersed, so the EWMA intervals will be too narrow. Gamma-Poisson only partly absorbs this through parameter uncertainty, which vanishes as history grows.
+- Velocity in story points is not a count of independent events. The Poisson models only approximate it, so prefer item throughput when both are available.
+- The forecast covers future throughput, not scope. The *N* items remaining are taken as given.
