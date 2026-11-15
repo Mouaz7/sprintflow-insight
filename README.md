@@ -154,7 +154,7 @@ cd ..
 docker compose build app
 ```
 
-`npm run check` runs frontend tests and the production build. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 25 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
+`npm run check` runs frontend lint, formatting and type checks, tests, the production build and bundle size limits. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 25 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
 
 All verification scripts are TypeScript and run directly with Node 24. Install tooling with `npm ci --prefix scripts`, then use:
 
