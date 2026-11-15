@@ -133,7 +133,36 @@ button {
   }
 }
 
-.date-input-control { position: relative; display: block; }
-.date-input-control > input[type="text"] { width: 100%; padding-right: 44px; }
-.date-input-control > .date-input-source { position: absolute; right: 20px; top: 50%; width: 1px; min-width: 0; height: 1px; min-height: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
-.date-input-picker { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; padding: 7px; border: 0; background: transparent; color: inherit; }
+.date-input-control {
+  position: relative;
+  display: block;
+}
+.date-input-control > input[type='text'] {
+  width: 100%;
+  padding-right: 44px;
+}
+.date-input-control > .date-input-source {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  width: 1px;
+  min-width: 0;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.date-input-picker {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}

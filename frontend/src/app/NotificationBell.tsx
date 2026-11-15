@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { Language, Notification } from '../api/contracts';
-import { Notice } from './ui';
-import { localizeMessage } from './messages';
+import { localizeMessage } from '../shared/i18n/messages';
+import { Notice } from '../shared/ui/ui';
 
 export function NotificationBell({
   language,
@@ -83,10 +83,13 @@ export function NotificationBell({
   }
   const unread = items.filter((item) => !item.read).length;
   const unreadBadge = unread > 99 ? '99+' : String(unread);
-  const unreadTotal = unread > 99 ? ` (${unread} ${sv ? 'totalt' : 'total'})` : '';
+  const unreadTotal =
+    unread > 99 ? ` (${unread} ${sv ? 'totalt' : 'total'})` : '';
   const label = unread
     ? `${sv ? 'Notiser' : 'Notifications'}, ${unreadBadge} ${sv ? 'olästa' : 'unread'}${unreadTotal}`
-    : sv ? 'Notiser' : 'Notifications';
+    : sv
+      ? 'Notiser'
+      : 'Notifications';
   return (
     <div className="notification-control" ref={root}>
       <button

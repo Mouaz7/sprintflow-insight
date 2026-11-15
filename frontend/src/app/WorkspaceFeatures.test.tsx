@@ -7,16 +7,22 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { TaskDiscussion, TaskMetadata } from './TaskCollaboration';
+import type { Preferences, Task } from '../api/contracts';
+import {
+  PublicReportView,
+  ShareReportCard,
+} from '../features/insights/SharedReports';
+import { Onboarding } from '../features/onboarding/Onboarding';
+import { CalendarView } from '../features/planning/CalendarView';
+import { RetrospectiveView } from '../features/planning/RetrospectiveView';
+import { PreferencesPanel } from '../features/profile/PreferencesPanel';
+import { TrashView } from '../features/projects/TrashView';
+import { SavedFilters } from '../features/tasks/SavedFilters';
+import {
+  TaskDiscussion,
+  TaskMetadata,
+} from '../features/tasks/TaskCollaboration';
 import { NotificationBell } from './NotificationBell';
-import { SavedFilters } from './SavedFilters';
-import { TrashView } from './TrashView';
-import { PreferencesPanel } from './PreferencesPanel';
-import { CalendarView } from './CalendarView';
-import { RetrospectiveView } from './RetrospectiveView';
-import { ShareReportCard, PublicReportView } from './SharedReports';
-import { Onboarding } from './Onboarding';
-import type { Task, Preferences } from '../api/contracts';
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 const task: Task = {
   id: 1,
@@ -154,19 +160,27 @@ describe('Workspace feature components', () => {
   });
   it.each([
     {
-      language: 'EN' as const, count: 2, badge: '2',
+      language: 'EN' as const,
+      count: 2,
+      badge: '2',
       name: 'Notifications, 2 unread',
     },
     {
-      language: 'SV' as const, count: 2, badge: '2',
+      language: 'SV' as const,
+      count: 2,
+      badge: '2',
       name: 'Notiser, 2 olästa',
     },
     {
-      language: 'EN' as const, count: 120, badge: '99+',
+      language: 'EN' as const,
+      count: 120,
+      badge: '99+',
       name: 'Notifications, 99+ unread (120 total)',
     },
     {
-      language: 'SV' as const, count: 120, badge: '99+',
+      language: 'SV' as const,
+      count: 120,
+      badge: '99+',
       name: 'Notiser, 99+ olästa (120 totalt)',
     },
   ])(

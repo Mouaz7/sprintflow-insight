@@ -1,13 +1,13 @@
-import { localizeMessage } from './messages';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Story, Sprint, Activity } from '../api/contracts';
-import { PageHeader } from './ui';
-import { ShareReportCard } from './SharedReports';
-import { MetricsCards } from './MetricsView';
-import { BacklogManager } from './BacklogView';
-import { SprintManager } from './SprintView';
-import { ActivityTimeline } from './ActivityTimeline';
+import type { Activity, Sprint, Story } from '../api/contracts';
+import { ActivityTimeline } from '../features/insights/ActivityTimeline';
+import { MetricsCards } from '../features/insights/MetricsView';
+import { ShareReportCard } from '../features/insights/SharedReports';
+import { BacklogManager } from '../features/planning/BacklogView';
+import { SprintManager } from '../features/planning/SprintView';
+import { localizeMessage } from '../shared/i18n/messages';
+import { PageHeader } from '../shared/ui/ui';
 
 type InsightView = 'backlog' | 'sprints' | 'metrics' | 'updates';
 export function ProjectInsightView({
@@ -17,7 +17,7 @@ export function ProjectInsightView({
   language,
 }: {
   view: InsightView;
-  projectId?: number;
+  projectId?: number | undefined;
   hasProjects: boolean;
   language: 'EN' | 'SV';
 }) {
@@ -154,7 +154,7 @@ export function ProjectInsightView({
                 setData((current) => {
                   const items = current as Story[];
                   return items.some((item) => item.id === saved.id)
-                    ? items.map((item) => item.id === saved.id ? saved : item)
+                    ? items.map((item) => (item.id === saved.id ? saved : item))
                     : [...items, saved];
                 });
               }}
@@ -171,7 +171,7 @@ export function ProjectInsightView({
                 setData((current) => {
                   const items = current as Sprint[];
                   return items.some((item) => item.id === saved.id)
-                    ? items.map((item) => item.id === saved.id ? saved : item)
+                    ? items.map((item) => (item.id === saved.id ? saved : item))
                     : [...items, saved];
                 });
               }}

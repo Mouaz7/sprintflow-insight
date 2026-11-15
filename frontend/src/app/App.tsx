@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError, clearCsrfToken } from '../api/client';
 import type { Project, Session, User } from '../api/contracts';
-import { AuthScreen } from './AuthScreen';
+import { AuthScreen } from '../features/auth/AuthScreen';
+import { PublicReportView } from '../features/insights/SharedReports';
 import { Workspace } from './Workspace';
-import { PublicReportView } from './SharedReports';
 
 export function App() {
   const token = new URLSearchParams(window.location.search).get('report');

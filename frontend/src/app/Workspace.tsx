@@ -1,22 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Language, Session, User, WorkspaceView } from '../api/contracts';
-import { ConfirmProvider, EditorProjectContext, useModalFocus } from './ui';
-import { DraftProjectsContext } from './useDraftProject';
-import { InterfaceIcon } from './InterfaceIcons';
-import { ProfileView } from './ProfileView';
-import { TasksView } from './TasksView';
-import { ProjectInsightView } from './ProjectInsights';
-import { ProjectsView } from './ProjectsView';
-import { OverviewView } from './OverviewView';
-import { LanguageSelector } from './LanguageSelector';
-import { NotificationBell } from './NotificationBell';
 import { api } from '../api/client';
-import type { Preferences } from '../api/contracts';
-import { Notice } from './ui';
-import { CalendarView } from './CalendarView';
-import { RetrospectiveView } from './RetrospectiveView';
-import { TrashView } from './TrashView';
-import { Onboarding } from './Onboarding';
+import type {
+  Language,
+  Preferences,
+  Session,
+  User,
+  WorkspaceView,
+} from '../api/contracts';
+import { OverviewView } from '../features/insights/OverviewView';
+import { Onboarding } from '../features/onboarding/Onboarding';
+import { CalendarView } from '../features/planning/CalendarView';
+import { RetrospectiveView } from '../features/planning/RetrospectiveView';
+import { ProfileView } from '../features/profile/ProfileView';
+import { ProjectsView } from '../features/projects/ProjectsView';
+import { TrashView } from '../features/projects/TrashView';
+import { TasksView } from '../features/tasks/TasksView';
+import { DraftProjectsContext } from '../shared/lib/useDraftProject';
+import { InterfaceIcon } from '../shared/ui/InterfaceIcons';
+import { LanguageSelector } from '../shared/ui/LanguageSelector';
+import {
+  ConfirmProvider,
+  EditorProjectContext,
+  Notice,
+  useModalFocus,
+} from '../shared/ui/ui';
+import { NotificationBell } from './NotificationBell';
+import { ProjectInsightView } from './ProjectInsights';
 
 type Props = {
   session: Session;
@@ -27,8 +36,17 @@ type Props = {
 };
 const projectStorage = 'sprintflow-active-project';
 const workspaceViews: readonly WorkspaceView[] = [
-  'overview', 'projects', 'backlog', 'sprints', 'tasks', 'metrics',
-  'updates', 'profile', 'calendar', 'retrospective', 'trash',
+  'overview',
+  'projects',
+  'backlog',
+  'sprints',
+  'tasks',
+  'metrics',
+  'updates',
+  'profile',
+  'calendar',
+  'retrospective',
+  'trash',
 ];
 const viewStorage = (userId: number) => `sprintflow-view-v1:${userId}`;
 
@@ -65,7 +83,9 @@ function WorkspaceContent({
   language,
   setLanguage,
 }: Props & { language: Language; setLanguage: (value: Language) => void }) {
-  const [view, setView] = useState<WorkspaceView>(() => restoreView(session.user.id));
+  const [view, setView] = useState<WorkspaceView>(() =>
+    restoreView(session.user.id),
+  );
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideAvailable, setGuideAvailable] = useState(false);
   const [preferenceError, setPreferenceError] = useState('');
@@ -85,7 +105,10 @@ function WorkspaceContent({
   const accountName = session.user.displayName || session.user.email;
   const accountInitial = accountName.slice(0, 1).toUpperCase();
   const activeProject = session.projects.find((p) => p.id === activeProjectId);
-  const draftProjects = useMemo(() => ({ projects: session.projects, onSelect: setActiveProjectId }), [session.projects]);
+  const draftProjects = useMemo(
+    () => ({ projects: session.projects, onSelect: setActiveProjectId }),
+    [session.projects],
+  );
   const labels = sv
     ? {
         overview: 'Översikt',
@@ -147,7 +170,7 @@ function WorkspaceContent({
     return () => {
       live = false;
     };
-  }, [session.user.id]);
+  }, [session.user.id, setLanguage]);
   function changeLanguage(value: Language) {
     setLanguage(value);
     void api('/auth/preferences', {
@@ -271,11 +294,8 @@ function WorkspaceContent({
                 ) : (
                   accountInitial
                 )}
-              </span>
-              {' '}
-              <span className="account-name">
-                {accountName}
-              </span>
+              </span>{' '}
+              <span className="account-name">{accountName}</span>
             </button>
             <button
               ref={menuButton}
@@ -331,123 +351,132 @@ function WorkspaceContent({
         </MobileMenu>
       )}
       <DraftProjectsContext.Provider value={draftProjects}>
-      <EditorProjectContext.Provider
-        value={['projects', 'profile', 'trash'].includes(view) ? undefined : activeProject}
-      >
-        <div className="workspace-content" id="workspace-page" tabIndex={-1}>
-          <Notice language={language} error={preferenceError} />
-          {guideAvailable &&
-            view === 'overview' &&
-            session.projects.length === 0 && (
-              <section className="onboarding-banner">
-                <p>
-                  {sv
-                    ? 'Ny här? Vi hjälper dig att komma igång.'
-                    : 'New here? Let us help you get started.'}
-                </p>
-                <button onClick={() => setGuideOpen(true)}>
-                  {sv ? 'Visa introduktion' : 'Show introduction'}
-                </button>
-              </section>
+        <EditorProjectContext.Provider
+          value={
+            ['projects', 'profile', 'trash'].includes(view)
+              ? undefined
+              : activeProject
+          }
+        >
+          <div className="workspace-content" id="workspace-page" tabIndex={-1}>
+            <Notice language={language} error={preferenceError} />
+            {guideAvailable &&
+              view === 'overview' &&
+              session.projects.length === 0 && (
+                <section className="onboarding-banner">
+                  <p>
+                    {sv
+                      ? 'Ny här? Vi hjälper dig att komma igång.'
+                      : 'New here? Let us help you get started.'}
+                  </p>
+                  <button onClick={() => setGuideOpen(true)}>
+                    {sv ? 'Visa introduktion' : 'Show introduction'}
+                  </button>
+                </section>
+              )}
+            {activeProject &&
+              !['projects', 'profile', 'trash'].includes(view) && (
+                <label className="project-context">
+                  <span>{sv ? 'Aktuellt projekt' : 'Current project'}</span>
+                  <select
+                    aria-label={sv ? 'Aktuellt projekt' : 'Current project'}
+                    value={activeProjectId}
+                    onChange={(event) =>
+                      setActiveProjectId(Number(event.target.value))
+                    }
+                  >
+                    {session.projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            {view === 'calendar' && (
+              <CalendarView
+                key={activeProjectId}
+                projectId={activeProjectId}
+                language={language}
+              />
             )}
-          {activeProject && !['projects', 'profile', 'trash'].includes(view) && (
-            <label className="project-context">
-              <span>{sv ? 'Aktuellt projekt' : 'Current project'}</span>
-              <select
-                aria-label={sv ? 'Aktuellt projekt' : 'Current project'}
-                value={activeProjectId}
-                onChange={event => setActiveProjectId(Number(event.target.value))}
-              >
-                {session.projects.map(project => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
-          {view === 'calendar' && (
-            <CalendarView
-              key={activeProjectId}
-              projectId={activeProjectId}
-              language={language}
-            />
-          )}
-          {view === 'retrospective' && (
-            <RetrospectiveView
-              key={activeProjectId}
-              projectId={activeProjectId}
-              language={language}
-              userEmail={session.user.email}
-            />
-          )}
-          {view === 'trash' && (
-            <TrashView
-              language={language}
-              projects={session.projects}
-              userEmail={session.user.email}
-              onChanged={onProjectsChanged}
-            />
-          )}
-          {view === 'overview' && (
-            <OverviewView
-              project={activeProject}
-              language={language}
-              onNavigate={selectView}
-              onNewTask={() => {
-                setTaskRequest((n) => n + 1);
-                selectView('tasks');
-              }}
-            />
-          )}
-          {view === 'projects' && (
-            <ProjectsView
-              projects={session.projects}
-              project={activeProject}
-              user={session.user}
-              language={language}
-              onChanged={onProjectsChanged}
-              onSelect={setActiveProjectId}
-            />
-          )}
-          {view === 'tasks' && (
-            <TasksView
-              key={activeProjectId}
-              hasProjects={session.projects.length > 0}
-              projectId={activeProjectId}
-              language={language}
-              openRequest={taskRequest}
-              userEmail={session.user.email}
-              readOnly={!!activeProject?.archivedAt}
-              onRequestHandled={() => setTaskRequest(0)}
-            />
-          )}
-          {(view === 'backlog' ||
-            view === 'sprints' ||
-            view === 'metrics' ||
-            view === 'updates') && (
-            <ProjectInsightView
-              key={activeProjectId}
-              view={view}
-              projectId={activeProjectId}
-              hasProjects={session.projects.length > 0}
-              language={language}
-            />
-          )}
-          {view === 'profile' && (
-            <ProfileView
-              user={session.user}
-              language={language}
-              onSaved={onUserChanged}
-              onLogout={onLogout}
-              onAppearance={(nextLanguage, theme) => {
-                setLanguage(nextLanguage);
-                setDarkMode(theme === 'dark');
-              }}
-              onReplay={() => setGuideOpen(true)}
-              onAccountDeleted={onAccountDeleted}
-            />
-          )}
-        </div>
-      </EditorProjectContext.Provider>
+            {view === 'retrospective' && (
+              <RetrospectiveView
+                key={activeProjectId}
+                projectId={activeProjectId}
+                language={language}
+                userEmail={session.user.email}
+              />
+            )}
+            {view === 'trash' && (
+              <TrashView
+                language={language}
+                projects={session.projects}
+                userEmail={session.user.email}
+                onChanged={onProjectsChanged}
+              />
+            )}
+            {view === 'overview' && (
+              <OverviewView
+                project={activeProject}
+                language={language}
+                onNavigate={selectView}
+                onNewTask={() => {
+                  setTaskRequest((n) => n + 1);
+                  selectView('tasks');
+                }}
+              />
+            )}
+            {view === 'projects' && (
+              <ProjectsView
+                projects={session.projects}
+                project={activeProject}
+                user={session.user}
+                language={language}
+                onChanged={onProjectsChanged}
+                onSelect={setActiveProjectId}
+              />
+            )}
+            {view === 'tasks' && (
+              <TasksView
+                key={activeProjectId}
+                hasProjects={session.projects.length > 0}
+                projectId={activeProjectId}
+                language={language}
+                openRequest={taskRequest}
+                userEmail={session.user.email}
+                readOnly={!!activeProject?.archivedAt}
+                onRequestHandled={() => setTaskRequest(0)}
+              />
+            )}
+            {(view === 'backlog' ||
+              view === 'sprints' ||
+              view === 'metrics' ||
+              view === 'updates') && (
+              <ProjectInsightView
+                key={activeProjectId}
+                view={view}
+                projectId={activeProjectId}
+                hasProjects={session.projects.length > 0}
+                language={language}
+              />
+            )}
+            {view === 'profile' && (
+              <ProfileView
+                user={session.user}
+                language={language}
+                onSaved={onUserChanged}
+                onLogout={onLogout}
+                onAppearance={(nextLanguage, theme) => {
+                  setLanguage(nextLanguage);
+                  setDarkMode(theme === 'dark');
+                }}
+                onReplay={() => setGuideOpen(true)}
+                onAccountDeleted={onAccountDeleted}
+              />
+            )}
+          </div>
+        </EditorProjectContext.Provider>
       </DraftProjectsContext.Provider>
       {guideOpen && (
         <Onboarding
@@ -489,6 +518,7 @@ function MobileMenu({
   }, [onClose]);
   return (
     <div
+      role="presentation"
       className="mobile-menu-backdrop"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();

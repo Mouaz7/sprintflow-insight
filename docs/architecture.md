@@ -21,6 +21,7 @@ PostgreSQL + Flyway migrations
 
 ## Boundaries
 
+- The frontend is split into `app/` (shell and composition), `features/{auth,tasks,planning,insights,projects,profile,onboarding}`, `shared/{ui,i18n,lib}` and `api/`. Features may import only themselves, `shared` and `api`; ESLint enforces this ([ADR 0008](adr/0008-frontend-feature-folders-and-lint.md)).
 - `frontend/src/api` is the frontend boundary for REST requests. It sends the server-issued CSRF token on every state-changing request and always uses same-origin credentials. The Google sign-in component also loads the official Identity Services script.
 - The Java API has feature packages for authentication, projects, stories, tasks, metrics, collaboration and notifications.
 - Spring Security protects `/api/**` except narrowly scoped sign-in, registration, recovery, CSRF and expiring public-report reads.

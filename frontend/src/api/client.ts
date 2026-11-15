@@ -88,7 +88,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const payload = (await response.json().catch(() => ({}))) as T & {
     message?: string;
     detail?: string;
-    error?: string;
+    error?: string | undefined;
   };
   if (!response.ok) {
     const message = payload.message ?? payload.detail;
