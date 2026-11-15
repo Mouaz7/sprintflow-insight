@@ -104,4 +104,29 @@ class DatabaseUnavailableFilterTest {
     assertThat(DatabaseUnavailableFilter.isDatabaseUnavailable(new IllegalStateException()))
         .isFalse();
   }
+
+  @Test
+  void lockConflictsAreNotMistakenForAnOutage() {
+    var conflicts =
+        new Throwable[] {
+          new org.springframework.dao.CannotAcquireLockException("lock timeout"),
+          new org.springframework.dao.PessimisticLockingFailureException("deadlock"),
+          new org.springframework.dao.OptimisticLockingFailureException("stale"),
+          new org.springframework.dao.ConcurrencyFailureException("conflict"),
+          new JpaSystemException(
+              new RuntimeException(
+                  new java.sql.SQLTransactionRollbackException("serialization", "40001")))
+        };
+    for (Throwable conflict : conflicts) {
+      assertThat(DatabaseUnavailableFilter.isDatabaseUnavailable(conflict))
+          .as(conflict.toString())
+          .isFalse();
+      assertThat(DatabaseFailures.isConcurrencyConflict(conflict)).as(conflict.toString()).isTrue();
+    }
+    assertThat(
+            DatabaseUnavailableFilter.isDatabaseUnavailable(
+                new org.springframework.dao.QueryTimeoutException("slow")))
+        .as("other transient failures still mean the database is struggling")
+        .isTrue();
+  }
 }

@@ -114,6 +114,19 @@ class ApiExceptionHandlerTest {
   }
 
   @Test
+  void lockAndConcurrencyFailuresAreConflictsNotOutages() throws Exception {
+    for (String path :
+        new String[] {
+          "/test/lock", "/test/pessimistic", "/test/optimistic", "/test/deadlock-wrapped"
+        }) {
+      expectProblem(mvc.perform(get(path)), ErrorCode.CONFLICT)
+          .andExpect(header().doesNotExist("Retry-After"))
+          .andExpect(jsonPath("$.detail").value(DatabaseFailures.CONFLICT_DETAIL))
+          .andExpect(content().string(not(containsString("secret-driver-text"))));
+    }
+  }
+
+  @Test
   void wrappedClientErrorsKeepTheirStatusInsteadOfBecoming500() throws Exception {
     expectProblem(mvc.perform(get("/test/wrapped")), ErrorCode.BAD_REQUEST)
         .andExpect(jsonPath("$.detail").value("Invalid export filters."));
@@ -196,6 +209,29 @@ class ApiExceptionHandlerTest {
     @GetMapping("/test/database")
     String database() {
       throw new org.springframework.dao.DataAccessResourceFailureException("secret-driver-text");
+    }
+
+    @GetMapping("/test/lock")
+    String lock() {
+      throw new org.springframework.dao.CannotAcquireLockException(
+          "secret-driver-text", new java.sql.SQLException("secret-driver-text", "55P03"));
+    }
+
+    @GetMapping("/test/pessimistic")
+    String pessimistic() {
+      throw new org.springframework.dao.PessimisticLockingFailureException("secret-driver-text");
+    }
+
+    @GetMapping("/test/optimistic")
+    String optimistic() {
+      throw new org.springframework.dao.OptimisticLockingFailureException("secret-driver-text");
+    }
+
+    @GetMapping("/test/deadlock-wrapped")
+    String deadlockWrapped() {
+      throw new org.springframework.orm.jpa.JpaSystemException(
+          new RuntimeException(
+              new java.sql.SQLTransactionRollbackException("secret-driver-text", "40P01")));
     }
 
     @GetMapping("/test/database-wrapped")
