@@ -84,3 +84,14 @@ Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln
 - **Omöjliga lås:** om låsen inte går att uppfylla, till exempel en inlåst story som beror på en utlåst story eller inlåsta stories som tillsammans överskrider kapaciteten, föreslås ingen sprint. I stället visas vilka lås som krockar.
 
 Metoden, baslinjerna (girig och dynamisk programmering) och begränsningarna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md).
+
+## Realtid och närvaro (B1)
+
+Tavlan uppdateras automatiskt när någon annan i projektet skapar, flyttar, ändrar eller slänger en uppgift, kommenterar eller byter status på en sprint. Du behöver inte ladda om sidan. Överst i arbetsytan visas avatarer för de projektmedlemmar som har projektet öppet just nu.
+
+- **Anslutning:** webbläsaren öppnar en WebSocket mot `/ws` med den vanliga inloggningen. Ingen extra inloggning eller token behövs. Utloggning, lösenordsbyte eller att du tas bort ur projektet stänger anslutningen inom 30 sekunder.
+- **Vad som skickas:** bara vad som ändrades (typ, id, version och ett sekvensnummer), aldrig innehållet. Webbläsaren hämtar sedan det nya innehållet via API:t med dina vanliga behörigheter.
+- **Avbrott:** tappas anslutningen försöker webbläsaren igen efter 1, 2, 4 … upp till 30 sekunder. Efter återanslutning hämtas det som missades via `GET /api/projects/{id}/events?after=<senaste sekvensnummer>`. Är luckan för stor eller äldre än 7 dagar laddas projektet om i stället.
+- **Begränsningar:** en server i taget tills C6 inför en extern meddelandebroker. Att slänga en hel story eller sprint med dess uppgifter skickar ännu ingen uppdatering. Kommentarstråden i en öppen uppgift uppdateras när den öppnas igen.
+
+Arkitekturen beskrivs i [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).

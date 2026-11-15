@@ -17,3 +17,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0012](0012-late-task-risk-model.md) | Hand-written regularised logistic regression for late-task risk | Accepted |
 | [0014](0014-ci-supply-chain.md) | CI pipeline and software supply chain: one build, SBOMs, keyless signing, provenance | Accepted |
 | [0015](0015-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |
+| [0017](0017-realtime-stomp-and-sequence-numbers.md) | Realtime updates over STOMP with per-project sequence numbers | Accepted |
