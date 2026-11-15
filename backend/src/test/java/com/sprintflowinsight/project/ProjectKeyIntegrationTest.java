@@ -219,6 +219,27 @@ class ProjectKeyIntegrationTest extends ApiIntegrationTest {
   }
 
   @Test
+  void lookupByKeyDoesNotRevealThatAProjectIsInTheRecycleBin() throws Exception {
+    User owner = user();
+    User outsider = user();
+    Project project = project(owner, null);
+    String key = createTask(owner, project, "Hidden").get("key").asString();
+    Project trashed = projects.findById(project.getId()).orElseThrow();
+    trashed.setTrashedAt(Instant.now());
+    projects.save(trashed);
+
+    for (User caller : new User[] {outsider, owner}) {
+      mvc.perform(get("/api/tasks/by-key/" + key).with(as(caller)))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+          .andExpect(jsonPath("$.detail").value("Task not found."));
+    }
+    mvc.perform(get("/api/tasks/by-key/" + project.getKey() + "-999").with(as(outsider)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.detail").value("Task not found."));
+  }
+
+  @Test
   void onlyOwnersAndAdminsChangeTheKeyOfAnActiveProject() throws Exception {
     User owner = user();
     User admin = user();
