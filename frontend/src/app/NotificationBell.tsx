@@ -82,13 +82,18 @@ export function NotificationBell({
     }
   }
   const unread = items.filter((item) => !item.read).length;
+  const unreadBadge = unread > 99 ? '99+' : String(unread);
+  const unreadTotal = unread > 99 ? ` (${unread} ${sv ? 'totalt' : 'total'})` : '';
+  const label = unread
+    ? `${sv ? 'Notiser' : 'Notifications'}, ${unreadBadge} ${sv ? 'olästa' : 'unread'}${unreadTotal}`
+    : sv ? 'Notiser' : 'Notifications';
   return (
     <div className="notification-control" ref={root}>
       <button
         ref={button}
         type="button"
         className="theme-toggle notification-bell"
-        aria-label={`${sv ? 'Notiser' : 'Notifications'}${unread ? ` (${unread} ${sv ? 'olästa' : 'unread'})` : ''}`}
+        aria-label={label}
         aria-expanded={open}
         aria-controls="notification-list"
         onClick={() => setOpen((value) => !value)}
@@ -108,7 +113,7 @@ export function NotificationBell({
         </svg>
         {unread > 0 && (
           <span className="notification-count" aria-hidden="true">
-            {unread > 99 ? '99+' : unread}
+            {unreadBadge}
           </span>
         )}
       </button>
