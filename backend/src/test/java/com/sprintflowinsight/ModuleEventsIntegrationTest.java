@@ -195,4 +195,53 @@ class ModuleEventsIntegrationTest {
         .andWaitForStateChange(() -> pending(id), count -> count == 0)
         .andVerify(count -> assertThat(delivered(id)).isEqualTo(1));
   }
+
+  @Test
+  void replaysAnExistingA3PublicationWithJackson3() {
+    Project project = project();
+    UUID eventId = UUID.randomUUID();
+    String listenerId =
+        new TransactionTemplate(manager)
+            .execute(
+                tx -> {
+                  events.publishEvent(
+                      new NotificationRequested(
+                          eventId,
+                          project.getId(),
+                          "member@example.com",
+                          Instant.now(),
+                          null,
+                          "Pre-upgrade publication",
+                          true));
+                  String target =
+                      jdbc.queryForObject(
+                          "select listener_id from event_publication where serialized_event like ?",
+                          String.class,
+                          "%" + eventId + "%");
+                  tx.setRollbackOnly();
+                  return target;
+                });
+    // Literal Jackson 2 record JSON as written by A3, persisted before the runtime upgrade.
+    String previousJson =
+        """
+{"eventId":"%s","projectId":%d,"actorEmail":"member@example.com","occurredAt":"2026-01-01T10:00:00Z","recipientEmail":null,"message":"Pre-upgrade publication","projectOwner":true}
+"""
+            .formatted(eventId, project.getId());
+    jdbc.update(
+        "insert into event_publication(id,listener_id,event_type,serialized_event,publication_date)"
+            + " values (?,?,?,?,?)",
+        UUID.randomUUID(),
+        listenerId,
+        NotificationRequested.class.getName(),
+        previousJson,
+        java.sql.Timestamp.from(Instant.now().minusSeconds(3600)));
+    publications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              assertThat(delivered(eventId)).isEqualTo(1);
+              assertThat(pending(eventId)).isZero();
+            });
+  }
 }

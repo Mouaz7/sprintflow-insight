@@ -20,12 +20,12 @@ _Repositories_
 
 _Others_
 
-* `c.s.r.PdfReportWriter` -- Renders a simple text report (headings + lines) as a proper PDF with PDFBox. Lines wrap by measured glyph width rather than character count, pages carry "Page x of y" footers, and characters the standard fonts cannot encode degrade to "?" instead of corrupting the file.
+* `c.s.r.PdfReportWriter`
 |Bean references
 |* `c.s.w.project.ProjectRepository` (in Workspace)
 * `c.s.w.activity.ActivityService` (in Workspace)
 * `c.s.w.task.TaskRepository` (in Workspace)
-* `c.s.w.project.ProjectAccessService` (in Workspace) -- Central project authorisation. One query loads the project and the caller's membership (`c.s.w.project.AccessContext`); the result is memoised for the rest of the HTTP request, so a handler that checks several needs still costs a single round trip.
+* `c.s.w.project.ProjectAccessService` (in Workspace)
 * `c.s.w.sprint.SprintRepository` (in Workspace)
 * `c.s.w.task.TaskStatusHistoryRepository` (in Workspace)
 * `c.s.w.story.UserStoryRepository` (in Workspace)

@@ -4,4 +4,5 @@
 |`com.sprintflowinsight.common`
 |Spring components
 |* `c.s.c.EventPublicationMaintenance`
+* `c.s.c.HttpClientConfiguration`
 |===

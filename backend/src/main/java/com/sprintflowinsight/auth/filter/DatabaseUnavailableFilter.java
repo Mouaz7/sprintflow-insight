@@ -1,6 +1,6 @@
 package com.sprintflowinsight.auth.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.SecurityConfiguration;
 import com.sprintflowinsight.common.error.ErrorCode;
 import jakarta.servlet.FilterChain;
@@ -51,7 +51,6 @@ public class DatabaseUnavailableFilter extends OncePerRequestFilter implements O
       if (!isDatabaseUnavailable(failure) || response.isCommitted()) throw failure;
       LOG.warn("Database unavailable on {}: {}", request.getRequestURI(), rootName(failure));
       response.resetBuffer();
-      response.setHeader(HttpHeaders.CONTENT_LENGTH, null);
       response.setHeader(HttpHeaders.RETRY_AFTER, "5");
       SecurityConfiguration.writeProblem(
           json, request, response, ErrorCode.SERVICE_UNAVAILABLE, DETAIL);

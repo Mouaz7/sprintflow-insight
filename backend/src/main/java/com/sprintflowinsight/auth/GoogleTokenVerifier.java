@@ -2,7 +2,8 @@ package com.sprintflowinsight.auth;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.http.HttpTransport;
+import org.springframework.web.client.RestClient;
 import com.google.api.client.json.gson.GsonFactory;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,11 @@ public class GoogleTokenVerifier {
   /** The verified claims SprintFlow uses. */
   public record VerifiedGoogleUser(String email, String name, String picture) {}
 
-  private final NetHttpTransport transport = new NetHttpTransport();
+  private final HttpTransport transport;
+
+  public GoogleTokenVerifier(RestClient outboundRestClient) {
+    this.transport = new GoogleRestClientTransport(outboundRestClient);
+  }
   private final Map<String, GoogleIdTokenVerifier> verifiers = new ConcurrentHashMap<>();
 
   /** Empty when the token is invalid, expired, for another audience or the email is unverified. */

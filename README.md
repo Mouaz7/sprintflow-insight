@@ -1,6 +1,6 @@
 # SprintFlow Insight
 
-![Java 17](https://img.shields.io/badge/Java-17-ED8B00) ![React](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
 SprintFlow helps teams turn a shared backlog into visible delivery: agree on priorities, plan a sprint, collaborate on tasks, and review progress against the sprint goal. Completed sprint history remains meaningful after tasks move into later sprints.
 
@@ -30,7 +30,7 @@ See [workspace features](docs/workspace-features.md) and [metric definitions](do
 | Layer | Implementation |
 | --- | --- |
 | Frontend | React, TypeScript, Vite; Node 24 builds the static application |
-| Backend | Java 17, Spring Boot, REST |
+| Backend | Java 25, Spring Boot, REST |
 | Authentication | Spring Security, BCrypt password hashing, server-managed sessions and CSRF protection |
 | Database | PostgreSQL 16 with Flyway migrations |
 | Local deployment | Docker multi-stage build and Docker Compose |
@@ -133,7 +133,7 @@ Do not paste `.env`, OAuth downloads, or app passwords into issues or logs.
 
 ## Development
 
-Install **Node 24** and a **Java 17+ JDK**. On Windows:
+Install **Node 24** and a **Java 25 JDK**. On Windows:
 
 ```powershell
 .\start.cmd -Native
@@ -154,7 +154,7 @@ cd ..
 docker compose build app
 ```
 
-`npm run check` runs frontend tests and the production build. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 17 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
+`npm run check` runs frontend tests and the production build. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 25 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
 
 All verification scripts are TypeScript and run directly with Node 24. Install tooling with `npm ci --prefix scripts`, then use:
 
@@ -174,7 +174,7 @@ Browser checks use Playwright Chromium (`npx playwright install chromium` in `sc
 
 ## CI
 
-GitHub Actions checks pull requests and `main`: Node 24 frontend tests/build, Java 17 backend verification, packaged frontend presence, and a Docker build with an isolated container smoke check. The build artifact is retained for seven days. GitHub publication updates source code; it does not deploy a separate hosted service.
+GitHub Actions checks pull requests and `main`: Node 24 frontend tests/build, Java 25 backend verification, packaged frontend presence, and a Docker build with an isolated container smoke check. The build artifact is retained for seven days. GitHub publication updates source code; it does not deploy a separate hosted service.
 
 ## Project structure
 

@@ -16,7 +16,7 @@ _Services_
 * `c.s.a.PreferencesService`
 * `c.s.a.SessionAuthenticationService`
 * `c.s.a.UserEmailService`
-* `c.s.a.UserSessions` -- Per-user session control on top of Spring Session. Sessions are indexed by the immutable account id (`user:<id>`), never by email, so revocation still works after an email change.
+* `c.s.a.UserSessions`
 
 _Repositories_
 
@@ -26,7 +26,7 @@ _Repositories_
 
 _Others_
 
-* `c.s.a.GoogleTokenVerifier` -- Verifies Google ID tokens. One HTTP transport and one verifier per client id are reused, so Google's signing keys are cached between sign-ins instead of being fetched on every request. A separate bean so tests can replace it without network access.
+* `c.s.a.GoogleTokenVerifier`
 * `c.s.a.SecurityConfiguration`
 * `c.s.a.SessionUser`
 |Aggregate roots

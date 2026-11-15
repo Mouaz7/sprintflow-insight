@@ -1,6 +1,6 @@
 package com.sprintflowinsight.reporting;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.project.ProjectRepository;
 import com.sprintflowinsight.workspace.sprint.SprintRepository;

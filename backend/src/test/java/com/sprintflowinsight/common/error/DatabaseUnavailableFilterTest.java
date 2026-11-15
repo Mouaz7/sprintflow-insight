@@ -3,7 +3,7 @@ package com.sprintflowinsight.common.error;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter;
 import jakarta.servlet.ServletException;
 import java.sql.SQLException;
@@ -35,7 +35,9 @@ class DatabaseUnavailableFilterTest {
     assertThat(response.getStatus()).isEqualTo(503);
     assertThat(response.getHeader("Retry-After")).isEqualTo("5");
     assertThat(response.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
-    assertThat(response.getHeader("Content-Length")).isNull();
+    assertThat(response.getHeader("Content-Length"))
+        .as("length describes the problem body, not the discarded success body")
+        .isEqualTo(Integer.toString(response.getContentAsByteArray().length));
     assertThat(response.getContentType()).startsWith("application/problem+json");
     var problem = json.readTree(response.getContentAsString());
     assertThat(problem.path("code").asText()).isEqualTo("SERVICE_UNAVAILABLE");

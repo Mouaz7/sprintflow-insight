@@ -71,7 +71,12 @@ if (-not $javaHome) {
     }
 }
 if (-not $javaHome) {
-    Write-Error 'Java 17 or later is required. Install a JDK or configure JAVA_HOME, then run this script again.'
+    Write-Error 'Java 25 is required. Install a JDK or configure JAVA_HOME, then run this script again.'
+}
+
+$taskJavaVersion = & (Join-Path $javaHome 'bin\java.exe') -version 2>&1 | Out-String
+if ($taskJavaVersion -notmatch 'version "25(?:\.|")') {
+    Write-Error 'This release requires Java 25. Set JAVA_HOME to a Java 25 JDK and run again.'
 }
 
 $env:JAVA_HOME = $javaHome

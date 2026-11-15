@@ -5,16 +5,18 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-FROM maven:3.9.9-eclipse-temurin-17 AS backend
+FROM eclipse-temurin:25-jdk-jammy AS backend
 WORKDIR /build/backend
-COPY backend/pom.xml ./
-RUN mvn -B dependency:go-offline
+COPY backend/pom.xml backend/mvnw ./
+COPY backend/.mvn ./.mvn
+RUN chmod +x ./mvnw
+RUN ./mvnw -B dependency:go-offline
 COPY backend/src ./src
 COPY docs/openapi.yaml /build/docs/openapi.yaml
 COPY --from=frontend /build/frontend/dist /build/frontend/dist
-RUN mvn -B -DskipTests package
+RUN ./mvnw -B -DskipTests package
 
-FROM eclipse-temurin:17-jre-jammy AS runtime
+FROM eclipse-temurin:25-jre-jammy AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 1000 sprintflow && useradd --uid 1000 --gid sprintflow --no-create-home sprintflow
 WORKDIR /app

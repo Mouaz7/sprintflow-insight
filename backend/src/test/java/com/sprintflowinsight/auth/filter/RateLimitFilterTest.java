@@ -2,7 +2,7 @@ package com.sprintflowinsight.auth.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.UserIdentity;
 import com.sprintflowinsight.auth.filter.RateLimitFilter;
 import io.github.bucket4j.TimeMeter;
