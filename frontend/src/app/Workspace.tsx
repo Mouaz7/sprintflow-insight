@@ -138,6 +138,18 @@ function WorkspaceShell() {
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const focusAfterMenu = useRef<'navigation' | 'toggle' | null>(null);
+  useEffect(() => {
+    const target = focusAfterMenu.current;
+    if (menuOpen || !target) return;
+    focusAfterMenu.current = null;
+    // Runs after the dialog's cleanup has removed `inert` from the page.
+    if (target === 'toggle') menuButton.current?.focus();
+    else
+      document
+        .querySelector<HTMLElement>('.header-navigation [aria-current="page"]')
+        ?.focus();
+  }, [menuOpen]);
   const [taskRequest, setTaskRequest] = useState(0);
   const darkMode = theme === 'dark';
   const accountName = session.user.displayName || session.user.email;
@@ -325,20 +337,12 @@ function WorkspaceShell() {
       {menuOpen && (
         <MobileMenu
           onClose={() => {
+            // Focus moves after the menu has unmounted and restored the page.
+            focusAfterMenu.current = window.matchMedia('(min-width: 1024px)')
+              .matches
+              ? 'navigation'
+              : 'toggle';
             setMenuOpen(false);
-            if (window.matchMedia('(min-width: 1024px)').matches) {
-              // The modal restores its previous focus during cleanup; focus the
-              // visible desktop navigation after that cleanup has completed.
-              requestAnimationFrame(() => {
-                document
-                  .querySelector<HTMLElement>(
-                    '.header-navigation [aria-current="page"]',
-                  )
-                  ?.focus();
-              });
-            } else {
-              menuButton.current?.focus();
-            }
           }}
         >
           {nav(true)}

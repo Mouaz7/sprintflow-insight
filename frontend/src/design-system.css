@@ -2946,6 +2946,8 @@ input[type='file']::file-selector-button {
   .workspace-shell button,
   .auth-page button,
   .workspace-shell summary,
+  .workspace-shell nav a,
+  .workspace-shell .account-profile,
   .export-actions a,
   .share-report-card a {
     min-height: 44px;

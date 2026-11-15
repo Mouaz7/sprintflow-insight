@@ -73,7 +73,7 @@ try {
   await page.goto(base);
   await page.locator('.project-control select').selectOption(String(projectId));
   async function nav(name: string) {
-    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name, exact: true }).click();
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name, exact: true }).click();
   }
   for (const target of [sprint.id, null]) {
     await nav('Backlog');
@@ -114,7 +114,7 @@ try {
   assert.equal((await checked(owner.context, `/stories/${story.id}`)).sprintId, null);
   const adminPage = await admin.context.newPage();
   await adminPage.goto(base);
-  await adminPage.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Projects', exact: true }).click();
+  await adminPage.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Projects', exact: true }).click();
   await adminPage.getByRole('button', { name: 'Add member', exact: true }).waitFor();
   assert.equal(await adminPage.getByRole('button', { name: 'Make owner', exact: true }).count(), 0);
   await page.locator('.project-control select').selectOption(String(projectId));

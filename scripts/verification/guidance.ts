@@ -33,7 +33,9 @@ try {
     await page.locator('.page h1').waitFor();
     async function nav(index: number) {
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.locator('.header-navigation nav button').nth(index).click();
+      await page.locator('.header-navigation nav a').nth(index).click();
+      // Views are lazy route chunks: wait until the new route has committed.
+      await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
       await page.locator('.page h1').waitFor();
     }
     for (let index = 0; index < 11; index++) {

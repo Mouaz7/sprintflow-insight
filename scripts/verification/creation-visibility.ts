@@ -20,7 +20,11 @@ async function call(path: string, method = 'GET', data?: unknown) {
   const token = await (await context.request.get(base + '/api/auth/csrf')).json();
   return context.request.fetch(base + '/api' + path, { method, data, headers: method === 'GET' ? {} : { [token.headerName]: token.token } });
 }
-async function nav(index: number) { await page.locator('.header-navigation nav button').nth(index).click(); }
+async function nav(index: number) {
+  await page.locator('.header-navigation nav a').nth(index).click();
+  // Views are lazy route chunks: wait until the new route has committed.
+  await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
+}
 async function closed() { await page.getByRole('dialog').waitFor({ state: 'hidden' }); }
 let blockedRead = '';
 try {

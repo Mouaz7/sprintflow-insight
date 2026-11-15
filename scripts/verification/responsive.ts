@@ -27,7 +27,7 @@ async function checkLayout(page: Page, label: string, workspace = true) {
       contentBottom: content && content.bottom + scrollY,
       clipped: [...document.querySelectorAll('button:not(.notification-bell),h1,h2,h3,p')].filter(el => visible(el) && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2).map(el => ({ tag: el.tagName, class: el.className, text: el.textContent?.slice(0, 70) })),
       smallTargets: matchMedia('(pointer: coarse)').matches || innerWidth < 768
-        ? [...document.querySelectorAll('button,summary,.export-actions a')].filter(el => visible(el) && (el.getBoundingClientRect().height < 43.9 || el.getBoundingClientRect().width < 43.9)).map(el => el.textContent?.slice(0, 50)) : [],
+        ? [...document.querySelectorAll('button,summary,.export-actions a,nav a,.account-profile')].filter(el => visible(el) && (el.getBoundingClientRect().height < 43.9 || el.getBoundingClientRect().width < 43.9)).map(el => el.textContent?.slice(0, 50)) : [],
       tinyFields: innerWidth < 768 ? [...document.querySelectorAll('input:not([type=checkbox]):not([type=hidden]),select,textarea')].filter(el => visible(el) && getComputedStyle(el).opacity !== '0' && parseFloat(getComputedStyle(el).fontSize) < 16).map(el => el.className) : [],
     };
   });
@@ -61,7 +61,9 @@ async function checkLayout(page: Page, label: string, workspace = true) {
 async function navigate(page: Page, view: number) {
   // Switch views at desktop width; then exercise the responsive layout itself.
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.locator('.header-navigation nav button').nth(view).click();
+  await page.locator('.header-navigation nav a').nth(view).click();
+  // Views are lazy route chunks: wait until the new route has committed.
+  await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', view);
   await page.locator('.page h1').waitFor();
   await page.waitForLoadState('networkidle');
 }
