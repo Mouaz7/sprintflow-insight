@@ -81,6 +81,10 @@ class SprintPlanSolverTest {
         PlanningProblem.of(
             2, List.of(CandidateStory.of("first", 4, 2), CandidateStory.of("second", 4, 2)));
     assertThat(GREEDY.solve(ties).selectedStoryIds()).containsExactly("first");
+    var equalDensity =
+        PlanningProblem.of(
+            3, List.of(CandidateStory.of("small", 2, 1), CandidateStory.of("large", 6, 3)));
+    assertThat(GREEDY.solve(equalDensity).selectedStoryIds()).containsExactly("large");
   }
 
   @Test
@@ -100,6 +104,7 @@ class SprintPlanSolverTest {
             new ExcludedStory("free", ExclusionReason.NO_ADDED_VALUE, List.of(), List.of()));
     assertThat(plan.explanation().bindingResources()).isEmpty();
     assertThat(plan.explanation().resources().getFirst().slack()).isZero();
+    assertThat(new ResourceUsage("total", 3, 5, false).slack()).isEqualTo(2);
   }
 
   @Test
