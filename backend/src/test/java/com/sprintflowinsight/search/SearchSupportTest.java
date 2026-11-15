@@ -49,5 +49,9 @@ class SearchSupportTest {
     SearchRequest narrowed = new SearchRequest("q", null, List.of("task", "comment"), 5, null);
     assertThat(narrowed.pageSize()).isEqualTo(5);
     assertThat(narrowed.typeSet()).containsExactlyInAnyOrder(SearchType.TASK, SearchType.COMMENT);
+    // Bean Validation rejects these over HTTP; the record still never hands out an unbounded size.
+    assertThat(new SearchRequest("q", null, null, 500, null).pageSize())
+        .isEqualTo(SearchRequest.MAX_LIMIT);
+    assertThat(new SearchRequest("q", null, null, -3, null).pageSize()).isEqualTo(1);
   }
 }

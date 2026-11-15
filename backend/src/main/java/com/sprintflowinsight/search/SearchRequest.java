@@ -30,7 +30,7 @@ public record SearchRequest(
   public static final int DEFAULT_LIMIT = 20;
 
   public int pageSize() {
-    return limit == null ? DEFAULT_LIMIT : limit;
+    return limit == null ? DEFAULT_LIMIT : Math.clamp(limit, 1, MAX_LIMIT);
   }
 
   public Set<SearchType> typeSet() {

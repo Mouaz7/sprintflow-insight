@@ -92,7 +92,7 @@ public class SearchRepository {
         SELECT * FROM ranked
         WHERE NOT :hasCursor OR (rank, kind, id) < (:cursorRank, :cursorKind, :cursorId)
         ORDER BY rank DESC, kind DESC, id DESC
-        LIMIT :limit
+        LIMIT :limit + 1
       )
       SELECT page.kind, page.id, page.project_id, readable.key, readable.name, page.task_id,
              page.number, page.title, page.rank, page.exact,
@@ -113,7 +113,8 @@ public class SearchRepository {
   }
 
   /**
-   * At most {@code limit} hits after {@code cursor} in the projects {@code userId} is a member of.
+   * At most {@code limit} + 1 hits after {@code cursor} (the extra row tells whether another page
+   * exists) in the projects {@code userId} is a member of.
    *
    * @param projectId one project, or {@code null} for every readable project
    * @param cursor {@code null} for the first page

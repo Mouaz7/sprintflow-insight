@@ -36,7 +36,7 @@ public class SearchService {
     int pageSize = request.pageSize();
     List<SearchRepository.Row> rows =
         repository.search(
-            userId, request.projectId(), query, request.typeSet(), cursor, pageSize + 1);
+            userId, request.projectId(), query, request.typeSet(), cursor, pageSize);
     boolean more = rows.size() > pageSize;
     List<SearchRepository.Row> page = more ? rows.subList(0, pageSize) : rows;
     String next = null;
