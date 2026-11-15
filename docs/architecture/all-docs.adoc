@@ -8,6 +8,9 @@ include::module-common.adoc[]
 == Forecast
 plantuml::module-forecast.puml[,,format=svg]
 include::module-forecast.adoc[]
+== Risk
+plantuml::module-risk.puml[,,format=svg]
+include::module-risk.adoc[]
 
 == Auth
 plantuml::module-auth.puml[,,format=svg]

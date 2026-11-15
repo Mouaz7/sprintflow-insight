@@ -31,11 +31,12 @@ Run a feature or migration suite:
 
 ## Property and fault tests
 
-Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Three classes contain four properties, generating 4,800 examples per full run:
+Surefire explicitly includes both `*Test` and `*Properties`, so a normal verification runs jqwik. Five classes contain thirteen properties:
 
 - CSV: quoted-cell round trips and formula neutralisation, including invisible prefixes.
 - PDF: wrapping fits the requested width and preserves visible text order.
 - Rate limiting: arbitrary request timings obey a 30-attempt fixed refill window.
+- Risk model (`risk/*Properties`): probabilities strictly in (0, 1), explanations are the largest log-odds terms, regularisation never increases the weight norm, training is deterministic; AUC equals the pairwise definition, is 1/0 for perfect/reversed rankers and invariant under increasing transforms; Brier is 0 for perfect predictions; calibration bins partition the predictions.
 
 jqwik reports the seed and a shrunk counterexample on failure. To replay it, temporarily set `seed = "<reported-seed>"` on the failing `@Property`, then run `./mvnw -Dtest=CsvCellProperties test` (substitute the affected class). Remove the fixed seed after diagnosis. See the [jqwik guide](https://jqwik.net/docs/1.10.1/user-guide.html#optional-property-attributes). The local `.jqwik-database` is ignored by Git.
 
