@@ -1,19 +1,15 @@
 package com.sprintflowinsight.support;
 
-import com.sprintflowinsight.support.TestFiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprintflowinsight.auth.UserRepository;
-import com.sprintflowinsight.project.ProjectRepository;
-import com.sprintflowinsight.repository.ActivityEventRepository;
-import com.sprintflowinsight.repository.TaskRepository;
-import com.sprintflowinsight.repository.TaskStatusHistoryRepository;
-import com.sprintflowinsight.service.NotificationService;
-import java.nio.charset.StandardCharsets;
+import com.sprintflowinsight.notifications.NotificationService;
+import com.sprintflowinsight.workspace.activity.ActivityEventRepository;
+import com.sprintflowinsight.workspace.project.ProjectRepository;
+import com.sprintflowinsight.workspace.task.TaskRepository;
+import com.sprintflowinsight.workspace.task.TaskStatusHistoryRepository;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -24,23 +20,21 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * End-to-end HTTP flows through the real server, real sessions and PostgreSQL. Each subclass
- * covers one feature area; this base provides the cookie-jar client and data helpers.
+ * End-to-end HTTP flows through the real server, real sessions and PostgreSQL. Each subclass covers
+ * one feature area; this base provides the cookie-jar client and data helpers.
  */
-@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.context.annotation.Import(
+    com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "app.security.auth-rate-limit.enabled=false"
-    })
+    properties = {"app.security.auth-rate-limit.enabled=false"})
 public abstract class HttpFlowTest {
 
-  @Autowired protected com.sprintflowinsight.story.UserStoryRepository storyRepository;
+  @Autowired protected com.sprintflowinsight.workspace.story.UserStoryRepository storyRepository;
 
   protected String sessionCookie;
   protected String testEmail;
@@ -69,9 +63,12 @@ public abstract class HttpFlowTest {
   @Autowired protected ActivityEventRepository activityEventRepository;
 
   @Autowired protected org.springframework.jdbc.core.JdbcTemplate jdbc;
-  @Autowired protected com.sprintflowinsight.project.ProjectDeletionService projectDeletion;
+
+  @Autowired
+  protected com.sprintflowinsight.workspace.project.ProjectDeletionService projectDeletion;
+
   @Autowired protected org.springframework.transaction.PlatformTransactionManager transactions;
-  @Autowired protected com.sprintflowinsight.service.TaskService taskService;
+  @Autowired protected com.sprintflowinsight.workspace.task.TaskService taskService;
 
   @Autowired protected com.sprintflowinsight.auth.UserEmailService userEmailService;
 
@@ -243,7 +240,7 @@ public abstract class HttpFlowTest {
                   case "tasks" ->
                       taskRepository
                           .findById(itemId)
-                          .map(com.sprintflowinsight.model.Task::getVersion)
+                          .map(com.sprintflowinsight.workspace.task.Task::getVersion)
                           .orElse(null);
                   case "projects" ->
                       jdbc

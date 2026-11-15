@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Verifies Google ID tokens. One HTTP transport and one verifier per client id are reused, so
- * Google's signing keys are cached between sign-ins instead of being fetched on every request.
- * A separate bean so tests can replace it without network access.
+ * Google's signing keys are cached between sign-ins instead of being fetched on every request. A
+ * separate bean so tests can replace it without network access.
  */
 @Component
 public class GoogleTokenVerifier {

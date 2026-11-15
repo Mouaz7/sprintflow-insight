@@ -22,10 +22,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Account security over real HTTP and real (JDBC-backed) sessions: credential changes sign the
- * account out elsewhere, recovery does not leak account state, and Google sign-in trusts only
- * the verifier's verdict.
+ * account out elsewhere, recovery does not leak account state, and Google sign-in trusts only the
+ * verifier's verdict.
  */
-@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.context.annotation.Import(
+    com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
@@ -44,9 +45,13 @@ class AccountSecurityIntegrationTest {
   void changingThePasswordSignsOutOtherSessionsAndRotatesTheCurrentOne() {
     String email = newEmail();
     Browser laptop = new Browser();
-    laptop.post("/api/auth/register", Map.of("email", email, "password", PASSWORD, "displayName", "Ada"));
+    laptop.post(
+        "/api/auth/register", Map.of("email", email, "password", PASSWORD, "displayName", "Ada"));
     Browser phone = new Browser();
-    assertThat(phone.post("/api/auth/login", Map.of("email", email, "password", PASSWORD)).getStatusCode())
+    assertThat(
+            phone
+                .post("/api/auth/login", Map.of("email", email, "password", PASSWORD))
+                .getStatusCode())
         .isEqualTo(HttpStatus.OK);
     assertThat(phone.get("/api/auth/me").getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -67,9 +72,12 @@ class AccountSecurityIntegrationTest {
     String withCode = newEmail();
     String withoutCode = newEmail();
     new Browser()
-        .post("/api/auth/register", Map.of("email", withoutCode, "password", PASSWORD, "displayName", "B"));
+        .post(
+            "/api/auth/register",
+            Map.of("email", withoutCode, "password", PASSWORD, "displayName", "B"));
     Browser signedIn = new Browser();
-    signedIn.post("/api/auth/register", Map.of("email", withCode, "password", PASSWORD, "displayName", "A"));
+    signedIn.post(
+        "/api/auth/register", Map.of("email", withCode, "password", PASSWORD, "displayName", "A"));
     User user = users.findByEmail(withCode).orElseThrow();
     user.setRecoveryCodeHash(encoder.encode("correct-code"));
     users.save(user);
@@ -79,7 +87,8 @@ class AccountSecurityIntegrationTest {
     var wrongCode = recover(withCode, "wrong-code");
     for (var response : java.util.List.of(unknown, noCode, wrongCode)) {
       assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-      assertThat(response.getBody()).containsEntry("detail", "Email or recovery code is incorrect.");
+      assertThat(response.getBody())
+          .containsEntry("detail", "Email or recovery code is incorrect.");
     }
 
     assertThat(recover(withCode, "correct-code").getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -130,8 +139,10 @@ class AccountSecurityIntegrationTest {
       return exchange(path, HttpMethod.POST, body, headers);
     }
 
-    private ResponseEntity<Map> exchange(String path, HttpMethod method, Object body, HttpHeaders headers) {
-      ResponseEntity<Map> response = rest.exchange(path, method, new HttpEntity<>(body, headers), Map.class);
+    private ResponseEntity<Map> exchange(
+        String path, HttpMethod method, Object body, HttpHeaders headers) {
+      ResponseEntity<Map> response =
+          rest.exchange(path, method, new HttpEntity<>(body, headers), Map.class);
       String setCookie = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
       if (setCookie != null && setCookie.startsWith("SPRINTFLOW_SESSION="))
         cookie = setCookie.split(";", 2)[0];

@@ -71,7 +71,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   private static final java.util.Map<String, String> CONSTRAINT_MESSAGES =
       java.util.Map.of(
           "sprint_one_active_project_idx",
-          com.sprintflowinsight.service.ProjectMutationService.ACTIVE_SPRINT_MESSAGE,
+          com.sprintflowinsight.workspace.project.ProjectMutationService.ACTIVE_SPRINT_MESSAGE,
           "story_points_allowed",
           "Story points must be 1, 2, 3, 5, or 8.",
           "task_points_range",
@@ -113,7 +113,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<ProblemDetail> response =
         respond(
             ErrorCode.SERVICE_UNAVAILABLE,
-            com.sprintflowinsight.common.error.DatabaseUnavailableFilter.DETAIL,
+            com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter.DETAIL,
             request);
     return ResponseEntity.status(response.getStatusCode())
         .headers(response.getHeaders())
@@ -167,7 +167,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleUnexpected(Exception exception, WebRequest request)
       throws Exception {
-    if (com.sprintflowinsight.common.error.DatabaseUnavailableFilter.isDatabaseUnavailable(
+    if (com.sprintflowinsight.auth.filter.DatabaseUnavailableFilter.isDatabaseUnavailable(
         exception)) return handleDatabaseUnavailable(exception, request);
     // Binding and proxies wrap deliberate client errors (e.g. a constructor rejecting a filter).
     for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {

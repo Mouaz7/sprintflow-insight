@@ -7,14 +7,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprintflowinsight.auth.User;
-import com.sprintflowinsight.model.Sprint;
-import com.sprintflowinsight.model.Task;
-import com.sprintflowinsight.project.Project;
-import com.sprintflowinsight.repository.SprintRepository;
-import com.sprintflowinsight.repository.TaskRepository;
-import com.sprintflowinsight.story.UserStory;
-import com.sprintflowinsight.story.UserStoryRepository;
 import com.sprintflowinsight.support.ApiIntegrationTest;
+import com.sprintflowinsight.workspace.project.Project;
+import com.sprintflowinsight.workspace.sprint.Sprint;
+import com.sprintflowinsight.workspace.sprint.SprintRepository;
+import com.sprintflowinsight.workspace.story.UserStory;
+import com.sprintflowinsight.workspace.story.UserStoryRepository;
+import com.sprintflowinsight.workspace.task.Task;
+import com.sprintflowinsight.workspace.task.TaskRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -83,7 +83,8 @@ class LifecycleBulkIntegrationTest extends ApiIntegrationTest {
     Project project = project(owner, null);
     Sprint sprint = sprint(project);
     UserStory story = story(project, sprint);
-    for (int i = 0; i < taskCount; i++) task(project, i % 2 == 0 ? sprint : null, i % 2 == 0 ? null : story);
+    for (int i = 0; i < taskCount; i++)
+      task(project, i % 2 == 0 ? sprint : null, i % 2 == 0 ? null : story);
     return statementsFor(
         () ->
             mvc.perform(

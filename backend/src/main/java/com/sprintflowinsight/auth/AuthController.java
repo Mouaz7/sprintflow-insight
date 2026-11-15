@@ -1,20 +1,19 @@
 package com.sprintflowinsight.auth;
 
 import com.sprintflowinsight.ApiExceptionHandler;
-import com.sprintflowinsight.project.ProjectMemberRepository;
-import com.sprintflowinsight.project.ProjectRepository;
-import com.sprintflowinsight.repository.TaskCommentRepository;
-import com.sprintflowinsight.repository.TaskRepository;
-import com.sprintflowinsight.repository.TaskStatusHistoryRepository;
-import com.sprintflowinsight.service.ActivityService;
-import com.sprintflowinsight.service.NotificationService;
+import com.sprintflowinsight.notifications.NotificationService;
+import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.collaboration.TaskCommentRepository;
+import com.sprintflowinsight.workspace.project.ProjectMemberRepository;
+import com.sprintflowinsight.workspace.project.ProjectRepository;
+import com.sprintflowinsight.workspace.task.TaskRepository;
+import com.sprintflowinsight.workspace.task.TaskStatusHistoryRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,8 +80,10 @@ public class AuthController {
   @Value("${app.google.client-id:}")
   private String googleClientId;
 
-  @Autowired private com.sprintflowinsight.repository.RetrospectiveRepository retrospectives;
-  @Autowired private com.sprintflowinsight.repository.SharedReportRepository sharedReports;
+  @Autowired
+  private com.sprintflowinsight.workspace.collaboration.RetrospectiveRepository retrospectives;
+
+  @Autowired private com.sprintflowinsight.reporting.SharedReportRepository sharedReports;
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private AuthenticationManager authenticationManager;
   @Autowired private SessionAuthenticationService authenticationSessions;
@@ -334,7 +335,8 @@ public class AuthController {
     var verified = googleTokens.verify(request.credential(), clientId);
     if (verified.isEmpty())
       return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.UNAUTHORIZED, "Google could not verify this account.");
+          org.springframework.http.HttpStatus.UNAUTHORIZED,
+          "Google could not verify this account.");
     var payload = verified.get();
     {
       String email = payload.email().trim().toLowerCase(java.util.Locale.ROOT);
@@ -366,8 +368,7 @@ public class AuthController {
       @Valid @RequestBody RecoveryPasswordResetRequest request) {
     Optional<User> existingUser =
         userRepository.findByEmail(request.email().trim().toLowerCase(java.util.Locale.ROOT));
-    String storedHash =
-        existingUser.map(User::getRecoveryCodeHash).orElse(null);
+    String storedHash = existingUser.map(User::getRecoveryCodeHash).orElse(null);
     boolean matches =
         passwordEncoder.matches(
             request.recoveryCode(), storedHash == null ? unusedRecoveryHash() : storedHash);

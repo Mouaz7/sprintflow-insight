@@ -2,8 +2,8 @@ package com.sprintflowinsight.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprintflowinsight.common.ratelimit.RateLimitPolicy;
-import com.sprintflowinsight.common.ratelimit.RateLimiter;
+import com.sprintflowinsight.auth.filter.RateLimitPolicy;
+import com.sprintflowinsight.auth.filter.RateLimiter;
 import io.github.bucket4j.TimeMeter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;

@@ -216,10 +216,10 @@
                 <configuration>
                     <targetClasses>
                         <param>com.sprintflowinsight.common.*</param>
-                        <param>com.sprintflowinsight.service.MetricsService</param>
-                        <param>com.sprintflowinsight.service.TaskExportFilter</param>
-                        <param>com.sprintflowinsight.service.UploadValidator</param>
-                        <param>com.sprintflowinsight.service.PdfReportWriter</param>
+                        <param>com.sprintflowinsight.reporting.MetricsService</param>
+                        <param>com.sprintflowinsight.reporting.TaskExportFilter</param>
+                        <param>com.sprintflowinsight.workspace.attachment.UploadValidator</param>
+                        <param>com.sprintflowinsight.reporting.PdfReportWriter</param>
                         <param>com.sprintflowinsight.CsvCell</param>
                     </targetClasses>
                     <targetTests>

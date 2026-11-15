@@ -1,9 +1,10 @@
-package com.sprintflowinsight.common.ratelimit;
+package com.sprintflowinsight.auth.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.UserIdentity;
+import com.sprintflowinsight.auth.filter.RateLimitFilter;
 import io.github.bucket4j.TimeMeter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,11 +68,14 @@ class RateLimitFilterTest {
     assertThat(blocked.getHeader("RateLimit-Remaining")).isEqualTo("0");
 
     nanos.addAndGet(1_000_000_000L); // greedy refill: 300/min = 5 tokens per second
-    for (int i = 0; i < 5; i++) assertThat(post("/api/tasks", "10.9.9.9").getStatus()).isEqualTo(200);
+    for (int i = 0; i < 5; i++)
+      assertThat(post("/api/tasks", "10.9.9.9").getStatus()).isEqualTo(200);
     assertThat(post("/api/tasks", "10.9.9.9").getStatus()).isEqualTo(429);
 
     signIn(8L);
-    assertThat(post("/api/tasks", "10.9.9.9").getStatus()).as("other accounts unaffected").isEqualTo(200);
+    assertThat(post("/api/tasks", "10.9.9.9").getStatus())
+        .as("other accounts unaffected")
+        .isEqualTo(200);
   }
 
   @Test

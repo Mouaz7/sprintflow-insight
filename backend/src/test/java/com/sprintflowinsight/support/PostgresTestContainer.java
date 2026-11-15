@@ -8,21 +8,29 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * One PostgreSQL container for the whole test JVM, wired into every Spring test context through
- * {@link ServiceConnection}. Tests therefore run against the same engine, version and SQL
- * dialect as production. Contexts share the database, so tests create uniquely named data and
- * never assume an empty table.
+ * {@link ServiceConnection}. Tests therefore run against the same engine, version and SQL dialect
+ * as production. Contexts share the database, so tests create uniquely named data and never assume
+ * an empty table.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestContainer {
   public static final PostgreSQLContainer<?> POSTGRES =
       new PostgreSQLContainer<>(
-              DockerImageName.parse(System.getProperty("postgres.test.image", "postgres:16.10-alpine"))
+              DockerImageName.parse(
+                      System.getProperty("postgres.test.image", "postgres:16.10-alpine"))
                   .asCompatibleSubstituteFor("postgres"))
           .withDatabaseName("sprintflow_test")
           .withUsername("sprintflow")
           .withPassword("test-only")
           // fsync off is safe for throwaway data and makes the suite markedly faster.
-          .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "max_connections=300");
+          .withCommand(
+              "postgres",
+              "-c",
+              "fsync=off",
+              "-c",
+              "synchronous_commit=off",
+              "-c",
+              "max_connections=300");
 
   static {
     POSTGRES.start(); // stopped by the Testcontainers reaper when the JVM exits

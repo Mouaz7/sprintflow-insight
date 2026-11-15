@@ -5,10 +5,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import com.sprintflowinsight.auth.User;
 import com.sprintflowinsight.auth.UserIdentity;
 import com.sprintflowinsight.auth.UserRepository;
-import com.sprintflowinsight.project.Project;
-import com.sprintflowinsight.project.ProjectMember;
-import com.sprintflowinsight.project.ProjectMemberRepository;
-import com.sprintflowinsight.project.ProjectRepository;
+import com.sprintflowinsight.workspace.project.Project;
+import com.sprintflowinsight.workspace.project.ProjectMember;
+import com.sprintflowinsight.workspace.project.ProjectMemberRepository;
+import com.sprintflowinsight.workspace.project.ProjectRepository;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import java.util.UUID;
@@ -24,10 +24,11 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * Shared fixture for HTTP-level integration tests: MockMvc against the full application, data
- * created directly through repositories, and callers authenticated without a login round trip.
- * All subclasses share one Spring context.
+ * created directly through repositories, and callers authenticated without a login round trip. All
+ * subclasses share one Spring context.
  */
-@org.springframework.context.annotation.Import(com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.context.annotation.Import(
+    com.sprintflowinsight.support.PostgresTestContainer.class)
 @SpringBootTest(
     properties = {
       "app.security.auth-rate-limit.enabled=false",
@@ -70,7 +71,8 @@ public abstract class ApiIntegrationTest {
 
   protected Project project(User owner, User member) {
     Project project =
-        projects.save(new Project("Project " + UUID.randomUUID(), "Test project", owner.getEmail()));
+        projects.save(
+            new Project("Project " + UUID.randomUUID(), "Test project", owner.getEmail()));
     if (member != null) member(project, member, "Member");
     return project;
   }
