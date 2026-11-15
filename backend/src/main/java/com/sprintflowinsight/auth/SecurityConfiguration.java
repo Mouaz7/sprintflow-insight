@@ -1,6 +1,6 @@
 package com.sprintflowinsight.auth;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.common.error.Problems;
 import java.util.List;
@@ -62,8 +62,7 @@ public class SecurityConfiguration {
 
   @Bean
   AuthenticationManager authenticationManager(UserDetailsService details, PasswordEncoder encoder) {
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-    provider.setUserDetailsService(details);
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(details);
     provider.setPasswordEncoder(encoder);
     return new ProviderManager(provider);
   }
@@ -210,6 +209,10 @@ public class SecurityConfiguration {
     problem.setInstance(java.net.URI.create(request.getRequestURI()));
     response.setStatus(code.status().value());
     response.setContentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-    json.writeValue(response.getOutputStream(), Problems.asMap(problem));
+    // Serialise first so Content-Length always describes this body, even when it replaces a
+    // response whose earlier length header was already set.
+    byte[] body = json.writeValueAsBytes(Problems.asMap(problem));
+    response.setContentLength(body.length);
+    response.getOutputStream().write(body);
   }
 }

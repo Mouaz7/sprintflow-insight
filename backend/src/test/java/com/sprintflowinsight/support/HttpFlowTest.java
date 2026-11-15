@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +29,7 @@ import org.springframework.util.MultiValueMap;
  */
 @org.springframework.context.annotation.Import(
     com.sprintflowinsight.support.PostgresTestContainer.class)
+@org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"app.security.auth-rate-limit.enabled=false"})

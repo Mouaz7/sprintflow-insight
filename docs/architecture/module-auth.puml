@@ -1,19 +1,30 @@
 @startuml
-set separator none
-title Auth
+title <size:24>Auth</size>
 
+set separator none
 top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
 
 !include <C4/C4>
 !include <C4/C4_Context>
 !include <C4/C4_Component>
 
-Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
-  Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
-  Component(SprintFlowApplication.SprintFlowApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
+  Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
+    Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+  }
+
 }
 
 Rel(SprintFlowApplication.SprintFlowApplication.Auth, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
+hide stereotypes
 @enduml

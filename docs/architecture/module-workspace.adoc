@@ -14,11 +14,11 @@
 _Services_
 
 * `c.s.w.NotificationRequests`
-* `c.s.w.WorkspaceEmailListener` -- Moves account references in the same transaction as the profile change.
+* `c.s.w.WorkspaceEmailListener`
 * `c.s.w.activity.ActivityService`
-* `c.s.w.project.ProjectAccessService` -- Central project authorisation. One query loads the project and the caller's membership (`c.s.w.project.AccessContext`); the result is memoised for the rest of the HTTP request, so a handler that checks several needs still costs a single round trip.
+* `c.s.w.project.ProjectAccessService`
 * `c.s.w.project.ProjectDeletionService`
-* `c.s.w.project.ProjectFactory` -- The single way a project comes into existence: unique name, owner membership, activity.
+* `c.s.w.project.ProjectFactory`
 * `c.s.w.project.ProjectMutationService`
 * `c.s.w.project.ProjectService`
 * `c.s.w.project.ProjectTemplateService`

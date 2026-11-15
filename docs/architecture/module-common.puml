@@ -1,17 +1,27 @@
 @startuml
-set separator none
-title Common
+title <size:24>Common</size>
 
+set separator none
 top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
 
 !include <C4/C4>
 !include <C4/C4_Context>
 !include <C4/C4_Component>
 
-Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
-  Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
+  Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
+    Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+  }
+
 }
 
-
 SHOW_LEGEND(true)
+hide stereotypes
 @enduml

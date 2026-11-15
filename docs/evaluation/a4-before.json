@@ -1,0 +1,32 @@
+{
+  "label": "A3 f1cc7eb, Boot 3.5.16, Java 17.0.21.0.3",
+  "protocol": {
+    "k6": "2.3.0",
+    "virtual_users": 5,
+    "measured_duration_seconds": 20,
+    "warmup_iterations": 10,
+    "reads_per_iteration": 3,
+    "think_time_seconds": 0.1,
+    "dataset": "one Scrum project, one sprint, one story, 23 tasks",
+    "jvm_flags": "-Xms256m -Xmx512m -XX:ActiveProcessorCount=2",
+    "postgres": "16.10-alpine, Docker cpus=2,memory=512m",
+    "endpoints": [
+      "GET /api/projects",
+      "GET /api/tasks?projectId=<fixture>",
+      "GET /api/projects/<fixture>/metrics"
+    ]
+  },
+  "metrics": {
+    "requests": 1650,
+    "requests_per_second": 82.5,
+    "failed_requests": 0,
+    "mean_ms": 27.055008786060608,
+    "median_ms": 14.195872,
+    "p90_ms": 61.20119230000002,
+    "p95_ms": 104.3672715,
+    "max_ms": 159.094965
+  },
+  "first_measured_request": "2026-11-15T20:09:42.588514171+01:00",
+  "last_measured_request": "2026-11-15T20:10:02.562859558+01:00",
+  "limits": "Single local run; host load and caches are not controlled. This is upgrade acceptance evidence, not a causal scalability claim."
+}

@@ -1,9 +1,9 @@
 package com.sprintflowinsight.support;
 
-import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
+import org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -14,8 +14,8 @@ import org.testcontainers.utility.DockerImageName;
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestContainer {
-  public static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(
+  public static final PostgreSQLContainer POSTGRES =
+      new PostgreSQLContainer(
               DockerImageName.parse(
                       System.getProperty("postgres.test.image", "postgres:16.10-alpine"))
                   .asCompatibleSubstituteFor("postgres"))

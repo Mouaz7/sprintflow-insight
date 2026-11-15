@@ -2,7 +2,7 @@
 
 ## Requirements and commands
 
-Use Java 17 and a running Docker daemon. On Windows start Docker Desktop with Linux containers and use `mvnw.cmd`; on Linux/macOS use `./mvnw`. No database URL, password, `.env` import or manually started PostgreSQL service is required for tests. If the surrounding shell exports `DEBUG`, unset it before verification: Spring Boot interprets it as debug mode, which makes the HTTP test client's body logging fail the log-secrecy assertion.
+Use Java 25 and a running Docker daemon. On Windows start Docker Desktop with Linux containers and use `mvnw.cmd`; on Linux/macOS use `./mvnw`. No database URL, password, `.env` import or manually started PostgreSQL service is required for tests. If the surrounding shell exports `DEBUG`, unset it before verification: Spring Boot interprets it as debug mode, which makes the HTTP test client's body logging fail the log-secrecy assertion.
 
 From the repository root:
 
@@ -84,3 +84,16 @@ Always use `clean` after moving Java packages; stale class files otherwise remai
 `TestContextShutdown` closes cached Spring contexts when the JUnit test plan finishes, before the JVM starts Testcontainers cleanup. Modulith checks outstanding publications during context shutdown, so PostgreSQL must still be available then. The test listener is registered only under `src/test/resources`; production lifecycle is unchanged. Do not run a dependency scanner that invokes Maven concurrently with verification after editing sources, because recompilation during a JaCoCo run invalidates class fingerprints.
 
 A3 verification: 125 backend tests passed with 91.3% line coverage (3319/3634) and 70.2% branch coverage (963/1372). PIT detected 378 of 710 mutations (53.2%, including timeout detections), above the unchanged 50% floor. Frontend acceptance includes notification badges with unread counts: accessible names retain the visible number outside parentheses, including the `99+` cap. The focused axe regression is covered for English and Swedish.
+
+## A4 platform migration and performance
+
+Tests use Java 25, Boot 4 MVC/client test autoconfiguration and Testcontainers 2. Existing Mockito replacements use `@MockitoBean`/`@MockitoSpyBean`. `GoogleRestClientTransportTest` uses a local HTTP server to exercise actual timeout and response handling; Google claims remain covered by the replaceable verifier's security tests.
+
+The k6 comparison uses the same fixture/load and JVM/database limits before/after; its raw points are excluded from Git and measured-only summaries are committed under `docs/evaluation/`. To repeat against a disposable app (never production):
+
+```sh
+BASE_URL=http://127.0.0.1:18084 k6 run --summary-export artifacts/perf-summary.json --out json=artifacts/perf-raw.json scripts/performance/workspace-read.k6.ts
+node scripts/verification/summarize-performance.ts artifacts/perf-raw.json artifacts/perf-measured.json 'runtime and commit'
+```
+
+The fixture cleans up its own account/project on normal completion. Local measurements include uncontrolled host and cache effects; they validate the workload and provide evaluation data, not a production SLA or proof of scalability.

@@ -1,6 +1,6 @@
 package com.sprintflowinsight.auth.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.SecurityConfiguration;
 import com.sprintflowinsight.auth.UserIdentity;
 import com.sprintflowinsight.common.error.ErrorCode;
@@ -17,7 +17,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterProperties;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,7 +33,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * configured at the server level.
  */
 @Component
-@Order(SecurityProperties.DEFAULT_FILTER_ORDER + 1)
+@Order(SecurityFilterProperties.DEFAULT_FILTER_ORDER + 1)
 public class RateLimitFilter extends OncePerRequestFilter {
   private static final Logger SECURITY_LOG = LoggerFactory.getLogger("security.events");
   private static final Set<String> WRITES = Set.of("POST", "PUT", "PATCH", "DELETE");

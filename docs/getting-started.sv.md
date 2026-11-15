@@ -63,7 +63,7 @@ Kontrollera att Docker Desktop körs och att port 8081 är ledig. Om databasen n
 
 ## Utvecklarläge
 
-Med Node 24 och Java 17 eller senare installerat kan du köra:
+Med Node 24 och Java 25 installerat kan du köra:
 
 ```powershell
 .\start.cmd -Native

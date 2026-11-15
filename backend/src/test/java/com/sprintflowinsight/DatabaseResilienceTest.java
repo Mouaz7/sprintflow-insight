@@ -18,9 +18,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,8 +32,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.ToxiproxyContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.toxiproxy.ToxiproxyContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -41,14 +41,15 @@ import org.testcontainers.utility.DockerImageName;
  * database. An outage must give a clear, retryable 503 (never a 500 leaking driver text), health
  * must report it, and the app must recover by itself once the database is back.
  */
+@org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"app.security.auth-rate-limit.enabled=false"})
 @AutoConfigureMockMvc
 class DatabaseResilienceTest {
   private static final Network NETWORK = Network.newNetwork();
-  private static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(
+  private static final PostgreSQLContainer POSTGRES =
+      new PostgreSQLContainer(
               DockerImageName.parse(
                       System.getProperty("postgres.test.image", "postgres:16.10-alpine"))
                   .asCompatibleSubstituteFor("postgres"))
