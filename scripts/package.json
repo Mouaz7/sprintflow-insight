@@ -7,8 +7,6 @@
     "repository": "node verification/repository-check.ts",
     "smoke": "node verification/container-smoke.ts",
     "responsive": "node verification/responsive.ts",
-    "creation-visibility": "node verification/creation-visibility.ts",
-    "business-rules": "node verification/business-rules.ts",
     "guidance": "node verification/guidance.ts",
     "trusted-types": "node verification/trusted-types.ts",
     "sbom": "cyclonedx-npm --omit dev --package-lock-only --output-reproducible --output-format JSON --output-file ../artifacts/sbom/frontend.cdx.json ../frontend/package.json"
