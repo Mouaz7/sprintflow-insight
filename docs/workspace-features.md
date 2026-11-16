@@ -16,7 +16,7 @@
 | Etiketter | Sparade etiketter, neutrala märken och etikettfilter |
 | Sparade filter | Personliga filter per projekt, Mina uppgifter/Blockerat, spara/byt namn/radera |
 | Retrospektiv | Det gick bra/Att förbättra/Nästa steg, redigering och moderering per sprint |
-| Tillgänglighet | Namngivna kontroller, tangentbord, fokus, 44 px kontroller, befintligt stöd för minskad rörelse och temakontroller |
+| Tillgänglighet | Namngivna kontroller, tangentbord, fokus, 44 px kontroller, befintligt stöd för minskad rörelse och temakontroller; ett `<main>`, skip-länk, fokus på sidrubriken vid sidbyte och axe-tester (mål WCAG 2.2 AA) |
 | Introduktion | Valfri guide, sparat slutförande och möjlighet att öppna den igen från profilen |
 | Delade rapporter | Ögonblicksbild, bekräftelse före delning, sju dagars giltighet, återkallelse och utskrift |
 
@@ -84,3 +84,9 @@ Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln
 - **Omöjliga lås:** om låsen inte går att uppfylla, till exempel en inlåst story som beror på en utlåst story eller inlåsta stories som tillsammans överskrider kapaciteten, föreslås ingen sprint. I stället visas vilka lås som krockar.
 
 Metoden, baslinjerna (girig och dynamisk programmering) och begränsningarna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md).
+
+## Adresser per vy (A6)
+
+Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
+
+Språk och tema delas av inloggningen och arbetsytan och sätts innan gränssnittet renderas. Plural och datum använder förkompilerade ICU-meddelanden för svenska och engelska. Vid byte av vy flyttas tangentbordsfokus till sidrubriken; skip-länken går direkt till huvudinnehållet.

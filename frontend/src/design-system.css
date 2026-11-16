@@ -854,7 +854,7 @@ input[type='file']::file-selector-button {
   gap: 4px;
   min-width: 0;
 }
-.header-navigation nav button {
+.header-navigation nav a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -867,11 +867,11 @@ input[type='file']::file-selector-button {
   font-size: 13px;
   font-weight: 500;
 }
-.header-navigation nav button.active {
+.header-navigation nav a.active {
   border-bottom-color: #e77d59;
   color: #ffffff;
 }
-.header-navigation nav button:hover {
+.header-navigation nav a:hover {
   background: #303c52;
   color: #ffffff;
 }
@@ -2590,7 +2590,7 @@ input[type='file']::file-selector-button {
   display: grid;
   gap: 8px;
 }
-.mobile-menu nav button {
+.mobile-menu nav a {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2603,7 +2603,7 @@ input[type='file']::file-selector-button {
   font-size: var(--text-body);
   text-align: left;
 }
-.mobile-menu nav button.active {
+.mobile-menu nav a.active {
   color: #ffffff;
   background: #3c485e;
 }
@@ -2628,7 +2628,7 @@ input[type='file']::file-selector-button {
   .account-name {
     display: none;
   }
-  .header-navigation nav button {
+  .header-navigation nav a {
     padding-inline: 12px;
   }
 }
@@ -2964,6 +2964,8 @@ input[type='file']::file-selector-button {
   .workspace-shell button,
   .auth-page button,
   .workspace-shell summary,
+  .workspace-shell nav a,
+  .workspace-shell .account-profile,
   .export-actions a,
   .share-report-card a {
     min-height: 44px;

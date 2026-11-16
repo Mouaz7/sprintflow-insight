@@ -1,15 +1,10 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
 import type { Language, Project } from '../../api/contracts';
 import { ProjectsView } from './ProjectsView';
 import { ConfirmProvider } from '../../shared/ui/ui';
+import { renderWithProviders } from '../../test/render';
 
 vi.mock('../../api/client', () => ({ api: vi.fn() }));
 
@@ -17,16 +12,16 @@ const user = { id: 1, email: 'qa@example.com' };
 
 function projectsView(projects: Project[], language: Language = 'EN') {
   const onChanged = vi.fn().mockResolvedValue(undefined);
-  render(
-    <ConfirmProvider language={language}>
+  renderWithProviders(
+    <ConfirmProvider>
       <ProjectsView
         projects={projects}
         user={user}
-        language={language}
         onChanged={onChanged}
         onSelect={vi.fn()}
       />
     </ConfirmProvider>,
+    { language },
   );
   return onChanged;
 }

@@ -1,3 +1,4 @@
+import { HttpResponse } from 'msw';
 import {
   fireEvent,
   render,
@@ -7,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { mockApi } from '../test/api';
 import { projects } from './appTestFixtures';
 describe('App.tasks', () => {
   beforeEach(() => {
@@ -30,47 +32,38 @@ describe('App.tasks', () => {
       version: 0,
     };
 
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockImplementation(
-          async (input: RequestInfo | URL, init: RequestInit = {}) => {
-            const url = String(input);
-            const method = init.method ?? 'GET';
-            requests.push({
-              url,
-              method,
-              body: init.body as string | undefined,
-            });
-            let payload: unknown = [];
-            if (url.endsWith('/auth/me'))
-              payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
-            else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
-            else if (url.includes('/tasks?projectId=1')) payload = [task];
-            else if (url.endsWith('/auth/csrf'))
-              payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
-            else if (url.endsWith('/tasks/7') && method === 'PUT') {
-              task = { ...task, ...JSON.parse(String(init.body)) };
-              payload = task;
-            } else if (url.includes('/tasks/7/block?'))
-              payload = {
-                ...task,
-                blocked: true,
-                blockReason: 'Waiting for review',
-              };
-            else if (url.endsWith('/tasks/7/unblock'))
-              payload = { ...task, blocked: false };
-            return {
-              ok: true,
-              status: method === 'DELETE' ? 204 : 200,
-              json: async () => payload,
-            };
-          },
-        ),
-    );
+    mockApi(async (input, init) => {
+      const url = String(input);
+      const method = init.method ?? 'GET';
+      requests.push({
+        url,
+        method,
+        body: init.body,
+      });
+      let payload: unknown = [];
+      if (url.endsWith('/auth/me'))
+        payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
+      else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
+      else if (url.includes('/tasks?projectId=1')) payload = [task];
+      else if (url.endsWith('/auth/csrf'))
+        payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
+      else if (url.endsWith('/tasks/7') && method === 'PUT') {
+        task = { ...task, ...JSON.parse(String(init.body)) };
+        payload = task;
+      } else if (url.includes('/tasks/7/block?'))
+        payload = {
+          ...task,
+          blocked: true,
+          blockReason: 'Waiting for review',
+        };
+      else if (url.endsWith('/tasks/7/unblock'))
+        payload = { ...task, blocked: false };
+      return method === 'DELETE'
+        ? new HttpResponse(null, { status: 204 })
+        : payload;
+    });
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Tasks' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Tasks' }));
     expect(await screen.findByText('Ship board')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Search tasks'), {
       target: { value: 'does-not-exist' },

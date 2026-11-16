@@ -75,7 +75,7 @@ public class SharedReportService {
     report.setCreatedBy(access.email(session));
     reports.save(report);
     return Map.of(
-        "id", report.getId(), "path", "/?report=" + token, "expiresAt", report.getExpiresAt());
+        "id", report.getId(), "path", "/report/" + token, "expiresAt", report.getExpiresAt());
   }
 
   public List<Map<String, Object>> list(Long projectId, HttpSession session) {

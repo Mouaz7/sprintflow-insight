@@ -1,7 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Language, Preferences } from '../../api/contracts';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import type { Preferences } from '../../api/contracts';
+import { useT } from '../../shared/i18n/LanguageProvider';
+import { tasksText } from './i18n';
+import { preferencesQuery } from '../../api/queries';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 export type TaskFilters = {
   query: string;
@@ -18,51 +22,49 @@ type SavedFilter = {
   projectId: number;
   criteria: TaskFilters;
 };
+function parseFilters(preferences: Preferences | undefined): {
+  items: SavedFilter[];
+  failed: boolean;
+} {
+  if (!preferences) return { items: [], failed: false };
+  try {
+    const data: unknown = JSON.parse(preferences.savedFilters ?? '[]');
+    return { items: Array.isArray(data) ? data : [], failed: false };
+  } catch {
+    return { items: [], failed: true };
+  }
+}
+
 export function SavedFilters({
   projectId,
-  language,
   userEmail,
   current,
   onApply,
 }: {
   projectId: number;
-  language: Language;
   userEmail: string;
   current: TaskFilters;
   onApply: (value: TaskFilters) => void;
 }) {
-  const sv = language === 'SV';
-  const [items, setItems] = useState<SavedFilter[]>([]);
-  const [error, setError] = useState('');
+  const t = useT(tasksText);
+  const fieldExample = useFieldExample();
+  const queryClient = useQueryClient();
+  const preferences = useQuery(preferencesQuery);
+  const stored = parseFilters(preferences.data);
+  // Filters saved in this view replace the loaded list until the next load.
+  const [savedItems, setItems] = useState<SavedFilter[]>();
+  const items = savedItems ?? stored.items;
+  const loadError =
+    preferences.error?.message ??
+    (stored.failed ? t('savedFiltersFailed') : '');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionError, setError] = useState<string>();
+  const error = actionError ?? loadError;
   const [selected, setSelected] = useState('');
   const [editor, setEditor] = useState<{ item?: SavedFilter }>();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    api<Preferences>('/auth/preferences')
-      .then((value) => {
-        if (live) {
-          try {
-            const data = JSON.parse(value.savedFilters ?? '[]');
-            setItems(Array.isArray(data) ? data : []);
-          } catch {
-            setError(
-              sv
-                ? 'Sparade filter kunde inte läsas.'
-                : 'Saved filters could not load.',
-            );
-          }
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [projectId, sv]);
   async function persist(values: SavedFilter[]) {
     setBusy(true);
     setError('');
@@ -72,6 +74,10 @@ export function SavedFilters({
         body: JSON.stringify({ savedFilters: JSON.stringify(values) }),
       });
       setItems(values);
+      await queryClient.invalidateQueries({
+        queryKey: preferencesQuery.queryKey,
+        refetchType: 'none',
+      });
       return true;
     } catch (cause) {
       setError((cause as Error).message);
@@ -106,9 +112,7 @@ export function SavedFilters({
     const item = items.find((value) => value.id === selectedValue);
     if (
       item &&
-      (await confirm(
-        sv ? 'Ta bort det sparade filtret?' : 'Delete this saved filter?',
-      )) &&
+      (await confirm(t('confirmDeleteFilter'))) &&
       (await persist(items.filter((value) => value.id !== item.id)))
     )
       setSelected('');
@@ -141,9 +145,9 @@ export function SavedFilters({
   return (
     <div className="saved-filter-controls">
       <label>
-        {sv ? 'Sparade filter' : 'Saved filters'}
+        {t('savedFilters')}
         <select
-          aria-label={sv ? 'Sparade filter' : 'Saved filters'}
+          aria-label={t('savedFilters')}
           value={selectedValue}
           onChange={(event) => {
             const value = event.target.value;
@@ -159,9 +163,9 @@ export function SavedFilters({
             }
           }}
         >
-          <option value="">{sv ? 'Alla uppgifter' : 'All tasks'}</option>
-          <option value="mine">{sv ? 'Mina uppgifter' : 'My tasks'}</option>
-          <option value="blocked">{sv ? 'Blockerat' : 'Blocked'}</option>
+          <option value="">{t('allTasks')}</option>
+          <option value="mine">{t('myTasks')}</option>
+          <option value="blocked">{t('blockedFilter')}</option>
           {items
             .filter((item) => item.projectId === projectId)
             .map((item) => (
@@ -178,7 +182,7 @@ export function SavedFilters({
           setEditor({});
         }}
       >
-        {sv ? 'Spara filter' : 'Save filter'}
+        {t('saveFilter')}
       </button>
       {items.some((item) => item.id === selectedValue) && (
         <>
@@ -191,45 +195,36 @@ export function SavedFilters({
               setEditor({ item });
             }}
           >
-            {sv ? 'Byt filternamn' : 'Rename filter'}
+            {t('renameFilter')}
           </button>
           <button disabled={busy} className="danger-action" onClick={remove}>
-            {sv ? 'Ta bort filter' : 'Delete filter'}
+            {t('deleteFilter')}
           </button>
         </>
       )}
-      <Notice language={language} error={editor ? undefined : error} />
+      <Notice error={editor ? undefined : error} />
       {editor && (
         <Drawer
-          title={
-            editor.item
-              ? sv
-                ? 'Byt filternamn'
-                : 'Rename filter'
-              : sv
-                ? 'Spara filter'
-                : 'Save filter'
-          }
-          language={language}
+          title={editor.item ? t('renameFilter') : t('saveFilter')}
           dirty={name !== (editor.item?.name ?? '')}
           busy={busy}
           onClose={() => setEditor(undefined)}
         >
           <form className="editor-form" onSubmit={save}>
-            <FormGuide topic="filter" language={language} />
+            <FormGuide topic="filter" />
             <label>
-              {sv ? 'Filternamn' : 'Filter name'}
+              {t('filterName')}
               <input
                 required
                 maxLength={80}
-                placeholder={fieldExample('filter', language)}
+                placeholder={fieldExample('filter')}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            <Notice language={language} error={error} />
+            <Notice error={error} />
             <button className="primary-action" disabled={busy || !name.trim()}>
-              {sv ? 'Spara' : 'Save'}
+              {t('save')}
             </button>
           </form>
         </Drawer>

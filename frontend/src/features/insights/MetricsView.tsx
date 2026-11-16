@@ -1,64 +1,33 @@
-import { useEffect, useState } from 'react';
-import { api } from '../../api/client';
-import type { Metrics, Sprint } from '../../api/contracts';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { sprintsQuery } from '../../api/queries';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { FlowAnalysis } from './FlowAnalysis';
+import { insightsText } from './i18n';
 import { MetricsHistory } from './MetricsHistory';
 import { metricsPresentation } from './metricsPresentation';
+import { metricsQuery } from './queries';
 import { SprintAnalysis } from './SprintAnalysis';
 
-export function MetricsCards({
-  projectId,
-  language,
-}: {
-  projectId: number;
-  language: 'EN' | 'SV';
-}) {
-  const sv = language === 'SV';
-  const [metrics, setMetrics] = useState<Metrics>();
-  const [sprints, setSprints] = useState<Sprint[]>([]);
+export function MetricsCards({ projectId }: { projectId: number }) {
+  const t = useT(insightsText);
+  const { language } = useLanguage();
   const [sprintId, setSprintId] = useState('');
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let cancelled = false;
-    api<Sprint[]>(`/sprints?projectId=${projectId}`)
-      .then((result) => {
-        if (!cancelled) setSprints(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
-  useEffect(() => {
-    let cancelled = false;
-    setMetrics(undefined);
-    setError('');
-    const suffix = sprintId ? `?sprintId=${sprintId}` : '';
-    api<Metrics>(`/projects/${projectId}/metrics${suffix}`)
-      .then((result) => {
-        if (!cancelled) setMetrics(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, sprintId]);
+  const sprintList = useQuery(sprintsQuery(projectId));
+  const metricsResult = useQuery(metricsQuery(projectId, sprintId));
+  const sprints = sprintList.data ?? [];
+  const metrics = metricsResult.data;
+  const error = metricsResult.error?.message ?? sprintList.error?.message ?? '';
   if (!metrics)
     return (
       <>
         {error && (
           <p className="form-message error" role="alert">
-            {localizeMessage(error, sv ? 'SV' : 'EN')}
+            {localizeMessage(error, language)}
           </p>
         )}
-        <div className="empty-state">
-          {sv ? 'Laddar mätvärden…' : 'Loading metrics…'}
-        </div>
+        <div className="empty-state">{t('loadingMetrics')}</div>
       </>
     );
   const view = metricsPresentation(metrics, language, sprintId);
@@ -67,12 +36,12 @@ export function MetricsCards({
     <>
       <div className="insight-toolbar">
         <label>
-          {sv ? 'Visa data' : 'Data scope'}
+          {t('dataScope')}
           <select
             value={sprintId}
             onChange={(event) => setSprintId(event.target.value)}
           >
-            <option value="">{sv ? 'Hela projektet' : 'Entire project'}</option>
+            <option value="">{t('entireProject')}</option>
             {sprints.map((sprint) => (
               <option value={sprint.id} key={sprint.id}>
                 {sprint.name}
@@ -107,37 +76,23 @@ export function MetricsCards({
       </div>
       <FlowAnalysis view={view} />
       <details className="metric-method">
-        <summary>
-          {sv ? 'Så beräknas mätvärdena' : 'How these metrics are calculated'}
-        </summary>
+        <summary>{t('howCalculated')}</summary>
         <ul>
           <li>
-            <strong>{sv ? 'Cykeltid:' : 'Cycle time:'} </strong>
-            {sv
-              ? 'från senaste start i Pågår till senaste Klart-händelsen.'
-              : 'from the latest In Progress transition to the latest Done transition.'}
+            <strong>{t('cycleTimeLabel')} </strong>
+            {t('cycleTimeMethod')}
           </li>
           <li>
-            <strong>{sv ? 'Ledtid:' : 'Lead time:'} </strong>
-            {sv
-              ? 'från att uppgiften skapades till Klart-händelsen.'
-              : 'from task creation to its Done transition.'}
+            <strong>{t('leadTimeLabel')} </strong>
+            {t('leadTimeMethod')}
           </li>
           <li>
-            <strong>{sv ? 'Genomströmning:' : 'Throughput:'} </strong>
-            {sv
-              ? sprintId
-                ? 'antal uppgifter som slutförts i den valda sprinten.'
-                : 'antal uppgifter som slutförts under de senaste 14 dagarna.'
-              : sprintId
-                ? 'tasks completed in the selected sprint.'
-                : 'tasks completed in the last 14 days.'}
+            <strong>{t('throughputLabel')} </strong>
+            {t(sprintId ? 'throughputMethodSprint' : 'throughputMethod14')}
           </li>
           <li>
-            <strong>{sv ? 'Hastighet:' : 'Velocity:'} </strong>
-            {sv
-              ? 'story points för uppgifter som har en sparad Klart-händelse.'
-              : 'story points on tasks with a persisted Done transition.'}
+            <strong>{t('velocityLabel')} </strong>
+            {t('velocityMethod')}
           </li>
         </ul>
       </details>

@@ -96,7 +96,9 @@ class MetricsFlowTest extends HttpFlowTest {
     ResponseEntity<Map> created =
         request(HttpMethod.POST, "/api/projects/" + projectId + "/reports", Map.of());
     assertThat(created.getStatusCode()).isEqualTo(HttpStatus.OK);
-    String token = ((String) created.getBody().get("path")).split("=", 2)[1];
+    String path = (String) created.getBody().get("path");
+    assertThat(path).startsWith("/report/");
+    String token = path.substring("/report/".length());
     long reportId = id(created);
     sessionCookie = null;
     var snapshot = request(HttpMethod.GET, "/api/shared-reports/" + token, null);
@@ -117,7 +119,8 @@ class MetricsFlowTest extends HttpFlowTest {
         .isEqualTo(HttpStatus.NOT_FOUND);
     sessionCookie = ownerCookie;
     created = request(HttpMethod.POST, "/api/projects/" + projectId + "/reports", Map.of());
-    String expiredToken = ((String) created.getBody().get("path")).split("=", 2)[1];
+    String expiredToken =
+        ((String) created.getBody().get("path")).substring("/report/".length());
     jdbc.update(
         "update shared_report set expires_at = ? where id = ?",
         java.sql.Timestamp.from(Instant.now().minusSeconds(1)),

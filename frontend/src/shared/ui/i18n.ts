@@ -1,0 +1,46 @@
+import { defineLexicon } from '../i18n/lexicon';
+
+export const uiText = defineLexicon({
+  EN: {
+    confirmation: 'CONFIRMATION',
+    confirmTitle: 'Do you want to continue?',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    discardChanges: 'You have unsaved changes. Discard them and close?',
+    workspaceEditor: 'WORKSPACE EDITOR',
+    closePanel: 'Close panel',
+    project: 'Project',
+    chooseProject: 'Choose project',
+    projectHelp:
+      'New work is saved here. Choose the project before selecting a sprint or story.',
+    datePlaceholder: 'YYYY-MM-DD',
+    chooseDate: 'Choose date from calendar',
+    language: 'Language',
+    changeLanguage: 'Change language: English',
+    formHelp: 'Form help',
+    explanations: 'Explanations and examples',
+    howPageWorks: 'How this page works',
+    example: 'E.g. ',
+  },
+  SV: {
+    confirmation: 'BEKRÄFTELSE',
+    confirmTitle: 'Vill du fortsätta?',
+    cancel: 'Avbryt',
+    confirm: 'Bekräfta',
+    discardChanges: 'Du har osparade ändringar. Vill du kasta dem och stänga?',
+    workspaceEditor: 'ARBETSUTRYMME',
+    closePanel: 'Stäng panel',
+    project: 'Projekt',
+    chooseProject: 'Välj projekt',
+    projectHelp:
+      'Här sparas det du skapar. Välj projekt innan du väljer sprint eller berättelse.',
+    datePlaceholder: 'ÅÅÅÅ-MM-DD',
+    chooseDate: 'Välj datum i kalender',
+    language: 'Språk',
+    changeLanguage: 'Byt språk: Svenska',
+    formHelp: 'Hjälp med formuläret',
+    explanations: 'Förklaringar och exempel',
+    howPageWorks: 'Så fungerar sidan',
+    example: 'Exempel: ',
+  },
+});

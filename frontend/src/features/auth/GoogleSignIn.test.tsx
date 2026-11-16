@@ -1,12 +1,7 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
+import { renderWithProviders } from '../../test/render';
 import { GoogleSignIn } from './GoogleSignIn';
 vi.mock('../../api/client', () => ({ api: vi.fn(), clearCsrfToken: vi.fn() }));
 describe('Google Identity integration', () => {
@@ -20,8 +15,9 @@ describe('Google Identity integration', () => {
   });
   it('explains missing configuration without loading an external script', async () => {
     vi.mocked(api).mockResolvedValue({ clientId: '' });
-    render(
-      <GoogleSignIn language="SV" darkMode={false} onSignedIn={vi.fn()} />,
+    renderWithProviders(
+      <GoogleSignIn darkMode={false} onSignedIn={vi.fn()} />,
+      { language: 'SV' },
     );
     const button = await screen.findByRole('button', {
       name: 'Fortsätt med Google',
@@ -42,8 +38,9 @@ describe('Google Identity integration', () => {
     vi.mocked(api).mockResolvedValue({
       clientId: 'test.apps.googleusercontent.com',
     });
-    render(
-      <GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />,
+    renderWithProviders(
+      <GoogleSignIn darkMode={false} onSignedIn={vi.fn()} />,
+      { language: 'EN' },
     );
     await waitFor(() =>
       expect(
@@ -74,7 +71,9 @@ describe('Google Identity integration', () => {
         : user,
     );
     const onSignedIn = vi.fn().mockResolvedValue(undefined);
-    render(<GoogleSignIn language="EN" darkMode onSignedIn={onSignedIn} />);
+    renderWithProviders(<GoogleSignIn darkMode onSignedIn={onSignedIn} />, {
+      language: 'EN',
+    });
     await waitFor(() => expect(renderButton).toHaveBeenCalled());
     expect(renderButton.mock.calls[0]![1]).toMatchObject({
       theme: 'filled_black',
@@ -100,8 +99,9 @@ describe('Google Identity integration', () => {
       .mockRejectedValueOnce(
         new Error('Google could not verify this account.'),
       );
-    render(
-      <GoogleSignIn language="EN" darkMode={false} onSignedIn={vi.fn()} />,
+    renderWithProviders(
+      <GoogleSignIn darkMode={false} onSignedIn={vi.fn()} />,
+      { language: 'EN' },
     );
     await waitFor(() => expect(initialize).toHaveBeenCalled());
     const callback = initialize.mock.calls[0]![0].callback;
