@@ -44,8 +44,8 @@ export function Chart({
   const xValues = data.map((r) => r.x ?? 0),
     minX = Math.min(...xValues),
     maxX = Math.max(...xValues);
-  const pointX = (r: ChartRow, i: number) =>
-    r.x === undefined
+  const pointX = (r: ChartRow | undefined, i: number) =>
+    r?.x === undefined
       ? g.x(i)
       : g.left + ((r.x - minX) / (maxX - minX || 1)) * (g.right - g.left);
   return (
@@ -170,7 +170,9 @@ export function Chart({
               x={
                 kind === 'bar'
                   ? g.left + ((i + 0.5) * (g.right - g.left)) / data.length
-                  : g.x(i)
+                  : kind === 'scatter'
+                    ? pointX(data[i], i)
+                    : g.x(i)
               }
               y="226"
               textAnchor="middle"

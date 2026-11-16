@@ -70,6 +70,24 @@ describe('accessible chart data', () => {
     );
     expect(screen.getByRole('slider')).toHaveAttribute('max', '0');
   });
+  it('aligns scatter labels with their numeric x positions when intervals are unequal', () => {
+    render(
+      <ScatterChart
+        title="Uneven intervals"
+        data={[
+          { label: 'A', x: 0, values: [1] },
+          { label: 'B', x: 1, values: [2] },
+          { label: 'C', x: 10, values: [3] },
+        ]}
+        series={['Points']}
+      />,
+    );
+    const plot = screen.getByRole('img', { name: 'Uneven intervals' });
+    const label = within(plot).getByText('B');
+    const point = plot.querySelectorAll('circle')[1];
+    expect(Number(label.getAttribute('x'))).toBeCloseTo(120.8);
+    expect(label.getAttribute('x')).toBe(point?.getAttribute('cx'));
+  });
   it('histogram includes each finite sample exactly once, including max and equal observations', () => {
     for (const samples of [
       [1, 2, 3, 4, 5, 6],
