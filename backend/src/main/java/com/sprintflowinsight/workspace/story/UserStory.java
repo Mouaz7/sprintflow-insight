@@ -43,6 +43,19 @@ public class UserStory {
 
   private Long sprintId;
 
+  /** Set only through the epic assignment endpoint, so story edits never clear it. */
+  @com.fasterxml.jackson.annotation.JsonProperty(
+      access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+  private Long epicId;
+
+  public Long getEpicId() {
+    return epicId;
+  }
+
+  public void setEpicId(Long epicId) {
+    this.epicId = epicId;
+  }
+
   @com.fasterxml.jackson.annotation.JsonProperty(
       access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
   private long backlogPosition;
