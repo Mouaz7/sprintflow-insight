@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 /** Destination names for one project. Only these two topics exist for clients. */
 final class ProjectTopics {
+  static final String OPEN_TASK = "/app/projects/{projectId}/presence";
   static final String EVENTS = "/topic/projects/{projectId}";
   static final String PRESENCE = "/topic/projects/{projectId}/presence";
   private static final Pattern EVENTS_TOPIC = Pattern.compile("/topic/projects/([1-9][0-9]{0,17})");

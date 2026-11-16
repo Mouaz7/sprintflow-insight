@@ -27,6 +27,7 @@ final class PresenceRegistry {
     final long userId;
     final String name;
     final Map<String, Topic> subscriptions = new HashMap<>();
+    final Map<Long,Long> openTasks = new HashMap<>();
     Instant seen;
 
     Connection(long userId, String name, Instant seen) {
@@ -73,6 +74,8 @@ final class PresenceRegistry {
     Connection connection = connections.get(sessionId);
     if (connection == null) return Set.of();
     Topic topic = connection.subscriptions.remove(subscriptionId);
+    boolean removedTask=topic!=null && !connection.views(topic.projectId()) && connection.openTasks.remove(topic.projectId())!=null;
+    if(removedTask)return Set.of(topic.projectId());
     if (topic == null || !topic.events() || viewing(topic.projectId(), connection.userId))
       return Set.of();
     return Set.of(topic.projectId());
@@ -80,6 +83,14 @@ final class PresenceRegistry {
 
   synchronized Set<Long> disconnected(String sessionId) {
     return removeConnection(sessionId);
+  }
+
+  synchronized Set<Long> openTask(String sessionId,long projectId,Long taskId,Instant now) {
+    Connection connection=connections.get(sessionId);
+    if(connection==null || !connection.views(projectId)) throw new org.springframework.security.access.AccessDeniedException("Subscribe to the project before reporting presence.");
+    connection.seen=now;
+    Long previous=taskId==null?connection.openTasks.remove(projectId):connection.openTasks.put(projectId,taskId);
+    return java.util.Objects.equals(previous,taskId)?Set.of():Set.of(projectId);
   }
 
   /** Confirms a live session; see {@link #expire}. */
@@ -118,6 +129,13 @@ final class PresenceRegistry {
       if (connection.views(projectId))
         byUser.putIfAbsent(
             connection.userId, new PresenceMessage.Viewer(connection.userId, connection.name));
+    for(var entry:List.copyOf(byUser.entrySet())) {
+      var ids=new TreeSet<Long>();
+      for(Connection connection:connections.values()) if(connection.userId==entry.getKey() && connection.views(projectId)) {
+        Long taskId=connection.openTasks.get(projectId);if(taskId!=null)ids.add(taskId);
+      }
+      byUser.put(entry.getKey(),new PresenceMessage.Viewer(entry.getKey(),entry.getValue().name(),List.copyOf(ids)));
+    }
     var sorted =
         new TreeSet<PresenceMessage.Viewer>(
             Comparator.comparing(PresenceMessage.Viewer::name, String.CASE_INSENSITIVE_ORDER)
@@ -131,7 +149,7 @@ final class PresenceRegistry {
     if (connection == null) return Set.of();
     Set<Long> changed = new HashSet<>();
     for (Topic topic : connection.subscriptions.values())
-      if (topic.events() && !viewing(topic.projectId(), connection.userId))
+      if (topic.events() && (!viewing(topic.projectId(), connection.userId) || connection.openTasks.containsKey(topic.projectId())))
         changed.add(topic.projectId());
     return changed;
   }

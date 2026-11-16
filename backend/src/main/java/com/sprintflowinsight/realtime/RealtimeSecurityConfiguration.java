@@ -20,7 +20,7 @@ import org.springframework.security.messaging.access.intercept.MessageMatcherDel
  * Frame-level authorisation. {@link EnableWebSocketSecurity} also checks the session's CSRF token
  * in the CONNECT headers. Every frame needs the authenticated session user; SUBSCRIBE is allowed
  * only to the two topics of a project the user may read, and every other destination, including
- * any SEND, is denied.
+ * any other SEND, is denied.
  */
 @Configuration
 @EnableWebSocketSecurity
@@ -35,6 +35,8 @@ public class RealtimeSecurityConfiguration {
         .nullDestMatcher()
         .authenticated()
         .simpSubscribeDestMatchers(ProjectTopics.EVENTS, ProjectTopics.PRESENCE)
+        .access(projectReader(access))
+        .simpDestMatchers(ProjectTopics.OPEN_TASK)
         .access(projectReader(access))
         .anyMessage()
         .denyAll()

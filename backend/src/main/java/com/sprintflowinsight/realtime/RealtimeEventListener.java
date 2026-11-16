@@ -77,4 +77,13 @@ public class RealtimeEventListener {
         event.version(),
         event.occurredAt());
   }
+  @ApplicationModuleListener
+  public void changed(com.sprintflowinsight.workspace.events.WorkspaceChanged event) {
+    publisher.publish(event.eventId(),event.projectId(),event.type(),event.entityId(),null,event.occurredAt());
+  }
+
+  @ApplicationModuleListener
+  public void notification(com.sprintflowinsight.notifications.NotificationDelivered event) {
+    publisher.publish(event.eventId(),event.projectId(),"NotificationsChanged",null,null,event.occurredAt());
+  }
 }

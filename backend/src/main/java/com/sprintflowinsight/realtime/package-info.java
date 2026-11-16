@@ -6,6 +6,8 @@
 @org.springframework.modulith.ApplicationModule(
     allowedDependencies = {
       "auth",
+      "notifications",
+      "workspace :: task",
       "common",
       "common :: errors",
       "workspace :: project",

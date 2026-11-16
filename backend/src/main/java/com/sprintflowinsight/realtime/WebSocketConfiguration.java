@@ -61,6 +61,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
+    registry.setPreserveReceiveOrder(true);
     var httpSession = new HttpSessionHandshakeInterceptor();
     httpSession.setCopyAllAttributes(false);
     httpSession.setCopyHttpSessionId(true);
@@ -75,11 +76,12 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     heartbeats.setThreadNamePrefix("stomp-heartbeat-");
     heartbeats.setDaemon(true);
     heartbeats.initialize();
+    registry.setPreservePublishOrder(true);
     registry
         .enableSimpleBroker("/topic")
         .setHeartbeatValue(new long[] {HEARTBEAT_MS, HEARTBEAT_MS})
         .setTaskScheduler(heartbeats);
-    // No @MessageMapping handlers exist; RealtimeSecurityConfiguration denies every SEND.
+    // The only client SEND destination carries validated open-task presence, never a domain mutation.
     registry.setApplicationDestinationPrefixes("/app");
   }
 
