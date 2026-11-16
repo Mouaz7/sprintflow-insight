@@ -2,6 +2,8 @@ import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { flowStatus, healthStatus, insightsText } from './i18n';
 import type { MetricsPresentation } from './metricsPresentation';
+import { LineChart } from '../../shared/ui/charts/Chart';
+import { EmptyState } from '../../shared/ui/States';
 export function FlowAnalysis({ view }: { view: MetricsPresentation }) {
   const t = useT(insightsText);
   const { language } = useLanguage();
@@ -9,18 +11,8 @@ export function FlowAnalysis({ view }: { view: MetricsPresentation }) {
     sprintId,
     burndown,
     burndownReady,
-    metrics,
     burndownEmptyTitle,
     burndownEmptyDetail,
-    chartGridValues,
-    chartBottom,
-    chartMax,
-    chartTop,
-    chartLeft,
-    chartRight,
-    chartPath,
-    chartCoords,
-    dateLabelIndexes,
     health,
     statusCounts,
   } = view;
@@ -39,83 +31,21 @@ export function FlowAnalysis({ view }: { view: MetricsPresentation }) {
           </span>
         </div>
         {!burndownReady ? (
-          <div className="burndown-empty-state" role="status">
-            <span className="burndown-empty-icon" aria-hidden="true">
-              {metrics.burndownAvailable === false &&
-              Number(metrics.taskCount ?? 0) > 0
-                ? '!'
-                : '✓'}
-            </span>
-            <div>
-              <strong>{burndownEmptyTitle}</strong>
-              <p>{burndownEmptyDetail}</p>
-            </div>
-          </div>
+          <EmptyState
+            title={burndownEmptyTitle}
+            description={burndownEmptyDetail}
+          />
         ) : (
           <>
-            <svg
-              className="burndown-chart"
-              viewBox="0 0 720 250"
-              preserveAspectRatio="none"
-              role="img"
-              aria-label={t('burndownChart')}
-            >
-              {chartGridValues.map((value) => {
-                const y =
-                  chartBottom - (value / chartMax) * (chartBottom - chartTop);
-                return (
-                  <g key={value}>
-                    <line
-                      className="burndown-gridline"
-                      x1={chartLeft}
-                      x2={chartRight}
-                      y1={y}
-                      y2={y}
-                    />
-                    <text
-                      className="burndown-axis-label"
-                      x={chartLeft - 10}
-                      y={y + 4}
-                      textAnchor="end"
-                    >
-                      {value}
-                    </text>
-                  </g>
-                );
-              })}
-              <line
-                className="burndown-ideal"
-                x1={chartLeft}
-                x2={chartRight}
-                y1={chartTop}
-                y2={chartBottom}
-              />
-              <polyline className="burndown-actual" points={chartPath} />
-              {chartCoords.map((point) => (
-                <circle
-                  className="burndown-point"
-                  key={point.date}
-                  cx={point.x}
-                  cy={point.y}
-                  r="4"
-                >
-                  <title>
-                    {point.date}: {point.remainingPoints} {t('pointsRemaining')}
-                  </title>
-                </circle>
-              ))}
-              {dateLabelIndexes.map((index) => (
-                <text
-                  className="burndown-date-label"
-                  key={burndown[index]?.date}
-                  x={chartCoords[index]?.x ?? chartLeft}
-                  y="226"
-                  textAnchor="middle"
-                >
-                  {burndown[index]?.date.slice(5)}
-                </text>
-              ))}
-            </svg>
+            <LineChart
+              title={t('burndownChart')}
+              data={burndown.map((day) => ({
+                label: day.date,
+                values: [day.remainingPoints],
+              }))}
+              series={[t('remainingPoints')]}
+              ideal
+            />
             <div className="burndown-legend">
               <span>
                 <i className="legend-actual" />

@@ -1,10 +1,10 @@
 import { useT } from '../i18n/LanguageProvider';
-
+import { Skeleton } from './States';
 export function RouteLoading() {
   const t = useT();
   return (
-    <p className="route-loading" role="status">
-      {t('loading')}
-    </p>
+    <div className="route-loading">
+      <Skeleton label={t('loading')} />
+    </div>
   );
 }

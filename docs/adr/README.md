@@ -18,3 +18,5 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0013](0013-router-query-and-typed-lexicon.md) | Client routes, query cache and typed lexicon | Accepted |
 | [0014](0014-ci-supply-chain.md) | CI pipeline and software supply chain: one build, SBOMs, keyless signing, provenance | Accepted |
 | [0015](0015-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |
+
+- [0018: Design foundations, accessible SVG charts and visual baselines](0018-design-system-charts-and-visual-baselines.md)

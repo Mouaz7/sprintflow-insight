@@ -1,3 +1,4 @@
+import { Skeleton, ErrorState } from '../../shared/ui/States';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { sprintsQuery } from '../../api/queries';
@@ -20,15 +21,16 @@ export function MetricsCards({ projectId }: { projectId: number }) {
   const metrics = metricsResult.data;
   const error = metricsResult.error?.message ?? sprintList.error?.message ?? '';
   if (!metrics)
-    return (
-      <>
-        {error && (
-          <p className="form-message error" role="alert">
-            {localizeMessage(error, language)}
-          </p>
-        )}
-        <div className="empty-state">{t('loadingMetrics')}</div>
-      </>
+    return error ? (
+      <ErrorState
+        detail={localizeMessage(error, language)}
+        onRetry={() => {
+          void metricsResult.refetch();
+          void sprintList.refetch();
+        }}
+      />
+    ) : (
+      <Skeleton label={t('loadingMetrics')} />
     );
   const view = metricsPresentation(metrics, language, sprintId);
   const { query, cards } = view;
