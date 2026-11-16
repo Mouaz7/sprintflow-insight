@@ -20,10 +20,17 @@ describe('STOMP frames', () => {
     expect(frames).toEqual([
       {
         command: 'MESSAGE',
-        headers: { subscription: 'events', destination: '/topic/projects/1' },
+        headers: new Map([
+          ['subscription', 'events'],
+          ['destination', '/topic/projects/1'],
+        ]),
         body: '{"seq":1}',
       },
-      { command: 'CONNECTED', headers: { version: '1.2' }, body: '' },
+      {
+        command: 'CONNECTED',
+        headers: new Map([['version', '1.2']]),
+        body: '',
+      },
     ]);
     expect(rest).toBe('ERR');
   });
@@ -32,19 +39,19 @@ describe('STOMP frames', () => {
     const { frames } = parseFrames(
       'ERROR\nmessage:a\\cb\\\\c\\nd\nmessage:second\nbroken\n\n\0',
     );
-    expect(frames[0]?.headers).toEqual({ message: 'a:b\\c\nd' });
+    expect(frames[0]?.headers).toEqual(new Map([['message', 'a:b\\c\nd']]));
   });
 
   it('accepts frames without a blank line', () => {
     expect(parseFrames('RECEIPT\0').frames).toEqual([
-      { command: 'RECEIPT', headers: {}, body: '' },
+      { command: 'RECEIPT', headers: new Map(), body: '' },
     ]);
   });
 
-  it('ignores prototype header names', () => {
+  it('keeps prototype-like header names as plain data', () => {
     const { frames } = parseFrames('MESSAGE\n__proto__:x\nconstructor:y\n\n\0');
     expect(Object.getPrototypeOf({})).not.toHaveProperty('x');
-    expect(frames[0]?.headers['__proto__']).toBeUndefined();
-    expect(frames[0]?.headers.constructor).toBe('y');
+    expect(frames[0]?.headers.get('__proto__')).toBe('x');
+    expect(frames[0]?.headers.get('constructor')).toBe('y');
   });
 });

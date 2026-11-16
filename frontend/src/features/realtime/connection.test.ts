@@ -93,8 +93,8 @@ describe('ProjectConnection', () => {
     await connected(socket);
 
     const connect = parseFrames(socket.sent[0]!).frames[0]!;
-    expect(connect.headers['X-CSRF-TOKEN']).toBe('csrf-token');
-    expect(connect.headers['accept-version']).toBe('1.2');
+    expect(connect.headers.get('X-CSRF-TOKEN')).toBe('csrf-token');
+    expect(connect.headers.get('accept-version')).toBe('1.2');
     expect(socket.commands()).toEqual(['CONNECT', 'SUBSCRIBE', 'SUBSCRIBE']);
     expect(handlers.onStatus).toHaveBeenLastCalledWith('live');
     await vi.waitFor(() =>

@@ -5,7 +5,7 @@
  */
 export type StompFrame = {
   command: string;
-  headers: Record<string, string>;
+  headers: ReadonlyMap<string, string>;
   body: string;
 };
 
@@ -61,15 +61,15 @@ export function parseFrames(buffer: string): {
     const head = split < 0 ? raw : raw.slice(0, split);
     const body = split < 0 ? '' : raw.slice(split).replace(/^\r?\n\r?\n/, '');
     const [command = '', ...lines] = head.split(/\r?\n/);
-    // No prototype: a header named "__proto__" cannot reach Object.prototype.
-    const headers: Record<string, string> = Object.create(null);
+    // A Map, so header names from the network never become object properties.
+    const headers = new Map<string, string>();
     for (const line of lines) {
       const colon = line.indexOf(':');
       if (colon <= 0) continue;
       const name = unescapeHeader(line.slice(0, colon));
       // The first occurrence of a repeated header wins (STOMP 1.2).
-      if (!Object.hasOwn(headers, name) && name !== '__proto__')
-        headers[name] = unescapeHeader(line.slice(colon + 1));
+      if (!headers.has(name))
+        headers.set(name, unescapeHeader(line.slice(colon + 1)));
     }
     frames.push({ command, headers, body });
   }

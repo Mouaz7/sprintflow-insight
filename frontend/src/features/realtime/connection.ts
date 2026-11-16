@@ -131,11 +131,11 @@ export class ProjectConnection {
       } catch {
         return;
       }
-      if (frame.headers.subscription === 'presence')
+      if (frame.headers.get('subscription') === 'presence')
         this.handlers.onPresence(
           (payload as { viewers?: Viewer[] }).viewers ?? [],
         );
-      else if (frame.headers.subscription === 'events')
+      else if (frame.headers.get('subscription') === 'events')
         this.message(payload as RealtimeMessage);
     } else if (frame.command === 'ERROR') {
       // The server refused (for example lost access); reconnect re-checks.
