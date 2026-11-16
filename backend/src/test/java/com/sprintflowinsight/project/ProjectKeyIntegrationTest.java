@@ -219,6 +219,27 @@ class ProjectKeyIntegrationTest extends ApiIntegrationTest {
   }
 
   @Test
+  void lookupByKeyDoesNotRevealThatAProjectIsInTheRecycleBin() throws Exception {
+    User owner = user();
+    User outsider = user();
+    Project project = project(owner, null);
+    String key = createTask(owner, project, "Hidden").get("key").asString();
+    Project trashed = projects.findById(project.getId()).orElseThrow();
+    trashed.setTrashedAt(Instant.now());
+    projects.save(trashed);
+
+    for (User caller : new User[] {outsider, owner}) {
+      mvc.perform(get("/api/tasks/by-key/" + key).with(as(caller)))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+          .andExpect(jsonPath("$.detail").value("Task not found."));
+    }
+    mvc.perform(get("/api/tasks/by-key/" + project.getKey() + "-999").with(as(outsider)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.detail").value("Task not found."));
+  }
+
+  @Test
   void onlyOwnersAndAdminsChangeTheKeyOfAnActiveProject() throws Exception {
     User owner = user();
     User admin = user();
@@ -305,6 +326,33 @@ class ProjectKeyIntegrationTest extends ApiIntegrationTest {
         .andExpect(status().isNoContent());
     mvc.perform(get("/api/projects/" + project.getId()).with(as(colleague)))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void notificationsFollowTheAccountIdNotTheStoredMemberEmail() throws Exception {
+    User owner = user();
+    User colleague = user();
+    User newcomer = user();
+    Project project = project(owner, colleague);
+    String oldEmail = colleague.getEmail();
+    String nextEmail = "renamed-" + UUID.randomUUID() + "@example.test";
+    jdbc.update("update users set email = ? where id = ?", nextEmail, colleague.getId());
+    colleague.setEmail(nextEmail);
+    // The stale member address now belongs to someone else.
+    jdbc.update("update users set email = ? where id = ?", oldEmail, newcomer.getId());
+    newcomer.setEmail(oldEmail);
+    String insert =
+        "insert into notification(project_id, recipient_email, message, is_read, created_at)"
+            + " values (?, ?, ?, false, now())";
+    jdbc.update(insert, project.getId(), nextEmail.toLowerCase(), "for the member");
+    jdbc.update(insert, project.getId(), oldEmail.toLowerCase(), "for the old address");
+
+    mvc.perform(get("/api/notifications").with(as(colleague)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.message == 'for the member')]").isNotEmpty());
+    mvc.perform(get("/api/notifications").with(as(newcomer)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.message == 'for the old address')]").isEmpty());
   }
 
   @Test

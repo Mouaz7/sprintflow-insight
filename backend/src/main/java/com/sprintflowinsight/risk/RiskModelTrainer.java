@@ -1,6 +1,8 @@
 package com.sprintflowinsight.risk;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Chooses between a trained model and the cold-start heuristic and trains the former.
@@ -8,8 +10,13 @@ import java.util.List;
  * <p>Logistic regression is only fitted when both classes have at least {@link
  * #MIN_EVENTS_PER_CLASS} examples: ten events per candidate feature, the common rule of thumb for
  * stable coefficients (Peduzzi et al., 1996). Below that, {@link ColdStartHeuristic} is used.
+ * The heuristic is also used, with a warning in the log, when the fit does not converge within
+ * {@link LogisticRegression.Options#maxIterations()}: unconverged coefficients are not trusted.
+ * The model's {@link RiskModel#source()} then reports {@code HEURISTIC}.
  */
 public final class RiskModelTrainer {
+  private static final Logger LOG = LoggerFactory.getLogger(RiskModelTrainer.class);
+
   /** Minimum count of the rarer outcome (late or on time) before a model is trained. */
   public static final int MIN_EVENTS_PER_CLASS = 10 * RiskFeature.COUNT;
 
@@ -40,6 +47,14 @@ public final class RiskModelTrainer {
     }
     Standardizer standardizer = Standardizer.fit(x);
     LogisticRegression.Fit fit = LogisticRegression.fit(standardizer.transform(x), y, options);
+    if (!fit.converged()) {
+      LOG.warn(
+          "Risk model did not converge after {} iterations (gradient {}); using the cold-start"
+              + " heuristic instead",
+          fit.iterations(),
+          fit.gradientNorm());
+      return ColdStartHeuristic.calibrated(examples);
+    }
     return new RiskModel(RiskModel.Source.TRAINED, standardizer, fit.intercept(), fit.weights());
   }
 }

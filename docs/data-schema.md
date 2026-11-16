@@ -20,6 +20,14 @@ PostgreSQL is the system of record. The authoritative, executable schema is the 
 
 Migration V15 backfills the B0 building blocks without changing row versions. Project keys are derived from names (initials of up to four words, otherwise the first four letters, accents folded, `PRJ` when fewer than two letters remain); collisions get the suffix A, B, …, Z, AA in project-id order. Existing tasks are numbered in id order per project, and counters start at each project's highest number. Membership rows get `user_id` by case-insensitive email match. Rows without an account are removed, case-variant duplicates collapse to the most privileged row, a missing owner row is added, and stale `Owner` rows of former owners become `Member`.
 
+The email match in V15 is ambiguous only if `users` holds two accounts whose addresses differ in case alone. `users.email` is unique only case-sensitively, but the application has always stored addresses lower-cased, so such pairs can only come from manual edits or imports. A member row could then attach to either account. V15 has already been applied, so it is left unchanged, and no guard migration was added, for two reasons. First, a check running after V15 cannot prevent the assignment; it could only block startup afterwards. Second, a V18 applied before the reserved V16/V17 would make Flyway reject those later migrations (out-of-order is disabled). Before upgrading a database that may contain such data, run this query; it must return no rows:
+
+```sql
+select lower(email), count(*) from users group by lower(email) having count(*) > 1;
+```
+
+If it returns rows, merge or rename the duplicate accounts before applying V15.
+
 Encrypted columns (none yet; later phases add them) store `EncryptionService` envelopes `sf1:<keyId>:<base64url(iv|ciphertext|tag)>` in a text column. The key id makes key rotation possible; see [ADR 0015](adr/0015-encryption-and-key-rotation.md).
 
 Migration V13 adds the Spring Session tables `spring_session` and `spring_session_attributes`. `principal_name` holds `user:<id>`, which lets the server find and revoke all of an account's sessions.

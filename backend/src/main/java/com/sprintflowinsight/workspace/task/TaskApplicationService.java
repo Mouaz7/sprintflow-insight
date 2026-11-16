@@ -69,8 +69,9 @@ public class TaskApplicationService {
   }
 
   /**
-   * Looks a task up by its identifier, e.g. {@code SF-123}. Unknown keys, trashed tasks and projects
-   * the caller cannot read all answer 404, so keys cannot be used to probe for other projects.
+   * Looks a task up by its identifier, e.g. {@code SF-123}. Unknown keys, trashed tasks, projects in
+   * the recycle bin and projects the caller cannot read all answer the same 404 "Task not found.",
+   * so keys cannot be used to probe for other projects.
    */
   public Task getTaskByKey(String key, HttpSession session) {
     TaskKey parsed = TaskKey.parse(key).orElseThrow(() -> ApiException.notFound("Task not found."));
@@ -83,9 +84,8 @@ public class TaskApplicationService {
     try {
       access.read(task.getProjectId(), session);
     } catch (ApiException denied) {
-      if (denied.code() == com.sprintflowinsight.common.error.ErrorCode.FORBIDDEN)
-        throw ApiException.notFound("Task not found.");
-      throw denied;
+      // Every refusal (no access, project in the recycle bin, ...) looks like an unknown key.
+      throw ApiException.notFound("Task not found.");
     }
     return task;
   }

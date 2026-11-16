@@ -44,12 +44,14 @@ public class ProjectService {
         access.userId(session), com.sprintflowinsight.OptionalPage.of(page, size));
   }
 
-  @Transactional
+  /** Runs in its own transaction, retried when a concurrent creation took the derived key. */
   public ResponseEntity<?> createProject(ProjectRequest request, HttpSession session) {
     String email = access.email(session);
+    String key = request.normalizedKey();
     return ResponseEntity.ok(
-        factory.create(
-            request.trimmedName(), request.description(), email, request.normalizedKey(), null));
+        factory.inTransactionRetryingDerivedKey(
+            key,
+            () -> factory.create(request.trimmedName(), request.description(), email, key, null)));
   }
 
   public Project getProject(Long id, HttpSession session) {

@@ -123,6 +123,25 @@ class EncryptionServiceTest {
   }
 
   @Test
+  void twoStepRotationKeepsMixedVersionsReadableDuringRollingDeploys() {
+    byte[] next = key();
+    // Step 0: the new key is readable everywhere before any instance writes with it.
+    EncryptionService staged = new EncryptionService(Keyring.of(current, next));
+    assertThat(staged.currentKeyId()).isEqualTo(Keyring.keyId(current));
+    // Step 1, mid-rollout: some instances already write with the new key, others do not.
+    EncryptionService swapped = new EncryptionService(Keyring.of(next, current));
+    String fromSwapped = swapped.encrypt("new write", "c");
+    String fromStaged = staged.encrypt("old write", "c");
+    assertThat(staged.decrypt(fromSwapped, "c")).isEqualTo("new write");
+    assertThat(swapped.decrypt(fromStaged, "c")).isEqualTo("old write");
+    // A lagging instance may re-encrypt back to the old key; the value stays readable.
+    assertThat(swapped.decrypt(staged.reEncrypt(fromSwapped, "c"), "c")).isEqualTo("new write");
+    // Skipping step 0 is what breaks: an instance without the new key cannot read new writes.
+    assertThatThrownBy(() -> service.decrypt(fromSwapped, "c"))
+        .isInstanceOf(EncryptionException.class);
+  }
+
+  @Test
   void springConstructorReadsBase64Configuration() {
     byte[] previous = key();
     EncryptionService configured =
