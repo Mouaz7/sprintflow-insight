@@ -97,4 +97,3 @@ Språk och tema delas av inloggningen och arbetsytan och sätts innan gränssnit
 Theme colours, typography and spacing live in `shared/styles/tokens.css`; responsive breakpoints are defined once in `shared/styles/breakpoints.css`. Feature styles sit with their feature and share one documented cascade. Inter/Manrope fonts are self-hosted, with local fallbacks and no Google Fonts stylesheet request.
 
 Burndown uses the shared line chart. The chart catalogue also includes bars, scatter plots, histograms and cumulative flow. Every chart can show its full values as a table and supports arrow/Home/End exploration through its data selector. Loading, empty and error states share semantic components. See [ADR 0018](adr/0018-design-system-charts-and-visual-baselines.md) and the [visual test instructions](testing.md#design-system-and-visual-baselines-a7).
-
