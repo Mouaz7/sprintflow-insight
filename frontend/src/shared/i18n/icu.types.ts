@@ -7,9 +7,6 @@ export type IcuArguments = {
   emptyTaskCount: { count: number };
 };
 
-type CompiledMessages = {
+export type CompiledMessages = {
   [K in keyof IcuArguments]: (args: IcuArguments[K]) => string;
 };
-
-declare const messages: { EN: CompiledMessages; SV: CompiledMessages };
-export default messages;

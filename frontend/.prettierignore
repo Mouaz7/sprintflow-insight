@@ -7,4 +7,4 @@ e2e/test-results
 e2e/lighthouse-report
 e2e/.lighthouseci
 
-src/shared/i18n/icu.generated.js
+src/shared/i18n/icu.generated.ts

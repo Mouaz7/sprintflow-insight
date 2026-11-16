@@ -1,4 +1,5 @@
-import messages, { type IcuArguments } from './icu.generated.js';
+import messages from './icu.generated';
+import type { IcuArguments } from './icu.types';
 import type { Formatter } from './lexicon';
 
 /** Precompiled ICU messages: no parser, eval or Function constructor in the browser. */
