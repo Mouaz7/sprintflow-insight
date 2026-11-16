@@ -1,3 +1,4 @@
+import { icu } from '../../shared/i18n/icu';
 import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const projectsText = defineLexicon({
@@ -12,8 +13,7 @@ export const projectsText = defineLexicon({
     archivedProjects: 'Archived projects',
     searchProjects: 'Search projects',
     searchPlaceholder: 'Search projects…',
-    projectCount: ({ count }: { count: number }, f) =>
-      f.plural(count, { one: '# project', other: '# projects' }),
+    projectCount: icu('projectCount'),
     selectedProject: 'SELECTED PROJECT',
     project: 'PROJECT',
     noDescription: 'No description yet.',
@@ -94,7 +94,7 @@ export const projectsText = defineLexicon({
     archivedProjects: 'Arkiverade projekt',
     searchProjects: 'Sök projekt',
     searchPlaceholder: 'Sök projekt…',
-    projectCount: ({ count }, f) => f.plural(count, { other: '# projekt' }),
+    projectCount: icu('projectCount'),
     selectedProject: 'VALT PROJEKT',
     project: 'PROJEKT',
     noDescription: 'Ingen beskrivning ännu.',

@@ -86,6 +86,18 @@ describe('App.routing', () => {
     expect(window.location.pathname).toBe('/metrics');
   });
 
+  it('does not fetch protected project data before a session is known', async () => {
+    const requests: string[] = [];
+    mockApi((path) => {
+      requests.push(path);
+      return apiError(401, 'Sign in to continue.');
+    });
+    visit('/tasks');
+    await screen.findByRole('heading', { name: 'Welcome back.' });
+    expect(requests).toContain('/api/auth/me');
+    expect(requests).not.toContain('/api/projects');
+  });
+
   it('moves focus to the new page heading after navigation, but not on load', async () => {
     mockSignedIn();
     visit('/overview');

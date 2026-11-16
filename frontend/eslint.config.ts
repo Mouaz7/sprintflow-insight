@@ -60,6 +60,7 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
+      'src/shared/i18n/icu.generated.js',
       'coverage/**',
       'node_modules/**',
       'e2e/playwright-report/**',
@@ -118,7 +119,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.ts', '*.config.ts'],
+    files: ['scripts/**/*.{ts,mjs}', '*.config.ts'],
     languageOptions: { globals: globals.node },
   },
   prettier,

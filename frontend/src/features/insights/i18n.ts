@@ -1,3 +1,4 @@
+import { icu } from '../../shared/i18n/icu';
 import type { Language } from '../../api/contracts';
 import { defineLexicon, type Translate } from '../../shared/i18n/lexicon';
 
@@ -178,8 +179,7 @@ export const insightsText = defineLexicon({
     confirmDeleteUpdate: 'Delete this update?',
     confirmClearHistory: 'Delete all project history? This cannot be undone.',
     clearFailed: 'Could not delete history.',
-    eventCount: ({ count }: { count: number }, f) =>
-      `${count} ${f.plural(count, { one: 'event', other: 'events' })}`,
+    eventCount: icu('eventCount'),
     clearing: 'Clearing…',
     clearHistory: 'Clear all history',
     edit: 'Edit',
@@ -349,8 +349,7 @@ export const insightsText = defineLexicon({
     confirmClearHistory:
       'Radera all historik i projektet? Det går inte att ångra.',
     clearFailed: 'Historiken kunde inte raderas.',
-    eventCount: ({ count }, f) =>
-      `${count} ${f.plural(count, { one: 'händelse', other: 'händelser' })}`,
+    eventCount: icu('eventCount'),
     clearing: 'Raderar…',
     clearHistory: 'Radera all historik',
     edit: 'Redigera',

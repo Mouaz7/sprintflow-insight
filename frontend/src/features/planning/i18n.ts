@@ -1,3 +1,4 @@
+import { icu } from '../../shared/i18n/icu';
 import { defineLexicon } from '../../shared/i18n/lexicon';
 
 type Count = { count: number };
@@ -20,8 +21,7 @@ export const planningText = defineLexicon({
     low: 'Low',
     productBacklog: 'Product backlog',
     // Backlog
-    storyCount: ({ count }: Count, f) =>
-      f.plural(count, { one: '# story', other: '# stories' }),
+    storyCount: icu('storyCount'),
     newStory: 'New story',
     editStory: 'Edit story',
     createStory: 'Create story',
@@ -47,8 +47,7 @@ export const planningText = defineLexicon({
     storyPoints: 'Story points',
     businessValue: 'Business value (1–5)',
     // Sprints
-    sprintCount: ({ count }: Count, f) =>
-      f.plural(count, { one: '# sprint', other: '# sprints' }),
+    sprintCount: icu('sprintCount'),
     newSprint: 'New sprint',
     editSprint: 'Edit sprint',
     createSprint: 'Create sprint',
@@ -117,8 +116,7 @@ export const planningText = defineLexicon({
     medium: 'Medel',
     low: 'Låg',
     productBacklog: 'Produktbacklog',
-    storyCount: ({ count }, f) =>
-      f.plural(count, { one: '# berättelse', other: '# berättelser' }),
+    storyCount: icu('storyCount'),
     newStory: 'Ny berättelse',
     editStory: 'Redigera berättelse',
     createStory: 'Skapa berättelse',
@@ -142,8 +140,7 @@ export const planningText = defineLexicon({
     moveDown: ({ title }) => `Flytta ned: ${title}`,
     storyPoints: 'Poäng',
     businessValue: 'Affärsvärde (1–5)',
-    sprintCount: ({ count }, f) =>
-      f.plural(count, { one: '# sprint', other: '# sprintar' }),
+    sprintCount: icu('sprintCount'),
     newSprint: 'Ny sprint',
     editSprint: 'Redigera sprint',
     createSprint: 'Skapa sprint',

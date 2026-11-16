@@ -88,3 +88,5 @@ Metoden, baslinjerna (girig och dynamisk programmering) och begränsningarna bes
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
+
+Språk och tema delas av inloggningen och arbetsytan och sätts innan gränssnittet renderas. Plural och datum använder förkompilerade ICU-meddelanden för svenska och engelska. Vid byte av vy flyttas tangentbordsfokus till sidrubriken; skip-länken går direkt till huvudinnehållet.

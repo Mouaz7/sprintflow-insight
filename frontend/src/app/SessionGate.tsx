@@ -32,7 +32,7 @@ export function SessionGate() {
   const queryClient = useQueryClient();
   const resetPassword = useMatch('/reset-password');
   const me = useQuery(meQuery);
-  const projects = useQuery({ ...projectsQuery, enabled: me.data !== null });
+  const projects = useQuery({ ...projectsQuery, enabled: Boolean(me.data) });
   const user = me.data;
 
   async function refreshProjects() {

@@ -5,17 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run messages:check && vite build",
     "test": "vitest run",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run size",
+    "check": "npm run messages:check && npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run size",
     "lint": "eslint . --max-warnings 0 && node scripts/check-boundaries.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "size": "size-limit",
-    "e2e": "npm --prefix e2e test"
+    "e2e": "npm --prefix e2e test",
+    "messages:compile": "node scripts/compile-messages.mjs",
+    "messages:check": "node scripts/compile-messages.mjs --check"
   },
   "dependencies": {
+    "@messageformat/runtime": "3.0.3",
     "@tanstack/react-query": "5.107.1",
     "@tanstack/react-virtual": "3.14.26",
     "react": "19.3.1",
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@babel/core": "7.29.13",
     "@eslint/js": "9.39.5",
+    "@messageformat/core": "3.4.1",
     "@rolldown/plugin-babel": "0.2.4",
     "@size-limit/file": "14.3.0",
     "@testing-library/jest-dom": "6.6.3",
