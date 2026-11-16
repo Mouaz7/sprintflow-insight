@@ -402,23 +402,126 @@ class SprintPlanSolverTest {
                 CandidateStory.of("pair-2", 0, 1),
                 CandidateStory.of("bottom", 5, 1)));
     assertThat(CP_SAT.solve(problem).selectedStoryIds()).containsExactly("top", "pair-1");
-    assertThat(CpSatSprintPlanSolver.tieBreakScale(new ProblemAnalysis(problem))).isEqualTo(11);
   }
 
   @Test
-  void cpSatDropsTheTieBreakWhenValuesAreHuge() {
+  void cpSatTieBreakIsLexicographicNotASumOfPositions() {
+    // Optimal pairs: {a, d}, {b, c} and {b, d}. The old preference Σ(n − position) scored
+    // {a, d} and {b, c} equally; the lexicographic tie-break prefers a, the earliest story.
+    var problem =
+        new PlanningProblem(
+            List.of(
+                CandidateStory.of("a", 5, 1).withEffort(Map.of("m", 1, "j", 1)),
+                CandidateStory.of("b", 5, 1).withEffort(Map.of("m", 1)),
+                CandidateStory.of("c", 5, 1).withEffort(Map.of("k", 1, "j", 1)),
+                CandidateStory.of("d", 5, 1).withEffort(Map.of("k", 1))),
+            Set.of(),
+            10,
+            Map.of("m", 1, "k", 1, "j", 1));
+    for (int run = 0; run < 5; run++) {
+      assertThat(CP_SAT.solve(problem).selectedStoryIds()).containsExactly("a", "d");
+    }
+  }
+
+  @Test
+  void cpSatLeavesOutStoriesWithoutValueDespiteSpareCapacity() {
+    var problem =
+        PlanningProblem.of(10, List.of(CandidateStory.of("a", 5, 3), CandidateStory.of("z", 0, 4)));
+    for (SprintPlanSolver solver : List.of(CP_SAT, GREEDY, DP)) {
+      SprintPlan plan = solver.solve(problem);
+      assertThat(plan.selectedStoryIds()).containsExactly("a");
+      assertThat(plan.explanation().excluded())
+          .containsExactly(
+              new ExcludedStory("z", ExclusionReason.NO_ADDED_VALUE, List.of(), List.of()));
+    }
+    // ...but takes one when a valuable successor needs it.
+    var enabling =
+        PlanningProblem.of(
+            10,
+            List.of(
+                CandidateStory.of("z", 0, 4),
+                CandidateStory.of("a", 5, 3).withPredecessors("z"),
+                CandidateStory.of("idle", 0, 1)));
+    assertThat(CP_SAT.solve(enabling).selectedStoryIds()).containsExactly("z", "a");
+  }
+
+  @Test
+  void tieBreakWeightsAreDistinctPowersOfTwoBelowTheExactLimit() {
+    List<CandidateStory> stories = new java.util.ArrayList<>();
+    for (int i = 0; i < 120; i++) {
+      stories.add(CandidateStory.of("s" + i, i % 7 == 0 ? 0 : CandidateStory.MAX_VALUE, 1));
+    }
+    var analysis = new ProblemAnalysis(PlanningProblem.of(2, stories));
+    List<Integer> free = java.util.stream.IntStream.range(0, 120).boxed().toList();
+    for (int from = 0; from < 120; from += CpSatSprintPlanSolver.TIE_BREAK_BLOCK) {
+      long[] block = CpSatSprintPlanSolver.preferenceBlock(analysis, free, from);
+      long absoluteSum = 0;
+      Set<Long> seen = new java.util.HashSet<>();
+      for (int i = 0; i < 120; i++) {
+        if (block[i] != 0) {
+          assertThat(i).isBetween(from, from + CpSatSprintPlanSolver.TIE_BREAK_BLOCK - 1);
+          assertThat(Long.bitCount(Math.abs(block[i]))).isOne();
+          assertThat(seen.add(Math.abs(block[i]))).isTrue();
+          assertThat(block[i] < 0).isEqualTo(i % 7 == 0);
+          absoluteSum += Math.abs(block[i]);
+        }
+      }
+      assertThat(absoluteSum).isLessThan(CpSatSprintPlanSolver.MAX_EXACT_OBJECTIVE);
+      // Earlier stories weigh more than all later ones in the block together.
+      assertThat(Math.abs(block[from])).isGreaterThan(absoluteSum - Math.abs(block[from]));
+    }
+  }
+
+  @Test
+  void cpSatHandlesHugeValuesAndManyTieBreakBlocks() {
     List<CandidateStory> stories = new java.util.ArrayList<>();
     for (int i = 0; i < 300; i++) {
       stories.add(CandidateStory.of("s" + i, CandidateStory.MAX_VALUE, 1));
     }
     var huge = PlanningProblem.of(2, stories);
-    assertThat(CpSatSprintPlanSolver.tieBreakScale(new ProblemAnalysis(huge))).isOne();
     SprintPlan plan = CP_SAT.solve(huge);
     assertThat(plan.objective()).isEqualTo(2 * CandidateStory.MAX_VALUE);
     assertThat(plan.bestBound()).isEqualTo(2 * CandidateStory.MAX_VALUE);
-    // Small problems keep the backlog-order preference.
-    var edge = PlanningProblem.of(1, List.of(CandidateStory.of("a", 0, 1)));
-    assertThat(CpSatSprintPlanSolver.tieBreakScale(new ProblemAnalysis(edge))).isEqualTo(2);
+    assertThat(plan.selectedStoryIds()).containsExactly("s0", "s1");
+  }
+
+  @Test
+  void explanationWithoutFreeChoiceReportsCapacity() {
+    var tooBig = PlanningProblem.of(5, List.of(CandidateStory.of("a", 100, 8)));
+    var lockedFull =
+        PlanningProblem.of(
+            5,
+            List.of(
+                CandidateStory.of("l", 1, 5).withLock(Lock.LOCKED_IN),
+                CandidateStory.of("b", 100, 3)));
+    for (SprintPlanSolver solver : List.of(CP_SAT, GREEDY, DP)) {
+      assertThat(solver.solve(tooBig).explanation().excluded())
+          .containsExactly(
+              new ExcludedStory("a", ExclusionReason.CAPACITY, List.of(), List.of("total")));
+      assertThat(solver.solve(lockedFull).explanation().excluded())
+          .containsExactly(
+              new ExcludedStory("b", ExclusionReason.CAPACITY, List.of(), List.of("total")));
+    }
+  }
+
+  @Test
+  void explanationJudgesEnablingPredecessorsWithTheirSuccessor() {
+    var problem =
+        PlanningProblem.of(
+            6,
+            List.of(
+                CandidateStory.of("p", 0, 3),
+                CandidateStory.of("s", 50, 2).withPredecessors("p"),
+                CandidateStory.of("x", 1, 2)));
+    for (SprintPlanSolver solver : List.of(CP_SAT, GREEDY, DP)) {
+      SprintPlan plan = solver.solve(problem);
+      assertThat(plan.selectedStoryIds()).containsExactly("p", "s");
+      // The chosen bundle {p, s} has density 10; x (0.5) lost on density, not on capacity.
+      assertThat(plan.explanation().excluded())
+          .containsExactly(
+              new ExcludedStory(
+                  "x", ExclusionReason.LOWER_VALUE_DENSITY, List.of(), List.of("total")));
+    }
   }
 
   @Test

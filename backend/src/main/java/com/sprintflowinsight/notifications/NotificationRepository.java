@@ -7,18 +7,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   boolean existsBySourceEventIdAndRecipientEmail(
       java.util.UUID sourceEventId, String recipientEmail);
 
+  /**
+   * The caller's notifications for projects they can still read. Notifications are addressed by
+   * email, but project membership is matched on the immutable account id, like every other access
+   * query, so a stale or reused address in {@code project_member.email} grants nothing.
+   */
   @org.springframework.data.jpa.repository.Query(
       """
       select notification from Notification notification
       where lower(notification.recipientEmail) = lower(:email) and exists (
         select project.id from Project project where project.id = notification.projectId
-        and project.trashedAt is null and
-          (lower(project.ownerEmail) = lower(:email) or exists (
-            select member.id from ProjectMember member where member.projectId = project.id
-            and lower(member.email) = lower(:email))))
+        and project.trashedAt is null and exists (
+          select member.id from ProjectMember member
+          where member.projectId = project.id and member.userId = :userId))
       order by notification.createdAt desc, notification.id desc
       """)
   List<Notification> findVisibleTo(
+      @org.springframework.data.repository.query.Param("userId") Long userId,
       @org.springframework.data.repository.query.Param("email") String email,
       org.springframework.data.domain.Pageable pageable);
 
