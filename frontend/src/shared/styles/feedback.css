@@ -1,0 +1,45 @@
+/* Subtle feedback uses the existing palette and card shapes. */
+@media (hover: hover) {
+  .dashboard-task-list > button:hover {
+    background: var(--surface-raised);
+  }
+  .account-profile:hover {
+    color: #f09b7c;
+  }
+  .task-board article[draggable='true']:hover {
+    box-shadow: var(--surface-shadow);
+  }
+}
+
+@media (--compact), (--touch) {
+  .workspace-shell,
+  .auth-page {
+    --control-height: 44px;
+    --compact-control-height: 44px;
+    --field-font: 16px;
+  }
+  .workspace-shell button,
+  .auth-page button,
+  .workspace-shell summary,
+  .workspace-shell nav a,
+  .workspace-shell .account-profile,
+  .export-actions a,
+  .share-report-card a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .header-controls .language-selector .language-control,
+  .auth-settings .language-selector .language-control {
+    line-height: 24px;
+  }
+  .workspace-shell input,
+  .workspace-shell select,
+  .workspace-shell textarea,
+  .auth-page input,
+  .auth-page select {
+    font-size: var(--field-font);
+  }
+  .task-labels button {
+    flex-basis: 44px;
+  }
+}

@@ -12,22 +12,24 @@ import {
 } from '../../shared/lib/formValues';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
 import { DateInput } from '../../shared/ui/DateInput';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Drawer, useConfirm } from '../../shared/ui/ui';
+import { planningText, sprintStatusKey } from './i18n';
 
 export function SprintManager({
   projectId,
   items,
-  language,
   onChanged,
 }: {
   projectId: number;
   items: Sprint[];
-  language: 'EN' | 'SV';
   onChanged: (saved?: Sprint) => void;
 }) {
   const confirm = useConfirm();
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(planningText);
+  const fieldExample = useFieldExample();
   const [panelOpen, setPanelOpen] = useState(false);
   const draft = useDraftProject(projectId, language);
   const [editing, setEditing] = useState<Sprint>();
@@ -53,7 +55,7 @@ export function SprintManager({
     setEndDate(sprint?.endDate ?? '');
     setError('');
   }
-  const dateError = localizeMessage(DATE_ERROR, sv ? 'SV' : 'EN');
+  const dateError = localizeMessage(DATE_ERROR, language);
   function changeDate(value: string, update: (value: string) => void) {
     update(value);
     setError('');
@@ -62,11 +64,7 @@ export function SprintManager({
     event.preventDefault();
     if (saving || (!editing && draft.blocked)) return;
     if (!validPoints(points, 2147483647)) {
-      setError(
-        sv
-          ? 'Ange ett heltal mellan 0 och 2147483647.'
-          : 'Enter a whole number between 0 and 2147483647.',
-      );
+      setError(t('pointsRange'));
       return;
     }
     if (!validDate(startDate) || !validDate(endDate)) {
@@ -74,11 +72,7 @@ export function SprintManager({
       return;
     }
     if (startDate && endDate && endDate < startDate) {
-      setError(
-        sv
-          ? 'Slutdatum måste vara samma dag eller efter startdatum.'
-          : 'End date must be on or after the start date.',
-      );
+      setError(t('endBeforeStart'));
       return;
     }
     setSaving(true);
@@ -116,13 +110,7 @@ export function SprintManager({
     }
   }
   async function remove(sprint: Sprint) {
-    if (
-      !(await confirm(
-        sv
-          ? `Ta bort sprinten “${sprint.name}”?`
-          : `Delete sprint “${sprint.name}”?`,
-      ))
-    )
+    if (!(await confirm(t('confirmDeleteSprint', { title: sprint.name }))))
       return;
     try {
       await api<unknown>(`/workspace/trash/sprint/${sprint.id}`, {
@@ -142,44 +130,24 @@ export function SprintManager({
   return (
     <div className="manager-layout">
       <div className="collection-actions">
-        <span>
-          {items.length}{' '}
-          {sv
-            ? items.length === 1
-              ? 'sprint'
-              : 'sprintar'
-            : items.length === 1
-              ? 'sprint'
-              : 'sprints'}
-        </span>
+        <span>{t('sprintCount', { count: items.length })}</span>
         <button className="primary-action" onClick={() => begin()}>
-          + {sv ? 'Ny sprint' : 'New sprint'}
+          + {t('newSprint')}
         </button>
       </div>
       {!panelOpen && savedTitle && (
         <p className="form-message success" role="status">
-          {sv
-            ? `Sprinten ”${savedTitle}” har sparats.`
-            : `Sprint “${savedTitle}” saved.`}
+          {t('sprintSaved', { title: savedTitle })}
         </p>
       )}
       {!panelOpen && error && (
         <p className="form-message error" role="alert">
-          {localizeMessage(error, sv ? 'SV' : 'EN')}
+          {localizeMessage(error, language)}
         </p>
       )}
       {panelOpen && (
         <Drawer
-          title={
-            editing
-              ? sv
-                ? 'Redigera sprint'
-                : 'Edit sprint'
-              : sv
-                ? 'Ny sprint'
-                : 'New sprint'
-          }
-          language={language}
+          title={t(editing ? 'editSprint' : 'newSprint')}
           projectSelection={
             !editing && draft.projects
               ? {
@@ -206,54 +174,51 @@ export function SprintManager({
           }
         >
           <form className="editor-form" onSubmit={save}>
-            <FormGuide topic="sprint" language={language} />
+            <FormGuide topic="sprint" />
             <fieldset disabled={saving}>
               <label>
-                {sv ? 'Namn' : 'Name'}
+                {t('name')}
                 <input
                   required
                   maxLength={255}
-                  placeholder={fieldExample('sprintName', language)}
+                  placeholder={fieldExample('sprintName')}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
               </label>
               <label>
-                {sv ? 'Sprintmål' : 'Sprint goal'}
+                {t('sprintGoal')}
                 <textarea
-                  aria-label={sv ? 'Sprintmål' : 'Sprint goal'}
+                  aria-label={t('sprintGoal')}
                   rows={3}
-                  placeholder={fieldExample('sprintGoal', language)}
+                  placeholder={fieldExample('sprintGoal')}
                   value={goal}
                   onChange={(event) => setGoal(event.target.value)}
                 />
               </label>
               <div className="form-row">
                 <label>
-                  {sv ? 'Status' : 'Status'}
+                  {t('status')}
                   <select
-                    aria-label={sv ? 'Status' : 'Status'}
+                    aria-label={t('status')}
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
                   >
                     {['Planned', 'Active', 'Completed', 'Cancelled'].map(
                       (item) => (
                         <option key={item} value={item}>
-                          {sv
-                            ? {
-                                Planned: 'Planerad',
-                                Active: 'Aktiv',
-                                Completed: 'Slutförd',
-                                Cancelled: 'Avbruten',
-                              }[item]
-                            : item}
+                          {t(
+                            sprintStatusKey[
+                              item as keyof typeof sprintStatusKey
+                            ],
+                          )}
                         </option>
                       ),
                     )}
                   </select>
                 </label>
                 <label>
-                  {sv ? 'Planerade poäng' : 'Planned points'}
+                  {t('plannedPoints')}
                   <input
                     type="number"
                     min={0}
@@ -267,9 +232,8 @@ export function SprintManager({
                   />
                 </label>
                 <label>
-                  {sv ? 'Startdatum' : 'Start date'}
+                  {t('startDate')}
                   <DateInput
-                    language={language}
                     required
                     min={MIN_DATE}
                     max={MAX_DATE}
@@ -282,9 +246,8 @@ export function SprintManager({
                   />
                 </label>
                 <label>
-                  {sv ? 'Slutdatum' : 'End date'}
+                  {t('endDate')}
                   <DateInput
-                    language={language}
                     required
                     min={validDate(startDate) ? startDate : MIN_DATE}
                     max={MAX_DATE}
@@ -304,7 +267,7 @@ export function SprintManager({
             )}
             {error && (
               <p className="form-message error" role="alert">
-                {localizeMessage(error, sv ? 'SV' : 'EN')}
+                {localizeMessage(error, language)}
               </p>
             )}
             <div className="form-actions">
@@ -312,17 +275,9 @@ export function SprintManager({
                 className="primary-action"
                 disabled={saving || (!editing && draft.blocked)}
               >
-                {saving
-                  ? sv
-                    ? 'Sparar…'
-                    : 'Saving…'
-                  : editing
-                    ? sv
-                      ? 'Spara ändringar'
-                      : 'Save changes'
-                    : sv
-                      ? 'Skapa sprint'
-                      : 'Create sprint'}
+                {t(
+                  saving ? 'saving' : editing ? 'saveChanges' : 'createSprint',
+                )}
               </button>
             </div>
           </form>
@@ -349,64 +304,54 @@ export function SprintManager({
               >
                 <header>
                   <span className="eyebrow">
-                    {sprint.status === 'Active'
-                      ? sv
-                        ? 'TEAMETS FOKUS'
-                        : 'TEAM FOCUS'
-                      : sv
-                        ? 'SPRINT'
-                        : 'SPRINT'}
+                    {t(
+                      sprint.status === 'Active'
+                        ? 'teamFocus'
+                        : 'sprintEyebrow',
+                    )}
                   </span>
                   <span className="status-badge">
-                    {sv
-                      ? ({
-                          Planned: 'Planerad',
-                          Active: 'Aktiv',
-                          Completed: 'Slutförd',
-                          Cancelled: 'Avbruten',
-                        }[sprint.status] ?? sprint.status)
+                    {sprint.status in sprintStatusKey
+                      ? t(
+                          sprintStatusKey[
+                            sprint.status as keyof typeof sprintStatusKey
+                          ],
+                        )
                       : sprint.status}
                   </span>
                 </header>
                 <h2>{sprint.name}</h2>
-                <p>
-                  {sprint.goal ||
-                    (sv ? 'Inget sprintmål ännu.' : 'No sprint goal yet.')}
-                </p>
+                <p>{sprint.goal || t('noSprintGoal')}</p>
                 <div className="sprint-details">
                   <span>
-                    <small>{sv ? 'Period' : 'Period'}</small>
+                    <small>{t('period')}</small>
                     <strong>
                       {sprint.startDate ?? '—'} → {sprint.endDate ?? '—'}
                     </strong>
                   </span>
                   <span>
-                    <small>{sv ? 'Planerat' : 'Planned'}</small>
+                    <small>{t('planned')}</small>
                     <strong>
-                      {sprint.totalStoryPoints} {sv ? 'poäng' : 'points'}
+                      {t('pointCount', { count: sprint.totalStoryPoints })}
                     </strong>
                   </span>
                 </div>
                 <div className="card-actions">
                   <button type="button" onClick={() => begin(sprint)}>
-                    {sv ? 'Redigera' : 'Edit'}
+                    {t('edit')}
                   </button>
                   <button
                     type="button"
                     className="danger-action"
                     onClick={() => remove(sprint)}
                   >
-                    {sv ? 'Ta bort' : 'Delete'}
+                    {t('delete')}
                   </button>
                 </div>
               </article>
             ))
         ) : (
-          <div className="empty-state">
-            {sv
-              ? 'Inga sprintar ännu. Skapa en sprint för att planera arbetet.'
-              : 'No sprints yet. Create a sprint to plan work.'}
-          </div>
+          <div className="empty-state">{t('noSprints')}</div>
         )}
       </div>
     </div>

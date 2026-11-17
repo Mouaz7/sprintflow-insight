@@ -1,0 +1,234 @@
+/* Compact two-part authentication, with no full-screen marketing column. */
+.auth-page {
+  display: grid;
+  place-items: center;
+  padding: 24px var(--inline-space);
+}
+.auth-frame {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(1100px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px #151d2a06;
+}
+.auth-story {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+  border-right: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+.auth-story h1 {
+  max-width: 12ch;
+  margin-block: 16px;
+  font-size: 28px;
+  font-weight: 800;
+}
+.auth-story-heading > p {
+  max-width: 40ch;
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: 1.9;
+}
+.auth-example {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.auth-example > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.auth-example h2 {
+  font-size: var(--text-section);
+}
+.auth-example > p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.example-progress {
+  height: 6px;
+  margin-top: 16px;
+  border-radius: 9px;
+  background: var(--line);
+  overflow: hidden;
+}
+.example-progress > span {
+  display: block;
+  width: 68%;
+  height: 100%;
+  background: var(--chart);
+}
+.example-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block: 12px 16px;
+}
+.example-progress-label strong {
+  font:
+    800 24px Manrope,
+    sans-serif;
+}
+.example-progress-label > span {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.example-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid var(--line);
+}
+.example-task > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.example-task strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.example-task small {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.example-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.example-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin-inline: 8px;
+  border-radius: 50%;
+  background: var(--chart);
+}
+.auth-story > footer {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: 1.8;
+}
+.auth-story > footer > span {
+  font-size: var(--text-small);
+}
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  padding: 24px 28px;
+  background: var(--surface);
+}
+.auth-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.auth-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.auth-card {
+  padding-block: 12px;
+}
+.auth-card h2 {
+  margin-block: 10px 12px;
+  font-size: var(--text-heading);
+  font-weight: 800;
+}
+.auth-subtitle {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+.auth-card form {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.auth-card fieldset {
+  gap: 16px;
+}
+.auth-card .primary-action,
+.google-action {
+  width: 100%;
+  min-height: var(--control-height);
+}
+.forgot-link {
+  justify-self: end;
+  margin-top: -12px;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block: 16px;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.divider::before,
+.divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+.google-action {
+  gap: 12px;
+}
+.google-action span {
+  font-size: var(--text-section);
+  font-weight: 700;
+}
+.auth-switch {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: var(--text-body);
+  text-align: center;
+}
+.auth-footnote {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.back-link {
+  display: block;
+  margin-top: 16px;
+}
+.auth-page input:-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+}

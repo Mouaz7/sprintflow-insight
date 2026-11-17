@@ -202,9 +202,38 @@ BASE_URL=http://127.0.0.1:8081 K6_PROFILE=smoke k6 run scripts/performance/works
 
 The smoke profile reuses the A4 fixture (disposable account, 23-task project, cleanup in `teardown`) with three warm-up iterations and two virtual users for ten seconds. It is a regression tripwire, not a capacity measurement. The full profile (no `K6_PROFILE`) is unchanged.
 
+## Frontend routes, data and accessibility (A6)
+
+`npm run check` is unchanged in order; ESLint now also enforces `react-hooks/set-state-in-effect`, and size-limit checks several budgets instead of one: the entry chunk (125 kB gzip), the tasks and backlog/sprints/metrics/updates route chunks (20 kB each), all JavaScript together (210 kB) and CSS (15 kB). See [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
+
+- **MSW.** `src/test/setup.ts` starts one MSW server for every test file and fails on unhandled requests. Tests answer API calls with `mockApi((path, request) => payload | HttpResponse)` from `src/test/api.ts`, so they go through the real `fetch` and REST client (CSRF, error mapping). Component tests that mock the `api` module at module level remain where they test a single component.
+- **Providers.** `renderWithProviders` (`src/test/render.tsx`) adds the query client, language, theme and a memory router; `renderWorkspace` (`src/app/testWorkspace.tsx`) renders the workspace routes for a fixed session. Views are lazy chunks, so the Testing Library wait time is raised to five seconds for their first import.
+- **Routing.** `App.routing.test.tsx` covers the old `?report=`/`?resetToken=` redirects, deep links, the signed-out deep link, unknown paths, one `<main>`, the skip link and focus on the page heading after navigation.
+- **Lexicon.** `shared/i18n/lexicon.test.ts` checks plurals, locale dates and numbers, and uses `@ts-expect-error` to prove that an unknown key, a missing Swedish key and a missing argument do not compile.
+- **Accessibility.** `App.a11y.test.tsx` runs axe-core (WCAG 2.0–2.2 A/AA tags) on sign-in in both languages with the dark theme, password reset, overview, tasks, backlog, projects, profile, the mobile menu and a shared report, and fails on serious or critical findings. `src/test/axe.test.ts` proves the helper catches violations. jsdom has no layout, so colour contrast and target size are left to the browser checks below.
+- **Virtualization.** `app/Virtualization.test.tsx` renders 5,000 tasks and 5,000 stories with a simulated viewport (jsdom has no layout). The board renders 28 cards and about 1,500 DOM nodes, only rendered cards request attachments, and the backlog renders a bounded window of rows with `aria-rowcount=5001`.
+
+For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. All six real-backend E2E flows (`npm run e2e`) subsequently passed both locally and in CI against the packaged Java app and PostgreSQL. A real-data Chromium check also verified 5,000 tasks and 5,000 stories (24 mounted cards and 12 rows), Home/End to both list edges, Swedish ICU plurals and an anonymous report link. `shared/i18n/icu.test.ts` checks genuine compiled ICU patterns; `npm run messages:check` rejects stale generated TypeScript.
+
+## Design system and visual baselines (A7)
+
+`npm run check --prefix frontend` includes shared chart/state tests and the existing feature/route regressions. `npm run storybook:build --prefix frontend` builds the separate component catalogue; it is never shipped in the Spring jar. The five SVG chart types all include table alternatives and keyboard data exploration.
+
+```sh
+npm ci --prefix frontend/e2e
+npm run storybook:build --prefix frontend
+npm run visual --prefix frontend
+# Only when intentionally changing the approved component appearance:
+npm run visual --prefix frontend/e2e -- --update-snapshots
+```
+
+Playwright compares every chart/state story in light and dark against the tracked PNGs in `frontend/e2e/visual/snapshots/`, then checks axe, complete data tables and keyboard selection. Review updated PNGs before committing them. CI's `storybook` job uploads failed comparisons/traces in `storybook-visual-report`; it does not regenerate expected images. Fonts are self-hosted and tests wait for `document.fonts.ready` for deterministic layout. The ordinary `npm run e2e` suite still runs against the real application and PostgreSQL.
+
+The production-server [chart E2E flow](../frontend/e2e/tests/charts.e2e.ts) creates a project and task through the real API, reads the migrated burndown, checks Home/End and its complete table, and runs axe in light and dark themes. It complements the isolated Storybook comparisons.
+
 ## Search (B9)
 
-`SearchIntegrationTest` runs `GET /api/search` against PostgreSQL with V16, V18 and V30: Owner, Admin, Member and Viewer find hits in their project; an outsider gets no hits (and 403 with `projectId`), also not for an exact task key; archived projects stay searchable, trashed projects, trashed tasks and their comments do not appear. Epic tests cover all membership roles, archived/trash boundaries, the type filter, indexing and highlighting. `EpicStorageIntegrationTest` verifies persistence and the same-project story foreign key. It also covers Swedish and English stemming, prefixes, a trigram typo, the type filter, highlight segments, the exact-key-first rule, keyset pages that return every hit exactly once, parameter validation as problems, and the query count: one statement for any number of projects and hits (three with `projectId`: user, access row, search). `SearchQueryTest`, `SearchCursorTest`, `SearchSupportTest` and `SearchQueryProperties` need no database; `SearchQuery`, `SearchCursor` and `SearchType` are in PIT's target classes.
+`SearchIntegrationTest` runs `GET /api/search` against PostgreSQL with V16, V17 and V18: Owner, Admin, Member and Viewer find hits in their project; an outsider gets no hits (and 403 with `projectId`), also not for an exact task key; archived projects stay searchable, trashed projects, trashed tasks and their comments do not appear. Epic tests cover all membership roles, archived/trash boundaries, the type filter, indexing and highlighting. `EpicStorageIntegrationTest` verifies persistence and the same-project story foreign key. It also covers Swedish and English stemming, prefixes, a trigram typo, the type filter, highlight segments, the exact-key-first rule, keyset pages that return every hit exactly once, parameter validation as problems, and the query count: one statement for any number of projects and hits (three with `projectId`: user, access row, search). `SearchQueryTest`, `SearchCursorTest`, `SearchSupportTest` and `SearchQueryProperties` need no database; `SearchQuery`, `SearchCursor` and `SearchType` are in PIT's target classes.
 
 In the frontend, `features/search/*.test.tsx` cover the palette (combobox ARIA, debounced and aborted requests, highlights rendered as text, keyset "show more", exact task key on Enter, commands), the shortcut listener (ignored while typing or behind a dialog) and the help dialog's focus trap in English and Swedish; `app/App.search.test.tsx` covers navigation from a hit to the board narrowed to its task.
 

@@ -1,4 +1,4 @@
--- B9 completion: the epic storage foundation is introduced by the shared B3 V18 migration.
+-- B9 completion: the epic storage foundation is introduced by the shared B3 V17 migration.
 -- Keep this additive migration separate from V16, which existing installations may have applied.
 ALTER TABLE epic ADD COLUMN search_vector tsvector GENERATED ALWAYS AS (
   setweight(to_tsvector('swedish'::regconfig, coalesce(title, '')), 'A') ||

@@ -59,9 +59,15 @@ describe('search support', () => {
     });
   });
 
-  it('fills placeholders and keeps unknown ones', () => {
+  it('formats typed placeholders and ICU result counts', () => {
     expect(searchText('EN')('resultCount', { count: 3 })).toBe('3 results');
     expect(searchText('SV')('resultCount', { count: 3 })).toBe('3 träffar');
-    expect(searchText('EN')('inProject')).toBe('in {project}');
+    expect(searchText('EN')('inProject', { project: 'Alpha' })).toBe(
+      'in Alpha',
+    );
+    expect(searchText('EN')('resultCount', { count: 1 })).toBe('1 result');
+    expect(searchText('SV')('resultCount', { count: 1200 })).toMatch(
+      /^1\s200 träffar$/,
+    );
   });
 });

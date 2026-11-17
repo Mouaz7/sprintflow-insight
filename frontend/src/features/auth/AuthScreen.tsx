@@ -1,11 +1,15 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { useMatch, useNavigate, useSearchParams } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../../api/client';
-import type { Language, User } from '../../api/contracts';
-import { fieldExample } from '../../shared/ui/Guidance';
+import type { User } from '../../api/contracts';
+import { useFieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { useTheme } from '../../shared/theme/ThemeProvider';
 import { LanguageSelector } from '../../shared/ui/LanguageSelector';
 import { Notice } from '../../shared/ui/ui';
 import { GoogleSignIn } from './GoogleSignIn';
+import { authText } from './i18n';
 
 type AuthMode = 'login' | 'register' | 'reset' | 'new-password';
 export function AuthScreen({
@@ -15,50 +19,30 @@ export function AuthScreen({
   onSignedIn: (user: User) => Promise<void>;
   initialError: string;
 }) {
+  const navigate = useNavigate();
+  const resetRoute = useMatch('/reset-password');
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>(() =>
-    new URLSearchParams(window.location.search).has('resetToken')
-      ? 'new-password'
-      : 'login',
+    resetRoute ? 'new-password' : 'login',
   );
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetToken] = useState(
-    () => new URLSearchParams(window.location.search).get('resetToken') ?? '',
-  );
+  const [resetToken] = useState(() => searchParams.get('token') ?? '');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState(initialError);
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('sprintflow-theme') === 'dark',
-  );
-  const [language, setLanguage] = useState<Language>(() =>
-    localStorage.getItem('sprintflow-language') === 'SV' ? 'SV' : 'EN',
-  );
-  const sv = language === 'SV';
-  useEffect(() => {
-    localStorage.setItem('sprintflow-theme', darkMode ? 'dark' : 'light');
-    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', darkMode ? '#151D2A' : '#FAF8F5');
-  }, [darkMode]);
-  useEffect(() => {
-    localStorage.setItem('sprintflow-language', language);
-    document.documentElement.lang = sv ? 'sv' : 'en';
-  }, [language, sv]);
+  const { theme, setTheme } = useTheme();
+  const darkMode = theme === 'dark';
+  const setDarkMode = (dark: boolean) => setTheme(dark ? 'dark' : 'light');
+  const { language, setLanguage } = useLanguage();
+  const t = useT(authText);
+  const fieldExample = useFieldExample();
   function changeMode(next: AuthMode) {
     if (busy) return;
-    if (mode === 'new-password') {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('resetToken');
-      window.history.replaceState(
-        null,
-        '',
-        url.pathname + url.search + url.hash,
-      );
-    }
+    // The reset token leaves the address bar once the reset form is left.
+    if (resetRoute) void navigate('/', { replace: true });
     setMode(next);
     setNotice('');
     setError('');
@@ -72,9 +56,7 @@ export function AuthScreen({
     setNotice('');
     setError('');
     if (mode === 'new-password' && password !== confirmPassword) {
-      setError(
-        sv ? 'Lösenorden matchar inte.' : 'Your new passwords do not match.',
-      );
+      setError(t('passwordsDiffer'));
       setBusy(false);
       return;
     }
@@ -86,21 +68,13 @@ export function AuthScreen({
         });
         setPassword('');
         setConfirmPassword('');
-        setNotice(
-          sv
-            ? 'Lösenordet har uppdaterats. Du kan nu logga in.'
-            : 'Password updated. You can now log in.',
-        );
+        setNotice(t('passwordUpdated'));
       } else if (mode === 'reset') {
         const response = await api<{ message: string }>(
           '/auth/password/reset/request',
           { method: 'POST', body: JSON.stringify({ email: email.trim() }) },
         );
-        setNotice(
-          sv
-            ? 'Om adressen tillhör ett konto skickas en återställningslänk. Kontrollera även skräpposten.'
-            : response.message,
-        );
+        setNotice(t('resetRequested', { serverMessage: response.message }));
       } else {
         const user = await api<User>(
           mode === 'login' ? '/auth/login' : '/auth/register',
@@ -126,108 +100,73 @@ export function AuthScreen({
           ? 'We couldn’t sign you in. If you haven’t created an account yet, choose Create account. If you already have an account, check your email and password or reset your password.'
           : cause instanceof Error
             ? cause.message
-            : sv
-              ? 'Det gick inte att slutföra begäran. Försök igen.'
-              : 'We couldn’t complete that request. Please try again.',
+            : t('requestFailed'),
       );
     } finally {
       setBusy(false);
     }
   }
-  const title = sv
-    ? {
-        login: 'Välkommen tillbaka.',
-        register: 'Skapa ditt konto.',
-        reset: 'Återställ lösenordet.',
-        'new-password': 'Välj ett nytt lösenord.',
-      }[mode]
-    : {
-        login: 'Welcome back.',
-        register: 'Create your account.',
-        reset: 'Reset your password.',
-        'new-password': 'Choose a new password.',
-      }[mode];
-  const subtitle = sv
-    ? {
-        login: 'Logga in och fortsätt med ditt arbete.',
-        register: 'En gemensam plats för ditt team och nästa steg.',
-        reset: 'Vi skickar en säker återställningslänk till din e-post.',
-        'new-password': 'Ange ditt nya lösenord två gånger.',
-      }[mode]
-    : {
-        login: 'Sign in to continue your work.',
-        register: 'A shared space for your team and its next steps.',
-        reset: 'We will send a secure reset link to your inbox.',
-        'new-password': 'Enter your new password twice.',
-      }[mode];
+  const title = t(
+    (
+      {
+        login: 'titleLogin',
+        register: 'titleRegister',
+        reset: 'titleReset',
+        'new-password': 'titleNewPassword',
+      } as const
+    )[mode],
+  );
+  const subtitle = t(
+    (
+      {
+        login: 'subtitleLogin',
+        register: 'subtitleRegister',
+        reset: 'subtitleReset',
+        'new-password': 'subtitleNewPassword',
+      } as const
+    )[mode],
+  );
   return (
     <main className="auth-page" data-theme={darkMode ? 'dark' : 'light'}>
       <div className="auth-frame">
         <aside className="auth-story">
           <div className="auth-story-heading">
             <span className="eyebrow">SPRINTFLOW / WORKSPACE</span>
-            <h1>
-              {sv
-                ? 'En plan. Ett team. Framåt.'
-                : 'One plan. One team. Forward.'}
-            </h1>
-            <p>
-              {sv
-                ? 'Samla idéerna, planera nästa sprint och se arbetet ta form.'
-                : 'Bring ideas together, plan your next sprint and see the work take shape.'}
-            </p>
+            <h1>{t('storyTitle')}</h1>
+            <p>{t('storyText')}</p>
           </div>
-          <div
-            className="auth-example"
-            aria-label={sv ? 'Exempel på en arbetsyta' : 'Example workspace'}
-          >
+          <div className="auth-example" aria-label={t('exampleWorkspace')}>
             <header>
-              <span className="status-badge">{sv ? 'EXEMPEL' : 'EXAMPLE'}</span>
+              <span className="status-badge">{t('example')}</span>
               <span>01 / 03</span>
             </header>
-            <h2>{sv ? 'Nästa lansering' : 'The next release'}</h2>
-            <p>
-              {sv
-                ? 'En tydlig väg från idé till leverans.'
-                : 'A clear path from idea to delivery.'}
-            </p>
+            <h2>{t('nextRelease')}</h2>
+            <p>{t('nextReleaseText')}</p>
             <div className="example-progress">
               <span />
             </div>
             <div className="example-progress-label">
               <strong>68%</strong>
-              <span>{sv ? 'av planen klart' : 'of the plan complete'}</span>
+              <span>{t('planComplete')}</span>
             </div>
             <div className="example-task">
               <span className="example-check">✓</span>
               <div>
-                <strong>
-                  {sv ? 'Sätt ett gemensamt mål' : 'Set a shared goal'}
-                </strong>
-                <small>
-                  {sv ? 'Klart · Produktteam' : 'Done · Product team'}
-                </small>
+                <strong>{t('sharedGoal')}</strong>
+                <small>{t('sharedGoalStatus')}</small>
               </div>
             </div>
             <div className="example-task">
               <span className="example-dot" />
               <div>
-                <strong>
-                  {sv ? 'Bygg nästa upplevelse' : 'Build the next experience'}
-                </strong>
-                <small>
-                  {sv ? 'Pågår · Sprint 04' : 'In progress · Sprint 04'}
-                </small>
+                <strong>{t('nextExperience')}</strong>
+                <small>{t('nextExperienceStatus')}</small>
               </div>
             </div>
           </div>
           <footer>
             <span>01</span>
-            <p>
-              {sv
-                ? 'Fokusera på det viktiga. Håll resten samlat.'
-                : 'Focus on what matters. Keep everything connected.'}
-            </p>
+            <p>{t('storyFooter')}</p>
           </footer>
         </aside>
         <section className="auth-panel">
@@ -243,16 +182,8 @@ export function AuthScreen({
               <button
                 type="button"
                 className="theme-toggle"
-                aria-label={
-                  sv
-                    ? darkMode
-                      ? 'Byt till ljust läge'
-                      : 'Byt till mörkt läge'
-                    : darkMode
-                      ? 'Switch to light mode'
-                      : 'Switch to dark mode'
-                }
-                onClick={() => setDarkMode((value) => !value)}
+                aria-label={t(darkMode ? 'switchToLight' : 'switchToDark')}
+                onClick={() => setDarkMode(!darkMode)}
               >
                 <InterfaceIcon name={darkMode ? 'sun' : 'moon'} />
               </button>
@@ -260,13 +191,11 @@ export function AuthScreen({
           </header>
           <div className="auth-card">
             <span className="eyebrow">
-              {mode === 'reset' || mode === 'new-password'
-                ? sv
-                  ? 'KONTOÅTERSTÄLLNING'
-                  : 'ACCOUNT RECOVERY'
-                : sv
-                  ? 'DIN ARBETSYTA'
-                  : 'YOUR WORKSPACE'}
+              {t(
+                mode === 'reset' || mode === 'new-password'
+                  ? 'accountRecovery'
+                  : 'yourWorkspace',
+              )}
             </span>
             <h2>{title}</h2>
             <p className="auth-subtitle">{subtitle}</p>
@@ -274,20 +203,20 @@ export function AuthScreen({
               <fieldset disabled={busy}>
                 {mode === 'register' && (
                   <label>
-                    {sv ? 'Namn' : 'Name'}
+                    {t('name')}
                     <input
                       required
                       maxLength={80}
                       autoComplete="name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder={fieldExample('name', language)}
+                      placeholder={fieldExample('name')}
                     />
                   </label>
                 )}
                 {mode !== 'new-password' && (
                   <label>
-                    {sv ? 'E-post' : 'Email'}
+                    {t('email')}
                     <input
                       required
                       type="email"
@@ -300,7 +229,7 @@ export function AuthScreen({
                 )}
                 {mode !== 'reset' && (
                   <label>
-                    {sv ? 'Lösenord' : 'Password'}
+                    {t('password')}
                     <input
                       required
                       minLength={6}
@@ -311,21 +240,17 @@ export function AuthScreen({
                       }
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={
+                      placeholder={t(
                         mode === 'login'
-                          ? sv
-                            ? 'Ditt befintliga lösenord'
-                            : 'Your existing password'
-                          : sv
-                            ? 'Välj ett eget lösenord, minst 6 tecken'
-                            : 'Choose your own password, at least 6 characters'
-                      }
+                          ? 'existingPassword'
+                          : 'choosePassword',
+                      )}
                     />
                   </label>
                 )}
                 {mode === 'new-password' && (
                   <label>
-                    {sv ? 'Bekräfta nytt lösenord' : 'Confirm new password'}
+                    {t('confirmPassword')}
                     <input
                       required
                       minLength={6}
@@ -333,11 +258,7 @@ export function AuthScreen({
                       type="password"
                       autoComplete="new-password"
                       value={confirmPassword}
-                      placeholder={
-                        sv
-                          ? 'Skriv samma nya lösenord igen'
-                          : 'Enter the same new password again'
-                      }
+                      placeholder={t('confirmPasswordPlaceholder')}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </label>
@@ -350,50 +271,32 @@ export function AuthScreen({
                   disabled={busy}
                   onClick={() => changeMode('reset')}
                 >
-                  {sv ? 'Glömt lösenord?' : 'Forgot password?'}
+                  {t('forgotPassword')}
                 </button>
               )}
-              <Notice language={language} error={error} success={notice} />
+              <Notice error={error} success={notice} />
               <button className="primary-action" disabled={busy}>
-                {busy
-                  ? sv
-                    ? 'Vänta…'
-                    : 'Please wait…'
-                  : mode === 'login'
-                    ? sv
-                      ? 'Logga in'
-                      : 'Log in'
-                    : mode === 'register'
-                      ? sv
-                        ? 'Skapa konto'
-                        : 'Create account'
-                      : mode === 'new-password'
-                        ? sv
-                          ? 'Spara nytt lösenord'
-                          : 'Save new password'
-                        : sv
-                          ? 'Skicka återställningslänk'
-                          : 'Send reset link'}
+                {t(
+                  busy
+                    ? 'pleaseWait'
+                    : mode === 'login'
+                      ? 'logIn'
+                      : mode === 'register'
+                        ? 'createAccount'
+                        : mode === 'new-password'
+                          ? 'saveNewPassword'
+                          : 'sendResetLink',
+                )}
               </button>
             </form>
             {mode !== 'reset' && mode !== 'new-password' && (
               <>
                 <div className="divider">
-                  <span>{sv ? 'eller' : 'or'}</span>
+                  <span>{t('or')}</span>
                 </div>
-                <GoogleSignIn
-                  language={language}
-                  darkMode={darkMode}
-                  onSignedIn={onSignedIn}
-                />
+                <GoogleSignIn darkMode={darkMode} onSignedIn={onSignedIn} />
                 <p className="auth-switch">
-                  {mode === 'login'
-                    ? sv
-                      ? 'Ny här?'
-                      : 'New here?'
-                    : sv
-                      ? 'Har du redan ett konto?'
-                      : 'Already have an account?'}{' '}
+                  {t(mode === 'login' ? 'newHere' : 'haveAccount')}{' '}
                   <button
                     type="button"
                     className="text-button"
@@ -402,13 +305,7 @@ export function AuthScreen({
                       changeMode(mode === 'login' ? 'register' : 'login')
                     }
                   >
-                    {mode === 'login'
-                      ? sv
-                        ? 'Skapa konto'
-                        : 'Create account'
-                      : sv
-                        ? 'Logga in'
-                        : 'Log in'}
+                    {t(mode === 'login' ? 'createAccount' : 'logIn')}
                   </button>
                 </p>
               </>
@@ -420,15 +317,11 @@ export function AuthScreen({
                 disabled={busy}
                 onClick={() => changeMode('login')}
               >
-                ← {sv ? 'Tillbaka till inloggning' : 'Back to log in'}
+                ← {t('backToLogin')}
               </button>
             )}
           </div>
-          <footer className="auth-footnote">
-            {sv
-              ? 'Planera tillsammans. Leverera med tydlighet.'
-              : 'Plan together. Deliver with clarity.'}
-          </footer>
+          <footer className="auth-footnote">{t('footnote')}</footer>
         </section>
       </div>
     </main>

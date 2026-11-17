@@ -1,12 +1,12 @@
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from '../../test/render';
 import { api } from '../../api/client';
 import { CommandCenter } from './CommandCenter';
 import type { SearchHit, SearchPage } from './searchApi';
@@ -41,25 +41,26 @@ function page(
   return { items, nextCursor };
 }
 
-function renderCenter(language: 'EN' | 'SV' = 'EN') {
+function renderCenter(language: 'EN' | 'SV' = 'EN', canCreateTask = true) {
   const onNavigate = vi.fn();
   const onNewTask = vi.fn();
-  const view = render(
+  const view = renderWithProviders(
     <>
       <input aria-label="Outside field" />
       <CommandCenter
-        language={language}
+        canCreateTask={canCreateTask}
         onNavigate={onNavigate}
         onNewTask={onNewTask}
       />
     </>,
+    { language },
   );
   return { onNavigate, onNewTask, ...view };
 }
 
-function openPalette() {
+async function openPalette() {
   fireEvent.keyDown(document.body, { key: 'k', ctrlKey: true });
-  return screen.getByRole('combobox', { name: 'Search or run a command' });
+  return screen.findByRole('combobox', { name: 'Search or run a command' });
 }
 
 describe('CommandCenter', () => {
@@ -68,12 +69,12 @@ describe('CommandCenter', () => {
     vi.mocked(api).mockResolvedValue(page([]));
   });
 
-  it('opens with Ctrl+K as a modal combobox, focuses the input and closes with Escape', () => {
+  it('opens with Ctrl+K as a modal combobox, focuses the input and closes with Escape', async () => {
     renderCenter();
     const launcher = screen.getByRole('button', { name: 'Search' });
     expect(launcher).toHaveAttribute('title', 'Search and commands (Ctrl+K)');
     launcher.focus();
-    const input = openPalette();
+    const input = await openPalette();
     const dialog = screen.getByRole('dialog', { name: 'Search and commands' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(input).toHaveFocus();
@@ -111,7 +112,7 @@ describe('CommandCenter', () => {
       ]),
     );
     const { onNavigate } = renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'login' } });
     expect(screen.getByRole('status')).toHaveTextContent('Searching…');
 
@@ -138,16 +139,70 @@ describe('CommandCenter', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('keeps read-only search available without offering task creation', async () => {
+    const { onNewTask } = renderCenter('EN', false);
+    fireEvent.keyDown(document.body, { key: 'c' });
+    expect(onNewTask).not.toHaveBeenCalled();
+    await openPalette();
+    expect(
+      screen.queryByRole('option', { name: 'New task' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Go to board' })).toBeVisible();
+  });
+
   it('only sends the latest query while typing', async () => {
     vi.mocked(api).mockResolvedValue(page([hit()]));
     renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'l' } });
     fireEvent.change(input, { target: { value: 'lo' } });
     fireEvent.change(input, { target: { value: 'log' } });
     await screen.findByRole('option', { name: /Fix login redirect/ });
     expect(api).toHaveBeenCalledTimes(1);
     expect(vi.mocked(api).mock.calls[0]![0]).toBe('/search?q=log&limit=20');
+  });
+
+  it('aborts an in-flight query and ignores its late response after the text changes', async () => {
+    let previousSignal: AbortSignal | undefined;
+    let finishPrevious: (value: SearchPage) => void = () => {};
+    vi.mocked(api).mockImplementation(async (path, options) => {
+      if (path.includes('q=old')) {
+        previousSignal = options?.signal ?? undefined;
+        return new Promise<SearchPage>((resolve) => {
+          finishPrevious = resolve;
+        });
+      }
+      return page([
+        hit({
+          id: 20,
+          title: 'New result',
+          titleSegments: [{ text: 'New result', match: true }],
+        }),
+      ]);
+    });
+    renderCenter();
+    const input = await openPalette();
+    fireEvent.change(input, { target: { value: 'old' } });
+    await waitFor(() => expect(previousSignal).toBeDefined());
+    fireEvent.change(input, { target: { value: 'new' } });
+    await waitFor(() => expect(previousSignal?.aborted).toBe(true));
+    expect(
+      await screen.findByRole('option', { name: /New result/ }),
+    ).toBeVisible();
+    await act(async () =>
+      finishPrevious(
+        page([
+          hit({
+            title: 'Old result',
+            titleSegments: [{ text: 'Old result', match: true }],
+          }),
+        ]),
+      ),
+    );
+    expect(
+      screen.queryByRole('option', { name: /Old result/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /New result/ })).toBeVisible();
   });
 
   it('jumps straight to a task key on Enter, even before results arrive', async () => {
@@ -157,7 +212,7 @@ describe('CommandCenter', () => {
       return page([]);
     });
     const { onNavigate } = renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'sf-12' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() =>
@@ -172,7 +227,7 @@ describe('CommandCenter', () => {
   it('opens the exact match first once results are shown and reports unknown keys', async () => {
     vi.mocked(api).mockResolvedValue(page([hit({ exactMatch: true })]));
     const { onNavigate } = renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'SF-12' } });
     expect(await screen.findByText('Exact match')).toBeInTheDocument();
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -199,7 +254,7 @@ describe('CommandCenter', () => {
         page([hit({ id: 14, key: 'SF-13', title: 'Second' })]),
       );
     renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'login' } });
     fireEvent.click(
       await screen.findByRole('option', { name: 'Show more results' }),
@@ -221,9 +276,9 @@ describe('CommandCenter', () => {
     ).toBeInTheDocument();
   });
 
-  it('runs commands from the palette and filters them by the query', () => {
+  it('runs commands from the palette and filters them by the query', async () => {
     const { onNavigate, onNewTask } = renderCenter();
-    const input = openPalette();
+    const input = await openPalette();
     fireEvent.change(input, { target: { value: 'board' } });
     fireEvent.click(screen.getByRole('option', { name: 'Go to board' }));
     expect(onNavigate).toHaveBeenCalledWith({ view: 'tasks' });
@@ -235,11 +290,11 @@ describe('CommandCenter', () => {
     openPalette();
     fireEvent.click(screen.getByRole('option', { name: 'Keyboard shortcuts' }));
     expect(
-      screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+      await screen.findByRole('dialog', { name: 'Keyboard shortcuts' }),
     ).toBeInTheDocument();
   });
 
-  it('handles g-sequences, c and ? but never while typing or behind a dialog', () => {
+  it('handles g-sequences, c and ? but never while typing or behind a dialog', async () => {
     const { onNavigate, onNewTask } = renderCenter();
     fireEvent.keyDown(document.body, { key: 'g' });
     fireEvent.keyDown(document.body, { key: 'b' });
@@ -269,18 +324,22 @@ describe('CommandCenter', () => {
     expect(onNavigate).toHaveBeenCalledTimes(2);
 
     fireEvent.keyDown(document.body, { key: '?' });
-    const help = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const help = await screen.findByRole('dialog', {
+      name: 'Keyboard shortcuts',
+    });
     expect(help).toHaveAttribute('aria-modal', 'true');
     // Behind the open dialog, plain shortcuts do nothing.
     fireEvent.keyDown(document.body, { key: 'c' });
     expect(onNewTask).toHaveBeenCalledTimes(1);
   });
 
-  it('opens with / and shows Swedish texts', () => {
+  it('opens with / and shows Swedish texts', async () => {
     renderCenter('SV');
     fireEvent.keyDown(document.body, { key: '/' });
     expect(
-      screen.getByRole('combobox', { name: 'Sök eller kör ett kommando' }),
+      await screen.findByRole('combobox', {
+        name: 'Sök eller kör ett kommando',
+      }),
     ).toHaveFocus();
     expect(
       screen.getByRole('option', { name: 'Gå till tavlan' }),

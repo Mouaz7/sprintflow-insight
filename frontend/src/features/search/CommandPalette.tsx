@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Language, WorkspaceView } from '../../api/contracts';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { useModalFocus } from '../../shared/ui/ui';
@@ -9,7 +9,7 @@ import {
   type SearchHit,
   type SearchSegment,
 } from './searchApi';
-import type { SearchText, SearchTextKey } from './searchText';
+import type { SearchText } from './searchText';
 import { GO_TO } from './shortcuts';
 import { useWorkspaceSearch } from './useWorkspaceSearch';
 
@@ -21,7 +21,11 @@ export type SearchTarget = {
   taskKey?: string;
 };
 
-type Command = { id: string; label: SearchTextKey; run: () => void };
+type Command = {
+  id: string;
+  label: (typeof GO_TO)[number]['label'] | 'newTask' | 'showShortcuts';
+  run: () => void;
+};
 
 type Option =
   | { kind: 'hit'; id: string; hit: SearchHit }
@@ -29,6 +33,7 @@ type Option =
   | { kind: 'more'; id: string };
 
 type Props = {
+  canCreateTask: boolean;
   language: Language;
   t: SearchText;
   onNavigate: (target: SearchTarget) => void;
@@ -70,6 +75,7 @@ function Highlighted({ segments }: { segments: SearchSegment[] }) {
  * option is announced through aria-activedescendant.
  */
 export function CommandPalette({
+  canCreateTask,
   language,
   t,
   onNavigate,
@@ -93,7 +99,9 @@ export function CommandPalette({
       label: item.label,
       run: () => onNavigate({ view: item.view }),
     })),
-    { id: 'new-task', label: 'newTask', run: onNewTask },
+    ...(canCreateTask
+      ? [{ id: 'new-task', label: 'newTask', run: onNewTask } as const]
+      : []),
     { id: 'shortcuts', label: 'showShortcuts', run: onShowShortcuts },
   ];
   const needle = search.query.toLocaleLowerCase();
@@ -119,6 +127,14 @@ export function CommandPalette({
   ];
   const activeIndex = Math.min(active, options.length - 1);
   const activeOption = activeIndex >= 0 ? options[activeIndex] : undefined;
+
+  const activeId = activeOption?.id;
+  useEffect(() => {
+    if (activeId)
+      document
+        .getElementById(activeId)
+        ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [activeId]);
 
   function choose(option: Option) {
     if (option.kind === 'hit') onNavigate(targetOf(option.hit));
@@ -168,9 +184,7 @@ export function CommandPalette({
       : search.query && !search.items.length
         ? t('noResults')
         : search.query
-          ? search.items.length === 1
-            ? t('oneResult')
-            : t('resultCount', { count: search.items.length })
+          ? t('resultCount', { count: search.items.length })
           : '';
   const firstCommand = options.findIndex((option) => option.kind === 'command');
 

@@ -297,6 +297,8 @@ class SearchIntegrationTest extends ApiIntegrationTest {
     mvc.perform(search(word).with(as(owner)).param("types", "task,comment"))
         .andExpect(jsonPath("$.items[?(@.type == 'story')]").isEmpty())
         .andExpect(jsonPath("$.items[?(@.type == 'sprint')]").isEmpty());
+    mvc.perform(search(word).with(as(owner)).param("types", "epic,task,story,sprint,comment,project"))
+        .andExpect(status().isOk());
     mvc.perform(search(project.getName()).with(as(owner)).param("types", "project"))
         .andExpect(jsonPath("$.items[0].id").value(project.getId()));
   }
@@ -375,6 +377,8 @@ class SearchIntegrationTest extends ApiIntegrationTest {
     mvc.perform(search("a").param("limit", "51").with(as(owner)))
         .andExpect(status().isBadRequest());
     mvc.perform(search("a").param("limit", "0").with(as(owner))).andExpect(status().isBadRequest());
+    mvc.perform(search("a").param("types", "task,task,task,task,task,task,task").with(as(owner)))
+        .andExpect(status().isBadRequest());
     mvc.perform(search("a").param("types", "user").with(as(owner)))
         .andExpect(status().isBadRequest());
     mvc.perform(search("a").param("cursor", "bm90LWEtY3Vyc29y").with(as(owner)))

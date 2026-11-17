@@ -1,11 +1,11 @@
 import { localizeMessage } from '../../shared/i18n/messages';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer } from '../../shared/ui/ui';
 import type { UseBacklogState } from './useBacklog';
 export function StoryEditor({ controller }: { controller: UseBacklogState }) {
   const {
     editing,
-    sv,
+    t,
     language,
     draft,
     saving,
@@ -32,18 +32,10 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
     error,
     sprintLoading,
   } = controller;
+  const fieldExample = useFieldExample();
   return (
     <Drawer
-      title={
-        editing
-          ? sv
-            ? 'Redigera berättelse'
-            : 'Edit story'
-          : sv
-            ? 'Ny berättelse'
-            : 'New story'
-      }
-      language={language}
+      title={t(editing ? 'editStory' : 'newStory')}
       projectSelection={
         !editing && draft.projects
           ? {
@@ -72,44 +64,44 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
       }
     >
       <form className="editor-form" onSubmit={save}>
-        <FormGuide topic="story" language={language} />
+        <FormGuide topic="story" />
         <fieldset disabled={saving}>
           <label>
-            {sv ? 'Titel' : 'Title'}
+            {t('title')}
             <input
               required
               maxLength={255}
-              placeholder={fieldExample('storyTitle', language)}
+              placeholder={fieldExample('storyTitle')}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
           <label>
-            {sv ? 'Beskrivning' : 'Description'}
+            {t('description')}
             <textarea
-              aria-label={sv ? 'Beskrivning' : 'Description'}
+              aria-label={t('description')}
               rows={3}
-              placeholder={fieldExample('storyDescription', language)}
+              placeholder={fieldExample('storyDescription')}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
           <label>
-            {sv ? 'Acceptanskriterier' : 'Acceptance criteria'}
+            {t('acceptanceCriteria')}
             <textarea
-              aria-label={sv ? 'Acceptanskriterier' : 'Acceptance criteria'}
+              aria-label={t('acceptanceCriteria')}
               required
               rows={3}
-              placeholder={fieldExample('criteria', language)}
+              placeholder={fieldExample('criteria')}
               value={criteria}
               onChange={(event) => setCriteria(event.target.value)}
             />
           </label>
           <div className="form-row">
             <label>
-              {sv ? 'Poäng' : 'Story points'}
+              {t('storyPoints')}
               <select
-                aria-label={sv ? 'Poäng' : 'Story points'}
+                aria-label={t('storyPoints')}
                 value={points}
                 onChange={(event) => setPoints(Number(event.target.value))}
               >
@@ -121,21 +113,21 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
               </select>
             </label>
             <label>
-              {sv ? 'Prioritet' : 'Priority'}
+              {t('priority')}
               <select
-                aria-label={sv ? 'Prioritet' : 'Priority'}
+                aria-label={t('priority')}
                 value={priority}
                 onChange={(event) => setPriority(Number(event.target.value))}
               >
-                <option value={1}>{sv ? 'Hög' : 'High'}</option>
-                <option value={2}>{sv ? 'Medel' : 'Medium'}</option>
-                <option value={3}>{sv ? 'Låg' : 'Low'}</option>
+                <option value={1}>{t('high')}</option>
+                <option value={2}>{t('medium')}</option>
+                <option value={3}>{t('low')}</option>
               </select>
             </label>
             <label>
-              {sv ? 'Affärsvärde (1–5)' : 'Business value (1–5)'}
+              {t('businessValue')}
               <select
-                aria-label={sv ? 'Affärsvärde (1–5)' : 'Business value (1–5)'}
+                aria-label={t('businessValue')}
                 value={businessValue}
                 onChange={(event) =>
                   setBusinessValue(Number(event.target.value))
@@ -149,15 +141,13 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
               </select>
             </label>
             <label>
-              {sv ? 'Sprint' : 'Sprint'}
+              {t('sprint')}
               <select
-                aria-label={sv ? 'Sprint' : 'Sprint'}
+                aria-label={t('sprint')}
                 value={sprintId}
                 onChange={(event) => setSprintId(event.target.value)}
               >
-                <option value="">
-                  {sv ? 'Produktbacklog' : 'Product backlog'}
-                </option>
+                <option value="">{t('productBacklog')}</option>
                 {sprints.map((sprint) => (
                   <option value={sprint.id} key={sprint.id}>
                     {sprint.name}
@@ -179,7 +169,7 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
         )}
         {error && (
           <p className="form-message error" role="alert">
-            {localizeMessage(error, sv ? 'SV' : 'EN')}
+            {localizeMessage(error, language)}
           </p>
         )}
         <div className="form-actions">
@@ -192,17 +182,7 @@ export function StoryEditor({ controller }: { controller: UseBacklogState }) {
               (!editing && draft.blocked)
             }
           >
-            {saving
-              ? sv
-                ? 'Sparar…'
-                : 'Saving…'
-              : editing
-                ? sv
-                  ? 'Spara ändringar'
-                  : 'Save changes'
-                : sv
-                  ? 'Skapa berättelse'
-                  : 'Create story'}
+            {t(saving ? 'saving' : editing ? 'saveChanges' : 'createStory')}
           </button>
         </div>
       </form>

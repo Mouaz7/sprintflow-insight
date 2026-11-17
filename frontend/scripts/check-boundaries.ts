@@ -12,6 +12,8 @@ const cases = [
     false,
   ],
   ['src/features/tasks/boundary-probe.ts', './TaskCollaboration', false],
+  ['src/features/tasks/boundary-probe.ts', '../../test/render', true],
+  ['src/features/tasks/boundary-probe.test.ts', '../../test/render', false],
 ];
 for (const [filePath, dependency, rejected] of cases) {
   const [result] = await eslint.lintText(`import '${dependency}';\n`, {

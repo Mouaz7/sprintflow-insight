@@ -22,7 +22,7 @@ import java.util.Set;
 public record SearchRequest(
     @NotBlank @Size(max = MAX_QUERY_LENGTH) String q,
     @Positive Long projectId,
-    @Size(max = 5) List<@Pattern(regexp = SearchType.WIRE_PATTERN) String> types,
+    @Size(max = 6) List<@Pattern(regexp = SearchType.WIRE_PATTERN) String> types,
     @Min(1) @Max(MAX_LIMIT) Integer limit,
     @Size(max = SearchCursor.MAX_LENGTH) @Pattern(regexp = "[A-Za-z0-9_-]+") String cursor) {
   public static final int MAX_QUERY_LENGTH = 200;

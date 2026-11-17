@@ -1,58 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api } from '../../api/client';
+import { roleQuery } from '../../api/queries';
 import type { Language } from '../../api/contracts';
+import {
+  LanguageScope,
+  useLanguage,
+  useT,
+} from '../../shared/i18n/LanguageProvider';
+import { storedLanguage } from '../../shared/lib/appearance';
 import { Notice, useConfirm } from '../../shared/ui/ui';
+import { flowStatus, insightsText } from './i18n';
+import { publicReportQuery, reportsQuery, type SharedReport } from './queries';
 
-export function ShareReportCard({
-  projectId,
-  language,
-}: {
-  projectId: number;
-  language: Language;
-}) {
-  const sv = language === 'SV';
-  const [items, setItems] = useState<
-    { id: number; createdAt: string; expiresAt: string }[]
-  >([]);
-  const [role, setRole] = useState('Viewer');
-  const [error, setError] = useState('');
+export function ShareReportCard({ projectId }: { projectId: number }) {
+  const t = useT(insightsText);
+  const { format } = useLanguage();
+  const queryClient = useQueryClient();
+  const roleResult = useQuery(roleQuery(projectId));
+  const role = roleResult.data?.role ?? 'Viewer';
+  const manager = ['Owner', 'Admin'].includes(role);
+  const reports = useQuery({ ...reportsQuery(projectId), enabled: manager });
+  const items = reports.data ?? [];
+  const [actionError, setError] = useState('');
+  const error =
+    actionError || roleResult.error?.message || reports.error?.message || '';
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
   const confirm = useConfirm();
-  useEffect(() => {
-    let live = true;
-    setRole('Viewer');
-    setItems([]);
-    setLink('');
-    api<{ role: string }>(`/projects/${projectId}/role`)
-      .then(async (value) => {
-        if (live) setRole(value.role);
-        if (['Owner', 'Admin'].includes(value.role)) {
-          const list = await api<typeof items>(
-            `/projects/${projectId}/reports`,
-          );
-          if (live) setItems(list);
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [projectId]);
+  const setItems = (update: (current: SharedReport[]) => SharedReport[]) =>
+    queryClient.setQueryData<SharedReport[]>(
+      reportsQuery(projectId).queryKey,
+      (current = []) => update(current),
+    );
   if (!['Owner', 'Admin'].includes(role)) return null;
   async function create() {
-    if (
-      busy ||
-      !(await confirm(
-        sv
-          ? 'Skapa en delbar rapport? Alla med länken kan läsa projektbeskrivningen och sammanställda mätvärden i sju dagar.'
-          : 'Create a shared report? Anyone with the link can read the project description and aggregate metrics for seven days.',
-      ))
-    )
-      return;
+    if (busy || !(await confirm(t('confirmShare')))) return;
     setBusy(true);
     setError('');
     try {
@@ -77,12 +61,7 @@ export function ShareReportCard({
     }
   }
   async function revoke(id: number) {
-    if (
-      !(await confirm(
-        sv ? 'Återkalla rapportlänken?' : 'Revoke this report link?',
-      ))
-    )
-      return;
+    if (!(await confirm(t('confirmRevoke')))) return;
     try {
       await api(`/projects/${projectId}/reports/${id}`, { method: 'DELETE' });
       setItems((current) => current.filter((item) => item.id !== id));
@@ -93,20 +72,16 @@ export function ShareReportCard({
   }
   return (
     <section className="analysis-card share-report-card">
-      <h2>{sv ? 'Delbar projektrapport' : 'Shareable project report'}</h2>
-      <p>
-        {sv
-          ? 'En skrivskyddad ögonblicksbild utan medlemslistor, kommentarer eller inloggningsuppgifter.'
-          : 'A read-only snapshot without member lists, comments or account credentials.'}
-      </p>
-      <Notice language={language} error={error} />
+      <h2>{t('shareableReport')}</h2>
+      <p>{t('shareableDetail')}</p>
+      <Notice error={error} />
       <button className="secondary-action" disabled={busy} onClick={create}>
-        {sv ? 'Skapa rapportlänk' : 'Create report link'}
+        {t('createReportLink')}
       </button>
       {link && (
         <div>
           <label>
-            {sv ? 'Rapportlänk' : 'Report link'}
+            {t('reportLink')}
             <input
               readOnly
               value={link}
@@ -119,24 +94,14 @@ export function ShareReportCard({
                 await navigator.clipboard.writeText(link);
                 setCopied(true);
               } catch {
-                setError(
-                  sv
-                    ? 'Kopiera länken manuellt från fältet.'
-                    : 'Copy the link manually from the field.',
-                );
+                setError(t('copyManually'));
               }
             }}
           >
-            {copied
-              ? sv
-                ? 'Kopierad'
-                : 'Copied'
-              : sv
-                ? 'Kopiera länk'
-                : 'Copy link'}
+            {t(copied ? 'copied' : 'copyLink')}
           </button>
           <a href={link} target="_blank" rel="noreferrer">
-            {sv ? 'Förhandsvisa' : 'Preview'}
+            {t('preview')}
           </a>
         </div>
       )}
@@ -144,11 +109,10 @@ export function ShareReportCard({
         {items.map((item) => (
           <li key={item.id}>
             <span>
-              {sv ? 'Giltig till' : 'Expires'}{' '}
-              {new Date(item.expiresAt).toLocaleString(sv ? 'sv-SE' : 'en-GB')}
+              {t('expires')} {format.dateTime(item.expiresAt)}
             </span>
             <button className="danger-action" onClick={() => revoke(item.id)}>
-              {sv ? 'Återkalla' : 'Revoke'}
+              {t('revoke')}
             </button>
           </li>
         ))}
@@ -158,72 +122,60 @@ export function ShareReportCard({
 }
 
 export function PublicReportView({ token }: { token: string }) {
-  const [data, setData] = useState<Record<string, unknown>>();
-  const [error, setError] = useState('');
-  const [sv, setSv] = useState(
-    localStorage.getItem('sprintflow-language') === 'SV',
+  // The report has its own language switch; it is not remembered.
+  const [language, setLanguage] = useState<Language>(storedLanguage);
+  return (
+    <LanguageScope language={language}>
+      <PublicReport
+        token={token}
+        onToggleLanguage={() =>
+          setLanguage((value) => (value === 'EN' ? 'SV' : 'EN'))
+        }
+      />
+    </LanguageScope>
   );
-  useEffect(() => {
-    let live = true;
-    api<Record<string, unknown>>(`/shared-reports/${encodeURIComponent(token)}`)
-      .then((value) => {
-        if (live) setData(value);
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [token]);
+}
+
+function PublicReport({
+  token,
+  onToggleLanguage,
+}: {
+  token: string;
+  onToggleLanguage: () => void;
+}) {
+  const t = useT(insightsText);
+  const { format } = useLanguage();
+  const report = useQuery(publicReportQuery(token));
+  const data = report.data;
+  const error = report.error?.message ?? '';
   return (
     <main className="public-report page" data-theme="light">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">
-            SPRINTFLOW · {sv ? 'DELAD RAPPORT' : 'SHARED REPORT'}
-          </p>
-          <h1>
-            {data
-              ? String(data.projectName)
-              : sv
-                ? 'Projektrapport'
-                : 'Project report'}
-          </h1>
+          <p className="eyebrow">SPRINTFLOW · {t('sharedReport')}</p>
+          <h1>{data ? String(data.projectName) : t('projectReport')}</h1>
         </div>
         <div className="card-actions">
-          <button onClick={() => setSv((value) => !value)}>
-            {sv ? 'English' : 'Svenska'}
-          </button>
-          <button onClick={() => window.print()}>
-            {sv ? 'Skriv ut' : 'Print'}
-          </button>
+          <button onClick={onToggleLanguage}>{t('otherLanguage')}</button>
+          <button onClick={() => window.print()}>{t('print')}</button>
         </div>
       </header>
-      <Notice language={sv ? 'SV' : 'EN'} error={error} />
-      {!data && !error && (
-        <p role="status">{sv ? 'Laddar rapport…' : 'Loading report…'}</p>
-      )}
+      <Notice error={error} />
+      {!data && !error && <p role="status">{t('loadingReport')}</p>}
       {data && (
         <>
           <p>{String(data.description ?? '')}</p>
           <p>
-            {sv ? 'Skapad' : 'Generated'}{' '}
-            {new Date(String(data.generatedAt)).toLocaleString(
-              sv ? 'sv-SE' : 'en-GB',
-            )}
+            {t('generated')} {format.dateTime(String(data.generatedAt))}
           </p>
           {!!data.sprintName && <h2>{String(data.sprintName)}</h2>}
           <div className="metric-grid">
             {(
               [
-                ['taskCount', sv ? 'Uppgifter' : 'Tasks'],
-                ['completionRate', sv ? 'Klart (%)' : 'Completed (%)'],
-                [
-                  'velocityStoryPoints',
-                  sv ? 'Levererade poäng' : 'Delivered points',
-                ],
-                ['cycleTimeHours', sv ? 'Cykeltid (h)' : 'Cycle time (h)'],
+                ['taskCount', t('tasks')],
+                ['completionRate', t('completedPercent')],
+                ['velocityStoryPoints', t('deliveredPoints')],
+                ['cycleTimeHours', t('cycleTimeHours')],
               ] as const
             ).map(([key, label]) => (
               <article className="analysis-card" key={key}>
@@ -233,30 +185,16 @@ export function PublicReportView({ token }: { token: string }) {
             ))}
           </div>
           <section className="analysis-card">
-            <h2>{sv ? 'Arbetsflöde' : 'Workflow'}</h2>
+            <h2>{t('workflow')}</h2>
             {Object.entries(
               (data.statusCounts ?? {}) as Record<string, number>,
             ).map(([status, count]) => (
               <p key={status}>
-                {sv
-                  ? ((
-                      {
-                        'To Do': 'Att göra',
-                        'In Progress': 'Pågående',
-                        Review: 'Granskning',
-                        Done: 'Klart',
-                      } as Record<string, string>
-                    )[status] ?? status)
-                  : status}
-                : {count}
+                {flowStatus(t, status)}: {count}
               </p>
             ))}
           </section>
-          <p>
-            {sv
-              ? 'Det här är en ögonblicksbild. Rapportlänken kan återkallas av projektägaren.'
-              : 'This is a snapshot. The project owner can revoke this report link.'}
-          </p>
+          <p>{t('snapshotNote')}</p>
         </>
       )}
     </main>

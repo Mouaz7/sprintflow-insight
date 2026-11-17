@@ -3,22 +3,23 @@ import type { WorkspaceView } from '../../api/contracts';
 import type { SearchTextKey } from './searchText';
 
 /** `g` followed by one of these keys navigates; the second key must follow within a second. */
-export const GO_TO: readonly {
-  key: string;
-  view: WorkspaceView;
-  label: SearchTextKey;
-}[] = [
+export const GO_TO = [
   { key: 'o', view: 'overview', label: 'goOverview' },
   { key: 'b', view: 'tasks', label: 'goBoard' },
   { key: 'l', view: 'backlog', label: 'goBacklog' },
   { key: 's', view: 'sprints', label: 'goSprints' },
   { key: 'm', view: 'metrics', label: 'goMetrics' },
   { key: 'p', view: 'projects', label: 'goProjects' },
-];
+] as const satisfies readonly {
+  key: string;
+  view: WorkspaceView;
+  label: SearchTextKey;
+}[];
 
 export const SEQUENCE_TIMEOUT_MS = 1000;
 
 export type ShortcutHandlers = {
+  dismiss: () => void;
   togglePalette: () => void;
   openPalette: () => void;
   openHelp: () => void;
@@ -53,6 +54,10 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
     const keydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing) return;
       const key = event.key.toLowerCase();
+      if (event.key === 'Escape') {
+        latest.current.dismiss();
+        return;
+      }
       if ((event.ctrlKey || event.metaKey) && !event.altKey && key === 'k') {
         if (modalOpen() && !document.querySelector('[data-command-palette]'))
           return;

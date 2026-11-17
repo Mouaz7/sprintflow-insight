@@ -107,6 +107,57 @@ test('searches from the command palette, jumps to a task key and shows the short
   await expect(
     page
       .getByRole('navigation', { name: 'Main navigation' })
-      .getByRole('button', { name: 'Overview', exact: true }),
+      .getByRole('link', { name: 'Overview', exact: true }),
   ).toHaveAttribute('aria-current', 'page');
+});
+
+test('keeps the active search option visible when keyboard navigation crosses the scroll window', async ({
+  page,
+  api,
+  account,
+}) => {
+  const word = uniqueWord();
+  const project = await api.json<Project>('/projects', 'POST', {
+    name: `Keyboard scroll ${account.email.slice(-20)}`,
+  });
+  for (let index = 0; index < 12; index++)
+    await api.json('/tasks', 'POST', {
+      title: `${word} result ${index}`,
+      status: 'To Do',
+      projectId: project.id,
+    });
+  await page.goto('/overview');
+  await page.getByRole('button', { name: 'Search', exact: true }).waitFor();
+  await page.keyboard.press('Control+K');
+  const palette = page.getByRole('dialog', { name: 'Search and commands' });
+  const input = palette.getByRole('combobox');
+  await input.fill(word);
+  const options = palette.getByRole('option');
+  await expect(options).toHaveCount(12);
+  const visibleSelection = () =>
+    palette
+      .locator('[role="option"][aria-selected="true"]')
+      .evaluate((option) => {
+        const list = option.closest('[role="listbox"]');
+        if (!list) return false;
+        const selected = option.getBoundingClientRect();
+        const viewport = list.getBoundingClientRect();
+        return (
+          selected.top >= viewport.top - 1 &&
+          selected.bottom <= viewport.bottom + 1
+        );
+      });
+  await input.press('Control+End');
+  await expect(input).toHaveAttribute(
+    'aria-activedescendant',
+    (await options.last().getAttribute('id')) ?? '',
+  );
+  await expect.poll(visibleSelection).toBe(true);
+  await input.press('Control+Home');
+  await expect(input).toHaveAttribute(
+    'aria-activedescendant',
+    (await options.first().getAttribute('id')) ?? '',
+  );
+  await expect.poll(visibleSelection).toBe(true);
+  await expect(input).toBeFocused();
 });

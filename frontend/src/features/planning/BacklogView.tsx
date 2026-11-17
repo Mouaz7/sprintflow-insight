@@ -6,7 +6,8 @@ export function BacklogManager(props: BacklogManagerProps) {
   const controller = useBacklog(props);
   const {
     items,
-    sv,
+    t,
+    language,
     begin,
     panelOpen,
     savedTitle,
@@ -23,52 +24,37 @@ export function BacklogManager(props: BacklogManagerProps) {
   return (
     <div className="manager-layout">
       <div className="collection-actions">
-        <span>
-          {items.length}{' '}
-          {sv
-            ? items.length === 1
-              ? 'berättelse'
-              : 'berättelser'
-            : items.length === 1
-              ? 'story'
-              : 'stories'}
-        </span>
+        <span>{t('storyCount', { count: items.length })}</span>
         <button className="primary-action" onClick={() => begin()}>
-          + {sv ? 'Ny berättelse' : 'New story'}
+          + {t('newStory')}
         </button>
       </div>
       {!panelOpen && savedTitle && (
         <p className="form-message success" role="status">
-          {sv
-            ? `Berättelsen ”${savedTitle}” har sparats.`
-            : `Story “${savedTitle}” saved.`}
+          {t('storySaved', { title: savedTitle })}
         </p>
       )}
       {!panelOpen && error && (
         <p className="form-message error" role="alert">
-          {localizeMessage(error, sv ? 'SV' : 'EN')}
+          {localizeMessage(error, language)}
         </p>
       )}
       {panelOpen && <StoryEditor controller={controller} />}
       <div className="backlog-toolbar">
         <input
           type="search"
-          aria-label={sv ? 'Sök berättelser' : 'Search stories'}
-          placeholder={sv ? 'Sök i backloggen…' : 'Search backlog…'}
+          aria-label={t('searchStories')}
+          placeholder={t('searchBacklog')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
         <select
-          aria-label={
-            sv ? 'Filtrera backlog efter sprint' : 'Filter backlog by sprint'
-          }
+          aria-label={t('filterBySprint')}
           value={sprintFilter}
           onChange={(event) => setSprintFilter(event.target.value)}
         >
-          <option value="all">{sv ? 'Alla sprintar' : 'All sprints'}</option>
-          <option value="backlog">
-            {sv ? 'Produktbacklog' : 'Product backlog'}
-          </option>
+          <option value="all">{t('allSprints')}</option>
+          <option value="backlog">{t('productBacklog')}</option>
           {sprints.map((sprint) => (
             <option key={sprint.id} value={sprint.id}>
               {sprint.name}
@@ -76,15 +62,13 @@ export function BacklogManager(props: BacklogManagerProps) {
           ))}
         </select>
         <select
-          aria-label={sv ? 'Sortera backlog' : 'Sort backlog'}
+          aria-label={t('sortBacklog')}
           value={sortBy}
           onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
         >
-          <option value="manual">
-            {sv ? 'Manuell ordning' : 'Manual order'}
-          </option>
-          <option value="priority">{sv ? 'Prioritet' : 'Priority'}</option>
-          <option value="title">{sv ? 'Titel' : 'Title'}</option>
+          <option value="manual">{t('manualOrder')}</option>
+          <option value="priority">{t('priority')}</option>
+          <option value="title">{t('title')}</option>
           <option value="points">Story points</option>
         </select>
       </div>
@@ -92,13 +76,7 @@ export function BacklogManager(props: BacklogManagerProps) {
         <StoryTable controller={controller} />
       ) : (
         <div className="empty-state">
-          {items.length
-            ? sv
-              ? 'Inga berättelser matchar din sökning.'
-              : 'No stories match your search.'
-            : sv
-              ? 'Backloggen är tom. Skapa den första berättelsen.'
-              : 'The backlog is empty. Create the first story.'}
+          {t(items.length ? 'noMatchingStories' : 'emptyBacklog')}
         </div>
       )}
     </div>

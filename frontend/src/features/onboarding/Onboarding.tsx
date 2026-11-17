@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { api } from '../../api/client';
-import type { Language, WorkspaceView } from '../../api/contracts';
+import type { WorkspaceView } from '../../api/contracts';
+import { useT } from '../../shared/i18n/LanguageProvider';
 import { Drawer, Notice } from '../../shared/ui/ui';
+import { onboardingText } from './i18n';
 export function Onboarding({
-  language,
   onClose,
   onNavigate,
 }: {
-  language: Language;
   onClose: () => void;
   onNavigate: (view: WorkspaceView) => void;
 }) {
-  const sv = language === 'SV';
+  const t = useT(onboardingText);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function finish(view?: WorkspaceView) {
@@ -32,60 +32,43 @@ export function Onboarding({
   }
   return (
     <Drawer
-      title={sv ? 'Kom igång med SprintFlow' : 'Get started with SprintFlow'}
-      language={language}
+      title={t('title')}
       busy={busy}
       onClose={() => {
         void finish();
       }}
     >
-      <p>
-        {sv
-          ? 'Tre enkla steg hjälper ditt team att komma igång.'
-          : 'Three simple steps help your team get started.'}
-      </p>
+      <p>{t('intro')}</p>
       <ol className="onboarding-steps">
         <li>
-          <h2>{sv ? 'Skapa ert projekt' : 'Create your project'}</h2>
-          <p>
-            {sv
-              ? 'Välj en tom arbetsyta eller börja med Scrum- eller Kanbanmallen.'
-              : 'Choose a blank workspace or start with a Scrum or Kanban template.'}
-          </p>
+          <h2>{t('createProject')}</h2>
+          <p>{t('createProjectHelp')}</p>
           <button disabled={busy} onClick={() => finish('projects')}>
-            {sv ? 'Öppna projekt' : 'Open projects'}
+            {t('openProjects')}
           </button>
         </li>
         <li>
-          <h2>{sv ? 'Planera nästa leverans' : 'Plan your next delivery'}</h2>
-          <p>
-            {sv
-              ? 'Lägg till berättelser och välj ett tydligt sprintmål.'
-              : 'Add stories and choose a clear sprint goal.'}
-          </p>
+          <h2>{t('plan')}</h2>
+          <p>{t('planHelp')}</p>
           <button disabled={busy} onClick={() => finish('sprints')}>
-            {sv ? 'Öppna sprintar' : 'Open sprints'}
+            {t('openSprints')}
           </button>
         </li>
         <li>
-          <h2>{sv ? 'Arbeta tillsammans' : 'Work together'}</h2>
-          <p>
-            {sv
-              ? 'Tilldela uppgifter, skriv kommentarer och följ checklistan.'
-              : 'Assign tasks, add comments and follow the checklist.'}
-          </p>
+          <h2>{t('collaborate')}</h2>
+          <p>{t('collaborateHelp')}</p>
           <button disabled={busy} onClick={() => finish('tasks')}>
-            {sv ? 'Öppna uppgifter' : 'Open tasks'}
+            {t('openTasks')}
           </button>
         </li>
       </ol>
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       <button
         className="primary-action"
         disabled={busy}
         onClick={() => finish()}
       >
-        {sv ? 'Jag är redo' : 'I’m ready'}
+        {t('ready')}
       </button>
     </Drawer>
   );

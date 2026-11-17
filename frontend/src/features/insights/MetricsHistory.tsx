@@ -1,11 +1,14 @@
+import { useT } from '../../shared/i18n/LanguageProvider';
+import { insightsText } from './i18n';
 import type { MetricsPresentation } from './metricsPresentation';
 export function MetricsHistory({ view }: { view: MetricsPresentation }) {
-  const { sv, completedSprints } = view;
+  const { completedSprints } = view;
+  const t = useT(insightsText);
   return (
     <section className="history-section">
       <div>
-        <p className="kicker">{sv ? 'HISTORIK' : 'HISTORY'}</p>
-        <h2>{sv ? 'Avslutade sprintar' : 'Completed sprints'}</h2>
+        <p className="kicker">{t('history')}</p>
+        <h2>{t('completedSprints')}</h2>
       </div>
       {completedSprints.length ? (
         <div className="history-list">
@@ -16,28 +19,21 @@ export function MetricsHistory({ view }: { view: MetricsPresentation }) {
                 <small>
                   {sprint.completedAt
                     ? new Date(sprint.completedAt).toLocaleDateString()
-                    : sv
-                      ? 'Avslutad'
-                      : 'Completed'}
+                    : t('completed')}
                 </small>
               </div>
               <span>
                 {sprint.actualStoryPoints} / {sprint.plannedStoryPoints}{' '}
-                {sv ? 'poäng' : 'pts'}
+                {t('pts')}
               </span>
               <small>
-                {sprint.completedTasks}{' '}
-                {sv ? 'uppgifter klara' : 'tasks completed'}
+                {sprint.completedTasks} {t('tasksCompleted')}
               </small>
             </article>
           ))}
         </div>
       ) : (
-        <p className="empty-state">
-          {sv
-            ? 'Avslutade sprintar visas här när historik finns.'
-            : 'Completed sprints will appear here when history is available.'}
-        </p>
+        <p className="empty-state">{t('noHistory')}</p>
       )}
     </section>
   );

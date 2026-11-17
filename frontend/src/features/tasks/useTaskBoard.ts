@@ -1,6 +1,15 @@
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import type { ProjectMember, Sprint, Story, Task } from '../../api/contracts';
+import type { Task } from '../../api/contracts';
+import {
+  afterProjectWrite,
+  membersQuery,
+  roleQuery,
+  sprintsQuery,
+  storiesQuery,
+  tasksQuery,
+} from '../../api/queries';
 import { localizeMessage } from '../../shared/i18n/messages';
 import {
   DATE_ERROR,
@@ -9,44 +18,73 @@ import {
 } from '../../shared/lib/formValues';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
 import { useConfirm } from '../../shared/ui/ui';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { tasksText } from './i18n';
 export type TasksViewProps = {
   userEmail?: string;
   readOnly?: boolean;
   hasProjects: boolean;
   projectId?: number | undefined;
-  language: 'EN' | 'SV';
   openRequest?: number;
   onRequestHandled?: () => void;
   /** Opens the board filtered to this task key, e.g. from search. */
   focusTaskKey?: string | undefined;
+  focusRequestKey?: string | undefined;
 };
 export function useTaskBoard({
   hasProjects,
   projectId,
-  language,
   openRequest = 0,
   onRequestHandled,
   userEmail = '',
   readOnly = false,
   focusTaskKey = '',
+  focusRequestKey = '',
 }: TasksViewProps) {
   const confirm = useConfirm();
-  const sv = language === 'SV';
+  const { language } = useLanguage();
+  const t = useT(tasksText);
   const draft = useDraftProject(projectId, language);
   const [panelOpen, setPanelOpen] = useState(false);
   const [savedTitle, setSavedTitle] = useState('');
-  const [loading, setLoading] = useState(true);
+  // A "new task" request from another view opens the editor once per request.
+  const [handledRequest, setHandledRequest] = useState(0);
+  if (openRequest !== handledRequest) {
+    setHandledRequest(openRequest);
+    if (openRequest) setPanelOpen(true);
+  }
   useEffect(() => {
-    if (openRequest) {
-      setPanelOpen(true);
-      onRequestHandled?.();
-    }
+    if (openRequest) onRequestHandled?.();
   }, [openRequest, onRequestHandled]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [projectRole, setProjectRole] = useState('');
+  const queryClient = useQueryClient();
+  const board = useQueries({
+    queries: [
+      { ...tasksQuery(projectId ?? 0), enabled: !!projectId },
+      { ...storiesQuery(projectId ?? 0), enabled: !!projectId },
+      { ...sprintsQuery(projectId ?? 0), enabled: !!projectId },
+      { ...membersQuery(projectId ?? 0), enabled: !!projectId },
+      { ...roleQuery(projectId ?? 0), enabled: !!projectId },
+    ],
+  });
+  const [taskResult, storyResult, sprintResult, memberResult, roleResult] =
+    board;
+  // As before, one failed request leaves the whole board empty with its message.
+  const loadError = board.find((result) => result.isError)?.error;
+  const loaded = !!projectId && !loadError;
+  const loading = !!projectId && board.some((result) => result.isPending);
+  const tasks = (loaded && taskResult.data) || [];
+  const stories = (loaded && storyResult.data) || [];
+  const sprints = (loaded && sprintResult.data) || [];
+  const members = (loaded && memberResult.data) || [];
+  const projectRole = (loaded && roleResult.data?.role) || '';
+  function setTasks(update: (items: Task[]) => Task[]) {
+    if (!projectId) return;
+    queryClient.setQueryData(tasksQuery(projectId).queryKey, (items) =>
+      update(items ?? []),
+    );
+    // Other views of the project reload when they open.
+    void afterProjectWrite(queryClient, projectId);
+  }
   const [blocking, setBlocking] = useState<Task>();
   const [discussion, setDiscussion] = useState<Task>();
   const role =
@@ -57,48 +95,31 @@ export function useTaskBoard({
   const canWrite = !readOnly && role !== 'Viewer';
   const [editing, setEditing] = useState<Task>();
   const foreignDraft = panelOpen && !editing && draft.id !== projectId;
-  const [draftLinks, setDraftLinks] = useState<{
-    id: number | undefined;
-    stories: Story[];
-    sprints: Sprint[];
-    members: ProjectMember[];
-  }>();
-  const [draftLinksError, setDraftLinksError] = useState('');
-  useEffect(() => {
-    if (!foreignDraft || !draft.id) return;
-    let live = true;
-    setDraftLinks(undefined);
-    setDraftLinksError('');
-    Promise.all([
-      api<Story[]>(`/stories/project/${draft.id}`),
-      api<Sprint[]>(`/sprints?projectId=${draft.id}`),
-      api<ProjectMember[]>(`/projects/${draft.id}/members`),
-    ])
-      .then(([stories, sprints, members]) => {
-        if (live) setDraftLinks({ id: draft.id, stories, sprints, members });
-      })
-      .catch((cause: Error) => {
-        if (live) setDraftLinksError(cause.message);
-      });
-    return () => {
-      live = false;
-    };
-  }, [foreignDraft, draft.id]);
-  const draftLinksLoading = foreignDraft && draftLinks?.id !== draft.id;
+  // Choices for a new task saved into another project than the board's.
+  const draftEnabled = foreignDraft && !!draft.id;
+  const draftLinks = useQueries({
+    queries: [
+      { ...storiesQuery(draft.id ?? 0), enabled: draftEnabled },
+      { ...sprintsQuery(draft.id ?? 0), enabled: draftEnabled },
+      { ...membersQuery(draft.id ?? 0), enabled: draftEnabled },
+    ],
+  });
+  const [draftStories, draftSprints, draftMembers] = draftLinks;
+  const draftLinksError =
+    (draftEnabled &&
+      draftLinks.find((result) => result.isError)?.error?.message) ||
+    '';
+  const draftLinksReady =
+    draftEnabled && draftLinks.every((result) => result.isSuccess);
+  const draftLinksLoading = foreignDraft && !draftLinksReady;
   const editorStories = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.stories
-      : []
+    ? (draftLinksReady && draftStories.data) || []
     : stories;
   const editorSprints = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.sprints
-      : []
+    ? (draftLinksReady && draftSprints.data) || []
     : sprints;
   const editorMembers = foreignDraft
-    ? draftLinks && draftLinks.id === draft.id
-      ? draftLinks.members
-      : []
+    ? (draftLinksReady && draftMembers.data) || []
     : members;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -107,7 +128,15 @@ export function useTaskBoard({
   const [storyId, setStoryId] = useState('');
   const [sprintId, setSprintId] = useState('');
   const [assigneeEmail, setAssigneeEmail] = useState('');
+  const focusSource = `${focusRequestKey}:${focusTaskKey}`;
+  const [handledFocus, setHandledFocus] = useState(focusSource);
   const [query, setQuery] = useState(focusTaskKey);
+  // A new navigation can target the same key after the user edited the filter.
+  // Adjust the filter without remounting and losing an editor-open request.
+  if (handledFocus !== focusSource) {
+    setHandledFocus(focusSource);
+    setQuery(focusTaskKey);
+  }
   const [statusFilter, setStatusFilter] = useState('');
   const [sprintFilter, setSprintFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');
@@ -115,7 +144,9 @@ export function useTaskBoard({
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [labelFilter, setLabelFilter] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<number>();
-  const [message, setMessage] = useState('');
+  // Undefined shows the load error, if any; actions set or clear their own.
+  const [actionMessage, setMessage] = useState<string>();
+  const message = actionMessage ?? loadError?.message ?? '';
   const [saving, setSaving] = useState(false);
   const pendingTasks = useRef(new Set<number>());
   const [busyTasks, setBusyTasks] = useState(new Set<number>());
@@ -130,47 +161,6 @@ export function useTaskBoard({
     setBusyTasks(new Set(pendingTasks.current));
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setTasks([]);
-    setStories([]);
-    setSprints([]);
-    setMembers([]);
-    setProjectRole('');
-    setMessage('');
-    if (!projectId) {
-      setLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-    Promise.all([
-      api<Task[]>(`/tasks?projectId=${projectId}`),
-      api<Story[]>(`/stories/project/${projectId}`),
-      api<Sprint[]>(`/sprints?projectId=${projectId}`),
-      api<ProjectMember[]>(`/projects/${projectId}/members`),
-      api<{ role: string }>(`/projects/${projectId}/role`),
-    ])
-      .then(([taskItems, storyItems, sprintItems, memberItems, roleValue]) => {
-        if (!cancelled) {
-          setTasks(taskItems);
-          setStories(storyItems);
-          setSprints(sprintItems);
-          setMembers(memberItems);
-          setProjectRole(roleValue?.role ?? '');
-        }
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setMessage(cause.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
   function clearForm() {
     draft.reset();
     setSavedTitle('');
@@ -211,15 +201,11 @@ export function useTaskBoard({
     )
       return;
     if (!validPoints(points, 1000)) {
-      setMessage(
-        sv
-          ? 'Ange ett heltal mellan 0 och 1000.'
-          : 'Enter a whole number between 0 and 1000.',
-      );
+      setMessage(t('pointsRange'));
       return;
     }
     if (dueDate && !validDate(dueDate)) {
-      setMessage(localizeMessage(DATE_ERROR, sv ? 'SV' : 'EN'));
+      setMessage(localizeMessage(DATE_ERROR, language));
       return;
     }
     setSaving(true);
@@ -249,6 +235,8 @@ export function useTaskBoard({
           body: JSON.stringify(body),
         },
       );
+      if (saved.projectId !== projectId)
+        void afterProjectWrite(queryClient, saved.projectId);
       if (!draft.reveal(saved.projectId))
         setTasks((current) =>
           editing
@@ -322,14 +310,7 @@ export function useTaskBoard({
   }
   async function deleteTask(task: Task) {
     if (pendingTasks.current.has(task.id)) return;
-    if (
-      !(await confirm(
-        sv
-          ? `Flytta “${task.title}” till papperskorgen? Du kan återställa den senare.`
-          : `Move “${task.title}” to the recycle bin? You can restore it later.`,
-      ))
-    )
-      return;
+    if (!(await confirm(t('confirmTrash', { title: task.title })))) return;
     if (!beginTaskChange(task.id)) return;
     try {
       await api<unknown>(`/workspace/trash/task/${task.id}`, {
@@ -347,19 +328,12 @@ export function useTaskBoard({
     }
   }
   const columns = ['To Do', 'In Progress', 'Review', 'Done'] as const;
-  const labels: Record<(typeof columns)[number], string> = sv
-    ? {
-        'To Do': 'Att göra',
-        'In Progress': 'Pågår',
-        Review: 'Granskning',
-        Done: 'Klart',
-      }
-    : {
-        'To Do': 'To Do',
-        'In Progress': 'In Progress',
-        Review: 'Review',
-        Done: 'Done',
-      };
+  const labels: Record<(typeof columns)[number], string> = {
+    'To Do': t('statusToDo'),
+    'In Progress': t('statusInProgress'),
+    Review: t('statusReview'),
+    Done: t('statusDone'),
+  };
   const filtered = tasks.filter(
     (task) =>
       (!statusFilter || task.status === statusFilter) &&
@@ -410,24 +384,19 @@ export function useTaskBoard({
     userEmail,
     readOnly,
     confirm,
-    sv,
+    t,
     draft,
     panelOpen,
     setPanelOpen,
     savedTitle,
     setSavedTitle,
     loading,
-    setLoading,
     tasks,
     setTasks,
     stories,
-    setStories,
     sprints,
-    setSprints,
     members,
-    setMembers,
     projectRole,
-    setProjectRole,
     blocking,
     setBlocking,
     discussion,
@@ -438,9 +407,7 @@ export function useTaskBoard({
     setEditing,
     foreignDraft,
     draftLinks,
-    setDraftLinks,
     draftLinksError,
-    setDraftLinksError,
     draftLinksLoading,
     editorStories,
     editorSprints,

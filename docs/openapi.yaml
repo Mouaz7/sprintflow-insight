@@ -364,7 +364,7 @@ paths:
           explode: false
           schema:
             type: array
-            maxItems: 5
+            maxItems: 6
             items: { type: string, enum: [epic, task, story, sprint, comment, project] }
         - in: query
           name: limit
@@ -691,7 +691,7 @@ paths:
       responses: { '200': { description: Report metadata without link tokens } }
     post:
       summary: Create a limited public report snapshot as an owner/admin
-      description: Optional sprintId. Returns id, path with a random token, and expiresAt. Tokens are hashed in storage; reports expire after seven days.
+      description: Optional sprintId. Returns id, path (`/report/{token}`, a client route of the web app) with a random token, and expiresAt. Tokens are hashed in storage; reports expire after seven days.
       responses: { '200': { description: New report link }, '403': { $ref: '#/components/responses/Error' } }
   /api/projects/{projectId}/reports/{id}:
     parameters:
