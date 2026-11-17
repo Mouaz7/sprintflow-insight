@@ -997,7 +997,7 @@ components:
           type: string
           example: TaskMoved
           description: TaskCreated, TaskMoved, TaskUpdated, TaskDeleted, CommentAdded, CommentUpdated, CommentDeleted, SprintStatusChanged, NotificationsChanged, or an aggregate activity event such as STORY_DELETED.
-        entityId: { type: integer, format: int64, nullable: true, description: Task or sprint id; the commented task for CommentAdded }
+        entityId: { type: integer, format: int64, nullable: true, description: Entity id according to type (task/sprint/story/project); comment events identify the task and notification events have no entity id. }
         version: { type: integer, format: int64, nullable: true, description: Entity version after the change; null when deleted or unknown }
     RealtimeEventPage:
       type: object

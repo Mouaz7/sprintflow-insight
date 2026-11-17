@@ -7,7 +7,8 @@ package com.sprintflowinsight.realtime;
  *
  * @param seq strictly increasing per project, without holes except where retention pruned rows
  * @param type the module event name, for example {@code TaskMoved}
- * @param entityId the task or sprint id; for {@code CommentAdded} the commented task
+ * @param entityId the entity identified by type (task, sprint, story or project); comment events
+ *     identify the commented task, while notification events have no entity id
  * @param version the entity version after the change, {@code null} when deleted or unknown
  */
 public record RealtimeMessage(long projectId, long seq, String type, Long entityId, Long version) {}
