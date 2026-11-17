@@ -1,5 +1,6 @@
 package com.sprintflowinsight.workspace.roadmap;
 
+import com.sprintflowinsight.VersionPrecondition;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.workspace.activity.ActivityService;
@@ -78,7 +79,11 @@ public class DependencyService {
     TaskDependency saved =
         dependencies.saveAndFlush(
             new TaskDependency(
-                projectId, blocker.getId(), blocked.getId(), access.userId(session), Instant.now()));
+                projectId,
+                blocker.getId(),
+                blocked.getId(),
+                access.userId(session),
+                Instant.now()));
     activity.record(
         projectId,
         "DEPENDENCY_ADDED",
@@ -100,7 +105,8 @@ public class DependencyService {
             .findByIdAndProjectId(dependencyId, projectId)
             .orElseThrow(() -> ApiException.notFound("Dependency not found."));
     Map<Long, Task> ends =
-        tasks.findAllById(List.of(dependency.getBlockerTaskId(), dependency.getBlockedTaskId()))
+        tasks
+            .findAllById(List.of(dependency.getBlockerTaskId(), dependency.getBlockedTaskId()))
             .stream()
             .collect(Collectors.toMap(Task::getId, Function.identity()));
     dependencies.delete(dependency);
@@ -117,42 +123,71 @@ public class DependencyService {
 
   @Transactional
   public EstimateView estimate(
-      Long projectId, Long taskId, EstimateRequest request, HttpSession session) {
+      Long projectId, Long taskId, EstimateRequest request, String ifMatch, HttpSession session) {
     access.write(projectId, session);
     mutations.lock(projectId);
     Task task = liveTask(projectId, taskId);
     TaskEstimate row =
         estimates.findById(task.getId()).orElseGet(() -> new TaskEstimate(task.getId(), projectId));
+    if (row.getVersion() == null && ifMatch != null)
+      throw new ApiException(
+          ErrorCode.PRECONDITION_FAILED,
+          "This estimate no longer exists. Reload it before changing it.");
+    if (row.getVersion() != null && (row.isActive() || ifMatch != null))
+      VersionPrecondition.require(ifMatch, row.getVersion());
     row.set(request.optimistic(), request.mostLikely(), request.pessimistic(), Instant.now());
-    return view(estimates.saveAndFlush(row));
+    TaskEstimate saved = estimates.saveAndFlush(row);
+    activity.record(
+        projectId,
+        "ESTIMATE_UPDATED",
+        "Updated estimate for " + task.getKey() + ".",
+        access.email(session));
+    return view(saved, task);
   }
 
   @Transactional
-  public void clearEstimate(Long projectId, Long taskId, HttpSession session) {
+  public void clearEstimate(Long projectId, Long taskId, String ifMatch, HttpSession session) {
     access.write(projectId, session);
     mutations.lock(projectId);
-    liveTask(projectId, taskId);
-    estimates.findById(taskId).ifPresent(estimates::delete);
+    Task task = liveTask(projectId, taskId);
+    estimates
+        .findById(taskId)
+        .filter(TaskEstimate::isActive)
+        .ifPresent(
+            row -> {
+              VersionPrecondition.require(ifMatch, row.getVersion());
+              row.clear(Instant.now());
+              estimates.flush();
+              activity.record(
+                  projectId,
+                  "ESTIMATE_REMOVED",
+                  "Removed estimate for " + task.getKey() + ".",
+                  access.email(session));
+            });
   }
 
-  static EstimateView view(TaskEstimate row) {
+  static EstimateView view(TaskEstimate row, Task task) {
     ThreePointEstimate estimate = row.toEstimate();
     return new EstimateView(
         row.getTaskId(),
+        RoadmapAssembler.ref(task),
         estimate.optimistic(),
         estimate.mostLikely(),
         estimate.pessimistic(),
         estimate.mean(),
-        estimate.standardDeviation());
+        estimate.standardDeviation(),
+        row.getVersion());
   }
 
   private ApiException cycleProblem(List<Long> cycle) {
     Map<Long, Task> byId =
-        tasks.findAllById(cycle).stream().collect(Collectors.toMap(Task::getId, Function.identity()));
+        tasks.findAllById(cycle).stream()
+            .collect(Collectors.toMap(Task::getId, Function.identity()));
     String path = cycle.stream().map(id -> key(byId.get(id))).collect(Collectors.joining(" → "));
     return new ApiException(
             ErrorCode.CONFLICT, "This dependency would create a cycle: " + path + ".")
-        .with("cycle", cycle);
+        .with("cycle", cycle)
+        .with("cycleKeys", cycle.stream().map(id -> key(byId.get(id))).toList());
   }
 
   private static String key(Task task) {

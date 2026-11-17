@@ -1,6 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { api } from '../../api/client';
+import { useQuery } from '@tanstack/react-query';
+import { createContext, useContext, useState } from 'react';
 import type { Language, Project } from '../../api/contracts';
+import { roleQuery } from '../../api/queries';
+import { common } from '../i18n/common';
+import { translator } from '../i18n/lexicon';
 
 export const DraftProjectsContext = createContext<
   | {
@@ -18,33 +21,23 @@ export function useDraftProject(
 ) {
   const scope = useContext(DraftProjectsContext);
   const [targetId, setTargetId] = useState(projectId);
-  const [access, setAccess] = useState<{
-    id: number;
-    allowed: boolean;
-    error?: string | undefined;
-  }>();
   const projects = scope?.projects.filter(
     (project) => !project.archivedAt && !project.trashedAt,
   );
-  useEffect(() => {
-    if (!scope || !targetId) return;
-    let live = true;
-    api<{ role: string }>(`/projects/${targetId}/role`)
-      .then(({ role }) => {
-        if (live)
-          setAccess({
-            id: targetId,
-            allowed: ['Owner', 'Admin', 'Member'].includes(role),
-          });
-      })
-      .catch((cause: Error) => {
-        if (live)
-          setAccess({ id: targetId, allowed: false, error: cause.message });
-      });
-    return () => {
-      live = false;
-    };
-  }, [scope, targetId]);
+  const role = useQuery({
+    ...roleQuery(targetId ?? 0),
+    enabled: Boolean(scope && targetId),
+  });
+  const access =
+    role.isSuccess && role.data
+      ? {
+          id: targetId,
+          allowed: ['Owner', 'Admin', 'Member'].includes(role.data.role),
+          error: undefined,
+        }
+      : role.isError
+        ? { id: targetId, allowed: false, error: role.error.message }
+        : undefined;
   const loading = Boolean(scope && targetId && access?.id !== targetId);
   const invalid = Boolean(
     scope && !projects?.some((project) => project.id === targetId),
@@ -57,16 +50,9 @@ export function useDraftProject(
     blocked: loading || invalid || denied,
     error:
       (access?.id === targetId && access?.error) ||
-      (denied
-        ? language === 'SV'
-          ? 'Du har inte skrivrättighet i det valda projektet.'
-          : 'You cannot create items in the selected project.'
-        : ''),
+      (denied ? translator(common, language)('noWriteAccess') : ''),
     change: (id: number) => {
-      if (id !== targetId) {
-        setAccess(undefined);
-        setTargetId(id);
-      }
+      if (id !== targetId) setTargetId(id);
     },
     reset: () => {
       setTargetId(projectId);

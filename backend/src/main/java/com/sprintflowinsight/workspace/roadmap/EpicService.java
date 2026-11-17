@@ -57,7 +57,10 @@ public class EpicService {
     request.applyTo(epic);
     Epic saved = epics.saveAndFlush(epic);
     activity.record(
-        projectId, "EPIC_CREATED", "Created epic “" + saved.getTitle() + "”.", access.email(session));
+        projectId,
+        "EPIC_CREATED",
+        "Created epic “" + saved.getTitle() + "”.",
+        access.email(session));
     return EpicView.of(saved);
   }
 
@@ -71,7 +74,10 @@ public class EpicService {
     request.applyTo(epic);
     Epic saved = epics.saveAndFlush(epic);
     activity.record(
-        projectId, "EPIC_UPDATED", "Updated epic “" + saved.getTitle() + "”.", access.email(session));
+        projectId,
+        "EPIC_UPDATED",
+        "Updated epic “" + saved.getTitle() + "”.",
+        access.email(session));
     return EpicView.of(saved);
   }
 
@@ -85,7 +91,10 @@ public class EpicService {
     epics.delete(epic);
     epics.flush();
     activity.record(
-        projectId, "EPIC_DELETED", "Deleted epic “" + epic.getTitle() + "”.", access.email(session));
+        projectId,
+        "EPIC_DELETED",
+        "Deleted epic “" + epic.getTitle() + "”.",
+        access.email(session));
   }
 
   @Transactional

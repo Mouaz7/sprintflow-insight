@@ -4,20 +4,14 @@ import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.roadmap.RoadmapViews.DependencyOverview;
 import com.sprintflowinsight.workspace.roadmap.RoadmapViews.EstimateView;
 import com.sprintflowinsight.workspace.roadmap.RoadmapViews.Roadmap;
-import com.sprintflowinsight.workspace.roadmap.schedule.StoryPrecedence;
 import com.sprintflowinsight.workspace.sprint.SprintRepository;
-import com.sprintflowinsight.workspace.story.UserStory;
 import com.sprintflowinsight.workspace.story.UserStoryRepository;
 import com.sprintflowinsight.workspace.task.Task;
 import com.sprintflowinsight.workspace.task.TaskRepository;
 import jakarta.servlet.http.HttpSession;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  * sprints, dependencies, estimates), so the number of queries does not grow with the project.
  */
 @Service
-public class RoadmapService implements PlanningBacklog {
+public class RoadmapService {
   private final ProjectAccessService access;
   private final EpicRepository epics;
   private final UserStoryRepository stories;
@@ -73,47 +67,17 @@ public class RoadmapService implements PlanningBacklog {
   @Transactional(readOnly = true)
   public List<EstimateView> estimates(Long projectId, HttpSession session) {
     access.read(projectId, session);
-    var live = tasks.findByProjectId(projectId).stream().map(Task::getId).toList();
-    var liveIds = new java.util.HashSet<>(live);
+    var live =
+        tasks.findByProjectId(projectId).stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    Task::getId, java.util.function.Function.identity()));
     return estimates.findByProjectId(projectId).stream()
-        .filter(row -> liveIds.contains(row.getTaskId()))
+        .filter(TaskEstimate::isActive)
+        .filter(row -> live.containsKey(row.getTaskId()))
         .sorted(java.util.Comparator.comparing(TaskEstimate::getTaskId))
-        .map(DependencyService::view)
+        .map(row -> DependencyService.view(row, live.get(row.getTaskId())))
         .toList();
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public List<PlanningStory> stories(Long projectId) {
-    List<Task> projectTasks = tasks.findByProjectId(projectId);
-    RoadmapAssembler assembler =
-        new RoadmapAssembler(
-            projectTasks, dependencies.findByProjectIdOrderByIdAsc(projectId), List.of());
-    Map<Long, Long> storyOfTask = new HashMap<>();
-    Map<Long, int[]> progress = new HashMap<>();
-    for (Task task : projectTasks) {
-      if (task.getStoryId() == null) continue;
-      storyOfTask.put(task.getId(), task.getStoryId());
-      int[] counts = progress.computeIfAbsent(task.getStoryId(), k -> new int[2]);
-      counts[0]++;
-      if (RoadmapAssembler.done(task)) counts[1]++;
-    }
-    Map<Long, Set<Long>> before =
-        StoryPrecedence.predecessors(storyOfTask, assembler.openBlockerEdges());
-    List<PlanningStory> result = new ArrayList<>();
-    for (UserStory story : stories.findByProjectId(projectId)) {
-      int[] counts = progress.get(story.getId());
-      boolean done = counts != null && counts[0] == counts[1];
-      result.add(
-          new PlanningStory(
-              story.getId(),
-              story.getTitle(),
-              story.getStoryPoints(),
-              story.getBusinessValue(),
-              done,
-              before.getOrDefault(story.getId(), Set.of())));
-    }
-    return List.copyOf(result);
   }
 
   private RoadmapAssembler assembler(Long projectId) {

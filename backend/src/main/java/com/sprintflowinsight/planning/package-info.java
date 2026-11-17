@@ -1,7 +1,6 @@
 /**
  * Sprint planning support (C1). The {@code optimizer} package is a pure domain service without
- * persistence or web dependencies. {@link com.sprintflowinsight.planning.SprintPlanningInputs}
- * adapts the workspace backlog (business value and story precedences from B3) into optimiser input.
+ * persistence or web dependencies; adapters that read backlogs will depend on other modules later.
  */
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {"workspace :: roadmap"})
+@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
 package com.sprintflowinsight.planning;

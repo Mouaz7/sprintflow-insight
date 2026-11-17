@@ -34,7 +34,8 @@ public class EpicController {
   @PostMapping("/epics")
   public ResponseEntity<EpicView> create(
       @PathVariable Long projectId, @Valid @RequestBody EpicRequest request, HttpSession session) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(service.create(projectId, request, session));
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(service.create(projectId, request, session));
   }
 
   @PutMapping("/epics/{epicId}")

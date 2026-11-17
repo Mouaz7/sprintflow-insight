@@ -17,6 +17,8 @@
     "playwright.config.ts",
     "lighthouse.ts",
     "support/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "playwright.visual.config.ts",
+    "visual/**/*.ts"
   ]
 }

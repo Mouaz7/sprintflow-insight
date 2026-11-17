@@ -62,7 +62,10 @@ class PasswordResetIntegrationTest {
     ArgumentCaptor<SimpleMailMessage> message = ArgumentCaptor.forClass(SimpleMailMessage.class);
     verify(mail).send(message.capture());
     assertThat(message.getValue().getTo()).containsExactly(email);
-    String token = message.getValue().getText().split("resetToken=", 2)[1].trim();
+    String text = message.getValue().getText();
+    String link = "/reset-password?token=";
+    assertThat(text).contains(link);
+    String token = text.substring(text.indexOf(link) + link.length()).trim();
     String request =
         json.writeValueAsString(Map.of("token", token, "newPassword", "new-password-123"));
     mvc.perform(

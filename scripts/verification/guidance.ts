@@ -33,10 +33,12 @@ try {
     await page.locator('.page h1').waitFor();
     async function nav(index: number) {
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.locator('.header-navigation nav button').nth(index).click();
+      await page.locator('.header-navigation nav a').nth(index).click();
+      // Views are lazy route chunks: wait until the new route has committed.
+      await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
       await page.locator('.page h1').waitFor();
     }
-    for (let index = 0; index < 11; index++) {
+    for (let index = 0; index < 12; index++) {
       await nav(index);
       const guide = page.locator('.page-guide');
       assert.equal(await guide.count(), 1);
@@ -61,8 +63,12 @@ try {
       [1, /Skapa projekt|Create project/, 'project'],
       [2, /Ny berättelse|New story/, 'story'],
       [3, /Ny sprint|New sprint/, 'sprint'],
-      [4, /Ny uppgift|New task/, 'task'],
-      [9, /Ny anteckning|New note/, 'retro'],
+      [4, /Ny epic|New epic/, 'epic'],
+      [4, /Storyns epic|Story epic/, 'storyEpic'],
+      [4, /Lägg till beroende|Add dependency/, 'dependency'],
+      [4, /Uppskatta en uppgift|Estimate a task/, 'estimate'],
+      [5, /Ny uppgift|New task/, 'task'],
+      [10, /Ny anteckning|New note/, 'retro'],
     ] as const) {
       await nav(view);
       const button = page.getByRole('button', { name: trigger }).first();
@@ -107,7 +113,7 @@ try {
   }
   assert.deepEqual(errors, []);
   fs.writeFileSync(`${out}results.json`, JSON.stringify({ layouts, forms, errors, api: 'fixtures only' }, null, 2));
-  console.log(`PASS: guidance on all 11 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
+  console.log(`PASS: guidance on all 12 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
 } finally {
   await browser.close();
 }

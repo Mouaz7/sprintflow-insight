@@ -48,17 +48,28 @@ public final class RoadmapViews {
    * @param externalBlocks warnings for the active sprint
    */
   public record DependencyOverview(
-      List<DependencyView> dependencies, List<Long> blockedTaskIds, List<ExternalBlock> externalBlocks) {}
+      List<DependencyView> dependencies,
+      List<Long> blockedTaskIds,
+      List<ExternalBlock> externalBlocks) {}
 
   public record EstimateView(
-      Long taskId, double optimistic, double mostLikely, double pessimistic, double expected, double standardDeviation) {}
+      Long taskId,
+      TaskRef task,
+      double optimistic,
+      double mostLikely,
+      double pessimistic,
+      double expected,
+      double standardDeviation,
+      Long version) {}
 
   /**
    * PERT forecast for remaining work.
    *
-   * @param probabilityOnTime {@code P(finish <= targetDate)}; {@code null} without a target date
+   * @param probabilityOnTime approximate {@code P(finish <= targetDate)}; {@code null} without a
+   *     target date or when estimates are incomplete
    * @param estimatedTasks open tasks in the network that have a three-point estimate
    * @param openTasks open tasks in the network, including outside blockers
+   * @param unplannedStories stories without tasks; these prevent a complete forecast
    * @param criticalPath the longest chain of open work, first task first
    */
   public record Forecast(
@@ -69,6 +80,7 @@ public final class RoadmapViews {
       Double probabilityOnTime,
       int estimatedTasks,
       int openTasks,
+      int unplannedStories,
       List<TaskRef> criticalPath) {}
 
   /**

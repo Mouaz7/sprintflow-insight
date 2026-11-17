@@ -14,9 +14,14 @@ public record ThreePointEstimate(double optimistic, double mostLikely, double pe
   public static final double MAX_DAYS = 1000;
 
   public ThreePointEstimate {
-    if (!Double.isFinite(optimistic) || !Double.isFinite(mostLikely) || !Double.isFinite(pessimistic))
+    if (!Double.isFinite(optimistic)
+        || !Double.isFinite(mostLikely)
+        || !Double.isFinite(pessimistic))
       throw new IllegalArgumentException("Estimates must be finite numbers");
-    if (optimistic < 0 || optimistic > mostLikely || mostLikely > pessimistic || pessimistic > MAX_DAYS)
+    if (optimistic < 0
+        || optimistic > mostLikely
+        || mostLikely > pessimistic
+        || pessimistic > MAX_DAYS)
       throw new IllegalArgumentException(
           "Estimates must satisfy 0 <= optimistic <= most likely <= pessimistic <= " + MAX_DAYS);
   }

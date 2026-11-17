@@ -49,6 +49,7 @@ export type WorkspaceView =
   | 'projects'
   | 'backlog'
   | 'sprints'
+  | 'roadmap'
   | 'tasks'
   | 'metrics'
   | 'updates'
@@ -108,6 +109,7 @@ export type ProjectMember = {
   role: 'Owner' | 'Admin' | 'Member' | 'Viewer';
 };
 export type Story = {
+  epicId?: number | null;
   backlogPosition?: number;
   id: number;
   title: string;
@@ -119,6 +121,87 @@ export type Story = {
   sprintId?: number;
   projectId: number;
   version?: number;
+};
+export type Epic = {
+  id: number;
+  title: string;
+  description: string | null;
+  color: string;
+  startDate: string | null;
+  targetDate: string | null;
+  version: number;
+};
+export type RoadmapTask = {
+  id: number;
+  key: string;
+  title: string;
+  status: string;
+  sprintId: number | null;
+};
+export type TaskDependency = {
+  id: number;
+  blocker: RoadmapTask;
+  blocked: RoadmapTask;
+  open: boolean;
+};
+export type DependencyOverview = {
+  dependencies: TaskDependency[];
+  blockedTaskIds: number[];
+  externalBlocks: { task: RoadmapTask; blocker: RoadmapTask }[];
+};
+export type TaskEstimate = {
+  taskId: number;
+  task: RoadmapTask;
+  optimistic: number;
+  mostLikely: number;
+  pessimistic: number;
+  expected: number;
+  standardDeviation: number;
+  version: number;
+};
+export type PertForecast = {
+  start: string;
+  expectedDays: number;
+  standardDeviationDays: number;
+  expectedFinish: string | null;
+  probabilityOnTime: number | null;
+  estimatedTasks: number;
+  openTasks: number;
+  unplannedStories: number;
+  criticalPath: RoadmapTask[];
+};
+export type RoadmapEpic = {
+  epic: Epic;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  storyCount: number;
+  totalPoints: number;
+  donePoints: number;
+  taskCount: number;
+  doneTaskCount: number;
+  progress: number;
+  storyIds: number[];
+  sprintIds: number[];
+  forecast: PertForecast;
+};
+export type RoadmapSnapshot = {
+  today: string;
+  epics: RoadmapEpic[];
+  sprints: {
+    id: number;
+    name: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+  }[];
+  epicLinks: {
+    fromEpicId: number;
+    toEpicId: number;
+    dependencies: number;
+    open: number;
+  }[];
+  dependencies: DependencyOverview;
+  project: PertForecast;
 };
 export type Sprint = {
   id: number;

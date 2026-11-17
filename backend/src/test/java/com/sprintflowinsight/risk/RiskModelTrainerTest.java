@@ -62,6 +62,18 @@ class RiskModelTrainerTest {
     assertThat(Fixtures.norm(strong.weights())).isLessThan(Fixtures.norm(weak.weights()) / 10);
   }
 
+  @Test
+  void anUnconvergedFitFallsBackToTheHeuristic() {
+    List<LabelledExample> history = Fixtures.history(2_000, 9);
+    var hurried = new RiskModelTrainer(new LogisticRegression.Options(0.01, 1, 1e-12));
+
+    RiskModel model = hurried.train(history);
+
+    assertThat(RiskModelTrainer.hasEnoughHistory(history)).isTrue();
+    assertThat(model.source()).isEqualTo(RiskModel.Source.HEURISTIC);
+    assertThat(model.intercept()).isEqualTo(ColdStartHeuristic.calibrated(history).intercept());
+  }
+
   private static List<LabelledExample> balanced(int late, int onTime) {
     List<LabelledExample> examples = new ArrayList<>();
     for (int i = 0; i < late + onTime; i++) {

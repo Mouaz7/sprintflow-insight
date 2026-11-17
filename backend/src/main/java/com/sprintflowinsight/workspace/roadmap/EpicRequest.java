@@ -19,6 +19,15 @@ public record EpicRequest(
 
   public static final String DEFAULT_COLOR = "#4f46e5";
 
+  @AssertTrue(message = "Epic dates must use a year between 1900 and 9999.")
+  public boolean isDateRangeValid() {
+    return validYear(startDate) && validYear(targetDate);
+  }
+
+  private static boolean validYear(LocalDate date) {
+    return date == null || (date.getYear() >= 1900 && date.getYear() <= 9999);
+  }
+
   @AssertTrue(message = "The target date cannot be before the start date.")
   public boolean isDateOrderValid() {
     return startDate == null || targetDate == null || !targetDate.isBefore(startDate);

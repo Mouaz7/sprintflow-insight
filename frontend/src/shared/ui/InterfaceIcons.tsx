@@ -5,6 +5,7 @@ type IconName =
   | 'projects'
   | 'backlog'
   | 'sprints'
+  | 'roadmap'
   | 'tasks'
   | 'metrics'
   | 'updates'
@@ -38,6 +39,14 @@ const paths: Record<IconName, ReactNode> = {
   sprints: (
     <>
       <path d="M13 2 4 14h7l-1 8 10-13h-7Z" />
+    </>
+  ),
+  roadmap: (
+    <>
+      <path d="M3 6h12M9 12h12M3 18h14" />
+      <circle cx="17" cy="6" r="2" />
+      <circle cx="7" cy="12" r="2" />
+      <circle cx="19" cy="18" r="2" />
     </>
   ),
   tasks: (

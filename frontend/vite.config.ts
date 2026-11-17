@@ -8,7 +8,18 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset({ target: '19' })] }),
   ],
   html: { cspNonce: '__SPRINTFLOW_CSP_NONCE__' },
-  server: { port: 5173, proxy: { '/api': 'http://localhost:8081' } },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8081',
+      // The backend only accepts WebSocket handshakes from its public origin.
+      '/ws': {
+        target: 'ws://localhost:8081',
+        ws: true,
+        headers: { origin: 'http://localhost:8081' },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     maxWorkers: 4,

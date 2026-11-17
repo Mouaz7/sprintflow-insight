@@ -31,3 +31,11 @@ include::module-notifications.adoc[]
 plantuml::module-reporting.puml[,,format=svg]
 include::module-reporting.adoc[]
 
+== Search
+plantuml::module-search.puml[,,format=svg]
+include::module-search.adoc[]
+
+== Realtime
+plantuml::module-realtime.puml[,,format=svg]
+include::module-realtime.adoc[]
+

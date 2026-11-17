@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Users are referenced by id; see {@link NotificationRequested}. */
+/**
+ * Users are referenced by id; see {@link NotificationRequested}. {@code version} is the task's
+ * version after the move; it is {@code null} in publications stored before B1.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TaskMoved(
     UUID eventId,
@@ -14,4 +17,5 @@ public record TaskMoved(
     Long taskId,
     String title,
     String previousStatus,
-    String status) {}
+    String status,
+    Long version) {}

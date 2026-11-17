@@ -1,3 +1,4 @@
+import { useLanguage } from '../../shared/i18n/LanguageProvider';
 import { localizeMessage } from '../../shared/i18n/messages';
 
 export function SettingsIcon({ kind }: { kind: 'person' | 'lock' | 'logout' }) {
@@ -35,19 +36,18 @@ export function SettingsIcon({ kind }: { kind: 'person' | 'lock' | 'logout' }) {
 export function Feedback({
   error,
   message,
-  sv,
 }: {
   error: string;
   message?: string;
-  sv: boolean;
 }) {
+  const { language } = useLanguage();
   if (!error && !message) return null;
   return (
     <p
       className={'form-message ' + (error ? 'error' : 'success')}
       role={error ? 'alert' : 'status'}
     >
-      {error ? localizeMessage(error, sv ? 'SV' : 'EN') : message}
+      {error ? localizeMessage(error, language) : message}
     </p>
   );
 }

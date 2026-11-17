@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +60,8 @@ public final class DependencyGraph {
 
   /**
    * The cycle that adding {@code from -> to} would close, found by a depth-first search from {@code
-   * to} for a path back to {@code from}. The result starts and ends with {@code from}: {@code [from,
-   * to, ..., from]}. Empty when the edge keeps the graph acyclic.
+   * to} for a path back to {@code from}. The result starts and ends with {@code from}: {@code
+   * [from, to, ..., from]}. Empty when the edge keeps the graph acyclic.
    */
   public Optional<List<Long>> cycleIfAdded(long from, long to) {
     if (from == to) return Optional.of(List.of(from, from));
@@ -184,51 +183,5 @@ public final class DependencyGraph {
       for (long next : successors.get(node)) if (keep.contains(next)) sub.add(node, next);
     }
     return sub;
-  }
-
-  /**
-   * Strongly connected components (Kosaraju, iterative). Each component lists its nodes in
-   * ascending order; components are ordered by their smallest node.
-   */
-  public List<Set<Long>> stronglyConnectedComponents() {
-    List<Long> finished = new ArrayList<>();
-    Set<Long> seen = new HashSet<>();
-    for (long root : successors.keySet()) {
-      if (!seen.add(root)) continue;
-      Deque<Long> path = new ArrayDeque<>();
-      Deque<Iterator<Long>> pending = new ArrayDeque<>();
-      path.addLast(root);
-      pending.addLast(successors.get(root).iterator());
-      while (!path.isEmpty()) {
-        Iterator<Long> next = pending.peekLast();
-        if (next.hasNext()) {
-          long child = next.next();
-          if (seen.add(child)) {
-            path.addLast(child);
-            pending.addLast(successors.get(child).iterator());
-          }
-        } else {
-          finished.add(path.removeLast());
-          pending.removeLast();
-        }
-      }
-    }
-    Set<Long> assigned = new HashSet<>();
-    List<Set<Long>> components = new ArrayList<>();
-    for (int i = finished.size() - 1; i >= 0; i--) {
-      long root = finished.get(i);
-      if (!assigned.add(root)) continue;
-      Set<Long> component = new TreeSet<>();
-      Deque<Long> stack = new ArrayDeque<>();
-      stack.push(root);
-      while (!stack.isEmpty()) {
-        long node = stack.pop();
-        component.add(node);
-        for (long before : predecessors.get(node)) if (assigned.add(before)) stack.push(before);
-      }
-      components.add(Collections.unmodifiableSet(component));
-    }
-    components.sort((a, b) -> Long.compare(a.iterator().next(), b.iterator().next()));
-    return List.copyOf(components);
   }
 }

@@ -1,4 +1,6 @@
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import { useT } from '../../shared/i18n/LanguageProvider';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
+import { profileText } from './i18n';
 import { Feedback, SettingsIcon } from './ProfileFeedback';
 import type { UseProfileState } from './useProfile';
 export function ProfileDetails({
@@ -10,8 +12,6 @@ export function ProfileDetails({
     saveProfile,
     saving,
     readingImage,
-    sv,
-    language,
     avatarImage,
     displayName,
     user,
@@ -29,6 +29,8 @@ export function ProfileDetails({
     dirty,
     discardChanges,
   } = controller;
+  const t = useT(profileText);
+  const fieldExample = useFieldExample();
   return (
     <form
       className="profile-card profile-details-card"
@@ -41,36 +43,23 @@ export function ProfileDetails({
           <SettingsIcon kind="person" />
         </span>
         <div>
-          <h2 id="profile-details-title">
-            {sv ? 'Personliga uppgifter' : 'Personal details'}
-          </h2>
-          <p>
-            {sv
-              ? 'Så här ser ditt team dig i SprintFlow.'
-              : 'How your team sees you in SprintFlow.'}
-          </p>
+          <h2 id="profile-details-title">{t('tabDetails')}</h2>
+          <p>{t('detailsHelp')}</p>
         </div>
       </div>
       <fieldset className="profile-fields" disabled={saving}>
-        <legend className="sr-only">
-          {sv ? 'Profiluppgifter' : 'Profile details'}
-        </legend>
-        <FormGuide topic="profile" language={language} />
+        <legend className="sr-only">{t('profileDetails')}</legend>
+        <FormGuide topic="profile" />
         <div className="profile-photo-row">
           <div className="profile-avatar">
             {avatarImage ? (
-              <img
-                src={avatarImage}
-                alt={
-                  sv ? 'Förhandsvisning av profilbild' : 'Profile photo preview'
-                }
-              />
+              <img src={avatarImage} alt={t('photoPreview')} />
             ) : (
               (displayName.trim() || user.email).slice(0, 1).toUpperCase()
             )}
           </div>
           <div className="profile-photo-controls">
-            <strong>{sv ? 'Profilbild' : 'Profile photo'}</strong>
+            <strong>{t('photo')}</strong>
             <div className="profile-photo-actions">
               <button
                 type="button"
@@ -78,13 +67,7 @@ export function ProfileDetails({
                 disabled={readingImage}
                 onClick={() => fileInput.current?.click()}
               >
-                {readingImage
-                  ? sv
-                    ? 'Läser bild…'
-                    : 'Reading photo…'
-                  : sv
-                    ? 'Ändra bild'
-                    : 'Change photo'}
+                {t(readingImage ? 'readingPhoto' : 'changePhoto')}
               </button>
               {avatarImage && (
                 <button
@@ -96,20 +79,16 @@ export function ProfileDetails({
                     clearFeedback();
                   }}
                 >
-                  {sv ? 'Ta bort bild' : 'Remove photo'}
+                  {t('removePhoto')}
                 </button>
               )}
             </div>
-            <small>
-              {sv
-                ? 'PNG, JPEG, WEBP eller GIF · under 750 kB'
-                : 'PNG, JPEG, WEBP or GIF · under 750 KB'}
-            </small>
+            <small>{t('photoFormats')}</small>
             <input
               ref={fileInput}
               type="file"
               hidden
-              aria-label={sv ? 'Välj profilbild' : 'Choose profile photo'}
+              aria-label={t('choosePhoto')}
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={selectImage}
             />
@@ -117,7 +96,7 @@ export function ProfileDetails({
         </div>
         <div className="profile-field-row">
           <label>
-            {sv ? 'Namn' : 'Name'}
+            {t('name')}
             <input
               required
               maxLength={80}
@@ -127,11 +106,11 @@ export function ProfileDetails({
                 setDisplayName(event.target.value);
                 clearFeedback();
               }}
-              placeholder={fieldExample('name', language)}
+              placeholder={fieldExample('name')}
             />
           </label>
           <label>
-            {sv ? 'Roll' : 'Role'}
+            {t('role')}
             <input
               maxLength={80}
               autoComplete="organization-title"
@@ -140,12 +119,12 @@ export function ProfileDetails({
                 setJobTitle(event.target.value);
                 clearFeedback();
               }}
-              placeholder={fieldExample('jobTitle', language)}
+              placeholder={fieldExample('jobTitle')}
             />
           </label>
         </div>
         <label>
-          {sv ? 'E-post' : 'Email'}
+          {t('email')}
           <input
             type="email"
             value={user.email}
@@ -154,14 +133,12 @@ export function ProfileDetails({
           />
         </label>
         <p id="profile-email-help" className="profile-field-help">
-          {sv
-            ? 'Din e-postadress används för inloggning och kan inte ändras här.'
-            : 'Your email is used to sign in and cannot be changed here.'}
+          {t('emailHelp')}
         </p>
         <label>
-          {sv ? 'Om dig' : 'About you'}
+          {t('aboutYou')}
           <textarea
-            aria-label={sv ? 'Om dig' : 'About you'}
+            aria-label={t('aboutYou')}
             maxLength={500}
             rows={4}
             value={bio}
@@ -169,7 +146,7 @@ export function ProfileDetails({
               setBio(event.target.value);
               clearFeedback();
             }}
-            placeholder={fieldExample('bio', language)}
+            placeholder={fieldExample('bio')}
             aria-describedby="profile-bio-count"
           />
         </label>
@@ -177,16 +154,10 @@ export function ProfileDetails({
           {bio.length} / 500
         </span>
       </fieldset>
-      <Feedback sv={sv} error={error} message={message} />
+      <Feedback error={error} message={message} />
       <div className="profile-card-footer">
         <span className="profile-save-hint">
-          {dirty
-            ? sv
-              ? 'Du har osparade ändringar'
-              : 'You have unsaved changes'
-            : sv
-              ? 'Din profil är uppdaterad'
-              : 'Your profile is up to date'}
+          {t(dirty ? 'unsavedChanges' : 'upToDate')}
         </span>
         <div className="profile-form-actions">
           {dirty && (
@@ -196,20 +167,14 @@ export function ProfileDetails({
               disabled={saving || readingImage}
               onClick={discardChanges}
             >
-              {sv ? 'Ångra ändringar' : 'Discard changes'}
+              {t('discardChanges')}
             </button>
           )}
           <button
             className="primary-action"
             disabled={saving || readingImage || !dirty}
           >
-            {saving
-              ? sv
-                ? 'Sparar…'
-                : 'Saving…'
-              : sv
-                ? 'Spara profil'
-                : 'Save profile'}
+            {t(saving ? 'saving' : 'saveProfile')}
           </button>
         </div>
       </div>

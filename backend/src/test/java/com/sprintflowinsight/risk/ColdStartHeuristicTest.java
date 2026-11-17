@@ -71,6 +71,45 @@ class ColdStartHeuristicTest {
   }
 
   @Test
+  void calibrationReachesTheTargetBeyondAnyFixedInterceptBound() {
+    // 400 days left: every score is about −105 log-odds, so the intercept must be about +104.
+    List<LabelledExample> examples = new ArrayList<>();
+    for (int i = 0; i < 12; i++) {
+      examples.add(
+          new LabelledExample(new RiskFeatures(1, 0, 0, 0, 3, 0, 400, 3), i < 4, Instant.EPOCH));
+    }
+    double target = (4 + 1.0) / (12 + 4.0);
+
+    var model = ColdStartHeuristic.calibrated(examples);
+
+    assertThat(model.intercept()).isGreaterThan(100);
+    double mean =
+        examples.stream().mapToDouble(e -> model.probability(e.features())).average().orElseThrow();
+    assertThat(mean).isCloseTo(target, within(1e-9));
+  }
+
+  @Test
+  void calibrationHandlesWidelySpreadScores() {
+    double[] scores = {-700, -1, 0, 650};
+    double intercept = ColdStartHeuristic.solveIntercept(scores, 0.4);
+    double mean = 0;
+    for (double s : scores) {
+      mean += LogisticRegression.sigmoid(intercept + s);
+    }
+    assertThat(mean / scores.length).isCloseTo(0.4, within(ColdStartHeuristic.CALIBRATION_TOLERANCE));
+  }
+
+  @Test
+  void nonFiniteScoresFallBackToThePriorIntercept() {
+    assertThat(ColdStartHeuristic.solveIntercept(new double[] {0, Double.NaN}, 0.3))
+        .isEqualTo(ColdStartHeuristic.logit(0.3));
+    assertThat(ColdStartHeuristic.solveIntercept(new double[] {Double.NEGATIVE_INFINITY}, 0.3))
+        .isEqualTo(ColdStartHeuristic.logit(0.3));
+    assertThat(ColdStartHeuristic.solveIntercept(new double[] {Double.POSITIVE_INFINITY}, 0.3))
+        .isEqualTo(ColdStartHeuristic.logit(0.3));
+  }
+
+  @Test
   void logitInvertsTheSigmoid() {
     assertThat(LogisticRegression.sigmoid(ColdStartHeuristic.logit(0.3))).isCloseTo(0.3, within(1e-15));
     assertThat(ColdStartHeuristic.logit(0.5)).isZero();

@@ -15,6 +15,38 @@ import org.junit.jupiter.api.io.TempDir;
  * rules enforced by the schema must hold on the real engine. Each test uses its own schema.
  */
 class SchemaMigrationTest {
+  @Test
+  void v20RetainsExistingEstimateValuesAndInitializesTheirRevision() throws Exception {
+    try (var db = new MigrationFixture()) {
+      db.migrateTo("19");
+      try (var sql = db.connection().createStatement()) {
+        sql.executeUpdate(
+            "insert into projects(id,name,owner_email,version,key) values"
+                + " (1,'P','owner@example.com',3,'PP')");
+        sql.executeUpdate(
+            "insert into task(id,project_id,number,title,status,is_blocked,story_points,version)"
+                + " values (1,1,1,'Existing','To Do',false,3,7)");
+        sql.executeUpdate(
+            "insert into"
+                + " task_estimate(task_id,project_id,optimistic_days,most_likely_days,pessimistic_days,updated_at)"
+                + " values (1,1,1.25,2.50,5.75,now())");
+        assertThat(db.migrateTo("20").migrationsExecuted).isEqualTo(1);
+        db.flyway().validate();
+        try (var rows =
+            sql.executeQuery(
+                "select optimistic_days,most_likely_days,pessimistic_days,version,active from"
+                    + " task_estimate where task_id=1")) {
+          assertThat(rows.next()).isTrue();
+          assertThat(rows.getBigDecimal(1)).isEqualByComparingTo("1.25");
+          assertThat(rows.getBigDecimal(2)).isEqualByComparingTo("2.50");
+          assertThat(rows.getBigDecimal(3)).isEqualByComparingTo("5.75");
+          assertThat(rows.getLong(4)).isZero();
+          assertThat(rows.getBoolean(5)).isTrue();
+        }
+      }
+    }
+  }
+
   /** Temporary migration directory for the previous release (V12, before A1). */
   @TempDir Path previousMigrations;
 
@@ -101,8 +133,8 @@ class SchemaMigrationTest {
             "insert into users(id,email,password) values (1,'owner@example.com','h'),"
                 + " (2,'member@example.com','h'), (3,'second@example.com','h')");
         sql.executeUpdate(
-            "insert into projects(id,name,owner_email,version) values"
-                + " (1,'Sprint Flow','owner@example.com',4), (2,'Space Force','owner@example.com',0),"
+            "insert into projects(id,name,owner_email,version) values (1,'Sprint"
+                + " Flow','owner@example.com',4), (2,'Space Force','owner@example.com',0),"
                 + " (3,'2026','Owner@Example.com',0), (4,'Åre Östra','second@example.com',0),"
                 + " (5,'Ghost','gone@example.com',0)");
         sql.executeUpdate(
@@ -190,7 +222,8 @@ class SchemaMigrationTest {
         assertThatThrownBy(
                 () ->
                     sql.executeUpdate(
-                        "insert into task(id,title,status,is_blocked,project_id,story_points,number)"
+                        "insert into"
+                            + " task(id,title,status,is_blocked,project_id,story_points,number)"
                             + " values (100,'dup','To Do',false,1,1,2)"))
             .hasMessageContaining("task_project_number_unique");
         assertThatThrownBy(
@@ -275,6 +308,62 @@ class SchemaMigrationTest {
                         "insert into sprint(id,name,status,total_story_points,project_id,version)"
                             + " values (4,'Second','Active',0,1,0)"))
             .hasMessageContaining("sprint_one_active_project_idx");
+      }
+    }
+  }
+
+  @Test
+  void searchUpgradeIndexesExistingContentWithoutChangingVersions() throws Exception {
+    try (var db = new MigrationFixture()) {
+      db.migrateTo("15");
+      try (Statement sql = db.connection().createStatement()) {
+        sql.executeUpdate(
+            "insert into users(id,email,password) values" + " (1,'migration@example.com','hash')");
+        sql.executeUpdate(
+            "insert into projects(id,name,owner_email,version,key) values"
+                + " (10,'Migration project','migration@example.com',4,'MP')");
+        sql.executeUpdate(
+            "insert into project_member(project_id,email,role,user_id) values"
+                + " (10,'migration@example.com','Owner',1)");
+        sql.executeUpdate(
+            "insert into task(id,project_id,number,title,status,is_blocked,story_points,version)"
+                + " values (20,10,1,'Migration task','To Do',false,3,7)");
+        sql.executeUpdate(
+            "insert into"
+                + " user_stories(id,project_id,title,acceptance_criteria,story_points,priority_id,version)"
+                + " values (30,10,'Migration story','Complete',2,2,5)");
+        sql.executeUpdate(
+            "insert into task_comment(task_id,project_id,author_email,message) values"
+                + " (20,10,'migration@example.com','Migration comment')");
+        assertThat(db.migrateTo("18").migrationsExecuted).isEqualTo(3);
+        assertThat(db.flyway().info().current().getVersion().toString()).isEqualTo("18");
+        // Later phases may add migrations; this test keeps its B9 boundary explicit.
+        db.migrateTo(null);
+        db.flyway().validate();
+        for (String table : java.util.List.of("task", "user_stories", "task_comment", "projects")) {
+          try (var rows =
+              sql.executeQuery(
+                  "select count(*) from "
+                      + table
+                      + " where search_vector @@ to_tsquery('simple','migration:*')")) {
+            assertThat(rows.next()).isTrue();
+            assertThat(rows.getInt(1)).as("Existing %s content is searchable", table).isEqualTo(1);
+          }
+        }
+        try (var rows = sql.executeQuery("select title,version from task where id=20")) {
+          assertThat(rows.next()).isTrue();
+          assertThat(rows.getString(1)).isEqualTo("Migration task");
+          assertThat(rows.getLong(2)).isEqualTo(7);
+        }
+        sql.executeUpdate(
+            "insert into epic(project_id,title,created_at) values (10,'Migration epic',now())");
+        try (var rows =
+            sql.executeQuery(
+                "select count(*) from epic where search_vector @@"
+                    + " to_tsquery('simple','migration:*')")) {
+          assertThat(rows.next()).isTrue();
+          assertThat(rows.getInt(1)).isEqualTo(1);
+        }
       }
     }
   }

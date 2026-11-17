@@ -8,7 +8,7 @@ import java.time.LocalDate;
  * <p>Classic PERT treats the length of the critical path as normally distributed (central limit
  * theorem over the tasks on the path) with the path's summed mean and variance. Parallel chains
  * that are nearly critical are ignored, so the probability is optimistic when several chains have
- * almost the same length ("merge bias"); ADR 0018 records this limitation.
+ * almost the same length ("merge bias"); ADR 0019 records this limitation.
  *
  * @param start first working day of the remaining work
  * @param expectedDays expected remaining working days
@@ -27,13 +27,17 @@ public record PertForecast(
     double mean = path.duration();
     double deviation = path.standardDeviation();
     Double probability =
-        deadline == null ? null : probabilityWithin(mean, deviation, WorkingDays.between(start, deadline));
+        deadline == null
+            ? null
+            : deadline.isBefore(start)
+                ? 0d
+                : probabilityWithin(mean, deviation, WorkingDays.between(start, deadline));
     return new PertForecast(start, mean, deviation, WorkingDays.finish(start, mean), probability);
   }
 
   /**
-   * {@code P(T <= available)} for {@code T ~ N(mean, deviation^2)}. A deterministic network
-   * ({@code deviation == 0}) is certain to finish on time exactly when its mean fits.
+   * {@code P(T <= available)} for {@code T ~ N(mean, deviation^2)}. A deterministic network ({@code
+   * deviation == 0}) is certain to finish on time exactly when its mean fits.
    */
   public static double probabilityWithin(double mean, double deviation, double available) {
     if (deviation <= CriticalPath.EPSILON) return mean <= available + CriticalPath.EPSILON ? 1 : 0;

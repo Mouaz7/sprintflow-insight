@@ -1,56 +1,48 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Language, Preferences } from '../../api/contracts';
+import { preferencesQuery } from '../../api/queries';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { translator } from '../../shared/i18n/lexicon';
 import { Notice } from '../../shared/ui/ui';
+import { profileText } from './i18n';
+import { integrationsQuery } from './queries';
 export function PreferencesPanel({
-  language,
   onAppearance,
   onReplay,
 }: {
-  language: Language;
   onAppearance?:
     ((language: Language, theme: 'light' | 'dark') => void) | undefined;
   onReplay?: (() => void) | undefined;
 }) {
-  const sv = language === 'SV';
-  const [settings, setSettings] = useState<Preferences>({
+  const { language } = useLanguage();
+  const t = useT(profileText);
+  const queryClient = useQueryClient();
+  const preferences = useQuery(preferencesQuery);
+  const integrations = useQuery(integrationsQuery).data;
+  const [fallback] = useState<Preferences>(() => ({
     language,
     theme:
       localStorage.getItem('sprintflow-theme') === 'dark' ? 'dark' : 'light',
     notifications: true,
     onboardingCompleted: false,
     savedFilters: '[]',
-  });
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState('');
+  }));
+  // Unsaved edits; until the first edit the form shows the saved settings.
+  const [draft, setDraft] = useState<Preferences>();
+  const saved =
+    preferences.data && ['EN', 'SV'].includes(preferences.data.language)
+      ? preferences.data
+      : fallback;
+  const settings = draft ?? saved;
+  const setSettings = (update: (value: Preferences) => Preferences) =>
+    setDraft(update(settings));
+  const ready = preferences.isSuccess;
+  const [writeError, setError] = useState('');
+  const error = writeError || preferences.error?.message || '';
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
-  const [integrations, setIntegrations] = useState<{
-    gmailReady: boolean;
-    googleReady: boolean;
-  }>();
-  useEffect(() => {
-    let live = true;
-    api<Preferences>('/auth/preferences')
-      .then((value) => {
-        if (live) {
-          if (value && ['EN', 'SV'].includes(value.language))
-            setSettings(value);
-          setReady(true);
-        }
-      })
-      .catch((cause) => {
-        if (live) setError(cause.message);
-      });
-    api<{ gmailReady: boolean; googleReady: boolean }>('/auth/integrations')
-      .then((value) => {
-        if (live) setIntegrations(value);
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -66,16 +58,15 @@ export function PreferencesPanel({
           notifications: settings.notifications,
         }),
       });
-      setSettings(value);
+      // The workspace shell applies saved appearance from this cache entry.
+      queryClient.setQueryData(preferencesQuery.queryKey, value);
+      setDraft(undefined);
       localStorage.setItem('sprintflow-language', value.language);
       localStorage.setItem('sprintflow-theme', value.theme);
       onAppearance?.(value.language, value.theme);
       window.dispatchEvent(new Event('sprintflow:notifications'));
-      setSuccess(
-        value.language === 'SV'
-          ? 'Inställningarna är sparade.'
-          : 'Settings saved.',
-      );
+      // Confirmed in the language that was just saved.
+      setSuccess(translator(profileText, value.language)('settingsSaved'));
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -85,12 +76,12 @@ export function PreferencesPanel({
   return (
     <div className="profile-layout">
       <form className="profile-card" onSubmit={save}>
-        <h2>{sv ? 'Utseende och notiser' : 'Appearance and notifications'}</h2>
+        <h2>{t('appearance')}</h2>
         <fieldset disabled={busy || !ready}>
           <label>
-            {sv ? 'Språk' : 'Language'}
+            {t('language')}
             <select
-              aria-label={sv ? 'Språk' : 'Language'}
+              aria-label={t('language')}
               value={settings.language}
               onChange={(event) =>
                 setSettings((value) => ({
@@ -104,9 +95,9 @@ export function PreferencesPanel({
             </select>
           </label>
           <label>
-            {sv ? 'Tema' : 'Theme'}
+            {t('theme')}
             <select
-              aria-label={sv ? 'Tema' : 'Theme'}
+              aria-label={t('theme')}
               value={settings.theme}
               onChange={(event) =>
                 setSettings((value) => ({
@@ -115,8 +106,8 @@ export function PreferencesPanel({
                 }))
               }
             >
-              <option value="light">{sv ? 'Ljust' : 'Light'}</option>
-              <option value="dark">{sv ? 'Mörkt' : 'Dark'}</option>
+              <option value="light">{t('light')}</option>
+              <option value="dark">{t('dark')}</option>
             </select>
           </label>
           <label className="checkbox-row">
@@ -130,46 +121,25 @@ export function PreferencesPanel({
                 }))
               }
             />
-            {sv
-              ? 'Ta emot samarbetsnotiser och deadlinepåminnelser'
-              : 'Receive collaboration notifications and deadline reminders'}
+            {t('receiveNotifications')}
           </label>
-          <button className="primary-action">
-            {sv ? 'Spara inställningar' : 'Save settings'}
-          </button>
+          <button className="primary-action">{t('saveSettings')}</button>
         </fieldset>
-        <Notice language={language} error={error} success={success} />
+        <Notice error={error} success={success} />
         <button className="secondary-action" type="button" onClick={onReplay}>
-          {sv ? 'Visa introduktionen igen' : 'Replay introduction'}
+          {t('replayIntroduction')}
         </button>
       </form>
       <section className="profile-card">
-        <h2>{sv ? 'Kontotjänster' : 'Account services'}</h2>
+        <h2>{t('accountServices')}</h2>
         <p>
-          Gmail ·{' '}
-          {integrations?.gmailReady
-            ? sv
-              ? 'Konfigurerad'
-              : 'Configured'
-            : sv
-              ? 'Behöver konfigureras'
-              : 'Setup required'}
+          Gmail · {t(integrations?.gmailReady ? 'configured' : 'setupRequired')}
         </p>
         <p>
           Google OAuth ·{' '}
-          {integrations?.googleReady
-            ? sv
-              ? 'Konfigurerad'
-              : 'Configured'
-            : sv
-              ? 'Behöver konfigureras'
-              : 'Setup required'}
+          {t(integrations?.googleReady ? 'configured' : 'setupRequired')}
         </p>
-        <p>
-          {sv
-            ? 'Administratören konfigurerar tjänsterna på servern. Lösenord och nycklar sparas aldrig i din profil.'
-            : 'The administrator configures these services on the server. Passwords and keys are never stored in your profile.'}
-        </p>
+        <p>{t('servicesHelp')}</p>
       </section>
     </div>
   );

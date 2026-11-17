@@ -1,5 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LanguageScope } from '../../shared/i18n/LanguageProvider';
+import { renderWithProviders } from '../../test/render';
 import { api } from '../../api/client';
 import { ActivityTimeline } from './ActivityTimeline';
 import { OverviewView } from './OverviewView';
@@ -31,7 +33,11 @@ describe('Activity presentation', () => {
       canManage: false,
       onChanged: vi.fn(),
     };
-    const { rerender } = render(<ActivityTimeline {...props} language="SV" />);
+    const { rerender } = renderWithProviders(
+      <LanguageScope language="SV">
+        <ActivityTimeline {...props} />
+      </LanguageScope>,
+    );
     expect(
       screen.getByRole('heading', {
         name: 'Skapade projektet “Mobilkontroll”.',
@@ -41,7 +47,11 @@ describe('Activity presentation', () => {
       screen.getByRole('heading', { name: custom.summary }),
     ).toBeInTheDocument();
 
-    rerender(<ActivityTimeline {...props} language="EN" />);
+    rerender(
+      <LanguageScope language="EN">
+        <ActivityTimeline {...props} />
+      </LanguageScope>,
+    );
     expect(
       screen.getByRole('heading', { name: event.summary }),
     ).toBeInTheDocument();
@@ -66,12 +76,20 @@ describe('Activity presentation', () => {
       onNavigate: vi.fn(),
       onNewTask: vi.fn(),
     };
-    const { rerender } = render(<OverviewView {...props} language="SV" />);
+    const { rerender } = renderWithProviders(
+      <LanguageScope language="SV">
+        <OverviewView {...props} />
+      </LanguageScope>,
+    );
     expect(
       await screen.findByText('Skapade projektet “Mobilkontroll”.'),
     ).toBeInTheDocument();
 
-    rerender(<OverviewView {...props} language="EN" />);
+    rerender(
+      <LanguageScope language="EN">
+        <OverviewView {...props} />
+      </LanguageScope>,
+    );
     expect(await screen.findByText(event.summary)).toBeInTheDocument();
   });
 });

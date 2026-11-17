@@ -73,7 +73,7 @@ public class PasswordResetService {
               message.setText(
                   "Use this link within 30 minutes to choose a new password:\n\n"
                       + resetBaseUrl
-                      + "/?resetToken="
+                      + "/reset-password?token="
                       + token);
               activeMailSender.send(message);
             });

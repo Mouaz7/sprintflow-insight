@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -65,14 +66,18 @@ public class RoadmapController {
       @PathVariable Long projectId,
       @PathVariable Long taskId,
       @Valid @RequestBody EstimateRequest request,
+      @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
-    return dependencies.estimate(projectId, taskId, request, session);
+    return dependencies.estimate(projectId, taskId, request, ifMatch, session);
   }
 
   @DeleteMapping("/tasks/{taskId}/estimate")
   public ResponseEntity<Void> clearEstimate(
-      @PathVariable Long projectId, @PathVariable Long taskId, HttpSession session) {
-    dependencies.clearEstimate(projectId, taskId, session);
+      @PathVariable Long projectId,
+      @PathVariable Long taskId,
+      @RequestHeader(value = "If-Match", required = false) String ifMatch,
+      HttpSession session) {
+    dependencies.clearEstimate(projectId, taskId, ifMatch, session);
     return ResponseEntity.noContent().build();
   }
 }

@@ -1,44 +1,22 @@
 package com.sprintflowinsight.workspace.roadmap.schedule;
 
-/** The standard normal distribution. */
+/** Standard normal probability, using the polynomial approximation in A&S 26.2.17. */
 public final class StandardNormal {
   private StandardNormal() {}
 
-  /**
-   * {@code P(Z <= z)}, computed as {@code erfc(-z / sqrt 2) / 2} with the Chebyshev-fitted
-   * complementary error function from Numerical Recipes ({@code erfcc}); fractional error below
-   * 1.2e-7 everywhere, which is far below the precision of any three-point estimate.
-   */
+  /** Cumulative probability; the approximation has absolute error below 7.5e-8. */
   public static double cdf(double z) {
     if (Double.isNaN(z)) throw new IllegalArgumentException("z must be a number");
     if (z == Double.POSITIVE_INFINITY) return 1;
     if (z == Double.NEGATIVE_INFINITY) return 0;
-    return 0.5 * erfc(-z / Math.sqrt(2));
-  }
-
-  static double erfc(double x) {
-    double t = 1 / (1 + 0.5 * Math.abs(x));
+    if (z == 0) return 0.5;
+    double x = Math.abs(z);
+    double t = 1 / (1 + 0.2316419 * x);
     double polynomial =
-        -x * x
-            - 1.26551223
-            + t
-                * (1.00002368
-                    + t
-                        * (0.37409196
-                            + t
-                                * (0.09678418
-                                    + t
-                                        * (-0.18628806
-                                            + t
-                                                * (0.27886807
-                                                    + t
-                                                        * (-1.13520398
-                                                            + t
-                                                                * (1.48851587
-                                                                    + t
-                                                                        * (-0.82215223
-                                                                            + t * 0.17087277))))))));
-    double value = t * Math.exp(polynomial);
-    return x >= 0 ? value : 2 - value;
+        t
+            * (0.319381530
+                + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    double tail = Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI) * polynomial;
+    return z > 0 ? 1 - tail : tail;
   }
 }

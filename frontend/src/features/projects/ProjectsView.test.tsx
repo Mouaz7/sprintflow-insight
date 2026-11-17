@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
+import { LanguageScope } from '../../shared/i18n/LanguageProvider';
 import { ConfirmProvider } from '../../shared/ui/ui';
 import { ProjectsView } from './ProjectsView';
 
@@ -14,7 +15,6 @@ vi.mock('../../api/client', () => ({ api: vi.fn() }));
 const props = {
   projects: [],
   user: { id: 1, email: 'qa@example.com' },
-  language: 'EN' as const,
   onSelect: vi.fn(),
 };
 describe('Project editor', () => {
@@ -127,25 +127,26 @@ describe('Project deletion', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const onChanged = vi.fn();
     const view = render(
-      <ProjectsView {...props} projects={[project]} onChanged={onChanged} />,
+      <LanguageScope language="EN">
+        <ProjectsView {...props} projects={[project]} onChanged={onChanged} />
+      </LanguageScope>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Only the project owner',
     );
     view.rerender(
-      <ProjectsView
-        {...props}
-        language="SV"
-        projects={[project]}
-        onChanged={onChanged}
-      />,
+      <LanguageScope language="SV">
+        <ProjectsView {...props} projects={[project]} onChanged={onChanged} />
+      </LanguageScope>,
     );
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Endast projektägaren kan ta bort projektet.',
     );
     view.rerender(
-      <ProjectsView {...props} projects={[project]} onChanged={onChanged} />,
+      <LanguageScope language="EN">
+        <ProjectsView {...props} projects={[project]} onChanged={onChanged} />
+      </LanguageScope>,
     );
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Only the project owner',

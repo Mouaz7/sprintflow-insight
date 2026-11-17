@@ -30,7 +30,8 @@ public final class WorkingDays {
   /**
    * The day on which work of {@code days} working days that starts on {@code start} finishes: the
    * {@code ceil(days)}-th working day counting {@code start} itself. Non-positive work finishes on
-   * {@code start}. Satisfies {@code between(start, finish(start, n)) == n} for whole {@code n >= 1}.
+   * {@code start}. Satisfies {@code between(start, finish(start, n)) == n} for whole {@code n >=
+   * 1}.
    */
   public static LocalDate finish(LocalDate start, double days) {
     long needed = (long) Math.ceil(days - 1e-9);

@@ -94,7 +94,15 @@ export async function responsiveFixture(page: Page, options: Options) {
       }));
     } else if (pathname.endsWith('/members')) {
       body = [{ id: 1, email: user.email, role: 'Owner' }, { id: 2, email: 'sara@example.com', role: 'Member' }];
-    } else if (pathname.endsWith('/role')) body = { role: 'Owner' };
+    } else if (pathname.endsWith('/roadmap')) body = {
+      today: '2026-10-05',
+      epics: [{ epic: { id: 1, title: 'Customer portal · Gemensam leverans och uppföljning', description: 'A clear release goal for the whole team.', color: '#4f46e5', startDate: '2026-10-05', targetDate: '2026-10-30', version: 0 }, plannedStart: '2026-10-05', plannedEnd: '2026-10-30', storyCount: 1, totalPoints: 8, donePoints: 0, taskCount: 4, doneTaskCount: 1, progress: .25, storyIds: [1], sprintIds: [1], forecast: { start: '2026-10-05', expectedDays: 6, standardDeviationDays: 1, expectedFinish: '2026-10-12', probabilityOnTime: .99, estimatedTasks: 3, openTasks: 3, unplannedStories: 0, criticalPath: [] } }],
+      sprints, epicLinks: [], dependencies: { dependencies: [], blockedTaskIds: [], externalBlocks: [] },
+      project: { start: '2026-10-05', expectedDays: 6, standardDeviationDays: 1, expectedFinish: '2026-10-12', probabilityOnTime: null, estimatedTasks: 3, openTasks: 3, unplannedStories: 0, criticalPath: [] },
+    };
+    else if (pathname.endsWith('/dependencies')) body = { dependencies: [], blockedTaskIds: [], externalBlocks: [] };
+    else if (pathname.endsWith('/estimates')) body = [];
+    else if (pathname.endsWith('/role')) body = { role: 'Owner' };
     else if (pathname.endsWith('/metrics')) body = metrics;
     else if (pathname.endsWith('/activity')) body = activity;
     else if (pathname.endsWith('/stories/project/1')) body = stories;

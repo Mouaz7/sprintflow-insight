@@ -18,10 +18,16 @@ Coming features must keep third-party secrets that the server itself has to read
 
 ### Rotation procedure
 
-1. Generate a key: `head -c 32 /dev/urandom | base64`.
-2. Set it as `SPRINTFLOW_ENCRYPTION_KEY` and move the old key to `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS`. Restart. New writes use the new key, and old values still decrypt.
-3. Wait for the next hourly run, or trigger `ReEncryptionJob.run()`. `ReEncryptionJob.pending()` must report 0. A non-zero failure count means values were written with a key that is no longer configured.
-4. Remove the old key from `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` and restart.
+Rotation takes two deploys. During a rolling deploy, old and new instances run side by side, and every instance must be able to read whatever any other instance writes.
+
+0. Generate a key with `head -c 32 /dev/urandom | base64`. Add it to `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` on every instance, but keep the old key as `SPRINTFLOW_ENCRYPTION_KEY`. Deploy, and wait until every instance runs with this configuration. Nothing is written with the new key yet, but every instance can already read it.
+1. Swap the keys. Set the new key as `SPRINTFLOW_ENCRYPTION_KEY` and move the old key to `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` (remove the new key from that list). Deploy again. New writes use the new key, and old values still decrypt on every instance, including those that have not restarted yet.
+
+   While this second rollout is in progress, an instance that is not yet updated may re-encrypt values back to the old key. This is harmless, because both keys are configured everywhere and updated instances rewrite those values again.
+2. Once the rollout is complete, wait for the next hourly run or trigger `ReEncryptionJob.run()`. `ReEncryptionJob.pending()` must then report 0. A non-zero failure count means that some values were written with a key that is no longer configured.
+3. Remove the old key from `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` and deploy.
+
+On a single instance (the default Compose setup), steps 0 and 1 can be combined into one restart.
 
 Losing every copy of the current key makes encrypted values unreadable by design. Back up `.env` (or the secret store used in deployment, phase C6) separately from database backups.
 

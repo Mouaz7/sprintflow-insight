@@ -1,12 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/client';
+import { renderWithProviders } from '../../test/render';
 import { ProfileView } from './ProfileView';
 
 vi.mock('../../api/client', () => ({ api: vi.fn() }));
@@ -20,7 +15,6 @@ const user = {
 };
 const props = {
   user,
-  language: 'EN' as const,
   onSaved: vi.fn(),
   onLogout: vi.fn().mockResolvedValue(undefined),
   onAccountDeleted: vi.fn(),
@@ -33,7 +27,7 @@ describe('Profile settings', () => {
   });
 
   it('uses keyboard tabs and preserves the personal draft across security settings', () => {
-    render(<ProfileView {...props} />);
+    renderWithProviders(<ProfileView {...props} />);
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Unsaved name' },
     });
@@ -60,7 +54,7 @@ describe('Profile settings', () => {
           finishSave = resolve;
         }),
     );
-    render(<ProfileView {...props} />);
+    renderWithProviders(<ProfileView {...props} />);
     expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Temporary name' },
@@ -91,7 +85,7 @@ describe('Profile settings', () => {
   });
 
   it('keeps password validation and server errors in the password card and clears fields after success', async () => {
-    render(<ProfileView {...props} />);
+    renderWithProviders(<ProfileView {...props} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Security' }));
     const passwordCard = screen.getByRole('form', { name: 'Change password' });
     fireEvent.change(screen.getByLabelText('Current password'), {
@@ -149,7 +143,9 @@ describe('Profile settings', () => {
   it('previews valid photos, rejects unsupported files and saves removal of an existing photo', async () => {
     const avatarImage = 'data:image/png;base64,cGhvdG8=';
     vi.mocked(api).mockResolvedValue({ ...user, avatarImage: '' });
-    render(<ProfileView {...props} user={{ ...user, avatarImage }} />);
+    renderWithProviders(
+      <ProfileView {...props} user={{ ...user, avatarImage }} />,
+    );
     const picker = screen.getByLabelText('Choose profile photo');
     fireEvent.change(picker, {
       target: {
@@ -192,7 +188,7 @@ describe('Profile settings', () => {
     vi.mocked(api).mockRejectedValueOnce(
       new Error('Transfer owned projects before deleting your account.'),
     );
-    render(<ProfileView {...props} />);
+    renderWithProviders(<ProfileView {...props} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Security' }));
     expect(
       screen.getByText('Delete account').closest('details'),

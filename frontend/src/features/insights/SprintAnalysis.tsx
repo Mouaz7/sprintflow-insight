@@ -1,13 +1,17 @@
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { insightsText } from './i18n';
 import type { MetricsPresentation } from './metricsPresentation';
 export function SprintAnalysis({ view }: { view: MetricsPresentation }) {
-  const { sv, sprintPace, businessValue } = view;
+  const { sprintPace, businessValue } = view;
+  const t = useT(insightsText);
+  const { language } = useLanguage();
   return (
     <div className="analysis-grid">
       <article className="analysis-card">
         <div className="analysis-heading">
           <div>
-            <small>{sv ? 'SPRINTTAKT' : 'SPRINT PACE'}</small>
-            <h2>{sv ? 'Leverans mot plan' : 'Delivery against plan'}</h2>
+            <small>{t('sprintPace')}</small>
+            <h2>{t('deliveryAgainstPlan')}</h2>
           </div>
           <b
             className={
@@ -17,34 +21,22 @@ export function SprintAnalysis({ view }: { view: MetricsPresentation }) {
             }
           >
             {sprintPace?.available
-              ? sv
-                ? sprintPace.status === 'On track'
-                  ? 'I fas'
-                  : 'Efter plan'
-                : sprintPace.status
-              : sv
-                ? 'Datum saknas'
-                : 'Dates needed'}
+              ? sprintPace.status === 'On track'
+                ? t('onTrack')
+                : language === 'EN'
+                  ? sprintPace.status
+                  : t('behind')
+              : t('datesNeeded')}
           </b>
         </div>
         <p>
           {sprintPace?.available
-            ? sv
-              ? String(sprintPace.deliveredStoryPoints) +
-                ' av ' +
-                sprintPace.plannedStoryPoints +
-                ' poäng klara; ' +
-                sprintPace.expectedStoryPoints +
-                ' förväntade hittills.'
-              : String(sprintPace.deliveredStoryPoints) +
-                ' of ' +
-                sprintPace.plannedStoryPoints +
-                ' points delivered; ' +
-                sprintPace.expectedStoryPoints +
-                ' expected so far.'
-            : sv
-              ? 'Lägg till start- och slutdatum på sprinten för att jämföra leveranstakt.'
-              : 'Add sprint start and end dates to compare delivery pace.'}
+            ? t('paceSummary', {
+                delivered: String(sprintPace.deliveredStoryPoints),
+                planned: String(sprintPace.plannedStoryPoints),
+                expected: String(sprintPace.expectedStoryPoints),
+              })
+            : t('paceMissing')}
         </p>
         {sprintPace?.available && (
           <div className="progress-track">
@@ -67,8 +59,8 @@ export function SprintAnalysis({ view }: { view: MetricsPresentation }) {
       <article className="analysis-card">
         <div className="analysis-heading">
           <div>
-            <small>{sv ? 'AFFÄRSVÄRDE' : 'BUSINESS VALUE'}</small>
-            <h2>{sv ? 'Levererat värde' : 'Value delivered'}</h2>
+            <small>{t('businessValue')}</small>
+            <h2>{t('valueDelivered')}</h2>
           </div>
           <b>
             {businessValue?.available
@@ -78,22 +70,12 @@ export function SprintAnalysis({ view }: { view: MetricsPresentation }) {
         </div>
         <p>
           {businessValue?.available
-            ? sv
-              ? String(businessValue.deliveredValue) +
-                ' av ' +
-                businessValue.expectedValue +
-                ' värdepoäng levererade från ' +
-                businessValue.scoredStories +
-                ' berättelser.'
-              : String(businessValue.deliveredValue) +
-                ' of ' +
-                businessValue.expectedValue +
-                ' value points delivered across ' +
-                businessValue.scoredStories +
-                ' stories.'
-            : sv
-              ? 'Koppla berättelser med affärsvärde 1–5 till sprintens uppgifter.'
-              : 'Link stories with business values from 1–5 to tasks in this sprint.'}
+            ? t('valueSummary', {
+                delivered: String(businessValue.deliveredValue),
+                expected: String(businessValue.expectedValue),
+                stories: String(businessValue.scoredStories),
+              })
+            : t('valueMissing')}
         </p>
         {businessValue?.available && (
           <div className="progress-track">

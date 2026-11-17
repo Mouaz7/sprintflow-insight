@@ -54,12 +54,15 @@ final class RoadmapAssembler {
     dependencies =
         allDependencies.stream()
             .filter(
-                d -> tasks.containsKey(d.getBlockerTaskId()) && tasks.containsKey(d.getBlockedTaskId()))
+                d ->
+                    tasks.containsKey(d.getBlockerTaskId())
+                        && tasks.containsKey(d.getBlockedTaskId()))
             .sorted(Comparator.comparing(TaskDependency::getId))
             .toList();
     estimates = new TreeMap<>();
     for (TaskEstimate row : estimateRows)
-      if (tasks.containsKey(row.getTaskId())) estimates.put(row.getTaskId(), row.toEstimate());
+      if (row.isActive() && tasks.containsKey(row.getTaskId()))
+        estimates.put(row.getTaskId(), row.toEstimate());
   }
 
   static boolean done(Task task) {
@@ -67,7 +70,8 @@ final class RoadmapAssembler {
   }
 
   static TaskRef ref(Task task) {
-    return new TaskRef(task.getId(), task.getKey(), task.getTitle(), task.getStatus(), task.getSprintId());
+    return new TaskRef(
+        task.getId(), task.getKey(), task.getTitle(), task.getStatus(), task.getSprintId());
   }
 
   DependencyOverview overview(Collection<Sprint> sprints) {
@@ -102,44 +106,49 @@ final class RoadmapAssembler {
     List<Edge> edges =
         dependencies.stream()
             .filter(
-                d -> !done(tasks.get(d.getBlockerTaskId())) && !done(tasks.get(d.getBlockedTaskId())))
+                d ->
+                    !done(tasks.get(d.getBlockerTaskId()))
+                        && !done(tasks.get(d.getBlockedTaskId())))
             .map(d -> new Edge(d.getBlockerTaskId(), d.getBlockedTaskId()))
             .toList();
     return DependencyGraph.of(open, edges);
-  }
-
-  /** Edges whose blocker is unfinished, for story precedences in sprint planning. */
-  List<Edge> openBlockerEdges() {
-    return dependencies.stream()
-        .filter(d -> !done(tasks.get(d.getBlockerTaskId())))
-        .map(d -> new Edge(d.getBlockerTaskId(), d.getBlockedTaskId()))
-        .toList();
   }
 
   /**
    * PERT forecast for the unfinished {@code scope} tasks, including every unfinished task that
    * (transitively) blocks them, because the scope cannot finish before those.
    */
-  Forecast forecast(DependencyGraph open, Collection<Long> scope, LocalDate start, LocalDate deadline) {
+  Forecast forecast(
+      DependencyGraph open,
+      Collection<Long> scope,
+      LocalDate start,
+      LocalDate deadline,
+      int unplannedStories) {
     Set<Long> openScope = new TreeSet<>();
     for (Long id : scope) if (open.nodes().contains(id)) openScope.add(id);
     DependencyGraph network = open.restrictedTo(open.withAncestors(openScope));
     CriticalPath path = CriticalPath.analyse(network, estimates);
     PertForecast pert = PertForecast.of(path, start, deadline);
     int estimated = (int) network.nodes().stream().filter(estimates::containsKey).count();
+    boolean complete =
+        estimated == network.nodes().size() && unplannedStories == 0 && !scope.isEmpty();
     return new Forecast(
         start,
         pert.expectedDays(),
         pert.standardDeviationDays(),
-        pert.expectedFinish(),
-        pert.probability(),
+        complete ? pert.expectedFinish() : null,
+        complete ? pert.probability() : null,
         estimated,
         network.nodes().size(),
+        unplannedStories,
         path.path().stream().map(tasks::get).map(RoadmapAssembler::ref).toList());
   }
 
   Roadmap roadmap(
-      Collection<Epic> epics, Collection<UserStory> stories, Collection<Sprint> sprints, LocalDate today) {
+      Collection<Epic> epics,
+      Collection<UserStory> stories,
+      Collection<Sprint> sprints,
+      LocalDate today) {
     Map<Long, Sprint> sprintById = new TreeMap<>();
     sprints.forEach(s -> sprintById.put(s.getId(), s));
     Map<Long, List<Task>> tasksByStory = new TreeMap<>();
@@ -161,13 +170,16 @@ final class RoadmapAssembler {
       int donePoints = 0;
       int taskCount = 0;
       int doneTasks = 0;
+      int unplannedStories = 0;
       Set<Long> sprintIds = new TreeSet<>();
       List<Long> scope = new ArrayList<>();
       for (UserStory story : members) {
         List<Task> storyTasks = tasksByStory.getOrDefault(story.getId(), List.of());
+        if (storyTasks.isEmpty()) unplannedStories++;
         long finished = storyTasks.stream().filter(RoadmapAssembler::done).count();
         totalPoints += story.getStoryPoints();
-        if (!storyTasks.isEmpty() && finished == storyTasks.size()) donePoints += story.getStoryPoints();
+        if (!storyTasks.isEmpty() && finished == storyTasks.size())
+          donePoints += story.getStoryPoints();
         taskCount += storyTasks.size();
         doneTasks += (int) finished;
         if (story.getSprintId() != null) sprintIds.add(story.getSprintId());
@@ -204,11 +216,14 @@ final class RoadmapAssembler {
               progress,
               members.stream().map(UserStory::getId).sorted().toList(),
               List.copyOf(sprintIds),
-              forecast(open, scope, start, epic.getTargetDate())));
+              forecast(open, scope, start, epic.getTargetDate(), unplannedStories)));
     }
     List<RoadmapSprint> sprintRows =
         sprintById.values().stream()
-            .map(s -> new RoadmapSprint(s.getId(), s.getName(), s.getStatus(), s.getStartDate(), s.getEndDate()))
+            .map(
+                s ->
+                    new RoadmapSprint(
+                        s.getId(), s.getName(), s.getStatus(), s.getStartDate(), s.getEndDate()))
             .toList();
     return new Roadmap(
         today,
@@ -216,7 +231,15 @@ final class RoadmapAssembler {
         sprintRows,
         epicLinks(epicOfStory),
         overview(sprints),
-        forecast(open, open.nodes(), today, null));
+        forecast(
+            open,
+            open.nodes(),
+            today,
+            null,
+            (int)
+                stories.stream()
+                    .filter(story -> tasksByStory.getOrDefault(story.getId(), List.of()).isEmpty())
+                    .count()));
   }
 
   private List<EpicLink> epicLinks(Map<Long, Long> epicOfStory) {
@@ -235,7 +258,13 @@ final class RoadmapAssembler {
       if (!done(blocker)) count[1]++;
     }
     return ends.entrySet().stream()
-        .map(e -> new EpicLink(e.getValue()[0], e.getValue()[1], counts.get(e.getKey())[0], counts.get(e.getKey())[1]))
+        .map(
+            e ->
+                new EpicLink(
+                    e.getValue()[0],
+                    e.getValue()[1],
+                    counts.get(e.getKey())[0],
+                    counts.get(e.getKey())[1]))
         .toList();
   }
 

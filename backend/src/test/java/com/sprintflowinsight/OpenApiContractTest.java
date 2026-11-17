@@ -2,13 +2,13 @@ package com.sprintflowinsight;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprintflowinsight.workspace.project.ProjectKeys;
+import com.sprintflowinsight.workspace.project.ProjectRequest;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import com.sprintflowinsight.workspace.project.ProjectKeys;
-import com.sprintflowinsight.workspace.project.ProjectRequest;
 import org.yaml.snakeyaml.Yaml;
 
 class OpenApiContractTest {
@@ -36,7 +36,8 @@ class OpenApiContractTest {
               "/api/workspace/trash/{kind}/{id}",
               "/api/projects/templates",
               "/api/projects/{projectId}/retrospective",
-              "/api/shared-reports/{token}");
+              "/api/shared-reports/{token}",
+              "/api/projects/{projectId}/events");
 
       Map<String, Object> metricsPath =
           (Map<String, Object>) paths.get("/api/projects/{projectId}/metrics");
@@ -73,6 +74,26 @@ class OpenApiContractTest {
 
       Map<String, Object> schemas =
           (Map<String, Object>) ((Map<String, Object>) document.get("components")).get("schemas");
+      Map<String, Object> realtime =
+          (Map<String, Object>)
+              ((Map<String, Object>) schemas.get("RealtimeMessage")).get("properties");
+      assertThat(realtime).containsOnlyKeys("projectId", "seq", "type", "entityId", "version");
+      assertThat(
+              (Map<String, Object>)
+                  ((Map<String, Object>) schemas.get("OpenTaskPresenceRequest")).get("properties"))
+          .containsOnlyKeys(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.realtime.OpenTaskRequest.class.getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName)
+                  .toArray(String[]::new));
+      assertThat(
+              (Map<String, Object>)
+                  ((Map<String, Object>) schemas.get("PresenceMessage")).get("properties"))
+          .containsOnlyKeys("projectId", "viewers");
+      assertThat(
+              (Map<String, Object>)
+                  ((Map<String, Object>) schemas.get("RealtimeEventPage")).get("properties"))
+          .containsOnlyKeys("projectId", "latestSeq", "resync", "events");
       Map<String, Object> problem = (Map<String, Object>) schemas.get("Problem");
       Map<String, Object> code =
           (Map<String, Object>) ((Map<String, Object>) problem.get("properties")).get("code");
@@ -123,6 +144,46 @@ class OpenApiContractTest {
                       ((Map<String, Object>) schemas.get("ProjectRequest")).get("properties"))
                   .get("key");
       assertThat(requestKey).containsEntry("pattern", "^" + ProjectRequest.KEY_INPUT + "$");
+
+      // B9: search parameters and result shapes follow the request and response records.
+      Map<String, Object> search =
+          (Map<String, Object>) ((Map<String, Object>) paths.get("/api/search")).get("get");
+      assertThat(
+              ((java.util.List<Map<String, Object>>) search.get("parameters"))
+                  .stream().map(parameter -> parameter.get("name")))
+          .containsExactlyInAnyOrderElementsOf(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.search.SearchRequest.class.getRecordComponents())
+                  .map(java.lang.reflect.RecordComponent::getName)
+                  .toList());
+      assertThat(((Map<String, Object>) search.get("responses")).keySet())
+          .contains("200", "400", "401", "403", "404");
+      Map<String, Class<? extends Record>> results =
+          Map.of(
+              "SearchResponse", com.sprintflowinsight.search.SearchResponse.class,
+              "SearchHit", com.sprintflowinsight.search.SearchHit.class,
+              "SearchSegment", com.sprintflowinsight.search.SearchHit.Segment.class);
+      results.forEach(
+          (name, type) ->
+              assertThat(
+                      ((Map<String, Object>)
+                              ((Map<String, Object>) schemas.get(name)).get("properties"))
+                          .keySet())
+                  .as(name + " properties")
+                  .containsExactlyInAnyOrderElementsOf(
+                      java.util.Arrays.stream(type.getRecordComponents())
+                          .map(java.lang.reflect.RecordComponent::getName)
+                          .toList()));
+      Map<String, Object> hitType =
+          (Map<String, Object>)
+              ((Map<String, Object>)
+                      ((Map<String, Object>) schemas.get("SearchHit")).get("properties"))
+                  .get("type");
+      assertThat((java.util.List<String>) hitType.get("enum"))
+          .containsExactlyElementsOf(
+              java.util.Arrays.stream(com.sprintflowinsight.search.SearchType.values())
+                  .map(com.sprintflowinsight.search.SearchType::wire)
+                  .toList());
     }
   }
 }

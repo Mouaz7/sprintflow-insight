@@ -1,0 +1,25 @@
+.presence {
+  display: flex;
+  align-items: center;
+}
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.presence-live .presence-dot {
+  background: var(--success-text);
+}
+.presence-avatar {
+  flex-basis: 26px;
+  width: 26px;
+  height: 26px;
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  font-size: 0.7rem;
+}
+.presence-dot + .presence-avatar {
+  margin-left: 0;
+}

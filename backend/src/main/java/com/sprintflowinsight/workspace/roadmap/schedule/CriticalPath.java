@@ -48,7 +48,8 @@ public record CriticalPath(
    * @param estimates three-point estimates by task; missing tasks take zero time
    * @throws IllegalStateException when the graph has a cycle
    */
-  public static CriticalPath analyse(DependencyGraph graph, Map<Long, ThreePointEstimate> estimates) {
+  public static CriticalPath analyse(
+      DependencyGraph graph, Map<Long, ThreePointEstimate> estimates) {
     List<Long> order = graph.topologicalOrder();
     if (order.isEmpty()) return new CriticalPath(0, 0, List.of(), Map.of());
     Map<Long, Double> finish = new HashMap<>();
@@ -74,8 +75,13 @@ public record CriticalPath(
     }
     long end = order.get(0);
     for (long task : order) {
-      if (better(finish.get(task), chainVariance.get(task), task, finish.get(end), chainVariance.get(end), end))
-        end = task;
+      if (better(
+          finish.get(task),
+          chainVariance.get(task),
+          task,
+          finish.get(end),
+          chainVariance.get(end),
+          end)) end = task;
     }
     double duration = finish.get(end);
     List<Long> path = new ArrayList<>();
@@ -98,7 +104,12 @@ public record CriticalPath(
   }
 
   private static boolean better(
-      double finish, double variance, long id, double bestFinish, double bestVariance, long bestId) {
+      double finish,
+      double variance,
+      long id,
+      double bestFinish,
+      double bestVariance,
+      long bestId) {
     if (finish > bestFinish + EPSILON) return true;
     if (finish < bestFinish - EPSILON) return false;
     if (variance > bestVariance + EPSILON) return true;

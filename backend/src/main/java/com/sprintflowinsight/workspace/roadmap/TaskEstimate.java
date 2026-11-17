@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -13,6 +14,11 @@ import java.time.Instant;
 @Table(name = "task_estimate")
 public class TaskEstimate {
   @Id private Long taskId;
+
+  @Version private Long version;
+
+  @Column(nullable = false)
+  private boolean active = true;
 
   @Column(nullable = false, updatable = false)
   private Long projectId;
@@ -36,15 +42,30 @@ public class TaskEstimate {
     this.projectId = projectId;
   }
 
-  public void set(BigDecimal optimistic, BigDecimal mostLikely, BigDecimal pessimistic, Instant at) {
+  public void set(
+      BigDecimal optimistic, BigDecimal mostLikely, BigDecimal pessimistic, Instant at) {
     this.optimistic = optimistic;
     this.mostLikely = mostLikely;
     this.pessimistic = pessimistic;
     this.updatedAt = at;
+    this.active = true;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void clear(Instant at) {
+    active = false;
+    updatedAt = at;
   }
 
   public Long getTaskId() {
     return taskId;
+  }
+
+  public Long getVersion() {
+    return version;
   }
 
   public BigDecimal getOptimistic() {

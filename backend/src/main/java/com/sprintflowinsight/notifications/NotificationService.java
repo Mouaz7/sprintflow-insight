@@ -29,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class NotificationService {
+  private final org.springframework.context.ApplicationEventPublisher events;
   private final UserPreferencesRepository preferences;
   private final UserRepository users;
 
@@ -43,7 +44,9 @@ public class NotificationService {
       ProjectMemberRepository members,
       TaskRepository tasks,
       UserPreferencesRepository preferences,
-      UserRepository users) {
+      UserRepository users,
+      org.springframework.context.ApplicationEventPublisher events) {
+    this.events = events;
     this.repository = repository;
     this.projects = projects;
     this.members = members;
@@ -77,25 +80,25 @@ public class NotificationService {
       Long actorUserId,
       String message,
       java.util.UUID sourceEventId) {
-    if (projectId == null || recipientUserId == null || recipientUserId.equals(actorUserId))
-      return;
+    if (projectId == null || recipientUserId == null || recipientUserId.equals(actorUserId)) return;
     users
         .findById(recipientUserId)
         .ifPresent(
             recipient -> {
               if (repository.existsByProjectIdAndRecipientEmailAndMessageAndCreatedAtAfter(
-                  projectId, normalize(recipient.getEmail()), message, Instant.now().minusSeconds(5)))
-                return;
+                  projectId,
+                  normalize(recipient.getEmail()),
+                  message,
+                  Instant.now().minusSeconds(5))) return;
               deliver(projectId, recipient, message, sourceEventId);
             });
   }
 
-  private void deliver(Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
+  private void deliver(
+      Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
     String email = normalize(recipient.getEmail());
-    if (!preferences
-        .findById(recipient.getId())
-        .map(UserPreferences::isNotifications)
-        .orElse(true)) return;
+    if (!preferences.findById(recipient.getId()).map(UserPreferences::isNotifications).orElse(true))
+      return;
     if (projects.findById(projectId).isEmpty()) return;
     if (sourceEventId != null
         && repository.existsBySourceEventIdAndRecipientEmail(sourceEventId, email)) return;
@@ -120,14 +123,13 @@ public class NotificationService {
     notification.setCreatedAt(Instant.now());
     notification.setRead(false);
     repository.save(notification);
+    events.publishEvent(
+        new NotificationDelivered(java.util.UUID.randomUUID(), projectId, Instant.now()));
   }
 
-  public List<Notification> forRecipient(String email) {
-    return forRecipient(email, Pageable.unpaged());
-  }
-
-  public List<Notification> forRecipient(String email, Pageable pageable) {
-    return repository.findVisibleTo(email.trim().toLowerCase(Locale.ROOT), pageable);
+  /** Notifications addressed to the account's current email, for projects it is a member of. */
+  public List<Notification> forRecipient(Long userId, String email, Pageable pageable) {
+    return repository.findVisibleTo(userId, email.trim().toLowerCase(Locale.ROOT), pageable);
   }
 
   public void markRead(Long id, String email) {
@@ -157,6 +159,7 @@ public class NotificationService {
     repository.deleteByRecipientEmail(email);
   }
 
+  @Transactional
   @Scheduled(cron = "0 0 9 * * *", zone = "Europe/Stockholm")
   public void sendDueDateReminders() {
     ZoneId zone = ZoneId.of("Europe/Stockholm");
