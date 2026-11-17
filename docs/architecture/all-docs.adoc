@@ -35,3 +35,7 @@ include::module-reporting.adoc[]
 plantuml::module-search.puml[,,format=svg]
 include::module-search.adoc[]
 
+== Realtime
+plantuml::module-realtime.puml[,,format=svg]
+include::module-realtime.adoc[]
+

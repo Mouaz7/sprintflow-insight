@@ -88,6 +88,11 @@
              can be revoked per user (password change/reset). -->
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-session-jdbc</artifactId></dependency>
 
+        <!-- Realtime (B1): STOMP over WebSocket with the in-memory simple broker, authorised per
+             frame by Spring Security messaging. C6 replaces the broker with a RabbitMQ relay. -->
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-websocket</artifactId></dependency>
+        <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-messaging</artifactId></dependency>
+
         <!-- Token-bucket rate limiting (local buckets; a JDBC ProxyManager can share them across instances). -->
         <dependency><groupId>com.bucket4j</groupId><artifactId>bucket4j_jdk17-core</artifactId><version>8.22.0</version></dependency>
 

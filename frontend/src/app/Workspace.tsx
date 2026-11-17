@@ -18,6 +18,8 @@ import type {
   WorkspaceView,
 } from '../api/contracts';
 import { preferencesQuery, roleQuery } from '../api/queries';
+import { PresenceAvatars } from '../features/realtime/PresenceAvatars';
+import { useProjectRealtime } from '../features/realtime/useProjectRealtime';
 import {
   CommandCenter,
   type SearchTarget,
@@ -163,6 +165,7 @@ function WorkspaceShell() {
     session.projects.find((project) => project.id === selectedProjectId) ??
     session.projects[0];
   const activeProjectId = activeProject?.id;
+  const realtime = useProjectRealtime(activeProjectId);
   const preferences = useQuery(preferencesQuery);
   const projectRole = useQuery({
     ...roleQuery(activeProjectId ?? 0),
@@ -306,6 +309,12 @@ function WorkspaceShell() {
               onNewTask={context.requestTask}
             />
             <LanguageSelector language={language} onChange={changeLanguage} />
+            <PresenceAvatars
+              viewers={realtime.viewers}
+              selfId={session.user.id}
+              status={realtime.status}
+              language={language}
+            />
             <button
               className="theme-toggle"
               type="button"

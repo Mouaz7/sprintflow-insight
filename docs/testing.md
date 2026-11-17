@@ -240,3 +240,9 @@ In the frontend, `features/search/*.test.tsx` cover the palette (combobox ARIA, 
 ```sh
 ./mvnw -Dtest='SearchIntegrationTest,Search*Test,SearchQueryProperties' test
 ```
+
+## Realtime verification (B1)
+
+`RealtimeWebSocketIntegrationTest` uses real sockets and PostgreSQL to verify handshake/session/Origin/CSRF rejection, denied subscriptions/SEND and no ghost presence after an outsider's rejected frame. Owner/Admin/Member/Viewer and archived-project readers report and clear an open task. Rollback, ordered event delivery, gap filling, logout and membership removal are covered. `RealtimeUnitTest` rejects foreign, missing and trashed task ids; `PresenceRegistryTest` covers multiple tabs and task cleanup. `RealtimeSequenceIntegrationTest` exercises concurrent publishers, duplicate delivery, retention and resync against PostgreSQL. V19 follows the existing V16–V18 search migrations.
+
+Frontend tests verify project-scoped Query invalidation, specific comment-thread refreshes, notification invalidation, coalescing, reconnect/backoff and heartbeat behavior. The MSW board regression checks that a data refresh does not reload project roles. `frontend/e2e/tests/realtime.e2e.ts` uses two authenticated browser contexts with actual REST/WebSocket traffic: a member moves a task and creates/edits/deletes a comment, the other browser updates without losing its local draft, presence tracks the open task, and reconnect fills a real gap. Fault injection closes the real socket while its browser is offline; no response is mocked. Axe runs on both boards and the live thread.

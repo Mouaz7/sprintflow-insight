@@ -61,6 +61,11 @@ async function csrfToken(): Promise<Csrf> {
   return csrf;
 }
 
+/** The session's CSRF header, e.g. for the realtime STOMP CONNECT frame. */
+export function csrfHeader(): Promise<Csrf> {
+  return csrfToken();
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);

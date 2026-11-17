@@ -19,4 +19,5 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0014](0014-ci-supply-chain.md) | CI pipeline and software supply chain: one build, SBOMs, keyless signing, provenance | Accepted |
 | [0015](0015-encryption-and-key-rotation.md) | AES-256-GCM envelopes with fingerprinted keys and re-encryption for rotation | Accepted |
 | [0016](0016-postgresql-full-text-search.md) | PostgreSQL full-text search with trigram fallback and in-statement access filtering | Accepted |
+| [0017](0017-realtime-stomp-and-sequence-numbers.md) | Session-authenticated STOMP, durable project sequences, replay and task presence | Accepted |
 | [0018](0018-design-system-charts-and-visual-baselines.md) | Design foundations, accessible SVG charts and visual baselines | Accepted |

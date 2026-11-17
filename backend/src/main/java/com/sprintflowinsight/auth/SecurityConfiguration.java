@@ -1,6 +1,5 @@
 package com.sprintflowinsight.auth;
 
-import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.common.error.Problems;
 import java.util.List;
@@ -25,6 +24,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class SecurityConfiguration {
@@ -161,6 +161,9 @@ public class SecurityConfiguration {
                     .requestMatchers(HttpMethod.POST, "/api/auth/google/config")
                     .denyAll()
                     .requestMatchers("/api/**")
+                    .authenticated()
+                    // The realtime handshake (B1) only upgrades an existing signed-in session.
+                    .requestMatchers("/ws", "/ws/**")
                     .authenticated()
                     .anyRequest()
                     .permitAll())

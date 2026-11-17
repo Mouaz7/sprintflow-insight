@@ -1,3 +1,4 @@
+import { useTaskPresence } from '../../shared/lib/useTaskPresence';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { PageHeader } from '../../shared/ui/ui';
 import { BlockTaskPanel } from './BlockTaskPanel';
@@ -29,6 +30,12 @@ export function TasksView(props: TasksViewProps) {
     role,
     setDiscussion,
   } = controller;
+  useTaskPresence(
+    projectId,
+    discussion?.id ??
+      blocking?.id ??
+      (panelOpen ? controller.editing?.id : undefined),
+  );
   return (
     <section className="page tasks-page">
       <PageHeader

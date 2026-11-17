@@ -7,11 +7,15 @@ import com.sprintflowinsight.workspace.attachment.FileDeletionService;
 import com.sprintflowinsight.workspace.attachment.TaskAttachment;
 import com.sprintflowinsight.workspace.attachment.TaskAttachmentRepository;
 import com.sprintflowinsight.workspace.collaboration.TaskCommentRepository;
+import com.sprintflowinsight.workspace.events.TaskCreated;
+import com.sprintflowinsight.workspace.events.TaskMoved;
+import com.sprintflowinsight.workspace.events.TaskUpdated;
 import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,6 +79,14 @@ public class TaskService {
     task.setProjectKey(number.projectKey());
     Task saved = taskRepository.save(task);
     recordHistory(saved, saved.getStatus(), now, actorEmail);
+    events.publishEvent(
+        new TaskCreated(
+            UUID.randomUUID(),
+            saved.getProjectId(),
+            notifications.userId(actorEmail),
+            now,
+            saved.getId(),
+            saved.getVersion()));
     notifications.notifyRecipient(
         saved.getProjectId(),
         saved.getAssigneeEmail(),
@@ -111,18 +123,9 @@ public class TaskService {
     task.setDueAt(changes.getDueAt());
     task.setBlocked(changes.isBlocked());
     task.setBlockReason(changes.getBlockReason());
-    if (changes.getStatus() != null && !changes.getStatus().equals(previousStatus)) {
+    boolean moved = changes.getStatus() != null && !changes.getStatus().equals(previousStatus);
+    if (moved) {
       task.setStatus(changes.getStatus());
-      events.publishEvent(
-          new com.sprintflowinsight.workspace.events.TaskMoved(
-              java.util.UUID.randomUUID(),
-              task.getProjectId(),
-              notifications.userId(actorEmail),
-              now,
-              task.getId(),
-              task.getTitle(),
-              previousStatus,
-              changes.getStatus()));
       applyWorkflowTimestamps(task, changes.getStatus(), now);
 
       activityService.record(
@@ -140,7 +143,22 @@ public class TaskService {
           "task",
           task.getId(),
           now);
-    Task saved = taskRepository.save(task);
+    // Flushed so the events carry the version the client will see after this commit.
+    Task saved = taskRepository.saveAndFlush(task);
+    Long actorId = notifications.userId(actorEmail);
+    if (moved)
+      events.publishEvent(
+          new TaskMoved(
+              UUID.randomUUID(),
+              saved.getProjectId(),
+              actorId,
+              now,
+              saved.getId(),
+              saved.getTitle(),
+              previousStatus,
+              saved.getStatus(),
+              saved.getVersion()));
+    else updated(saved, actorId, now);
     if (historyChanged) recordHistory(saved, saved.getStatus(), now, actorEmail);
     if (!Objects.equals(previousAssignee, saved.getAssigneeEmail()))
       notifications.notifyRecipient(
@@ -158,8 +176,9 @@ public class TaskService {
     for (Task task : taskRepository.findAllByProjectIdAndStoryId(projectId, storyId)) {
       if (Objects.equals(task.getSprintId(), sprintId)) continue;
       task.setSprintId(sprintId);
-      taskRepository.save(task);
-      recordHistory(task, task.getStatus(), now, actorEmail);
+      Task saved = taskRepository.saveAndFlush(task);
+      recordHistory(saved, saved.getStatus(), now, actorEmail);
+      updated(saved, notifications.userId(actorEmail), now);
     }
   }
 
@@ -198,7 +217,8 @@ public class TaskService {
 
     task.setBlocked(true);
     task.setBlockReason(reason);
-    Task saved = taskRepository.save(task);
+    Task saved = taskRepository.saveAndFlush(task);
+    updated(saved, notifications.userId(actorEmail), Instant.now());
     activityService.record(
         saved.getProjectId(),
         "TASK_BLOCKED",
@@ -218,7 +238,8 @@ public class TaskService {
 
     task.setBlocked(false);
     task.setBlockReason(null);
-    Task saved = taskRepository.save(task);
+    Task saved = taskRepository.saveAndFlush(task);
+    updated(saved, notifications.userId(actorEmail), Instant.now());
     activityService.record(
         saved.getProjectId(),
         "TASK_UNBLOCKED",
@@ -228,6 +249,18 @@ public class TaskService {
         saved.getId(),
         Instant.now());
     return saved;
+  }
+
+  /** Publishes {@link TaskUpdated} for a task that was saved and flushed in this transaction. */
+  public void updated(Task saved, Long actorUserId, Instant now) {
+    events.publishEvent(
+        new TaskUpdated(
+            UUID.randomUUID(),
+            saved.getProjectId(),
+            actorUserId,
+            now,
+            saved.getId(),
+            saved.getVersion()));
   }
 
   private void applyWorkflowTimestamps(Task task, String status, Instant now) {

@@ -13,3 +13,10 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 afterAll(() => server.close());
+
+// Realtime tests inject a socket; other component tests stay offline.
+Object.defineProperty(globalThis, 'WebSocket', {
+  value: undefined,
+  configurable: true,
+  writable: true,
+});
