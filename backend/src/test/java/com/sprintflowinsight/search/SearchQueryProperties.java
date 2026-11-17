@@ -77,11 +77,10 @@ class SearchQueryProperties {
     try {
       SearchCursor cursor = SearchCursor.decode(text);
       assertThat(cursor.id()).isPositive();
-      assertThat(cursor.typeOrder()).isBetween(1, 5);
+      assertThat(cursor.typeOrder()).isBetween(1, 6);
     } catch (ApiException rejected) {
       assertThat(rejected.code().status().value()).isEqualTo(400);
     }
-    assertThatThrownBy(() -> SearchCursor.decode(text + "\u0000"))
-        .isInstanceOf(ApiException.class);
+    assertThatThrownBy(() -> SearchCursor.decode(text + "\u0000")).isInstanceOf(ApiException.class);
   }
 }

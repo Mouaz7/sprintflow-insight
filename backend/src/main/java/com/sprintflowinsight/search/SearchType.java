@@ -7,6 +7,7 @@ import java.util.Locale;
  * cursor, so existing values must not change.
  */
 public enum SearchType {
+  EPIC(6),
   TASK(5),
   STORY(4),
   SPRINT(3),
@@ -14,7 +15,7 @@ public enum SearchType {
   PROJECT(1);
 
   /** Accepted values of the {@code types} parameter. */
-  public static final String WIRE_PATTERN = "task|story|sprint|comment|project";
+  public static final String WIRE_PATTERN = "epic|task|story|sprint|comment|project";
 
   private final int order;
 

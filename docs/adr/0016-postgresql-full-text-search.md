@@ -4,12 +4,12 @@ Status: accepted for B9.
 
 ## Context
 
-B9 adds a search across tasks, stories, sprints, comments and projects, reached from a Ctrl/⌘+K command palette. Content is mixed Swedish and English. Users type fragments ("inlogg"), make typos and paste task keys (`SF-123`). Results must never include another project's data, and the request must stay within the performance budget (p95 < 200 ms with 5 000 tasks per project) without N+1 queries.
+B9 adds a search across tasks, stories, epics, sprints, comments and projects, reached from a Ctrl/⌘+K command palette. Content is mixed Swedish and English. Users type fragments ("inlogg"), make typos and paste task keys (`SF-123`). Results must never include another project's data, and the request must stay within the performance budget (p95 < 200 ms with 5 000 tasks per project) without N+1 queries.
 
 ## Decision
 
 - **PostgreSQL full-text search, not a separate engine.** Elasticsearch/OpenSearch or Lucene would add an operated service, a second copy of the data, an indexing pipeline with its own consistency lag and a second place to enforce access. The data is already in PostgreSQL 16, and the project's volume is far below where a dedicated engine is needed.
-- **Stored generated `tsvector` columns** (migration V16) on `task`, `user_stories`, `sprint`, `task_comment` and `projects`, each with a GIN index. Each vector concatenates the `swedish` and `english` stemmers plus an unstemmed `simple` copy of the title, weighted A (title/name), B (body) and C (labels, acceptance criteria). Generated columns cannot drift from the source text and need no triggers; the JPA entities do not map them.
+- **Stored generated `tsvector` columns** on `task`, `user_stories`, `sprint`, `task_comment` and `projects` (V16), and `epic` (V30), each with a GIN index. Each vector concatenates the `swedish` and `english` stemmers plus an unstemmed `simple` copy of the title, weighted A (title/name), B (body) and C (labels, acceptance criteria). Generated columns cannot drift from the source text and need no triggers; the JPA entities do not map them.
 - **pg_trgm for typos**: GIN trigram indexes on titles and names; a row also matches when `word_similarity(query, title)` reaches pg_trgm's default threshold (0.6). The extension is installed in a dedicated `extensions` schema and every reference is schema-qualified, so migrations are independent of `search_path` (Flyway's per-schema migrations in tests rely on this). An existing installation elsewhere is moved there.
 - **Query parsing in Java, never `to_tsquery` on raw input.** `SearchQuery` keeps at most 8 words of letters and digits (≤ 64 code points each, NFKC-folded and lower-cased) and builds `'word':* & …`. Operators, quotes and backslashes cannot reach PostgreSQL's query parser. A text that is exactly a task key is also parsed with B0's `TaskKey`.
 - **One statement per search.** A materialised CTE selects the caller's readable projects (membership by `user_id`, `trashed_at IS NULL`, archived included); every branch joins it, so filtering happens before ranking and limiting, not after fetching. An exact task-key hit is a separate branch with rank 1000 and is excluded from the text branch. `ts_headline` runs only on the final page.
@@ -19,11 +19,12 @@ B9 adds a search across tasks, stories, sprints, comments and projects, reached 
 
 ## Consequences
 
-- Writes to the five tables compute the vectors (a few microseconds per row) and maintain extra GIN indexes; V16 rewrites the tables once to fill the generated columns.
+- Writes to the six tables compute the vectors (a few microseconds per row) and maintain extra GIN indexes; V16 rewrites the tables once to fill the generated columns.
 - `CREATE EXTENSION pg_trgm` needs the database owner (pg_trgm is a trusted extension since PostgreSQL 13) or a superuser. Managed databases that forbid it must pre-install pg_trgm before upgrading.
 - Mixing two stemmers can over-match (an English stem matching a Swedish word); ranking weights titles over bodies to limit the effect. Language detection per row was rejected as unreliable for short titles.
 - Trigram tolerance applies to titles and names only; typos in descriptions and comments are not found. Transpositions in very short words fall below the threshold.
 - An explicit `projectId` answers 403/404 like the project's other reads, which reveals whether a project id exists; the all-projects search reveals nothing.
+- Epic search uses the shared V18 epic storage prerequisite from B3, with the same project foreign keys and optimistic locking. This introduces no B3 roadmap API or editing UI: choosing an epic opens its project backlog until B3 adds that view. V30 adds its indexes without changing the applied V16 or V18 checksums. Existing cursor type orders 1–5 remain valid; epic uses 6.
 - The query count is constant (1 statement, 3 with `projectId`) and is asserted by `SearchIntegrationTest`.
 
 ## Sources

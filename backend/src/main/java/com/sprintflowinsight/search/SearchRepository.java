@@ -7,9 +7,9 @@ import java.util.Set;
 import org.springframework.stereotype.Repository;
 
 /**
- * The search statement. Access filtering, matching, ranking, keyset pagination and highlighting
- * all happen in one native query, so a search costs one round trip whatever the number of projects
- * or hits.
+ * The search statement. Access filtering, matching, ranking, keyset pagination and highlighting all
+ * happen in one native query, so a search costs one round trip whatever the number of projects or
+ * hits.
  *
  * <p>Rank = {@code ts_rank} over the weighted tsvector + trigram word similarity of the title,
  * rounded to six decimals so the keyset comparison is exact. An exact task-key hit ranks {@value
@@ -55,6 +55,13 @@ public class SearchRepository {
         WHERE :wantTask AND task.trashed_at IS NULL
           AND (task.search_vector @@ query.terms OR :text OPERATOR(extensions.<%%) task.title)
           AND NOT (:hasKey AND readable.key = :keyProject AND task.number = :keyNumber)
+        UNION ALL
+        SELECT 6, epic.id, epic.project_id, NULL, NULL, epic.title, epic.description,
+               ts_rank(epic.search_vector, query.terms)
+                 + extensions.word_similarity(:text, epic.title), false
+        FROM epic JOIN readable ON readable.id = epic.project_id CROSS JOIN query
+        WHERE :wantEpic
+          AND (epic.search_vector @@ query.terms OR :text OPERATOR(extensions.<%%) epic.title)
         UNION ALL
         SELECT 4, story.id, story.project_id, NULL, NULL, story.title, story.description,
                ts_rank(story.search_vector, query.terms)
@@ -138,6 +145,7 @@ public class SearchRepository {
             .setParameter("hasKey", key.isPresent())
             .setParameter("keyProject", key.map(k -> k.projectKey()).orElse(""))
             .setParameter("keyNumber", key.map(k -> k.number()).orElse(0))
+            .setParameter("wantEpic", types.contains(SearchType.EPIC))
             .setParameter("wantTask", types.contains(SearchType.TASK))
             .setParameter("wantStory", types.contains(SearchType.STORY))
             .setParameter("wantSprint", types.contains(SearchType.SPRINT))

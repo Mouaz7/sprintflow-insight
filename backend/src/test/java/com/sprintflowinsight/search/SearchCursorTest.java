@@ -19,12 +19,12 @@ class SearchCursorTest {
 
   @Test
   void roundTripsAndStaysUrlSafe() {
-    SearchCursor cursor = new SearchCursor(new BigDecimal("0.607927"), 5, 42);
+    SearchCursor cursor = new SearchCursor(new BigDecimal("0.607927"), 6, 42);
     String text = cursor.encode();
     assertThat(text).matches("[A-Za-z0-9_-]+").hasSizeLessThanOrEqualTo(SearchCursor.MAX_LENGTH);
     assertThat(SearchCursor.decode(text)).isEqualTo(cursor);
-    assertThat(SearchCursor.decode(encoded("1000.000000:1:9"))).isEqualTo(
-        new SearchCursor(new BigDecimal("1000.000000"), 1, 9));
+    assertThat(SearchCursor.decode(encoded("1000.000000:1:9")))
+        .isEqualTo(new SearchCursor(new BigDecimal("1000.000000"), 1, 9));
   }
 
   @Test
@@ -43,7 +43,7 @@ class SearchCursorTest {
           "!!!",
           encoded(""),
           encoded("0.5:5:1"),
-          encoded("0.500000:6:1"),
+          encoded("0.500000:7:1"),
           encoded("0.500000:0:1"),
           encoded("0.500000:5:0"),
           encoded("-1.000000:5:1"),

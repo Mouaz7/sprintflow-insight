@@ -16,11 +16,15 @@ import java.util.regex.Pattern;
 public record SearchCursor(BigDecimal rank, int typeOrder, long id) {
   public static final int MAX_LENGTH = 100;
   private static final Pattern FORMAT =
-      Pattern.compile("(0|[1-9][0-9]{0,3})\\.([0-9]{6}):([1-5]):([1-9][0-9]{0,18})");
+      Pattern.compile("(0|[1-9][0-9]{0,3})\\.([0-9]{6}):([1-6]):([1-9][0-9]{0,18})");
 
   public String encode() {
-    String plain = rank.setScale(6, java.math.RoundingMode.UNNECESSARY).toPlainString()
-        + ":" + typeOrder + ":" + id;
+    String plain =
+        rank.setScale(6, java.math.RoundingMode.UNNECESSARY).toPlainString()
+            + ":"
+            + typeOrder
+            + ":"
+            + id;
     return Base64.getUrlEncoder()
         .withoutPadding()
         .encodeToString(plain.getBytes(StandardCharsets.US_ASCII));

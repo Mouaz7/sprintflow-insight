@@ -1,6 +1,7 @@
 import { api } from '../../api/client';
 
-export type SearchType = 'task' | 'story' | 'sprint' | 'comment' | 'project';
+export type SearchType =
+  'epic' | 'task' | 'story' | 'sprint' | 'comment' | 'project';
 
 /** Plain text; `match` marks words that matched. Never markup. */
 export type SearchSegment = { text: string; match: boolean };

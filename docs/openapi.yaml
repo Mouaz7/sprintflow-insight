@@ -341,7 +341,7 @@ paths:
     get:
       summary: Full-text search across the projects the caller can read
       description: >-
-        Searches tasks, stories, sprints, comments and projects with PostgreSQL full-text search
+        Searches tasks, stories, epics, sprints, comments and projects with PostgreSQL full-text search
         (Swedish and English stemming, word prefixes) plus pg_trgm trigram similarity on titles for
         typos. Only members' projects are searched (any role, archived projects included, trashed
         projects and items excluded); the filter is part of the search statement. Hits are ordered by
@@ -365,7 +365,7 @@ paths:
           schema:
             type: array
             maxItems: 5
-            items: { type: string, enum: [task, story, sprint, comment, project] }
+            items: { type: string, enum: [epic, task, story, sprint, comment, project] }
         - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
@@ -845,7 +845,7 @@ components:
       type: object
       required: [type, id, projectId, projectKey, projectName, title, titleSegments, snippet, exactMatch]
       properties:
-        type: { type: string, enum: [task, story, sprint, comment, project] }
+        type: { type: string, enum: [epic, task, story, sprint, comment, project] }
         id: { type: integer, format: int64, description: Id of the matched item; for a comment the comment id. }
         projectId: { type: integer, format: int64 }
         projectKey: { type: string, example: SF }

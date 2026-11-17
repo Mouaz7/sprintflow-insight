@@ -44,6 +44,7 @@ export function targetOf(hit: SearchHit): SearchTarget {
       return hit.key
         ? { view: 'tasks', projectId: hit.projectId, taskKey: hit.key }
         : { view: 'tasks', projectId: hit.projectId };
+    case 'epic':
     case 'story':
       return { view: 'backlog', projectId: hit.projectId };
     case 'sprint':

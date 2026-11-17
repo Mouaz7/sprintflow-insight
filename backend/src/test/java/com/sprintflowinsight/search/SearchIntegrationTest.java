@@ -87,6 +87,91 @@ class SearchIntegrationTest extends ApiIntegrationTest {
         message);
   }
 
+  private long epic(Project project, String title, String description) {
+    return jdbc.queryForObject(
+        "insert into epic(project_id,title,description,created_at) values (?,?,?,now()) returning"
+            + " id",
+        Long.class,
+        project.getId(),
+        title,
+        description);
+  }
+
+  @Test
+  void epicsUseTheSameRoleAndLifecycleBoundaryAsOtherSearchHits() throws Exception {
+    User owner = user();
+    User admin = user();
+    User member = user();
+    User viewer = user();
+    User outsider = user();
+    Project project = project(owner, member);
+    member(project, admin, "Admin");
+    member(project, viewer, "Viewer");
+    String word = marker();
+    long epic = epic(project, "Epic " + word, "Deliver a useful increment");
+    for (User reader : List.of(owner, admin, member, viewer))
+      mvc.perform(search(word).param("types", "epic").with(as(reader)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.items.length()").value(1))
+          .andExpect(jsonPath("$.items[0].type").value("epic"))
+          .andExpect(jsonPath("$.items[0].id").value(epic));
+    mvc.perform(search(word).with(as(outsider)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items").isEmpty());
+    mvc.perform(search(word).param("projectId", project.getId().toString()).with(as(outsider)))
+        .andExpect(status().isForbidden());
+    project.setArchivedAt(Instant.now());
+    project = projects.save(project);
+    mvc.perform(search(word).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items[0].id").value(epic));
+    project.setTrashedAt(Instant.now());
+    project = projects.save(project);
+    mvc.perform(search(word).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items").isEmpty());
+  }
+
+  @Test
+  void epicsHaveBilingualStemsPrefixTyposHighlightsAndKeysetPaging() throws Exception {
+    User owner = user();
+    Project project = project(owner, null);
+    String word = marker();
+    long first = epic(project, "Inloggningen " + word, "Users are redirected after sign-in");
+    mvc.perform(search("inloggning " + word).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items[0].id").value(first));
+    mvc.perform(search("redirect " + word).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items[0].id").value(first))
+        .andExpect(jsonPath("$.items[0].snippet[?(@.match == true)].text").isNotEmpty());
+    mvc.perform(search(word.substring(0, 6)).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items[0].id").value(first));
+    String typo = word.substring(0, word.length() - 2) + word.charAt(word.length() - 1);
+    mvc.perform(search(typo).param("types", "epic").with(as(owner)))
+        .andExpect(jsonPath("$.items[0].id").value(first));
+    long second = epic(project, "Inloggningen " + word, "Second increment");
+    String response =
+        mvc.perform(search(word).param("types", "epic").param("limit", "1").with(as(owner)))
+            .andExpect(jsonPath("$.items.length()").value(1))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    Number seen = JsonPath.read(response, "$.items[0].id");
+    String cursor = JsonPath.read(response, "$.nextCursor");
+    String next =
+        mvc.perform(
+                search(word)
+                    .param("types", "epic")
+                    .param("limit", "1")
+                    .param("cursor", cursor)
+                    .with(as(owner)))
+            .andExpect(jsonPath("$.items.length()").value(1))
+            .andExpect(jsonPath("$.nextCursor").doesNotExist())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    Number other = JsonPath.read(next, "$.items[0].id");
+    assertThat(List.of(seen.longValue(), other.longValue()))
+        .containsExactlyInAnyOrder(first, second);
+  }
+
   @Test
   void everyRoleSeesHitsInItsProjectsButOutsidersNever() throws Exception {
     String word = marker();
@@ -111,8 +196,7 @@ class SearchIntegrationTest extends ApiIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items").isEmpty())
         .andExpect(jsonPath("$.nextCursor").doesNotExist());
-    mvc.perform(
-            search(word).param("projectId", project.getId().toString()).with(as(outsider)))
+    mvc.perform(search(word).param("projectId", project.getId().toString()).with(as(outsider)))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     // An exact key from a foreign project is not revealed either.
@@ -187,7 +271,8 @@ class SearchIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.items[0].id").value(login));
     // English stemming: "redirect" reaches "Redirects"/"redirected".
     mvc.perform(search("redirect " + word).with(as(owner)))
-        .andExpect(jsonPath("$.items[0].title").value("Users are redirected after sign-in " + word));
+        .andExpect(
+            jsonPath("$.items[0].title").value("Users are redirected after sign-in " + word));
     // Prefix: the first letters of a word are enough.
     mvc.perform(search(word.substring(0, 6)).with(as(owner)).param("types", "story"))
         .andExpect(jsonPath("$.items[?(@.id == " + story + ")]").isNotEmpty());
@@ -200,8 +285,9 @@ class SearchIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.items.length()").value(1))
         .andExpect(jsonPath("$.items[0].id").value(comment))
         .andExpect(jsonPath("$.items[0].taskId").value(login))
-        .andExpect(jsonPath("$.items[0].snippet[?(@.match == true)].text").value(
-            org.hamcrest.Matchers.hasItem("staging")));
+        .andExpect(
+            jsonPath("$.items[0].snippet[?(@.match == true)].text")
+                .value(org.hamcrest.Matchers.hasItem("staging")));
     // Every kind is found; the type filter narrows them.
     mvc.perform(search(word).with(as(owner)))
         .andExpect(jsonPath("$.items[?(@.type == 'task')]").isNotEmpty())
@@ -288,8 +374,7 @@ class SearchIntegrationTest extends ApiIntegrationTest {
     mvc.perform(search("x".repeat(201)).with(as(owner))).andExpect(status().isBadRequest());
     mvc.perform(search("a").param("limit", "51").with(as(owner)))
         .andExpect(status().isBadRequest());
-    mvc.perform(search("a").param("limit", "0").with(as(owner)))
-        .andExpect(status().isBadRequest());
+    mvc.perform(search("a").param("limit", "0").with(as(owner))).andExpect(status().isBadRequest());
     mvc.perform(search("a").param("types", "user").with(as(owner)))
         .andExpect(status().isBadRequest());
     mvc.perform(search("a").param("cursor", "bm90LWEtY3Vyc29y").with(as(owner)))
