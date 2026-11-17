@@ -151,10 +151,9 @@ test('updates two browsers, preserves comment drafts and recovers a dropped conn
       `/tasks/${task.id}/comments`,
     );
     expect(comments).toHaveLength(1);
-    await peerApi.json(
-      `/tasks/${task.id}/comments/${comments[0]!.id}`,
-      'DELETE',
-    );
+    const comment = comments[0];
+    if (!comment) throw new Error('The posted comment must exist.');
+    await peerApi.json(`/tasks/${task.id}/comments/${comment.id}`, 'DELETE');
     await expect(
       ownerThread.getByText('Revised live comment', { exact: true }),
     ).toHaveCount(0);
