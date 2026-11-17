@@ -17,7 +17,11 @@ import type {
   User,
   WorkspaceView,
 } from '../api/contracts';
-import { preferencesQuery } from '../api/queries';
+import { preferencesQuery, roleQuery } from '../api/queries';
+import {
+  CommandCenter,
+  type SearchTarget,
+} from '../features/search/CommandCenter';
 import { Onboarding } from '../features/onboarding/Onboarding';
 import { useLanguage, useT } from '../shared/i18n/LanguageProvider';
 import { DraftProjectsContext } from '../shared/lib/useDraftProject';
@@ -133,9 +137,9 @@ function WorkspaceShell() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideDismissed, setGuideDismissed] = useState(false);
   const [preferenceError, setPreferenceError] = useState('');
-  const [selectedProjectId, setActiveProjectId] = useState<number | undefined>(
-    () => storedProject(session.projects),
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    number | undefined
+  >(() => storedProject(session.projects));
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const focusAfterMenu = useRef<'navigation' | 'toggle' | null>(null);
@@ -160,6 +164,13 @@ function WorkspaceShell() {
     session.projects[0];
   const activeProjectId = activeProject?.id;
   const preferences = useQuery(preferencesQuery);
+  const projectRole = useQuery({
+    ...roleQuery(activeProjectId ?? 0),
+    enabled: !!activeProjectId,
+  });
+  const canCreateTask =
+    !activeProject?.archivedAt &&
+    ['Owner', 'Admin', 'Member'].includes(projectRole.data?.role ?? '');
   const guideAvailable =
     !guideDismissed && preferences.data?.onboardingCompleted === false;
 
@@ -201,8 +212,20 @@ function WorkspaceShell() {
     setTheme(value);
     savePreference({ theme: value });
   }
+  function setActiveProjectId(id: number) {
+    setSelectedProjectId(id);
+    if (view === 'tasks' && location.search)
+      void navigate('/tasks', { replace: true });
+  }
   function selectView(next: WorkspaceView) {
     void navigate(`/${next}`);
+    setMenuOpen(false);
+  }
+  function navigateSearch(target: SearchTarget) {
+    if (target.projectId !== undefined) setSelectedProjectId(target.projectId);
+    const params = new URLSearchParams();
+    if (target.taskKey) params.set('task', target.taskKey);
+    void navigate(`/${target.view}${params.size ? `?${params}` : ''}`);
     setMenuOpen(false);
   }
   const context: WorkspaceContext = {
@@ -277,6 +300,11 @@ function WorkspaceShell() {
                 ))}
               </select>
             </label>
+            <CommandCenter
+              canCreateTask={canCreateTask}
+              onNavigate={navigateSearch}
+              onNewTask={context.requestTask}
+            />
             <LanguageSelector language={language} onChange={changeLanguage} />
             <button
               className="theme-toggle"

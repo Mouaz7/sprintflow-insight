@@ -21,9 +21,9 @@ PostgreSQL + Flyway migrations
 
 ## Boundaries
 
-- The frontend is split into `app/` (shell, routes and composition), `features/{auth,tasks,planning,insights,projects,profile,onboarding}`, `shared/{ui,i18n,lib,theme}` and `api/`. Features may import only themselves, `shared` and `api`; ESLint enforces this ([ADR 0008](adr/0008-frontend-feature-folders-and-lint.md)). Test helpers in `src/test` may be imported by tests only.
+- The frontend is split into `app/` (shell, routes and composition), `features/{auth,tasks,planning,insights,projects,profile,onboarding,search}`, `shared/{ui,i18n,lib,theme}` and `api/`. Features may import only themselves, `shared` and `api`; ESLint enforces this ([ADR 0008](adr/0008-frontend-feature-folders-and-lint.md)). Test helpers in `src/test` may be imported by tests only.
 - `frontend/src/api` is the frontend boundary for REST requests. It sends the server-issued CSRF token on every state-changing request and always uses same-origin credentials. The Google sign-in component also loads the official Identity Services script.
-- The Java API has feature packages for authentication, projects, stories, tasks, metrics, collaboration and notifications.
+- The Java API has feature packages for authentication, projects, stories, tasks, metrics, collaboration, notifications and search.
 - Spring Security protects `/api/**` except narrowly scoped sign-in, registration, recovery, CSRF and expiring public-report reads.
 - Sessions are stored in PostgreSQL (Spring Session JDBC) and identify the account by immutable user ID. Profile changes lock that account and move email-based project, assignment, notification and author references together in one transaction. Changing or resetting a password signs the account out of its other sessions ([ADR 0002](adr/0002-sessions-in-postgresql.md)).
 - Token-bucket rate limits ([ADR 0003](adr/0003-token-bucket-rate-limiting.md)): credential routes per client address (30 login/Google/token-confirmation attempts, 20 registrations and 10 recovery requests per minute) and all other API writes per account (300 per minute, uploads 30). Rejections return a 429 problem with `Retry-After`. Forwarded IP headers are not trusted.
@@ -62,3 +62,7 @@ Task movement and comments publish typed events within their transaction. Notifi
 ## A4 runtime
 
 The backend runs on Java 25 and the supported Spring Boot 4.0 line (Spring/Security 7, Jackson 3, Hibernate 7, Flyway 11). Virtual threads handle servlet requests and asynchronous module listeners. At most four listeners run at once (`spring.task.execution.simple.concurrency-limit`), well below the 10-connection pool (`SPRINTFLOW_DB_POOL_SIZE`), so an event burst cannot starve HTTP requests of connections. Outbound Google signing-key requests pass through the bounded application `RestClient`; token verification stays in Google's library. The V14 JDBC event registry remains compatible through Modulith's legacy-structure setting. See [ADR 0007](adr/0007-boot4-java25.md) for BOM ownership, upgrade safety, timeouts and performance measurements.
+
+## B9 search
+
+The `search` module serves `GET /api/search` with PostgreSQL full-text search: generated Swedish/English `tsvector` columns with GIN indexes on tasks, stories, sprints, comments and projects (V16), plus epics (V30, using B3’s shared V18 storage prerequisite), and `pg_trgm` trigram similarity on titles for typos. One SQL statement filters by membership, matches, ranks (`ts_rank` + trigram similarity), pages by keyset and highlights; an exact task key (`SF-123`) ranks first. Highlights are returned as plain-text segments. The frontend's `features/search` adds the Ctrl/⌘+K command palette and a keyboard-shortcut help dialog. See [ADR 0016](adr/0016-postgresql-full-text-search.md).

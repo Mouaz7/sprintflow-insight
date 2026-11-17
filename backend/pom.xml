@@ -250,6 +250,9 @@
                         <param>com.sprintflowinsight.forecast.*</param>
                         <param>com.sprintflowinsight.risk.*</param>
                         <param>com.sprintflowinsight.planning.optimizer.*</param>
+                        <param>com.sprintflowinsight.search.SearchQuery</param>
+                        <param>com.sprintflowinsight.search.SearchCursor</param>
+                        <param>com.sprintflowinsight.search.SearchType</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.sprintflowinsight.*Test</param>

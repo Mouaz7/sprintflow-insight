@@ -22,6 +22,7 @@ System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags
     Component(SprintFlowApplication.SprintFlowApplication.Workspace, "Workspace", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Notifications, "Notifications", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Reporting, "Reporting", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Search, "Search", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
@@ -38,6 +39,8 @@ Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication
 Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Search, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Search, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

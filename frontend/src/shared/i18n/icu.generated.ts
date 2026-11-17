@@ -21,7 +21,8 @@ const messages: { EN: CompiledMessages; SV: CompiledMessages } = {
     sprintCount: (d) => plural(d.count, 0, en, { one: number("en-GB", d.count, 0) + " sprint", other: number("en-GB", d.count, 0) + " sprints" }),
     eventCount: (d) => plural(d.count, 0, en, { one: number("en-GB", d.count, 0) + " event", other: number("en-GB", d.count, 0) + " events" }),
     dueDate: (d) => " · due " + date_en_GB_yyyyMMdd_7qreb3(d.date),
-    emptyTaskCount: (d) => plural(d.count, 0, en, { "0": "No tasks", one: number("en-GB", d.count, 0) + " task", other: number("en-GB", d.count, 0) + " tasks" })
+    emptyTaskCount: (d) => plural(d.count, 0, en, { "0": "No tasks", one: number("en-GB", d.count, 0) + " task", other: number("en-GB", d.count, 0) + " tasks" }),
+    searchResultCount: (d) => plural(d.count, 0, en, { one: number("en-GB", d.count, 0) + " result", other: number("en-GB", d.count, 0) + " results" })
   },
   SV: {
     projectCount: (d) => plural(d.count, 0, sv, { one: number("sv-SE", d.count, 0) + " projekt", other: number("sv-SE", d.count, 0) + " projekt" }),
@@ -29,7 +30,8 @@ const messages: { EN: CompiledMessages; SV: CompiledMessages } = {
     sprintCount: (d) => plural(d.count, 0, sv, { one: number("sv-SE", d.count, 0) + " sprint", other: number("sv-SE", d.count, 0) + " sprintar" }),
     eventCount: (d) => plural(d.count, 0, sv, { one: number("sv-SE", d.count, 0) + " händelse", other: number("sv-SE", d.count, 0) + " händelser" }),
     dueDate: (d) => " · förfaller " + date_sv_SE_yyyyMMdd_wrp6h8(d.date),
-    emptyTaskCount: (d) => plural(d.count, 0, sv, { "0": "Inga uppgifter", one: number("sv-SE", d.count, 0) + " uppgift", other: number("sv-SE", d.count, 0) + " uppgifter" })
+    emptyTaskCount: (d) => plural(d.count, 0, sv, { "0": "Inga uppgifter", one: number("sv-SE", d.count, 0) + " uppgift", other: number("sv-SE", d.count, 0) + " uppgifter" }),
+    searchResultCount: (d) => plural(d.count, 0, sv, { one: number("sv-SE", d.count, 0) + " träff", other: number("sv-SE", d.count, 0) + " träffar" })
   }
 };
 export default messages;

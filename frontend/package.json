@@ -94,13 +94,25 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "210 kB",
+      "limit": "220 kB",
       "gzip": true
     },
     {
       "name": "Application CSS (gzip)",
       "path": "dist/assets/*.css",
       "limit": "15 kB",
+      "gzip": true
+    },
+    {
+      "name": "Search palette (gzip)",
+      "path": "dist/assets/CommandPalette-*.js",
+      "limit": "10 kB",
+      "gzip": true
+    },
+    {
+      "name": "Keyboard shortcut help (gzip)",
+      "path": "dist/assets/ShortcutHelp-*.js",
+      "limit": "3 kB",
       "gzip": true
     }
   ]

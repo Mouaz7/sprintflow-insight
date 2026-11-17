@@ -98,6 +98,8 @@ function ProjectsRoute() {
 }
 
 function TasksRoute() {
+  const location = useLocation();
+  const taskKey = new URLSearchParams(location.search).get('task') ?? '';
   const {
     session,
     activeProject,
@@ -108,6 +110,8 @@ function TasksRoute() {
   return (
     <TasksView
       key={activeProjectId}
+      focusTaskKey={taskKey}
+      focusRequestKey={location.key}
       hasProjects={session.projects.length > 0}
       projectId={activeProjectId}
       openRequest={taskRequest}

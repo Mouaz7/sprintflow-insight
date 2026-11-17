@@ -1,4 +1,5 @@
 export type IcuArguments = {
+  searchResultCount: { count: number };
   projectCount: { count: number };
   storyCount: { count: number };
   sprintCount: { count: number };

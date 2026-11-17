@@ -5,7 +5,8 @@
     "sprintCount": "{count, plural, one {# sprint} other {# sprints}}",
     "eventCount": "{count, plural, one {# event} other {# events}}",
     "dueDate": " · due {date, date, ::yyyyMMdd}",
-    "emptyTaskCount": "{count, plural, =0 {No tasks} one {# task} other {# tasks}}"
+    "emptyTaskCount": "{count, plural, =0 {No tasks} one {# task} other {# tasks}}",
+    "searchResultCount": "{count, plural, one {# result} other {# results}}"
   },
   "SV": {
     "projectCount": "{count, plural, one {# projekt} other {# projekt}}",
@@ -13,6 +14,7 @@
     "sprintCount": "{count, plural, one {# sprint} other {# sprintar}}",
     "eventCount": "{count, plural, one {# händelse} other {# händelser}}",
     "dueDate": " · förfaller {date, date, ::yyyyMMdd}",
-    "emptyTaskCount": "{count, plural, =0 {Inga uppgifter} one {# uppgift} other {# uppgifter}}"
+    "emptyTaskCount": "{count, plural, =0 {Inga uppgifter} one {# uppgift} other {# uppgifter}}",
+    "searchResultCount": "{count, plural, one {# träff} other {# träffar}}"
   }
 }

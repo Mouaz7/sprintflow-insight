@@ -19,4 +19,5 @@
 @import './shared/styles/base.css' layer(design);
 @import './shared/ui/charts/charts.css' layer(design);
 @import './shared/ui/states.css' layer(design);
+@import './features/search/search.css' layer(design);
 @import './shared/styles/accessibility.css' layer(accessibility);

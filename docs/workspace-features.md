@@ -74,6 +74,30 @@ Medlemskap knyts nu till kontots oföränderliga id i stället för e-postadress
 
 Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln `SPRINTFLOW_ENCRYPTION_KEY` skapas av startskripten i `.env`. Säkerhetskopiera `.env`, för utan nyckeln går krypterade värden inte att läsa. Nyckelrotation beskrivs i [ADR 0015](adr/0015-encryption-and-key-rotation.md).
 
+## Sök och kommandopalett (B9)
+
+Tryck **Ctrl+K** (**⌘K** på Mac) eller **/**, eller klicka på **Sök** i sidhuvudet, för att öppna kommandopaletten. Den söker i uppgifter, stories, epics, sprintar, kommentarer och projekt i alla projekt där du är medlem, även arkiverade. Saker i papperskorgen visas inte, och projekt där du inte är medlem syns aldrig, inte heller via ett uppgifts-id.
+
+- **Sökningen** förstår svenska och engelska böjningar ("inloggning" hittar "Inloggningen", "redirect" hittar "redirected"), räcker med början av ett ord och tål små stavfel i titlar. De ord som matchade markeras. Bästa träff kommer först, och **Visa fler träffar** hämtar nästa sida.
+- **Uppgifts-id:** skriv `SF-123` och tryck Enter för att hoppa direkt till uppgiften, även innan träfflistan har laddats.
+- **Navigering:** en uppgift eller kommentar öppnar tavlan i rätt projekt, filtrerad på uppgiftens id. En story eller epic öppnar projektets backlog (epicvyn kommer i B3), en sprint sprintvyn och ett projekt översikten.
+- **Kommandon:** utan sökord visar paletten kommandon som "Gå till tavlan", "Ny uppgift" och "Kortkommandon". Skriver du något filtreras även kommandona.
+- **Tangentbord:** piltangenterna flyttar mellan träffar, Enter öppnar och Esc stänger. Paletten följer WAI-ARIA-mönstret combobox med lista, så skärmläsare läser upp vald träff och antalet träffar.
+
+### Kortkommandon
+
+| Tangenter | Gör |
+|---|---|
+| Ctrl/⌘ + K | Öppna eller stäng sök och kommandon |
+| / | Öppna sök |
+| ? | Visa alla kortkommandon |
+| C | Ny uppgift |
+| G sedan O / B / L / S / M / P | Gå till översikt, tavlan, backlog, sprintar, mätvärden eller projekt |
+
+Kortkommandona gäller inte när du skriver i ett fält eller när en annan dialog är öppen. Hjälpdialogen (?) är en modal dialog där fokus stannar tills du stänger den.
+
+`GET /api/search?q=…` är API:t bakom paletten. Valfria parametrar är `projectId`, `types` (till exempel `task,comment`), `limit` (högst 50) och `cursor` för nästa sida. Sökningen bygger på PostgreSQL:s fulltextsökning och `pg_trgm`. Migreringen V16 installerar `pg_trgm`, vilket kräver att databasanvändaren äger databasen, som i `compose.yaml`. Se [ADR 0016](adr/0016-postgresql-full-text-search.md).
+
 ## Optimerad sprintplanering (C1, under arbete)
 
 "Föreslå sprint" ska välja de stories som ger mest affärsvärde inom teamets kapacitet. Funktionens kärna finns nu i backend. API och knapp i sprintplaneringen kommer i ett senare steg.
