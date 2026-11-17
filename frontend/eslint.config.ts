@@ -60,7 +60,11 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
+
       'src/shared/i18n/icu.generated.ts',
+
+      'storybook-static/**',
+
       'coverage/**',
       'node_modules/**',
       'e2e/playwright-report/**',

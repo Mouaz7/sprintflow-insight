@@ -211,5 +211,20 @@ The smoke profile reuses the A4 fixture (disposable account, 23-task project, cl
 - **Accessibility.** `App.a11y.test.tsx` runs axe-core (WCAG 2.0–2.2 A/AA tags) on sign-in in both languages with the dark theme, password reset, overview, tasks, backlog, projects, profile, the mobile menu and a shared report, and fails on serious or critical findings. `src/test/axe.test.ts` proves the helper catches violations. jsdom has no layout, so colour contrast and target size are left to the browser checks below.
 - **Virtualization.** `app/Virtualization.test.tsx` renders 5,000 tasks and 5,000 stories with a simulated viewport (jsdom has no layout). The board renders 28 cards and about 1,500 DOM nodes, only rendered cards request attachments, and the backlog renders a bounded window of rows with `aria-rowcount=5001`.
 
-For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. The A8 end-to-end suite (`npm run e2e`, real app and database) runs in CI; it was not run locally for A6 because Docker was unavailable.
+For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. All six real-backend E2E flows (`npm run e2e`) subsequently passed both locally and in CI against the packaged Java app and PostgreSQL. A real-data Chromium check also verified 5,000 tasks and 5,000 stories (24 mounted cards and 12 rows), Home/End to both list edges, Swedish ICU plurals and an anonymous report link. `shared/i18n/icu.test.ts` checks genuine compiled ICU patterns; `npm run messages:check` rejects stale generated TypeScript.
 
+## Design system and visual baselines (A7)
+
+`npm run check --prefix frontend` includes shared chart/state tests and the existing feature/route regressions. `npm run storybook:build --prefix frontend` builds the separate component catalogue; it is never shipped in the Spring jar. The five SVG chart types all include table alternatives and keyboard data exploration.
+
+```sh
+npm ci --prefix frontend/e2e
+npm run storybook:build --prefix frontend
+npm run visual --prefix frontend
+# Only when intentionally changing the approved component appearance:
+npm run visual --prefix frontend/e2e -- --update-snapshots
+```
+
+Playwright compares every chart/state story in light and dark against the tracked PNGs in `frontend/e2e/visual/snapshots/`, then checks axe, complete data tables and keyboard selection. Review updated PNGs before committing them. CI's `storybook` job uploads failed comparisons/traces in `storybook-visual-report`; it does not regenerate expected images. Fonts are self-hosted and tests wait for `document.fonts.ready` for deterministic layout. The ordinary `npm run e2e` suite still runs against the real application and PostgreSQL.
+
+The production-server [chart E2E flow](../frontend/e2e/tests/charts.e2e.ts) creates a project and task through the real API, reads the migrated burndown, checks Home/End and its complete table, and runs axe in light and dark themes. It complements the isolated Storybook comparisons.
