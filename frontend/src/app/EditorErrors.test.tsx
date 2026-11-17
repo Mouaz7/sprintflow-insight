@@ -157,7 +157,7 @@ it('exports exactly the current board filters including unscheduled and unassign
     fireEvent.change(screen.getByRole('combobox', { name }), {
       target: { value },
     });
-  fireEvent.click(screen.getByRole('checkbox', { name: 'Blocked' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Manually blocked' }));
   const url = new URL(
     screen
       .getByRole('link', { name: 'Export filtered tasks (CSV)' })

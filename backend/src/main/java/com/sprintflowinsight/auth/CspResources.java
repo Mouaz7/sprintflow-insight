@@ -10,9 +10,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CspResources implements WebMvcConfigurer {
   /**
-   * Client-side routes of the single-page app. A reload or shared link on one of these paths
-   * serves the same nonce-transformed document as {@code /}; keep in sync with the frontend
-   * router ({@code frontend/src/app/App.tsx} and {@code WorkspaceRoutes.tsx}).
+   * Client-side routes of the single-page app. A reload or shared link on one of these paths serves
+   * the same nonce-transformed document as {@code /}; keep in sync with the frontend router ({@code
+   * frontend/src/app/App.tsx} and {@code WorkspaceRoutes.tsx}).
    */
   static final List<String> SPA_ROUTES =
       List.of(
@@ -20,6 +20,7 @@ public class CspResources implements WebMvcConfigurer {
           "/projects",
           "/backlog",
           "/sprints",
+          "/roadmap",
           "/tasks",
           "/metrics",
           "/updates",

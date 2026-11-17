@@ -61,6 +61,12 @@ export function useProjectRealtime(
               queryKey: queryKeys.tasks(projectId),
             });
             void client.invalidateQueries({
+              queryKey: queryKeys.dependencies(projectId),
+            });
+            void client.invalidateQueries({
+              queryKey: queryKeys.roadmap(projectId),
+            });
+            void client.invalidateQueries({
               queryKey: ['project', projectId, 'metrics'],
             });
           }

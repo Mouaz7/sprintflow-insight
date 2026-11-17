@@ -19,6 +19,7 @@ export type SearchTarget = {
   projectId?: number;
   /** Narrows the task board to this task, e.g. SF-12. */
   taskKey?: string;
+  epicId?: number;
 };
 
 type Command = {
@@ -50,6 +51,7 @@ export function targetOf(hit: SearchHit): SearchTarget {
         ? { view: 'tasks', projectId: hit.projectId, taskKey: hit.key }
         : { view: 'tasks', projectId: hit.projectId };
     case 'epic':
+      return { view: 'roadmap', projectId: hit.projectId, epicId: hit.id };
     case 'story':
       return { view: 'backlog', projectId: hit.projectId };
     case 'sprint':

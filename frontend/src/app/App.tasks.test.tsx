@@ -76,7 +76,7 @@ describe('App.tasks', () => {
     expect(screen.getByLabelText('Filter sprint')).toBeInTheDocument();
     expect(screen.getByLabelText('Filter assignee')).toBeInTheDocument();
     expect(screen.getByLabelText('Filter due date')).toBeInTheDocument();
-    expect(screen.getByLabelText('Blocked')).toBeInTheDocument();
+    expect(screen.getByLabelText('Manually blocked')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Filter status'), {
       target: { value: 'Done' },
     });

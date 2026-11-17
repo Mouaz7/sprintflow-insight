@@ -27,6 +27,11 @@ const TasksView = lazy(() =>
     default: m.TasksView,
   })),
 );
+const RoadmapView = lazy(() =>
+  import('../features/roadmap/RoadmapView').then((m) => ({
+    default: m.RoadmapView,
+  })),
+);
 const CalendarView = lazy(() =>
   import('../features/planning/CalendarView').then((m) => ({
     default: m.CalendarView,
@@ -81,6 +86,11 @@ function OverviewRoute() {
       onNewTask={requestTask}
     />
   );
+}
+
+function RoadmapRoute() {
+  const { activeProject } = useWorkspace();
+  return <RoadmapView project={activeProject} />;
 }
 
 function ProjectsRoute() {
@@ -189,6 +199,7 @@ const routes: Record<WorkspaceView, ReactNode> = {
   projects: <ProjectsRoute />,
   backlog: <InsightRoute view="backlog" />,
   sprints: <InsightRoute view="sprints" />,
+  roadmap: <RoadmapRoute />,
   tasks: <TasksRoute />,
   metrics: <InsightRoute view="metrics" />,
   updates: <InsightRoute view="updates" />,

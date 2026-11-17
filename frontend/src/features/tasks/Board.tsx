@@ -8,6 +8,7 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
   const {
     columns,
     tasks,
+    dependencyBlocked,
     draggedTaskId,
     updateTask,
     setDraggedTaskId,
@@ -29,10 +30,13 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
       draggable={canWrite && !busyTasks.has(task.id)}
       onDragStart={() => setDraggedTaskId(task.id)}
       onDragEnd={() => setDraggedTaskId(undefined)}
-      className={`${task.blocked ? 'is-blocked' : ''} ${task.dueAt && new Date(task.dueAt) < new Date() && task.status !== 'Done' ? 'is-overdue' : ''}`}
+      className={`${task.blocked || dependencyBlocked.has(task.id) ? 'is-blocked' : ''} ${task.dueAt && new Date(task.dueAt) < new Date() && task.status !== 'Done' ? 'is-overdue' : ''}`}
     >
       {task.key && <small className="task-key">{task.key}</small>}
       <strong>{task.title}</strong>
+      {dependencyBlocked.has(task.id) && (
+        <small className="blocked-label">{t('dependencyBlocked')}</small>
+      )}
       {task.blocked && (
         <small className="blocked-label">
           {t('blockedLabel')} · {task.blockReason}

@@ -258,6 +258,7 @@
                         <param>com.sprintflowinsight.search.SearchQuery</param>
                         <param>com.sprintflowinsight.search.SearchCursor</param>
                         <param>com.sprintflowinsight.search.SearchType</param>
+                        <param>com.sprintflowinsight.workspace.roadmap.schedule.*</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.sprintflowinsight.*Test</param>

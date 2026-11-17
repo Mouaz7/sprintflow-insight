@@ -21,4 +21,5 @@
 @import './shared/ui/states.css' layer(design);
 @import './features/search/search.css' layer(design);
 @import './features/realtime/realtime.css' layer(design);
+@import './features/roadmap/roadmap.css' layer(design);
 @import './shared/styles/accessibility.css' layer(accessibility);

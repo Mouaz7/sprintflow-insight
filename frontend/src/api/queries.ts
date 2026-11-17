@@ -6,6 +6,7 @@ import {
 import { api, ApiError } from './client';
 import type {
   Preferences,
+  DependencyOverview,
   Project,
   ProjectMember,
   Sprint,
@@ -44,6 +45,9 @@ export const queryKeys = {
   sprints: (id: number) => ['project', id, 'sprints'] as const,
   stories: (id: number) => ['project', id, 'stories'] as const,
   tasks: (id: number) => ['project', id, 'tasks'] as const,
+  dependencies: (id: number) => ['project', id, 'dependencies'] as const,
+  roadmap: (id: number) => ['project', id, 'roadmap'] as const,
+  estimates: (id: number) => ['project', id, 'estimates'] as const,
 };
 
 /** The signed-in user, or `null` when the server reports no session. */
@@ -91,6 +95,13 @@ export const storiesQuery = (projectId: number) =>
   queryOptions({
     queryKey: queryKeys.stories(projectId),
     queryFn: () => api<Story[]>(`/stories/project/${projectId}`),
+  });
+
+export const dependenciesQuery = (projectId: number) =>
+  queryOptions({
+    queryKey: queryKeys.dependencies(projectId),
+    queryFn: () =>
+      api<DependencyOverview>(`/projects/${projectId}/dependencies`),
   });
 
 export const tasksQuery = (projectId: number) =>

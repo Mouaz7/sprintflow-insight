@@ -129,3 +129,16 @@ Tavlan, öppna kommentarstrådar och notisklockan uppdateras när andra arbetar 
 Sidhuvudet visar andra projektmedlemmars initialer. Håll pekaren över närvaron för namn och vilken uppgift de har öppen; skärmläsare får samma information. Flera flikar sammanförs till en person. Indikatorn visar om liveuppdateringarna är anslutna eller återansluter. Efter ett avbrott hämtas missade händelser automatiskt; om historiken har gallrats uppdateras projektets data i stället.
 
 Alla läsroller, inklusive Viewer och medlemmar i arkiverade projekt, kan se närvaro och rapportera vilken uppgift de tittar på. Det ger ingen skrivrätt. Närvaron innehåller visningsnamn och uppgiftsreferenser, aldrig e-post eller uppgiftstext. En instans stöds nu; flera instanser kräver C6:s externa broker enligt [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).
+
+
+## Epics, färdplan och beroenden (B3)
+
+Öppna **Färdplan** i projektet. Skapa en epic med namn, beskrivning, färg och valfria planerade datum. **Storyns epic** kopplar en story till en epic; **Ingen epic** tar bort kopplingen utan att ändra sprint eller uppgifter. Radering av en epic behåller dess arbete.
+
+Tidslinjen visar epics, sprintar, framsteg och pilar mellan epics vars uppgifter har beroenden. Rulla med tangentbordet eller öppna tabellen för samtliga datum och framsteg. Fokusera på en epic för dess egen prognos. Framsteg räknas som klara storypoäng: en story behöver minst en uppgift och alla dess uppgifter ska vara klara.
+
+**Lägg till beroende** väljer först uppgiften som måste bli klar, sedan den väntande uppgiften. Cykler avvisas och visar uppgiftskedjan. Tavlan markerar väntande uppgifter separat från manuella blockeringar. När blockeraren blir klar försvinner beroendeblockeringen. Tavlans filter för manuellt blockerade uppgifter och dess export behåller den manuella blockeringens betydelse. Färdplanen varnar när arbete i den aktiva sprinten väntar på oavslutat arbete utanför sprinten.
+
+**Uppskatta en uppgift** anger optimistisk, troligaste och pessimistisk tid i arbetsdagar (0–1000, högst två decimaler, stigande ordning). PERT visar den förväntade kritiska vägen, förväntat slutdatum och en ungefärlig sannolikhet till epicens måldatum. Oavslutade blockerare utanför epicen räknas med. Saknade estimat eller stories utan uppgifter döljer slutdatum och sannolikhet; sidan visar vad som saknas. Helger räknas bort, men inte helgdagar. Oberoende tider och en normalfördelningsapproximation antas; nära parallella vägar kan ge en optimistisk sannolikhet. Använd prognosen som planeringsstöd.
+
+Viewer och arkiverade projekt kan läsa färdplanen. Ägare, administratörer och medlemmar i aktiva projekt kan ändra den. Versionskonflikter behåller formulärets utkast; kopiera utkastet och öppna posten igen för att jämföra med senaste versionen. Sökresultat för epics öppnar rätt epic på färdplanen. Se [ADR 0019](adr/0019-epics-dependencies-and-pert.md) för beräkningar och API-kontraktet för gränser och versionskrav.

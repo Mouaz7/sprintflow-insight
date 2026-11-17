@@ -8,6 +8,7 @@ export const GO_TO = [
   { key: 'b', view: 'tasks', label: 'goBoard' },
   { key: 'l', view: 'backlog', label: 'goBacklog' },
   { key: 's', view: 'sprints', label: 'goSprints' },
+  { key: 'r', view: 'roadmap', label: 'goRoadmap' },
   { key: 'm', view: 'metrics', label: 'goMetrics' },
   { key: 'p', view: 'projects', label: 'goProjects' },
 ] as const satisfies readonly {

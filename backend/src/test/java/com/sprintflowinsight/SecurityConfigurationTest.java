@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -89,7 +89,10 @@ class SecurityConfigurationTest {
         "Build frontend first to exercise its packaged document.");
     for (String path :
         java.util.List.of(
-            "/tasks", "/report/private-share-token", "/reset-password?token=private-reset")) {
+            "/tasks",
+            "/roadmap?epic=1",
+            "/report/private-share-token",
+            "/reset-password?token=private-reset")) {
       ResponseEntity<String> response = rest.getForEntity(url(path), String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
       var nonce =

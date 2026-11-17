@@ -1,9 +1,39 @@
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { server } from '../test/server';
-import { api } from './client';
+import { api, ApiError } from './client';
 
 describe('REST client', () => {
+  it('retains structured conflict extensions for actionable cycle feedback', async () => {
+    server.use(
+      http.get('*/api/projects/1/dependencies', () =>
+        HttpResponse.json(
+          { detail: 'Cycle', cycleKeys: ['SF-1', 'SF-2', 'SF-1'] },
+          { status: 409 },
+        ),
+      ),
+    );
+    const cause = await api('/projects/1/dependencies').catch(
+      (error: unknown) => error,
+    );
+    expect(cause).toBeInstanceOf(ApiError);
+    expect((cause as ApiError).problem.cycleKeys).toEqual([
+      'SF-1',
+      'SF-2',
+      'SF-1',
+    ]);
+  });
+
+  it('handles a null error body and preserves successful arrays and primitives', async () => {
+    server.use(
+      http.get('*/api/null', () => HttpResponse.json(null, { status: 500 })),
+      http.get('*/api/array', () => HttpResponse.json([1, 2])),
+      http.get('*/api/count', () => HttpResponse.json(3)),
+    );
+    await expect(api('/null')).rejects.toBeInstanceOf(ApiError);
+    await expect(api('/array')).resolves.toEqual([1, 2]);
+    await expect(api('/count')).resolves.toBe(3);
+  });
   afterEach(() => vi.restoreAllMocks());
 
   it('adds the server CSRF token to state-changing requests', async () => {

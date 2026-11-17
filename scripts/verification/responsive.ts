@@ -8,7 +8,7 @@ import { responsiveFixture } from './responsive-fixtures.ts';
 const base = process.env.SPRINTFLOW_QA_URL || 'http://127.0.0.1:8081';
 const out = fileURLToPath(new URL('../../artifacts/responsive/', import.meta.url));
 const widths = [320, 390, 767, 768, 1023, 1024, 1279, 1280, 1920, 2560];
-const views = ['overview', 'projects', 'backlog', 'sprints', 'tasks', 'metrics', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
+const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
 fs.mkdirSync(out, { recursive: true });
 const results: { label: string; width: number; height: number }[] = [];
 
@@ -103,15 +103,15 @@ async function checkOverlay(page: Page, selector: string) {
           await page.setViewportSize({ width, height: 900 });
           const label = `${language}/${theme}/${empty ? 'empty' : 'populated'}/${views[view]}`;
           await checkLayout(page, label);
-          if (!empty && view === 4) {
+          if (!empty && views[view] === 'tasks') {
             const columns = await page.locator('.task-board').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
             assert.equal(columns, width >= 1280 ? 4 : width >= 768 ? 2 : 1, `${label}: board columns`);
           }
-          if (!empty && view === 8) {
+          if (!empty && views[view] === 'calendar') {
             const columns = await page.locator('.calendar-grid').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
             assert.equal(columns, width < 768 ? 1 : 7, `${label}: calendar columns`);
           }
-          if (language === 'SV' && theme === 'light' && !empty && [0, 4, 8].includes(view) && [320, 768, 1024, 2560].includes(width)) {
+          if (language === 'SV' && theme === 'light' && !empty && ['overview', 'roadmap', 'tasks', 'calendar'].includes(views[view]) && [320, 768, 1024, 2560].includes(width)) {
             await page.screenshot({ path: path.join(out, `${views[view]}-${width}.png`), fullPage: true });
           }
         }
@@ -156,7 +156,7 @@ async function checkOverlay(page: Page, selector: string) {
       await page.setViewportSize({ width: 1024, height: 900 });
       await page.locator('.mobile-menu').waitFor({ state: 'detached' });
       await page.waitForFunction(() => document.activeElement?.matches('.header-navigation [aria-current="page"]'));
-      await navigate(page, 4);
+      await navigate(page, views.indexOf('tasks'));
       await page.locator('.page-heading .primary-action').focus(); await page.keyboard.press('Enter');
       await page.locator('.editor-drawer').waitFor();
       for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }]) {

@@ -4,6 +4,7 @@ import { api } from '../../api/client';
 import type { Task } from '../../api/contracts';
 import {
   afterProjectWrite,
+  dependenciesQuery,
   membersQuery,
   roleQuery,
   sprintsQuery,
@@ -64,10 +65,17 @@ export function useTaskBoard({
       { ...sprintsQuery(projectId ?? 0), enabled: !!projectId },
       { ...membersQuery(projectId ?? 0), enabled: !!projectId },
       { ...roleQuery(projectId ?? 0), enabled: !!projectId },
+      { ...dependenciesQuery(projectId ?? 0), enabled: !!projectId },
     ],
   });
-  const [taskResult, storyResult, sprintResult, memberResult, roleResult] =
-    board;
+  const [
+    taskResult,
+    storyResult,
+    sprintResult,
+    memberResult,
+    roleResult,
+    dependencyResult,
+  ] = board;
   // As before, one failed request leaves the whole board empty with its message.
   const loadError = board.find((result) => result.isError)?.error;
   const loaded = !!projectId && !loadError;
@@ -77,13 +85,20 @@ export function useTaskBoard({
   const sprints = (loaded && sprintResult.data) || [];
   const members = (loaded && memberResult.data) || [];
   const projectRole = (loaded && roleResult.data?.role) || '';
+  const dependencyBlocked = new Set(
+    dependencyResult.data?.blockedTaskIds ?? [],
+  );
   function setTasks(update: (items: Task[]) => Task[]) {
     if (!projectId) return;
     queryClient.setQueryData(tasksQuery(projectId).queryKey, (items) =>
       update(items ?? []),
     );
     // Other views of the project reload when they open.
-    void afterProjectWrite(queryClient, projectId);
+    void afterProjectWrite(
+      queryClient,
+      projectId,
+      dependenciesQuery(projectId).queryKey,
+    );
   }
   const [blocking, setBlocking] = useState<Task>();
   const [discussion, setDiscussion] = useState<Task>();
@@ -392,6 +407,7 @@ export function useTaskBoard({
     setSavedTitle,
     loading,
     tasks,
+    dependencyBlocked,
     setTasks,
     stories,
     sprints,

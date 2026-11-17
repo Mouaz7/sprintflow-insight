@@ -98,7 +98,9 @@ it('reveals a created task when search and a saved blocked filter would hide it'
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Search tasks')).toHaveValue('');
   expect(screen.getByLabelText('Saved filters')).toHaveValue('');
-  expect(screen.getByLabelText('Blocked', { exact: true })).not.toBeChecked();
+  expect(
+    screen.getByLabelText('Manually blocked', { exact: true }),
+  ).not.toBeChecked();
 });
 
 it('reveals and selects a new project despite search and archived-project filters', async () => {

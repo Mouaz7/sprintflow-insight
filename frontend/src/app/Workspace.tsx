@@ -45,6 +45,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'projects',
   'backlog',
   'sprints',
+  'roadmap',
   'tasks',
   'metrics',
   'updates',
@@ -228,6 +229,7 @@ function WorkspaceShell() {
     if (target.projectId !== undefined) setSelectedProjectId(target.projectId);
     const params = new URLSearchParams();
     if (target.taskKey) params.set('task', target.taskKey);
+    if (target.epicId !== undefined) params.set('epic', String(target.epicId));
     void navigate(`/${target.view}${params.size ? `?${params}` : ''}`);
     setMenuOpen(false);
   }
@@ -289,6 +291,7 @@ function WorkspaceShell() {
             <label className="project-control">
               <span>{t('project')}</span>
               <select
+                aria-label={t('project')}
                 value={activeProjectId ?? ''}
                 disabled={!session.projects.length}
                 onChange={(e) => setActiveProjectId(Number(e.target.value))}

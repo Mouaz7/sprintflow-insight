@@ -42,8 +42,9 @@ describe('search support', () => {
       projectId: 3,
     });
     expect(targetOf({ ...base, type: 'epic' })).toEqual({
-      view: 'backlog',
+      view: 'roadmap',
       projectId: 3,
+      epicId: 1,
     });
     expect(targetOf({ ...base, type: 'story' })).toEqual({
       view: 'backlog',
