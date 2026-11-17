@@ -83,6 +83,12 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
     }
 
     @Override
+    public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command,
+        StompHeaders headers, byte[] payload, Throwable exception) {
+      errors.add("CLIENT " + command + " " + exception);
+    }
+
+    @Override
     public void handleTransportError(StompSession session, Throwable exception) {
       errors.add("TRANSPORT " + exception);
     }

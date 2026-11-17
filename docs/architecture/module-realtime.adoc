@@ -5,6 +5,7 @@
 |Spring components
 |_Controllers_
 
+* `c.s.r.PresenceController`
 * `c.s.r.RealtimeController`
 
 _Services_
@@ -30,11 +31,14 @@ _Others_
 |Bean references
 |* `c.s.w.project.ProjectAccessService` (in Workspace)
 * `c.s.a.UserRepository` (in Auth)
+* `c.s.w.task.TaskRepository` (in Workspace)
 |Events listened to
-|* `c.s.w.events.CommentAdded` (async) 
+|* `c.s.w.events.WorkspaceChanged` (async) 
+* `c.s.w.events.CommentAdded` (async) 
 * `c.s.w.events.TaskCreated` (async) 
 * `c.s.w.events.TaskDeleted` (async) 
 * `c.s.w.events.TaskMoved` (async) 
+* `c.s.n.NotificationDelivered` (async) 
 * `c.s.w.events.SprintStatusChanged` (async) 
 * `c.s.w.events.TaskUpdated` (async) 
 * `org.springframework.web.socket.messaging.SessionDisconnectEvent` 

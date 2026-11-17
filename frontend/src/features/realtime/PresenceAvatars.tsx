@@ -24,7 +24,11 @@ export function PresenceAvatars({ viewers, selfId, status, language }: Props) {
   const sv = language === 'SV';
   const others = viewers.filter((viewer) => viewer.userId !== selfId);
   const fallback = sv ? 'Teammedlem' : 'Team member';
-  const names = others.map((viewer) => viewer.name || fallback);
+  const names = others.map((viewer) => {
+    const name = viewer.name || fallback;
+    const tasks = viewer.taskIds ?? [];
+    return tasks.length ? `${name} (${sv ? 'uppgift' : 'task'} ${tasks.map(id => `#${id}`).join(', ')})` : name;
+  });
   const label =
     status !== 'live'
       ? sv

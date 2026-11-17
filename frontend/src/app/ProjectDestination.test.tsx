@@ -1,13 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { Workspace } from './Workspace';
+import { renderWorkspace } from './testWorkspace';
 
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 const projects = [
@@ -86,19 +80,13 @@ beforeEach(() => {
   });
 });
 async function open(view: string, action: string) {
-  render(
-    <Workspace
-      session={{ user: { id: 1, email: 'qa@example.com' }, projects }}
-      onProjectsChanged={vi.fn()}
-      onLogout={vi.fn()}
-      onUserChanged={vi.fn()}
-      onAccountDeleted={vi.fn()}
-    />,
-  );
+  renderWorkspace({
+    session: { user: { id: 1, email: 'qa@example.com' }, projects },
+  });
   fireEvent.click(
     within(
       screen.getByRole('navigation', { name: 'Main navigation' }),
-    ).getByRole('button', { name: view }),
+    ).getByRole('link', { name: view }),
   );
   const button = await screen.findByRole('button', {
     name: new RegExp(action),
@@ -264,28 +252,22 @@ it.each([
 ])(
   'switches the current project directly on the %s page',
   async (view, destinationRead) => {
-    render(
-      <Workspace
-        session={{ user: { id: 1, email: 'qa@example.com' }, projects }}
-        onProjectsChanged={vi.fn()}
-        onLogout={vi.fn()}
-        onUserChanged={vi.fn()}
-        onAccountDeleted={vi.fn()}
-      />,
-    );
+    renderWorkspace({
+      session: { user: { id: 1, email: 'qa@example.com' }, projects },
+    });
     fireEvent.click(
       within(
         screen.getByRole('navigation', { name: 'Main navigation' }),
-      ).getByRole('button', { name: view }),
+      ).getByRole('link', { name: view }),
     );
-    fireEvent.change(
-      screen.getByRole('combobox', { name: 'Current project' }),
-      { target: { value: '2' } },
-    );
-    expect(screen.getByRole('combobox', { name: 'Project' })).toHaveValue('2');
+    // One project picker serves every page (A6 removed the duplicate in the page).
     expect(
-      screen.getByRole('combobox', { name: 'Current project' }),
-    ).toHaveValue('2');
+      screen.queryByRole('combobox', { name: 'Current project' }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Project' }), {
+      target: { value: '2' },
+    });
+    expect(screen.getByRole('combobox', { name: 'Project' })).toHaveValue('2');
     await waitFor(() => expect(api).toHaveBeenCalledWith(destinationRead));
   },
 );

@@ -29,11 +29,11 @@ include::module-workspace.adoc[]
 plantuml::module-notifications.puml[,,format=svg]
 include::module-notifications.adoc[]
 
-== Realtime
-plantuml::module-realtime.puml[,,format=svg]
-include::module-realtime.adoc[]
-
 == Reporting
 plantuml::module-reporting.puml[,,format=svg]
 include::module-reporting.adoc[]
+
+== Realtime
+plantuml::module-realtime.puml[,,format=svg]
+include::module-realtime.adoc[]
 

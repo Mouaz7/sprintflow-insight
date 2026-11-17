@@ -1,4 +1,7 @@
 import type { Language, WorkspaceView } from '../../api/contracts';
+import { useLanguage, useT } from '../i18n/LanguageProvider';
+import { translator } from '../i18n/lexicon';
+import { uiText } from './i18n';
 
 type Copy = readonly [sv: string, en: string];
 const text = (copy: Copy, language: Language) =>
@@ -57,7 +60,13 @@ const examples = {
 } satisfies Record<string, Copy>;
 
 export function fieldExample(field: keyof typeof examples, language: Language) {
-  return `${language === 'SV' ? 'Exempel: ' : 'E.g. '}${text(examples[field], language)}`;
+  return `${translator(uiText, language)('example')}${text(examples[field], language)}`;
+}
+
+/** `fieldExample` in the current language. */
+export function useFieldExample() {
+  const { language } = useLanguage();
+  return (field: keyof typeof examples) => fieldExample(field, language);
 }
 
 type Field = readonly [label: Copy, description: Copy];
@@ -328,26 +337,15 @@ const formGuides = {
   },
 } satisfies Record<string, Guide>;
 
-export function FormGuide({
-  topic,
-  language,
-}: {
-  topic: keyof typeof formGuides;
-  language: Language;
-}) {
+export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
   const guide: Guide = formGuides[topic];
+  const { language } = useLanguage();
+  const t = useT(uiText);
   return (
-    <aside
-      className="form-guide"
-      aria-label={language === 'SV' ? 'Hjälp med formuläret' : 'Form help'}
-    >
+    <aside className="form-guide" aria-label={t('formHelp')}>
       <p>{text(guide.intro, language)}</p>
       <details className="guidance">
-        <summary>
-          {language === 'SV'
-            ? 'Förklaringar och exempel'
-            : 'Explanations and examples'}
-        </summary>
+        <summary>{t('explanations')}</summary>
         <dl>
           {guide.fields.map(([label, description]) => (
             <div key={label[1]}>
@@ -408,18 +406,12 @@ const pageGuides = {
   ],
 } satisfies Record<WorkspaceView, Copy>;
 
-export function PageGuide({
-  view,
-  language,
-}: {
-  view: WorkspaceView;
-  language: Language;
-}) {
+export function PageGuide({ view }: { view: WorkspaceView }) {
+  const { language } = useLanguage();
+  const t = useT(uiText);
   return (
     <details className="guidance page-guide">
-      <summary>
-        {language === 'SV' ? 'Så fungerar sidan' : 'How this page works'}
-      </summary>
+      <summary>{t('howPageWorks')}</summary>
       <p>{text(pageGuides[view], language)}</p>
     </details>
   );

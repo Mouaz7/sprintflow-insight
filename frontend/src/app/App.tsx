@@ -1,71 +1,80 @@
-import { useEffect, useState } from 'react';
-import { api, ApiError, clearCsrfToken } from '../api/client';
-import type { Project, Session, User } from '../api/contracts';
-import { AuthScreen } from '../features/auth/AuthScreen';
-import { PublicReportView } from '../features/insights/SharedReports';
-import { Workspace } from './Workspace';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense, useState } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router';
+import { createQueryClient } from '../api/queries';
+import { LanguageProvider } from '../shared/i18n/LanguageProvider';
+import { ThemeProvider } from '../shared/theme/ThemeProvider';
+import { RouteLoading } from '../shared/ui/RouteLoading';
+import { SessionGate } from './SessionGate';
+import { WorkspaceLayout } from './Workspace';
+import { workspaceRoutes } from './WorkspaceRoutes';
+
+const PublicReportView = lazy(() =>
+  import('../features/insights/SharedReports').then((module) => ({
+    default: module.PublicReportView,
+  })),
+);
 
 export function App() {
-  const token = new URLSearchParams(window.location.search).get('report');
-  return token ? <PublicReportView token={token} /> : <SessionApp />;
+  const [queryClient] = useState(createQueryClient);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  );
 }
 
-function SessionApp() {
-  const [session, setSession] = useState<Session>();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([api<User>('/auth/me'), api<Project[]>('/projects')])
-      .then(([user, projects]) => {
-        if (!cancelled) setSession({ user, projects });
-      })
-      .catch((cause) => {
-        if (!cancelled && !(cause instanceof ApiError && cause.status === 401))
-          setError(
-            'Could not load the workspace. Please check the connection and try again.',
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  async function signedIn(user: User) {
-    const projects = await api<Project[]>('/projects');
-    setSession({ user, projects });
-  }
-  async function refreshProjects() {
-    const projects = await api<Project[]>('/projects');
-    setSession((current) => current && { ...current, projects });
-  }
-  function signedOut() {
-    clearCsrfToken();
-    setSession(undefined);
-    setError('');
-  }
-  if (loading)
-    return (
-      <main className="app-loading" role="status">
-        Loading SprintFlow…
-      </main>
-    );
-  if (!session || new URLSearchParams(window.location.search).has('resetToken'))
-    return <AuthScreen onSignedIn={signedIn} initialError={error} />;
+function AppRoutes() {
+  const legacy = legacyRedirect(useLocation().search);
+  if (legacy) return <Navigate to={legacy} replace />;
   return (
-    <Workspace
-      session={session}
-      onProjectsChanged={refreshProjects}
-      onUserChanged={(user) =>
-        setSession((current) => current && { ...current, user })
-      }
-      onAccountDeleted={signedOut}
-      onLogout={async () => {
-        await api('/auth/logout', { method: 'POST' });
-        signedOut();
-      }}
-    />
+    <Routes>
+      <Route path="/report/:token" element={<PublicReportRoute />} />
+      <Route element={<SessionGate />}>
+        {/* The gate renders the password form for this path. */}
+        <Route path="/reset-password" element={null} />
+        {workspaceTree}
+      </Route>
+    </Routes>
+  );
+}
+
+/** The signed-in workspace: one route per view inside the shared shell. */
+export const workspaceTree = (
+  <Route element={<WorkspaceLayout />}>
+    {workspaceRoutes}
+    <Route path="*" element={<Navigate to="/overview" replace />} />
+  </Route>
+);
+
+/** Links sent before A6 used query parameters on the root path. */
+export function legacyRedirect(search: string): string | undefined {
+  const params = new URLSearchParams(search);
+  const report = params.get('report');
+  if (report) return `/report/${encodeURIComponent(report)}`;
+  const reset = params.get('resetToken');
+  if (reset) return `/reset-password?token=${encodeURIComponent(reset)}`;
+  return undefined;
+}
+
+function PublicReportRoute() {
+  const { token = '' } = useParams();
+  return (
+    <Suspense fallback={<RouteLoading />}>
+      <PublicReportView token={token} />
+    </Suspense>
   );
 }

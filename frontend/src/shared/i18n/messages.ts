@@ -1,4 +1,5 @@
 import type { Language } from '../../api/contracts';
+import { defineLexicon, translator } from './lexicon';
 
 // Keep the original message in state and translate when rendering, so switching
 // language also updates an error that is already visible. Never translate user data.
@@ -259,15 +260,18 @@ export function localizeMessage(message: string, language: Language): string {
   return message;
 }
 
+const roles = defineLexicon({
+  EN: { Owner: 'Owner', Admin: 'Admin', Member: 'Member', Viewer: 'Viewer' },
+  SV: {
+    Owner: 'Ägare',
+    Admin: 'Administratör',
+    Member: 'Medlem',
+    Viewer: 'Läsbehörighet',
+  },
+});
+
 export function roleLabel(role: string, language: Language): string {
-  return language === 'SV'
-    ? ((
-        {
-          Owner: 'Ägare',
-          Admin: 'Administratör',
-          Member: 'Medlem',
-          Viewer: 'Läsbehörighet',
-        } as Record<string, string>
-      )[role] ?? role)
+  return role in roles.EN
+    ? translator(roles, language)(role as keyof typeof roles.EN)
     : role;
 }

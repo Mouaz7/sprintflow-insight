@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+// Feature components need the query client and language providers.
+import { renderWithProviders as render } from '../test/render';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
 import { ActivityTimeline } from '../features/insights/ActivityTimeline';
@@ -22,29 +24,17 @@ describe('Failed editor requests', () => {
       const onChanged = vi.fn();
       if (kind === 'story')
         render(
-          <BacklogManager
-            projectId={1}
-            items={[]}
-            language="EN"
-            onChanged={onChanged}
-          />,
+          <BacklogManager projectId={1} items={[]} onChanged={onChanged} />,
         );
       if (kind === 'sprint')
         render(
-          <SprintManager
-            projectId={1}
-            items={[]}
-            language="EN"
-            onChanged={onChanged}
-          />,
+          <SprintManager projectId={1} items={[]} onChanged={onChanged} />,
         );
-      if (kind === 'task')
-        render(<TasksView projectId={1} hasProjects language="EN" />);
+      if (kind === 'task') render(<TasksView projectId={1} hasProjects />);
       if (kind === 'update')
         render(
           <ActivityTimeline
             projectId={1}
-            language="EN"
             canManage
             items={[
               {
@@ -122,7 +112,7 @@ it('closes an unchanged task without a false dirty warning when the local date d
         : [],
   );
   try {
-    render(<TasksView projectId={1} hasProjects language="EN" />);
+    render(<TasksView projectId={1} hasProjects />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
     expect(screen.getByLabelText('Due date')).toHaveValue('2026-10-24');
     fireEvent.click(screen.getByRole('button', { name: 'Close panel' }));
@@ -152,7 +142,7 @@ it('exports exactly the current board filters including unscheduled and unassign
         ]
       : [],
   );
-  render(<TasksView projectId={1} hasProjects language="EN" />);
+  render(<TasksView projectId={1} hasProjects />);
   await screen.findByRole('option', { name: 'Bug' });
   fireEvent.change(screen.getByRole('searchbox', { name: 'Search tasks' }), {
     target: { value: 'a & b' },
@@ -209,7 +199,7 @@ it('waits for a status update before blocking with the returned task version', a
       return { ...task, version: 2, status: 'In Progress', blocked: true };
     return path === '/tasks?projectId=1' ? [task] : [];
   });
-  render(<TasksView projectId={1} hasProjects language="EN" />);
+  render(<TasksView projectId={1} hasProjects />);
   const status = await screen.findByRole('combobox', { name: 'Move to' });
   fireEvent.change(status, { target: { value: 'In Progress' } });
   expect(screen.getByRole('button', { name: 'Block' })).toBeDisabled();

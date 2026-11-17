@@ -6,6 +6,56 @@ import boundaries from 'eslint-plugin-boundaries';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
+const policies = [
+  {
+    from: { element: { type: 'entry' } },
+    allow: { to: { element: { types: ['app'] } } },
+  },
+  {
+    from: { element: { type: 'app' } },
+    allow: {
+      to: { element: { types: ['app', 'feature', 'shared', 'api'] } },
+    },
+  },
+  {
+    from: { element: { type: 'feature' } },
+    allow: { to: { element: { types: ['shared', 'api'] } } },
+  },
+  {
+    from: { element: { type: 'feature' } },
+    allow: {
+      to: {
+        element: {
+          type: 'feature',
+          captured: { feature: '{{from.element.captured.feature}}' },
+        },
+      },
+    },
+  },
+  {
+    from: { element: { type: 'shared' } },
+    allow: { to: { element: { types: ['shared', 'api'] } } },
+  },
+  {
+    from: { element: { type: 'api' } },
+    allow: { to: { element: { type: 'api' } } },
+  },
+];
+
+// Test helpers in src/test may be imported by tests only; they compose the
+// application providers, so they may import shared and api code.
+const testPolicies = [
+  ...policies,
+  {
+    from: { element: { types: ['app', 'feature', 'shared', 'api'] } },
+    allow: { to: { element: { type: 'test-setup' } } },
+  },
+  {
+    from: { element: { type: 'test-setup' } },
+    allow: { to: { element: { types: ['test-setup', 'shared', 'api'] } } },
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -43,60 +93,26 @@ export default tseslint.config(
       ],
       ...reactHooks.configs['recommended-latest'].rules,
       'react-hooks/exhaustive-deps': 'error',
-      // Views still reset loading/error state before fetching in effects. That
-      // behaviour is kept unchanged in A5 and moves to query hooks later.
-      'react-hooks/set-state-in-effect': 'off',
       ...jsxA11y.flatConfigs.recommended.rules,
       'jsx-a11y/label-has-associated-control': [
         'error',
         { controlComponents: ['DateInput'] },
       ],
-      'boundaries/dependencies': [
-        'error',
-        {
-          default: 'disallow',
-          policies: [
-            {
-              from: { element: { type: 'entry' } },
-              allow: { to: { element: { types: ['app'] } } },
-            },
-            {
-              from: { element: { type: 'app' } },
-              allow: {
-                to: { element: { types: ['app', 'feature', 'shared', 'api'] } },
-              },
-            },
-            {
-              from: { element: { type: 'feature' } },
-              allow: { to: { element: { types: ['shared', 'api'] } } },
-            },
-            {
-              from: { element: { type: 'feature' } },
-              allow: {
-                to: {
-                  element: {
-                    type: 'feature',
-                    captured: { feature: '{{from.element.captured.feature}}' },
-                  },
-                },
-              },
-            },
-            {
-              from: { element: { type: 'shared' } },
-              allow: { to: { element: { types: ['shared', 'api'] } } },
-            },
-            {
-              from: { element: { type: 'api' } },
-              allow: { to: { element: { type: 'api' } } },
-            },
-          ],
-        },
-      ],
+      'boundaries/dependencies': ['error', { default: 'disallow', policies }],
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}'],
+    files: [
+      '**/*.test.{ts,tsx}',
+      'src/test/**',
+      'src/app/testWorkspace.tsx',
+      'src/app/appTestFixtures.ts',
+    ],
     rules: {
+      'boundaries/dependencies': [
+        'error',
+        { default: 'disallow', policies: testPolicies },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
     },

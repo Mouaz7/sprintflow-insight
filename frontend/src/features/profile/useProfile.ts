@@ -2,9 +2,10 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import type { User } from '../../api/contracts';
+import { useT } from '../../shared/i18n/LanguageProvider';
+import { profileText } from './i18n';
 type ProfileProps = {
   user: User;
-  language: 'EN' | 'SV';
   onSaved: (user: User) => void;
   onLogout: () => Promise<void>;
   onAccountDeleted: () => void;
@@ -15,14 +16,13 @@ type ProfileProps = {
 export type ProfileViewProps = ProfileProps;
 export function useProfile({
   user,
-  language,
   onSaved,
   onLogout,
   onAccountDeleted,
   onAppearance,
   onReplay,
 }: ProfileViewProps) {
-  const sv = language === 'SV';
+  const t = useT(profileText);
   const [tab, setTab] = useState<'details' | 'security' | 'settings'>(
     'details',
   );
@@ -44,12 +44,22 @@ export function useProfile({
     bio !== (user.bio || '') ||
     avatarImage !== (user.avatarImage || '');
 
-  useEffect(() => {
+  // When the saved account changes, the form follows it (adjusted while
+  // rendering instead of in an effect).
+  const savedUser = [
+    user.displayName,
+    user.jobTitle,
+    user.bio,
+    user.avatarImage,
+  ].join('\u0000');
+  const [syncedUser, setSyncedUser] = useState(savedUser);
+  if (syncedUser !== savedUser) {
+    setSyncedUser(savedUser);
     setDisplayName(user.displayName || '');
     setJobTitle(user.jobTitle || '');
     setBio(user.bio || '');
     setAvatarImage(user.avatarImage || '');
-  }, [user.displayName, user.jobTitle, user.bio, user.avatarImage]);
+  }
 
   useEffect(
     () => () => {
@@ -80,9 +90,7 @@ export function useProfile({
     event.target.value = '';
     if (!file) return;
     clearFeedback();
-    const invalidImage = sv
-      ? 'Välj PNG, JPEG, WEBP eller GIF under 750 kB.'
-      : 'Choose a PNG, JPEG, WEBP or GIF under 750 KB.';
+    const invalidImage = t('invalidImage');
     if (
       !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(
         file.type,
@@ -104,11 +112,7 @@ export function useProfile({
     };
     reader.onerror = () => {
       setReadingImage(false);
-      setError(
-        sv
-          ? 'Bilden kunde inte läsas. Välj en annan bild.'
-          : 'We couldn’t read this photo. Choose another image.',
-      );
+      setError(t('unreadableImage'));
     };
     reader.onabort = () => setReadingImage(false);
     reader.readAsDataURL(file);
@@ -118,7 +122,7 @@ export function useProfile({
     event.preventDefault();
     if (saving || readingImage || !dirty) return;
     if (!displayName.trim()) {
-      setError(sv ? 'Ange ditt namn.' : 'Enter your name.');
+      setError(t('enterName'));
       return;
     }
     setSaving(true);
@@ -137,15 +141,9 @@ export function useProfile({
         }),
       });
       onSaved(updated);
-      setMessage(sv ? 'Profilen har sparats.' : 'Profile saved.');
+      setMessage(t('profileSaved'));
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : sv
-            ? 'Profilen kunde inte sparas. Försök igen.'
-            : 'Could not save your profile. Please try again.',
-      );
+      setError(cause instanceof Error ? cause.message : t('profileSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -159,11 +157,7 @@ export function useProfile({
       await onLogout();
     } catch (cause) {
       setLogoutError(
-        cause instanceof Error
-          ? cause.message
-          : sv
-            ? 'Det gick inte att logga ut. Försök igen.'
-            : 'Could not log out. Please try again.',
+        cause instanceof Error ? cause.message : t('logoutFailed'),
       );
       setLoggingOut(false);
     }
@@ -171,13 +165,11 @@ export function useProfile({
 
   return {
     user,
-    language,
     onSaved,
     onLogout,
     onAccountDeleted,
     onAppearance,
     onReplay,
-    sv,
     tab,
     setTab,
     displayName,

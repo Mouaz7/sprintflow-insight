@@ -166,3 +166,61 @@ button {
   background: transparent;
   color: inherit;
 }
+
+/* Workspace navigation is made of links since A6 (one URL per view). */
+.header-navigation nav a,
+.mobile-menu nav a,
+.brand-home,
+.account-profile {
+  text-decoration: none;
+}
+.header-navigation nav a,
+.mobile-menu nav a {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+.route-loading {
+  width: min(1800px, 100%);
+  margin-inline: auto;
+  padding: var(--block-space, 24px) var(--inline-space, 16px);
+  color: var(--muted, #5b6474);
+}
+/* After a route change focus moves to the page heading (WCAG 2.4.3); keyboard
+   users see where they are, pointer users get no ring. */
+h1[tabindex='-1']:focus-visible {
+  outline: 3px solid var(--accent, #bf4b2b);
+  outline-offset: 4px;
+}
+h1[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+/* Long boards and backlogs scroll inside a bounded region (TanStack Virtual). */
+.virtual-scroll {
+  max-height: min(75vh, 1400px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.virtual-scroll:focus-visible {
+  outline: 3px solid var(--accent, #bf4b2b);
+  outline-offset: 2px;
+}
+.virtual-scroll-content {
+  position: relative;
+  width: 100%;
+}
+.virtual-scroll-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: 12px;
+}
+.task-board .virtual-scroll-item article {
+  margin-bottom: 0;
+}
+.virtual-spacer td {
+  padding: 0;
+  border: 0;
+}

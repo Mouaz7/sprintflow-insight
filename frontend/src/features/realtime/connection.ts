@@ -8,7 +8,7 @@ import {
 } from './sequence';
 import { encodeFrame, parseFrames, type StompFrame } from './stomp';
 
-export type Viewer = { userId: number; name: string };
+export type Viewer = { userId: number; name: string; taskIds?: number[] };
 export type RealtimeStatus = 'connecting' | 'live' | 'offline';
 
 export type RealtimeHandlers = {
@@ -41,6 +41,8 @@ export class ProjectConnection {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private heartbeat: ReturnType<typeof setInterval> | undefined;
   private lastFrameAt = 0;
+  private connected = false;
+  private taskId: number | null = null;
 
   constructor(
     private readonly projectId: number,
@@ -71,13 +73,24 @@ export class ProjectConnection {
     };
     socket.onclose = () => {
       if (socket !== this.socket) return;
+      this.connected = false;
       this.stopHeartbeat();
       this.socket = undefined;
       this.retry();
     };
   }
 
+  openTask(taskId: number | null) {
+    this.taskId = taskId;
+    if (!this.connected) return;
+    this.socket?.send(encodeFrame('SEND', {
+      destination: `/app/projects/${this.projectId}/presence`,
+      'content-type': 'application/json',
+    }, JSON.stringify({ taskId })));
+  }
+
   close() {
+    this.connected = false;
     this.closed = true;
     this.timers.forEach(clearTimeout);
     this.timers = [];
@@ -122,6 +135,8 @@ export class ProjectConnection {
           destination: `/topic/projects/${this.projectId}`,
         }),
       );
+      this.connected = true;
+      this.openTask(this.taskId);
       this.handlers.onStatus('live');
       void this.sync();
     } else if (frame.command === 'MESSAGE') {
@@ -170,7 +185,7 @@ export class ProjectConnection {
       if (this.closed) return;
       const result = fill(this.last, page);
       this.last = result.last;
-      if (!initial && result.resync) this.handlers.onChange([]);
+      if (initial || result.resync) this.handlers.onChange([]);
       else if (result.missed.length) this.handlers.onChange(result.missed);
     } catch {
       // Keep the position; the next message or reconnect tries again.

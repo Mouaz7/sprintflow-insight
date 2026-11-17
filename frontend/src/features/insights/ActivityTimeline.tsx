@@ -1,25 +1,26 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Activity, Language } from '../../api/contracts';
-import { FormGuide, fieldExample } from '../../shared/ui/Guidance';
+import type { Activity } from '../../api/contracts';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
 import { activitySummary } from './activityText';
+import { insightsText } from './i18n';
 
 export function ActivityTimeline({
   projectId,
   items,
-  language,
   canManage,
   onChanged,
 }: {
   projectId: number;
   items: Activity[];
-  language: Language;
   canManage: boolean;
   onChanged: () => void;
 }) {
-  const sv = language === 'SV';
+  const t = useT(insightsText);
+  const { language, format } = useLanguage();
   const confirm = useConfirm();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,15 +28,7 @@ export function ActivityTimeline({
   async function remove(item?: Activity) {
     if (
       busy ||
-      !(await confirm(
-        item
-          ? sv
-            ? 'Ta bort den här uppdateringen?'
-            : 'Delete this update?'
-          : sv
-            ? 'Radera all historik i projektet? Det går inte att ångra.'
-            : 'Delete all project history? This cannot be undone.',
-      ))
+      !(await confirm(t(item ? 'confirmDeleteUpdate' : 'confirmClearHistory')))
     )
       return;
     setBusy(true);
@@ -46,13 +39,7 @@ export function ActivityTimeline({
       });
       onChanged();
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : sv
-            ? 'Historiken kunde inte raderas.'
-            : 'Could not delete history.',
-      );
+      setError(cause instanceof Error ? cause.message : t('clearFailed'));
     } finally {
       setBusy(false);
     }
@@ -62,42 +49,28 @@ export function ActivityTimeline({
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .forEach((item) => {
-      const date = new Date(item.createdAt).toLocaleDateString(
-        sv ? 'sv-SE' : 'en-GB',
-        { day: 'numeric', month: 'long', year: 'numeric' },
-      );
+      const date = format.date(item.createdAt, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
       groups.set(date, [...(groups.get(date) ?? []), item]);
     });
   return (
     <>
       <div className="collection-actions">
-        <span>
-          {items.length}{' '}
-          {sv
-            ? items.length === 1
-              ? 'händelse'
-              : 'händelser'
-            : items.length === 1
-              ? 'event'
-              : 'events'}
-        </span>
+        <span>{t('eventCount', { count: items.length })}</span>
         {canManage && items.length > 0 && (
           <button
             className="danger-action secondary-action"
             disabled={busy}
             onClick={() => remove()}
           >
-            {busy
-              ? sv
-                ? 'Raderar…'
-                : 'Clearing…'
-              : sv
-                ? 'Radera all historik'
-                : 'Clear all history'}
+            {t(busy ? 'clearing' : 'clearHistory')}
           </button>
         )}
       </div>
-      <Notice language={language} error={error} />
+      <Notice error={error} />
       {items.length ? (
         <div className="activity-timeline">
           {[...groups].map(([date, events]) => (
@@ -112,7 +85,7 @@ export function ActivityTimeline({
                     <div className="timeline-event-content">
                       <time dateTime={item.createdAt}>
                         {new Date(item.createdAt).toLocaleTimeString(
-                          sv ? 'sv-SE' : 'en-GB',
+                          format.locale,
                           { hour: '2-digit', minute: '2-digit' },
                         )}
                       </time>
@@ -126,7 +99,7 @@ export function ActivityTimeline({
                           disabled={busy}
                           onClick={() => setEditing(item)}
                         >
-                          {sv ? 'Redigera' : 'Edit'}
+                          {t('edit')}
                         </button>
                         <button
                           className="danger-action"
@@ -134,7 +107,7 @@ export function ActivityTimeline({
                           disabled={busy}
                           onClick={() => remove(item)}
                         >
-                          {sv ? 'Ta bort' : 'Delete'}
+                          {t('delete')}
                         </button>
                       </div>
                     )}
@@ -147,19 +120,14 @@ export function ActivityTimeline({
       ) : (
         <div className="empty-state">
           <InterfaceIcon name="updates" />
-          <h2>{sv ? 'Här börjar historien' : 'The story starts here'}</h2>
-          <p>
-            {sv
-              ? 'Projektets aktivitet visas här när teamet börjar arbeta.'
-              : 'Project activity appears here when the team starts working.'}
-          </p>
+          <h2>{t('storyStarts')}</h2>
+          <p>{t('activityAppears')}</p>
         </div>
       )}
       {editing && (
         <ActivityEditor
           activity={editing}
           projectId={projectId}
-          language={language}
           onClose={() => setEditing(undefined)}
           onSaved={onChanged}
         />
@@ -171,25 +139,24 @@ export function ActivityTimeline({
 function ActivityEditor({
   activity,
   projectId,
-  language,
   onClose,
   onSaved,
 }: {
   activity: Activity;
   projectId: number;
-  language: Language;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [summary, setSummary] = useState(activity.summary);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const sv = language === 'SV';
+  const t = useT(insightsText);
+  const example = useFieldExample();
   async function save(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
     if (!summary.trim()) {
-      setError(sv ? 'Ange en uppdateringstext.' : 'Enter an update summary.');
+      setError(t('enterSummary'));
       return;
     }
     setBusy(true);
@@ -211,31 +178,30 @@ function ActivityEditor({
   }
   return (
     <Drawer
-      title={sv ? 'Redigera uppdatering' : 'Edit update'}
-      language={language}
+      title={t('editUpdate')}
       busy={busy}
       dirty={summary !== activity.summary}
       onClose={onClose}
     >
       <form className="editor-form" onSubmit={save}>
-        <FormGuide topic="activity" language={language} />
+        <FormGuide topic="activity" />
         <label>
-          {sv ? 'Uppdateringstext' : 'Update summary'}
+          {t('updateSummary')}
           <textarea
-            aria-label={sv ? 'Uppdateringstext' : 'Update summary'}
+            aria-label={t('updateSummary')}
             required
             maxLength={500}
             rows={5}
             disabled={busy}
-            placeholder={fieldExample('update', language)}
+            placeholder={example('update')}
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
           />
         </label>
-        <Notice language={language} error={error} />
+        <Notice error={error} />
         <div className="editor-footer">
           <button className="primary-action" disabled={busy}>
-            {busy ? (sv ? 'Sparar…' : 'Saving…') : sv ? 'Spara' : 'Save'}
+            {t(busy ? 'saving' : 'save')}
           </button>
         </div>
       </form>

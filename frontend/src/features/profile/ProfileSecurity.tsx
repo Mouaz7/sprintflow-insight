@@ -1,16 +1,13 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api } from '../../api/client';
+import { useT } from '../../shared/i18n/LanguageProvider';
 import { useConfirm } from '../../shared/ui/ui';
+import { profileText } from './i18n';
 import { Feedback, SettingsIcon } from './ProfileFeedback';
 
-export function PasswordSettings({
-  email,
-  sv,
-}: {
-  email: string;
-  sv: boolean;
-}) {
+export function PasswordSettings({ email }: { email: string }) {
+  const t = useT(profileText);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -27,11 +24,7 @@ export function PasswordSettings({
     if (busy) return;
     clearFeedback();
     if (newPassword !== confirmation) {
-      setError(
-        sv
-          ? 'De nya lösenorden stämmer inte överens.'
-          : 'Your new passwords do not match.',
-      );
+      setError(t('passwordsDiffer'));
       return;
     }
     setBusy(true);
@@ -44,14 +37,10 @@ export function PasswordSettings({
       setNewPassword('');
       setConfirmation('');
       setVisible(false);
-      setMessage(sv ? 'Lösenordet har ändrats.' : 'Password changed.');
+      setMessage(t('passwordChanged'));
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : sv
-            ? 'Lösenordet kunde inte ändras. Försök igen.'
-            : 'Could not change your password. Please try again.',
+        cause instanceof Error ? cause.message : t('passwordChangeFailed'),
       );
     } finally {
       setBusy(false);
@@ -69,28 +58,20 @@ export function PasswordSettings({
           <SettingsIcon kind="lock" />
         </span>
         <div>
-          <h2 id="profile-password-title">
-            {sv ? 'Byt lösenord' : 'Change password'}
-          </h2>
-          <p>{sv ? 'Håll ditt konto säkert.' : 'Keep your account secure.'}</p>
+          <h2 id="profile-password-title">{t('changePassword')}</h2>
+          <p>{t('keepSecure')}</p>
         </div>
       </div>
       <fieldset className="profile-fields" disabled={busy}>
-        <legend className="sr-only">
-          {sv ? 'Lösenordsuppgifter' : 'Password details'}
-        </legend>
+        <legend className="sr-only">{t('passwordDetails')}</legend>
         <label>
-          {sv ? 'Nuvarande lösenord' : 'Current password'}
+          {t('currentPassword')}
           <input
             required
             type={visible ? 'text' : 'password'}
             autoComplete="current-password"
             value={currentPassword}
-            placeholder={
-              sv
-                ? 'Ditt nuvarande inloggningslösenord'
-                : 'Your current sign-in password'
-            }
+            placeholder={t('currentPasswordPlaceholder')}
             onChange={(event) => {
               setCurrentPassword(event.target.value);
               clearFeedback();
@@ -98,7 +79,7 @@ export function PasswordSettings({
           />
         </label>
         <label>
-          {sv ? 'Nytt lösenord' : 'New password'}
+          {t('newPassword')}
           <input
             required
             minLength={8}
@@ -106,11 +87,7 @@ export function PasswordSettings({
             type={visible ? 'text' : 'password'}
             autoComplete="new-password"
             value={newPassword}
-            placeholder={
-              sv
-                ? 'Välj ett eget lösenord med 8–72 tecken'
-                : 'Choose your own password with 8–72 characters'
-            }
+            placeholder={t('newPasswordPlaceholder')}
             onChange={(event) => {
               setNewPassword(event.target.value);
               clearFeedback();
@@ -119,12 +96,10 @@ export function PasswordSettings({
           />
         </label>
         <p id="profile-password-help" className="profile-field-help">
-          {sv
-            ? 'Använd 8–72 tecken och välj ett unikt lösenord.'
-            : 'Use 8–72 characters and choose a unique password.'}
+          {t('passwordHelp')}
         </p>
         <label>
-          {sv ? 'Bekräfta nytt lösenord' : 'Confirm new password'}
+          {t('confirmPassword')}
           <input
             required
             minLength={8}
@@ -132,11 +107,7 @@ export function PasswordSettings({
             type={visible ? 'text' : 'password'}
             autoComplete="new-password"
             value={confirmation}
-            placeholder={
-              sv
-                ? 'Skriv samma nya lösenord igen'
-                : 'Enter the same new password again'
-            }
+            placeholder={t('confirmPasswordPlaceholder')}
             onChange={(event) => {
               setConfirmation(event.target.value);
               clearFeedback();
@@ -149,25 +120,13 @@ export function PasswordSettings({
           aria-pressed={visible}
           onClick={() => setVisible((value) => !value)}
         >
-          {visible
-            ? sv
-              ? 'Dölj lösenord'
-              : 'Hide passwords'
-            : sv
-              ? 'Visa lösenord'
-              : 'Show passwords'}
+          {t(visible ? 'hidePasswords' : 'showPasswords')}
         </button>
       </fieldset>
-      <Feedback sv={sv} error={error} message={message} />
+      <Feedback error={error} message={message} />
       <div className="profile-card-footer">
         <button className="primary-action" disabled={busy}>
-          {busy
-            ? sv
-              ? 'Uppdaterar…'
-              : 'Updating…'
-            : sv
-              ? 'Uppdatera lösenord'
-              : 'Update password'}
+          {t(busy ? 'updating' : 'updatePassword')}
         </button>
       </div>
     </form>
@@ -176,28 +135,19 @@ export function PasswordSettings({
 
 export function DeleteAccountSettings({
   email,
-  sv,
   onDeleted,
 }: {
   email: string;
-  sv: boolean;
   onDeleted: () => void;
 }) {
+  const t = useT(profileText);
   const confirm = useConfirm();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (
-      busy ||
-      !(await confirm(
-        sv
-          ? 'Kontot och dess personuppgifter tas bort. Överför eller ta bort dina ägda projekt först. Fortsätta?'
-          : 'Your account and personal data will be deleted. Transfer or delete owned projects first. Continue?',
-      ))
-    )
-      return;
+    if (busy || !(await confirm(t('confirmDeleteAccount')))) return;
     setBusy(true);
     setError('');
     try {
@@ -207,13 +157,7 @@ export function DeleteAccountSettings({
       });
       onDeleted();
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : sv
-            ? 'Kontot kunde inte tas bort. Försök igen.'
-            : 'Could not delete your account. Please try again.',
-      );
+      setError(cause instanceof Error ? cause.message : t('deleteFailed'));
     } finally {
       setBusy(false);
     }
@@ -222,51 +166,33 @@ export function DeleteAccountSettings({
     <details className="profile-delete-section">
       <summary>
         <span>
-          <strong>{sv ? 'Ta bort konto' : 'Delete account'}</strong>
-          <small>
-            {sv
-              ? 'Hantera permanent borttagning av ditt konto.'
-              : 'Manage permanent removal of your account.'}
-          </small>
+          <strong>{t('deleteAccount')}</strong>
+          <small>{t('deleteAccountHelp')}</small>
         </span>
         <span className="profile-delete-chevron" aria-hidden="true">
           ⌄
         </span>
       </summary>
       <form onSubmit={submit} aria-busy={busy}>
-        <p className="profile-delete-warning">
-          {sv
-            ? 'Det går inte att ångra. Överför eller ta bort alla projekt du äger innan du fortsätter.'
-            : 'This cannot be undone. Transfer or delete all projects you own before continuing.'}
-        </p>
+        <p className="profile-delete-warning">{t('deleteWarning')}</p>
         <label>
-          {sv ? 'Bekräfta med lösenord' : 'Confirm with password'}
+          {t('confirmWithPassword')}
           <input
             required
             disabled={busy}
             type="password"
             autoComplete="current-password"
             value={password}
-            placeholder={
-              sv
-                ? 'Ditt nuvarande lösenord bekräftar borttagningen'
-                : 'Your current password confirms deletion'
-            }
+            placeholder={t('confirmWithPasswordPlaceholder')}
             onChange={(event) => {
               setPassword(event.target.value);
               setError('');
             }}
           />
         </label>
-        <Feedback sv={sv} error={error} />
+        <Feedback error={error} />
         <button className="danger-button" disabled={busy}>
-          {busy
-            ? sv
-              ? 'Tar bort konto…'
-              : 'Deleting account…'
-            : sv
-              ? 'Ta bort mitt konto'
-              : 'Delete my account'}
+          {t(busy ? 'deletingAccount' : 'deleteMyAccount')}
         </button>
       </form>
     </details>
