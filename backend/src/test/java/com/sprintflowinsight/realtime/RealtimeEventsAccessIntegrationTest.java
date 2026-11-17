@@ -8,9 +8,9 @@ import com.sprintflowinsight.auth.User;
 import com.sprintflowinsight.support.ApiIntegrationTest;
 import com.sprintflowinsight.workspace.project.Project;
 import java.time.Instant;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.Test;
 
 /** GET /api/projects/{id}/events for every role, outsiders, archived and trashed projects. */
 class RealtimeEventsAccessIntegrationTest extends ApiIntegrationTest {

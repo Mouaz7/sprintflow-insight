@@ -14,5 +14,9 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-// Realtime tests inject their own socket; other components stay offline.
-Object.defineProperty(globalThis, 'WebSocket', { value: undefined, configurable: true, writable: true });
+// Realtime tests inject a socket; other component tests stay offline.
+Object.defineProperty(globalThis, 'WebSocket', {
+  value: undefined,
+  configurable: true,
+  writable: true,
+});

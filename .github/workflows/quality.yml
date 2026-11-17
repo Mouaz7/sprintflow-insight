@@ -435,3 +435,36 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           sbom-path: ${{ runner.temp }}/image-scan/image.cdx.json
           push-to-registry: true
+
+  storybook:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/e2e/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm ci --prefix frontend/e2e
+      - name: Build the component catalogue
+        run: npm run storybook:build --prefix frontend
+      - name: Install the pinned Chromium
+        working-directory: frontend/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Compare light/dark stories and verify accessibility and keyboard controls
+        run: npm run visual --prefix frontend
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: storybook-visual-report
+          path: |
+            frontend/e2e/playwright-report/visual/
+            frontend/e2e/test-results/visual/
+          retention-days: 7

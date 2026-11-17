@@ -58,13 +58,23 @@ public class RealtimeEventListener {
   @ApplicationModuleListener
   public void deleted(TaskDeleted event) {
     publisher.publish(
-        event.eventId(), event.projectId(), "TaskDeleted", event.taskId(), null, event.occurredAt());
+        event.eventId(),
+        event.projectId(),
+        "TaskDeleted",
+        event.taskId(),
+        null,
+        event.occurredAt());
   }
 
   @ApplicationModuleListener
   public void commented(CommentAdded event) {
     publisher.publish(
-        event.eventId(), event.projectId(), "CommentAdded", event.taskId(), null, event.occurredAt());
+        event.eventId(),
+        event.projectId(),
+        "CommentAdded",
+        event.taskId(),
+        null,
+        event.occurredAt());
   }
 
   @ApplicationModuleListener
@@ -77,13 +87,21 @@ public class RealtimeEventListener {
         event.version(),
         event.occurredAt());
   }
+
   @ApplicationModuleListener
   public void changed(com.sprintflowinsight.workspace.events.WorkspaceChanged event) {
-    publisher.publish(event.eventId(),event.projectId(),event.type(),event.entityId(),null,event.occurredAt());
+    publisher.publish(
+        event.eventId(),
+        event.projectId(),
+        event.type(),
+        event.entityId(),
+        null,
+        event.occurredAt());
   }
 
   @ApplicationModuleListener
   public void notification(com.sprintflowinsight.notifications.NotificationDelivered event) {
-    publisher.publish(event.eventId(),event.projectId(),"NotificationsChanged",null,null,event.occurredAt());
+    publisher.publish(
+        event.eventId(), event.projectId(), "NotificationsChanged", null, null, event.occurredAt());
   }
 }

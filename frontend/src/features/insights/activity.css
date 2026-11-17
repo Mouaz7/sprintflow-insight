@@ -1,0 +1,59 @@
+/* Updates become a dated timeline. */
+.activity-timeline {
+  margin-top: 24px;
+}
+.timeline-day {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 24px;
+}
+.timeline-day > h2 {
+  padding-top: 16px;
+  color: var(--muted);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+.timeline-events {
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+}
+.timeline-events article {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  position: relative;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+.timeline-dot {
+  position: absolute;
+  top: 16px;
+  left: -45px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--canvas);
+  color: var(--muted);
+}
+.timeline-event-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+.timeline-event-content time {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.timeline-event-content h3 {
+  margin-block: 12px;
+  font-size: var(--text-section);
+  line-height: 1.65;
+}
+.timeline-event-content small {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}

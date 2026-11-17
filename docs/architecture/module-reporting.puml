@@ -17,10 +17,10 @@ top to bottom direction
 
 System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
   Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
-    Component(SprintFlowApplication.SprintFlowApplication.Reporting, "Reporting", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Workspace, "Workspace", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Reporting, "Reporting", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }

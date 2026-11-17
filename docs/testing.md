@@ -37,6 +37,7 @@ Surefire explicitly includes both `*Test` and `*Properties`, so a normal verific
 - PDF: wrapping fits the requested width and preserves visible text order.
 - Rate limiting: arbitrary request timings obey a 30-attempt fixed refill window.
 - Risk model (`risk/*Properties`): probabilities strictly in (0, 1), explanations are the largest log-odds terms, regularisation never increases the weight norm, training is deterministic; AUC equals the pairwise definition, is 1/0 for perfect/reversed rankers and invariant under increasing transforms; Brier is 0 for perfect predictions; calibration bins partition the predictions.
+- Search (`search/SearchQueryProperties`, a jqwik fuzz of the parser until the Jazzer harness in C7): any text yields a well-formed, bounded `to_tsquery` argument of quoted prefix terms with no user-supplied operators, terms come from the input words, task keys are recognised in any case, cursors round-trip and arbitrary cursor text fails only as a 400 problem.
 
 jqwik reports the seed and a shrunk counterexample on failure. To replay it, temporarily set `seed = "<reported-seed>"` on the failing `@Property`, then run `./mvnw -Dtest=CsvCellProperties test` (substitute the affected class). Remove the fixed seed after diagnosis. See the [jqwik guide](https://jqwik.net/docs/1.10.1/user-guide.html#optional-property-attributes). The local `.jqwik-database` is ignored by Git.
 
@@ -142,6 +143,7 @@ E2E_BASE_URL=http://127.0.0.1:8081 npm run e2e --prefix frontend
 | `auth.e2e.ts` | Sign-up through the UI, sign-out (session gone: `/api/auth/me` is 401), wrong password shows an alert, sign-in, session survives reload |
 | `workspace.e2e.ts` | Create a project, sprint, story and task through the dialogs; API confirms each lands in the right project; persistence after reload; planning the story into the sprint moves its task (sprint inheritance) |
 | `roles.e2e.ts` | Owner/Admin/Member/Viewer/Outsider matrix, cross-project isolation, one active sprint, invalid associations (400), admin UI cannot transfer ownership, ownership transfer and back |
+| `search.e2e.ts` | Ctrl+K palette: search hit with highlight, Enter opens the board narrowed to the task, a typed task key jumps directly, `?` help dialog with focus, `g o`; axe on the open palette (light and dark) and the help dialog |
 | `security-headers.e2e.ts` | Sign-in page under the enforced CSP and Trusted Types (offline counterpart of `trusted-types.ts`) and security headers |
 
 Every test checks, through auto fixtures, that the page raised no uncaught errors and no CSP or Trusted Types violations. A violation counts only when it comes from the app's own documents or scripts: code injected through the DevTools protocol (axe-core) has no source file and is ignored. `expectAccessible` runs axe-core with WCAG 2.0/2.1/2.2 A and AA tags. It fails on **serious or critical** findings, attaches the full list (including minor and moderate findings) to the HTML report, and asserts that axe actually evaluated rules. It scans the sign-in page and backlog in light and dark mode, and the overview, projects, sprints, backlog and tasks views in light mode. Accounts are disposable (`e2e-<label>-<timestamp>@example.com`) and each test deletes its projects and accounts, even on failure. With one worker the suite needs about 20 seconds.
@@ -211,5 +213,36 @@ The smoke profile reuses the A4 fixture (disposable account, 23-task project, cl
 - **Accessibility.** `App.a11y.test.tsx` runs axe-core (WCAG 2.0–2.2 A/AA tags) on sign-in in both languages with the dark theme, password reset, overview, tasks, backlog, projects, profile, the mobile menu and a shared report, and fails on serious or critical findings. `src/test/axe.test.ts` proves the helper catches violations. jsdom has no layout, so colour contrast and target size are left to the browser checks below.
 - **Virtualization.** `app/Virtualization.test.tsx` renders 5,000 tasks and 5,000 stories with a simulated viewport (jsdom has no layout). The board renders 28 cards and about 1,500 DOM nodes, only rendered cards request attachments, and the backlog renders a bounded window of rows with `aria-rowcount=5001`.
 
-For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. The A8 end-to-end suite (`npm run e2e`, real app and database) runs in CI; it was not run locally for A6 because Docker was unavailable.
+For A6 the Playwright checks that use API fixtures were run against the production build served by `npx vite preview --port 4173` (`SPRINTFLOW_QA_URL=http://127.0.0.1:4173`): `responsive.ts` passed 1,110 layout checks (touch targets now include navigation links), and `guidance.ts` passed on all 11 pages. A one-off browser run with 5,000 fixture tasks rendered 24 cards and 1,385 DOM nodes. All six real-backend E2E flows (`npm run e2e`) subsequently passed both locally and in CI against the packaged Java app and PostgreSQL. A real-data Chromium check also verified 5,000 tasks and 5,000 stories (24 mounted cards and 12 rows), Home/End to both list edges, Swedish ICU plurals and an anonymous report link. `shared/i18n/icu.test.ts` checks genuine compiled ICU patterns; `npm run messages:check` rejects stale generated TypeScript.
 
+## Design system and visual baselines (A7)
+
+`npm run check --prefix frontend` includes shared chart/state tests and the existing feature/route regressions. `npm run storybook:build --prefix frontend` builds the separate component catalogue; it is never shipped in the Spring jar. The five SVG chart types all include table alternatives and keyboard data exploration.
+
+```sh
+npm ci --prefix frontend/e2e
+npm run storybook:build --prefix frontend
+npm run visual --prefix frontend
+# Only when intentionally changing the approved component appearance:
+npm run visual --prefix frontend/e2e -- --update-snapshots
+```
+
+Playwright compares every chart/state story in light and dark against the tracked PNGs in `frontend/e2e/visual/snapshots/`, then checks axe, complete data tables and keyboard selection. Review updated PNGs before committing them. CI's `storybook` job uploads failed comparisons/traces in `storybook-visual-report`; it does not regenerate expected images. Fonts are self-hosted and tests wait for `document.fonts.ready` for deterministic layout. The ordinary `npm run e2e` suite still runs against the real application and PostgreSQL.
+
+The production-server [chart E2E flow](../frontend/e2e/tests/charts.e2e.ts) creates a project and task through the real API, reads the migrated burndown, checks Home/End and its complete table, and runs axe in light and dark themes. It complements the isolated Storybook comparisons.
+
+## Search (B9)
+
+`SearchIntegrationTest` runs `GET /api/search` against PostgreSQL with V16, V17 and V18: Owner, Admin, Member and Viewer find hits in their project; an outsider gets no hits (and 403 with `projectId`), also not for an exact task key; archived projects stay searchable, trashed projects, trashed tasks and their comments do not appear. Epic tests cover all membership roles, archived/trash boundaries, the type filter, indexing and highlighting. `EpicStorageIntegrationTest` verifies persistence and the same-project story foreign key. It also covers Swedish and English stemming, prefixes, a trigram typo, the type filter, highlight segments, the exact-key-first rule, keyset pages that return every hit exactly once, parameter validation as problems, and the query count: one statement for any number of projects and hits (three with `projectId`: user, access row, search). `SearchQueryTest`, `SearchCursorTest`, `SearchSupportTest` and `SearchQueryProperties` need no database; `SearchQuery`, `SearchCursor` and `SearchType` are in PIT's target classes.
+
+In the frontend, `features/search/*.test.tsx` cover the palette (combobox ARIA, debounced and aborted requests, highlights rendered as text, keyset "show more", exact task key on Enter, commands), the shortcut listener (ignored while typing or behind a dialog) and the help dialog's focus trap in English and Swedish; `app/App.search.test.tsx` covers navigation from a hit to the board narrowed to its task.
+
+```sh
+./mvnw -Dtest='SearchIntegrationTest,Search*Test,SearchQueryProperties' test
+```
+
+## Realtime verification (B1)
+
+`RealtimeWebSocketIntegrationTest` uses real sockets and PostgreSQL to verify handshake/session/Origin/CSRF rejection, denied subscriptions/SEND and no ghost presence after an outsider's rejected frame. Owner/Admin/Member/Viewer and archived-project readers report and clear an open task. Rollback, ordered event delivery, gap filling, logout and membership removal are covered. `RealtimeUnitTest` rejects foreign, missing and trashed task ids; `PresenceRegistryTest` covers multiple tabs and task cleanup. `RealtimeSequenceIntegrationTest` exercises concurrent publishers, duplicate delivery, retention and resync against PostgreSQL. V19 follows the existing V16–V18 search migrations.
+
+Frontend tests verify project-scoped Query invalidation, specific comment-thread refreshes, notification invalidation, coalescing, reconnect/backoff and heartbeat behavior. The MSW board regression checks that a data refresh does not reload project roles. `frontend/e2e/tests/realtime.e2e.ts` uses two authenticated browser contexts with actual REST/WebSocket traffic: a member moves a task and creates/edits/deletes a comment, the other browser updates without losing its local draft, presence tracks the open task, and reconnect fills a real gap. Fault injection closes the real socket while its browser is offline; no response is mocked. Axe runs on both boards and the live thread.

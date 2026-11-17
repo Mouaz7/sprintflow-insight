@@ -31,10 +31,10 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Concurrency properties of the realtime sequence on real PostgreSQL. However many publishers
- * race, and even when the same module event is delivered twice at once, each project's numbers
- * are handed out exactly once, strictly increase in every publisher's own order, and the replay
- * log holds the contiguous range 1..n.
+ * Concurrency properties of the realtime sequence on real PostgreSQL. However many publishers race,
+ * and even when the same module event is delivered twice at once, each project's numbers are handed
+ * out exactly once, strictly increase in every publisher's own order, and the replay log holds the
+ * contiguous range 1..n.
  */
 class RealtimeSequenceIntegrationTest {
   private static MigrationFixture db;
@@ -77,8 +77,7 @@ class RealtimeSequenceIntegrationTest {
   private static Optional<RealtimeMessage> append(UUID source, long projectId) {
     try {
       return transactions.execute(
-          status ->
-              log.append(source, projectId, "TaskUpdated", 1L, 1L, Instant.now()));
+          status -> log.append(source, projectId, "TaskUpdated", 1L, 1L, Instant.now()));
     } catch (DuplicateKeyException replayedConcurrently) {
       return Optional.empty();
     }
@@ -128,8 +127,7 @@ class RealtimeSequenceIntegrationTest {
           Long previous = last.put(published.projectId(), published.seq());
           if (previous != null)
             assertThat(published.seq()).as("one publisher's order").isGreaterThan(previous);
-          seqs.computeIfAbsent(published.projectId(), id -> new ArrayList<>())
-              .add(published.seq());
+          seqs.computeIfAbsent(published.projectId(), id -> new ArrayList<>()).add(published.seq());
         }
       }
 
@@ -141,7 +139,9 @@ class RealtimeSequenceIntegrationTest {
         RealtimeEventPage page = log.since(projectId, 0);
         assertThat(page.latestSeq()).isEqualTo(n);
         assertThat(page.resync()).isFalse();
-        assertThat(page.events()).extracting(RealtimeMessage::seq).containsExactlyElementsOf(handed);
+        assertThat(page.events())
+            .extracting(RealtimeMessage::seq)
+            .containsExactlyElementsOf(handed);
       }
       long distinctEvents =
           targets.size() * (long) (deliverTwice ? (publishers + 1) / 2 : publishers);
@@ -160,7 +160,8 @@ class RealtimeSequenceIntegrationTest {
   @Example
   void gapRequestsReturnTheMissedRangeOrAskForAResync() {
     long projectId = project();
-    assertThat(log.since(projectId, 0)).isEqualTo(new RealtimeEventPage(projectId, 0, false, List.of()));
+    assertThat(log.since(projectId, 0))
+        .isEqualTo(new RealtimeEventPage(projectId, 0, false, List.of()));
     for (int i = 0; i < 3; i++) appendAt(projectId, Instant.now());
 
     var page = log.since(projectId, 1);
@@ -172,7 +173,8 @@ class RealtimeSequenceIntegrationTest {
     assertThat(log.since(projectId, 3).events()).isEmpty();
     assertThat(log.since(projectId, 3).resync()).isFalse();
     // A client ahead of the server (for example after a restore) must reload.
-    assertThat(log.since(projectId, 4)).isEqualTo(new RealtimeEventPage(projectId, 3, true, List.of()));
+    assertThat(log.since(projectId, 4))
+        .isEqualTo(new RealtimeEventPage(projectId, 3, true, List.of()));
     assertThat(log.since(projectId, -1).resync()).isTrue();
   }
 
@@ -185,8 +187,11 @@ class RealtimeSequenceIntegrationTest {
     Integer pruned = transactions.execute(status -> log.prune(now));
     assertThat(pruned).isPositive();
 
-    assertThat(log.since(projectId, 0)).isEqualTo(new RealtimeEventPage(projectId, 2, true, List.of()));
-    assertThat(log.since(projectId, 1).events()).extracting(RealtimeMessage::seq).containsExactly(2L);
+    assertThat(log.since(projectId, 0))
+        .isEqualTo(new RealtimeEventPage(projectId, 2, true, List.of()));
+    assertThat(log.since(projectId, 1).events())
+        .extracting(RealtimeMessage::seq)
+        .containsExactly(2L);
   }
 
   @Example

@@ -47,7 +47,12 @@ async function checkLayout(page: Page, label: string, workspace = true) {
       const contentWidth = await page.locator('.page').evaluate(el => el.getBoundingClientRect().width);
       assert.ok(contentWidth <= 1800, `${label}: content exceeds 1800px`);
       if (geometry.width >= 768 && geometry.width < 1024) {
-        const row = await page.locator('.header-controls').evaluate(el => [...el.children].map(child => child.getBoundingClientRect().top));
+        // Controls have different heights (the presence dot is intentionally small).
+        // Compare centre lines so actual wrapping fails without treating centred icons as a row.
+        const row = await page.locator('.header-controls').evaluate(el => [...el.children].map(child => {
+          const bounds = child.getBoundingClientRect();
+          return bounds.top + bounds.height / 2;
+        }));
         assert.ok(Math.max(...row) - Math.min(...row) < 10, `${label}: tablet controls wrap`);
       }
     }

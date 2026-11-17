@@ -33,16 +33,16 @@ _Others_
 * `c.s.a.UserRepository` (in Auth)
 * `c.s.w.task.TaskRepository` (in Workspace)
 |Events listened to
-|* `c.s.w.events.WorkspaceChanged` (async) 
-* `c.s.w.events.CommentAdded` (async) 
-* `c.s.w.events.TaskCreated` (async) 
-* `c.s.w.events.TaskDeleted` (async) 
-* `c.s.w.events.TaskMoved` (async) 
-* `c.s.n.NotificationDelivered` (async) 
-* `c.s.w.events.SprintStatusChanged` (async) 
-* `c.s.w.events.TaskUpdated` (async) 
-* `org.springframework.web.socket.messaging.SessionDisconnectEvent` 
-* `org.springframework.web.socket.messaging.SessionSubscribeEvent` 
-* `org.springframework.web.socket.messaging.SessionUnsubscribeEvent` 
-* `org.springframework.context.event.ContextClosedEvent` 
+|* `c.s.w.events.WorkspaceChanged` (async)
+* `c.s.w.events.CommentAdded` (async)
+* `c.s.w.events.TaskCreated` (async)
+* `c.s.w.events.TaskDeleted` (async)
+* `c.s.w.events.TaskMoved` (async)
+* `c.s.n.NotificationDelivered` (async)
+* `c.s.w.events.SprintStatusChanged` (async)
+* `c.s.w.events.TaskUpdated` (async)
+* `org.springframework.web.socket.messaging.SessionDisconnectEvent`
+* `org.springframework.web.socket.messaging.SessionSubscribeEvent`
+* `org.springframework.web.socket.messaging.SessionUnsubscribeEvent`
+* `org.springframework.context.event.ContextClosedEvent`
 |===

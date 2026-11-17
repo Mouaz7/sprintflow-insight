@@ -44,8 +44,9 @@ public class NotificationService {
       ProjectMemberRepository members,
       TaskRepository tasks,
       UserPreferencesRepository preferences,
-      UserRepository users, org.springframework.context.ApplicationEventPublisher events) {
-    this.events=events;
+      UserRepository users,
+      org.springframework.context.ApplicationEventPublisher events) {
+    this.events = events;
     this.repository = repository;
     this.projects = projects;
     this.members = members;
@@ -79,25 +80,25 @@ public class NotificationService {
       Long actorUserId,
       String message,
       java.util.UUID sourceEventId) {
-    if (projectId == null || recipientUserId == null || recipientUserId.equals(actorUserId))
-      return;
+    if (projectId == null || recipientUserId == null || recipientUserId.equals(actorUserId)) return;
     users
         .findById(recipientUserId)
         .ifPresent(
             recipient -> {
               if (repository.existsByProjectIdAndRecipientEmailAndMessageAndCreatedAtAfter(
-                  projectId, normalize(recipient.getEmail()), message, Instant.now().minusSeconds(5)))
-                return;
+                  projectId,
+                  normalize(recipient.getEmail()),
+                  message,
+                  Instant.now().minusSeconds(5))) return;
               deliver(projectId, recipient, message, sourceEventId);
             });
   }
 
-  private void deliver(Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
+  private void deliver(
+      Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
     String email = normalize(recipient.getEmail());
-    if (!preferences
-        .findById(recipient.getId())
-        .map(UserPreferences::isNotifications)
-        .orElse(true)) return;
+    if (!preferences.findById(recipient.getId()).map(UserPreferences::isNotifications).orElse(true))
+      return;
     if (projects.findById(projectId).isEmpty()) return;
     if (sourceEventId != null
         && repository.existsBySourceEventIdAndRecipientEmail(sourceEventId, email)) return;
@@ -122,7 +123,8 @@ public class NotificationService {
     notification.setCreatedAt(Instant.now());
     notification.setRead(false);
     repository.save(notification);
-    events.publishEvent(new NotificationDelivered(java.util.UUID.randomUUID(),projectId,Instant.now()));
+    events.publishEvent(
+        new NotificationDelivered(java.util.UUID.randomUUID(), projectId, Instant.now()));
   }
 
   /** Notifications addressed to the account's current email, for projects it is a member of. */

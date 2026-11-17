@@ -83,10 +83,16 @@ export class ProjectConnection {
   openTask(taskId: number | null) {
     this.taskId = taskId;
     if (!this.connected) return;
-    this.socket?.send(encodeFrame('SEND', {
-      destination: `/app/projects/${this.projectId}/presence`,
-      'content-type': 'application/json',
-    }, JSON.stringify({ taskId })));
+    this.socket?.send(
+      encodeFrame(
+        'SEND',
+        {
+          destination: `/app/projects/${this.projectId}/presence`,
+          'content-type': 'application/json',
+        },
+        JSON.stringify({ taskId }),
+      ),
+    );
   }
 
   close() {

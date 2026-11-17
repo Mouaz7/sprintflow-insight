@@ -31,8 +31,18 @@ updates:
     directory: /
     schedule: { interval: weekly, day: monday }
     cooldown: { default-days: 7 }
+    ignore:
+      # The project follows even-numbered Node.js LTS releases; odd majors are
+      # short-lived "current" releases that never become LTS.
+      - dependency-name: node
+        versions: [ '>= 25, < 26', '>= 27, < 28', '>= 29, < 30' ]
 
   - package-ecosystem: docker-compose
     directory: /
     schedule: { interval: weekly, day: monday }
     cooldown: { default-days: 7 }
+    ignore:
+      # The app, Testcontainers and the docs target PostgreSQL 16. A major
+      # upgrade is a platform decision that changes all of them together.
+      - dependency-name: postgres
+        update-types: [ version-update:semver-major ]

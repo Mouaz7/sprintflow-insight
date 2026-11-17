@@ -24,6 +24,36 @@ import org.springframework.security.messaging.access.intercept.MessageAuthorizat
 
 /** Pure pieces of the realtime module: destinations, principals, decisions and limits. */
 class RealtimeUnitTest {
+  @Test
+  @SuppressWarnings("unchecked")
+  void openTaskPresenceCannotExposeForeignMissingOrTrashedTasks() {
+    var access = mock(ProjectAccessService.class);
+    var tasks = mock(com.sprintflowinsight.workspace.task.TaskRepository.class);
+    var broker = mock(org.springframework.beans.factory.ObjectProvider.class);
+    var sessions =
+        new RealtimeSessions(
+            mock(org.springframework.session.SessionRepository.class),
+            access,
+            mock(com.sprintflowinsight.auth.UserRepository.class),
+            broker,
+            Duration.ofSeconds(90),
+            tasks);
+    when(access.canRead(7L, 5L)).thenReturn(true);
+    var foreign = new com.sprintflowinsight.workspace.task.Task();
+    foreign.setProjectId(8L);
+    var trashed = new com.sprintflowinsight.workspace.task.Task();
+    trashed.setProjectId(7L);
+    trashed.setTrashedAt(java.time.Instant.now());
+    when(tasks.findById(11L)).thenReturn(java.util.Optional.of(foreign));
+    when(tasks.findById(12L)).thenReturn(java.util.Optional.of(trashed));
+    for (Long taskId : java.util.List.of(11L, 12L, 13L))
+      assertThatThrownBy(() -> sessions.openTask("s", 7, taskId, signedIn(5)))
+          .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> sessions.openTask("s", 7, 11L, signedIn(6)))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    verifyNoInteractions(broker);
+  }
+
   private static UsernamePasswordAuthenticationToken signedIn(long userId) {
     return UsernamePasswordAuthenticationToken.authenticated(
         new UserIdentity(userId, "u@example.com"),
@@ -41,8 +71,14 @@ class RealtimeUnitTest {
     assertThat(ProjectTopics.project("/topic/projects/12")).hasValue(12);
     for (String other :
         new String[] {
-          null, "/topic/projects/", "/topic/projects/0", "/topic/projects/-1", "/topic/projects/1x",
-          "/topic/projects/1/other", "/topic/projects/12345678901234567890", "/topic/other/1",
+          null,
+          "/topic/projects/",
+          "/topic/projects/0",
+          "/topic/projects/-1",
+          "/topic/projects/1x",
+          "/topic/projects/1/other",
+          "/topic/projects/12345678901234567890",
+          "/topic/other/1",
           "/presence"
         }) assertThat(ProjectTopics.project(other)).as(other).isEmpty();
   }
@@ -78,13 +114,15 @@ class RealtimeUnitTest {
     assertThat(
             reader
                 .authorize(
-                    () -> signedIn(5), new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
+                    () -> signedIn(5),
+                    new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
                 .isGranted())
         .isTrue();
     assertThat(
             reader
                 .authorize(
-                    () -> signedIn(6), new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
+                    () -> signedIn(6),
+                    new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
                 .isGranted())
         .isFalse();
     for (String invalid : new String[] {"0", "07", "x", "99999999999999999999"})
@@ -103,7 +141,9 @@ class RealtimeUnitTest {
         .isFalse();
     assertThat(
             reader
-                .authorize(() -> null, new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
+                .authorize(
+                    () -> null,
+                    new MessageAuthorizationContext<>(message, Map.of("projectId", "7")))
                 .isGranted())
         .isFalse();
   }
@@ -135,7 +175,8 @@ class RealtimeUnitTest {
   @Test
   void retentionSettingsAreValidated() {
     JdbcTemplate jdbc = mock(JdbcTemplate.class);
-    assertThatThrownBy(() -> new RealtimeEventLog(jdbc, RealtimeEventLog.PAGE_SIZE - 1, Duration.ofDays(1)))
+    assertThatThrownBy(
+            () -> new RealtimeEventLog(jdbc, RealtimeEventLog.PAGE_SIZE - 1, Duration.ofDays(1)))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> new RealtimeEventLog(jdbc, 1000, Duration.ZERO))
         .isInstanceOf(IllegalArgumentException.class);
@@ -150,7 +191,8 @@ class RealtimeUnitTest {
     RealtimeEventLog log = mock(RealtimeEventLog.class);
     var publisher = new RealtimePublisher(log, null);
     publisher.publish(null, 1L, "TaskMoved", 1L, 1L, java.time.Instant.now());
-    publisher.publish(java.util.UUID.randomUUID(), null, "TaskMoved", 1L, 1L, java.time.Instant.now());
+    publisher.publish(
+        java.util.UUID.randomUUID(), null, "TaskMoved", 1L, 1L, java.time.Instant.now());
     verifyNoInteractions(log);
   }
 }

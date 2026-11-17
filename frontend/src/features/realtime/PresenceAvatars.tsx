@@ -1,5 +1,7 @@
 import type { Language } from '../../api/contracts';
 import type { RealtimeStatus, Viewer } from './connection';
+import { translator } from '../../shared/i18n/lexicon';
+import { realtimeText } from './i18n';
 
 type Props = {
   viewers: Viewer[];
@@ -21,24 +23,22 @@ function initials(name: string): string {
 
 /** Who else has the current project open, and whether updates are live. */
 export function PresenceAvatars({ viewers, selfId, status, language }: Props) {
-  const sv = language === 'SV';
+  const t = translator(realtimeText, language);
   const others = viewers.filter((viewer) => viewer.userId !== selfId);
-  const fallback = sv ? 'Teammedlem' : 'Team member';
+  const fallback = t('teamMember');
   const names = others.map((viewer) => {
     const name = viewer.name || fallback;
     const tasks = viewer.taskIds ?? [];
-    return tasks.length ? `${name} (${sv ? 'uppgift' : 'task'} ${tasks.map(id => `#${id}`).join(', ')})` : name;
+    return tasks.length
+      ? t('openTasks', { name, tasks: tasks.map((id) => `#${id}`).join(', ') })
+      : name;
   });
   const label =
     status !== 'live'
-      ? sv
-        ? 'Liveuppdateringar återansluter'
-        : 'Live updates reconnecting'
+      ? t('reconnecting')
       : others.length
-        ? `${sv ? 'Tittar nu' : 'Viewing now'}: ${names.join(', ')}`
-        : sv
-          ? 'Liveuppdateringar på'
-          : 'Live updates on';
+        ? t('viewers', { names: names.join(', ') })
+        : t('live');
   return (
     <div
       className={`presence presence-${status}`}

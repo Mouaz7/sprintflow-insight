@@ -32,7 +32,15 @@ class NotificationServiceTest {
     var tasks = mock(TaskRepository.class);
     var users = mock(UserRepository.class);
     var preferences = mock(UserPreferencesRepository.class);
-    var service = new NotificationService(notices, projects, members, tasks, preferences, users, mock(org.springframework.context.ApplicationEventPublisher.class));
+    var service =
+        new NotificationService(
+            notices,
+            projects,
+            members,
+            tasks,
+            preferences,
+            users,
+            mock(org.springframework.context.ApplicationEventPublisher.class));
     var project = mock(Project.class);
     when(project.getId()).thenReturn(1L);
     when(project.getOwnerEmail()).thenReturn("owner@example.com");

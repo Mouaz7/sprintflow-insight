@@ -1,3 +1,4 @@
+import { icu } from '../../shared/i18n/icu';
 import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const tasksText = defineLexicon({
@@ -24,7 +25,7 @@ export const tasksText = defineLexicon({
     saving: 'Saving…',
     blockedLabel: 'BLOCKED',
     points: 'pts',
-    due: ({ date }: { date: string }) => ` · due ${date}`,
+    due: icu('dueDate'),
     assigned: 'Assigned',
     moveTo: 'Move to',
     edit: 'Edit',
@@ -130,7 +131,7 @@ export const tasksText = defineLexicon({
     saving: 'Sparar…',
     blockedLabel: 'BLOCKERAD',
     points: 'poäng',
-    due: ({ date }) => ` · förfaller ${date}`,
+    due: icu('dueDate'),
     assigned: 'Ansvarig',
     moveTo: 'Flytta till',
     edit: 'Redigera',

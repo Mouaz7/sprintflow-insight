@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Sequence allocation and the bounded replay log (Flyway V17). Retention keeps at most {@code
+ * Sequence allocation and the bounded replay log (Flyway V19). Retention keeps at most {@code
  * app.realtime.max-events-per-project} rows per project and nothing older than {@code
  * app.realtime.retention}; the sequence counter itself is never reset.
  */
@@ -81,7 +81,9 @@ public class RealtimeEventLog {
         Timestamp.from(occurredAt));
     if (seq > maxPerProject)
       jdbc.update(
-          "delete from realtime_event where project_id=? and seq<=?", projectId, seq - maxPerProject);
+          "delete from realtime_event where project_id=? and seq<=?",
+          projectId,
+          seq - maxPerProject);
     return Optional.of(new RealtimeMessage(projectId, seq, type, entityId, version));
   }
 
@@ -89,7 +91,8 @@ public class RealtimeEventLog {
   @Transactional(readOnly = true)
   public RealtimeEventPage since(long projectId, long after) {
     long latest =
-        jdbc.queryForList(
+        jdbc
+            .queryForList(
                 "select last_seq from realtime_sequence where project_id=?", Long.class, projectId)
             .stream()
             .findFirst()

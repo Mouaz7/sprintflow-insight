@@ -27,6 +27,9 @@ export type TasksViewProps = {
   projectId?: number | undefined;
   openRequest?: number;
   onRequestHandled?: () => void;
+  /** Opens the board filtered to this task key, e.g. from search. */
+  focusTaskKey?: string | undefined;
+  focusRequestKey?: string | undefined;
 };
 export function useTaskBoard({
   hasProjects,
@@ -35,6 +38,8 @@ export function useTaskBoard({
   onRequestHandled,
   userEmail = '',
   readOnly = false,
+  focusTaskKey = '',
+  focusRequestKey = '',
 }: TasksViewProps) {
   const confirm = useConfirm();
   const { language } = useLanguage();
@@ -123,7 +128,15 @@ export function useTaskBoard({
   const [storyId, setStoryId] = useState('');
   const [sprintId, setSprintId] = useState('');
   const [assigneeEmail, setAssigneeEmail] = useState('');
-  const [query, setQuery] = useState('');
+  const focusSource = `${focusRequestKey}:${focusTaskKey}`;
+  const [handledFocus, setHandledFocus] = useState(focusSource);
+  const [query, setQuery] = useState(focusTaskKey);
+  // A new navigation can target the same key after the user edited the filter.
+  // Adjust the filter without remounting and losing an editor-open request.
+  if (handledFocus !== focusSource) {
+    setHandledFocus(focusSource);
+    setQuery(focusTaskKey);
+  }
   const [statusFilter, setStatusFilter] = useState('');
   const [sprintFilter, setSprintFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');

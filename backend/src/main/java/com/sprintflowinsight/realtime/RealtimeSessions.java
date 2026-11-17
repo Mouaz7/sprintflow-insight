@@ -55,8 +55,9 @@ public class RealtimeSessions {
       ProjectAccessService access,
       UserRepository users,
       ObjectProvider<SimpMessageSendingOperations> broker,
-      @Value("${app.realtime.presence-ttl:PT90S}") Duration presenceTtl, com.sprintflowinsight.workspace.task.TaskRepository tasks) {
-    this.tasks=tasks;
+      @Value("${app.realtime.presence-ttl:PT90S}") Duration presenceTtl,
+      com.sprintflowinsight.workspace.task.TaskRepository tasks) {
+    this.tasks = tasks;
     this.httpSessions = httpSessions;
     this.access = access;
     this.users = users;
@@ -123,12 +124,20 @@ public class RealtimeSessions {
     broadcast(presence.disconnected(event.getSessionId()));
   }
 
-  public void openTask(String sessionId,long projectId,Long taskId,java.security.Principal principal) {
-    Long userId=RealtimeSecurityConfiguration.userId(principal);
-    if(userId==null || !access.canRead(projectId,userId))throw new org.springframework.security.access.AccessDeniedException("Project access required.");
-    if(taskId!=null && tasks.findById(taskId).filter(task->projectId==task.getProjectId() && task.getTrashedAt()==null).isEmpty())
-      throw new org.springframework.security.access.AccessDeniedException("Task is not available in this project.");
-    broadcast(presence.openTask(sessionId,projectId,taskId,clock.instant()));
+  public void openTask(
+      String sessionId, long projectId, Long taskId, java.security.Principal principal) {
+    Long userId = RealtimeSecurityConfiguration.userId(principal);
+    if (userId == null || !access.canRead(projectId, userId))
+      throw new org.springframework.security.access.AccessDeniedException(
+          "Project access required.");
+    if (taskId != null
+        && tasks
+            .findById(taskId)
+            .filter(task -> projectId == task.getProjectId() && task.getTrashedAt() == null)
+            .isEmpty())
+      throw new org.springframework.security.access.AccessDeniedException(
+          "Task is not available in this project.");
+    broadcast(presence.openTask(sessionId, projectId, taskId, clock.instant()));
   }
 
   /** Verifies every open connection, refreshes live presence and expires the rest. */

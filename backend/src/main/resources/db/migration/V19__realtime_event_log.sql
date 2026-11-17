@@ -1,5 +1,5 @@
 -- B1: per-project sequence numbers and a short replay log for realtime messages (ADR 0017).
--- V16 is reserved for B9 search; Flyway accepts the gap.
+-- V16-V18 are the completed search/epic migrations; this is the next available version.
 
 -- Highest sequence number handed out per project. The upsert that increments it takes a row lock,
 -- so allocations for one project are serialized and commit in sequence order.

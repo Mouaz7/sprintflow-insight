@@ -10,5 +10,4 @@ package com.sprintflowinsight.realtime;
  * @param entityId the task or sprint id; for {@code CommentAdded} the commented task
  * @param version the entity version after the change, {@code null} when deleted or unknown
  */
-public record RealtimeMessage(
-    long projectId, long seq, String type, Long entityId, Long version) {}
+public record RealtimeMessage(long projectId, long seq, String type, Long entityId, Long version) {}

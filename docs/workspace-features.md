@@ -74,6 +74,30 @@ Medlemskap knyts nu till kontots oföränderliga id i stället för e-postadress
 
 Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln `SPRINTFLOW_ENCRYPTION_KEY` skapas av startskripten i `.env`. Säkerhetskopiera `.env`, för utan nyckeln går krypterade värden inte att läsa. Nyckelrotation beskrivs i [ADR 0015](adr/0015-encryption-and-key-rotation.md).
 
+## Sök och kommandopalett (B9)
+
+Tryck **Ctrl+K** (**⌘K** på Mac) eller **/**, eller klicka på **Sök** i sidhuvudet, för att öppna kommandopaletten. Den söker i uppgifter, stories, epics, sprintar, kommentarer och projekt i alla projekt där du är medlem, även arkiverade. Saker i papperskorgen visas inte, och projekt där du inte är medlem syns aldrig, inte heller via ett uppgifts-id.
+
+- **Sökningen** förstår svenska och engelska böjningar ("inloggning" hittar "Inloggningen", "redirect" hittar "redirected"), räcker med början av ett ord och tål små stavfel i titlar. De ord som matchade markeras. Bästa träff kommer först, och **Visa fler träffar** hämtar nästa sida.
+- **Uppgifts-id:** skriv `SF-123` och tryck Enter för att hoppa direkt till uppgiften, även innan träfflistan har laddats.
+- **Navigering:** en uppgift eller kommentar öppnar tavlan i rätt projekt, filtrerad på uppgiftens id. En story eller epic öppnar projektets backlog (epicvyn kommer i B3), en sprint sprintvyn och ett projekt översikten.
+- **Kommandon:** utan sökord visar paletten kommandon som "Gå till tavlan", "Ny uppgift" och "Kortkommandon". Skriver du något filtreras även kommandona.
+- **Tangentbord:** piltangenterna flyttar mellan träffar, Enter öppnar och Esc stänger. Paletten följer WAI-ARIA-mönstret combobox med lista, så skärmläsare läser upp vald träff och antalet träffar.
+
+### Kortkommandon
+
+| Tangenter | Gör |
+|---|---|
+| Ctrl/⌘ + K | Öppna eller stäng sök och kommandon |
+| / | Öppna sök |
+| ? | Visa alla kortkommandon |
+| C | Ny uppgift |
+| G sedan O / B / L / S / M / P | Gå till översikt, tavlan, backlog, sprintar, mätvärden eller projekt |
+
+Kortkommandona gäller inte när du skriver i ett fält eller när en annan dialog är öppen. Hjälpdialogen (?) är en modal dialog där fokus stannar tills du stänger den.
+
+`GET /api/search?q=…` är API:t bakom paletten. Valfria parametrar är `projectId`, `types` (till exempel `task,comment`), `limit` (högst 50) och `cursor` för nästa sida. Sökningen bygger på PostgreSQL:s fulltextsökning och `pg_trgm`. Migreringen V16 installerar `pg_trgm`, vilket kräver att databasanvändaren äger databasen, som i `compose.yaml`. Se [ADR 0016](adr/0016-postgresql-full-text-search.md).
+
 ## Optimerad sprintplanering (C1, under arbete)
 
 "Föreslå sprint" ska välja de stories som ger mest affärsvärde inom teamets kapacitet. Funktionens kärna finns nu i backend. API och knapp i sprintplaneringen kommer i ett senare steg.
@@ -85,16 +109,23 @@ Hemligheter som sparas av kommande funktioner krypteras med AES-256-GCM. Nyckeln
 
 Metoden, baslinjerna (girig och dynamisk programmering) och begränsningarna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md).
 
-## Realtid och närvaro (B1)
-
-Tavlan uppdateras automatiskt när någon annan i projektet skapar, flyttar, ändrar eller slänger en uppgift, kommenterar eller byter status på en sprint. Du behöver inte ladda om sidan. Överst i arbetsytan visas avatarer för de projektmedlemmar som har projektet öppet just nu.
-
-- **Anslutning:** webbläsaren öppnar en WebSocket mot `/ws` med den vanliga inloggningen. Ingen extra inloggning eller token behövs. Utloggning, lösenordsbyte eller att du tas bort ur projektet stänger anslutningen inom 30 sekunder.
-- **Vad som skickas:** bara vad som ändrades (typ, id, version och ett sekvensnummer), aldrig innehållet. Webbläsaren hämtar sedan det nya innehållet via API:t med dina vanliga behörigheter.
-- **Avbrott:** tappas anslutningen försöker webbläsaren igen efter 1, 2, 4 … upp till 30 sekunder. Efter återanslutning hämtas det som missades via `GET /api/projects/{id}/events?after=<senaste sekvensnummer>`. Är luckan för stor eller äldre än 7 dagar laddas projektet om i stället.
-- **Begränsningar:** en server i taget tills C6 inför en extern meddelandebroker. Att slänga en hel story eller sprint med dess uppgifter skickar ännu ingen uppdatering. Kommentarstråden i en öppen uppgift uppdateras när den öppnas igen.
-
-Arkitekturen beskrivs i [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
+
+
+Språk och tema delas av inloggningen och arbetsytan och sätts innan gränssnittet renderas. Plural och datum använder förkompilerade ICU-meddelanden för svenska och engelska. Vid byte av vy flyttas tangentbordsfokus till sidrubriken; skip-länken går direkt till huvudinnehållet.
+
+## Shared design foundations (A7)
+
+Theme colours, typography and spacing live in `shared/styles/tokens.css`; responsive breakpoints are defined once in `shared/styles/breakpoints.css`. Feature styles sit with their feature and share one documented cascade. Inter/Manrope fonts are self-hosted, with local fallbacks and no Google Fonts stylesheet request.
+
+Burndown uses the shared line chart. The chart catalogue also includes bars, scatter plots, histograms and cumulative flow. Every chart can show its full values as a table and supports arrow/Home/End exploration through its data selector. Loading, empty and error states share semantic components. See [ADR 0018](adr/0018-design-system-charts-and-visual-baselines.md) and the [visual test instructions](testing.md#design-system-and-visual-baselines-a7).
+
+## Liveuppdateringar och närvaro (B1)
+
+Tavlan, öppna kommentarstrådar och notisklockan uppdateras när andra arbetar i samma projekt. Du behöver inte ladda om sidan. Egna osparade utkast behålls när nya data hämtas. Även ändringar som berör flera uppgifter, exempelvis när en story flyttas till papperskorgen, uppdaterar projektets vyer.
+
+Sidhuvudet visar andra projektmedlemmars initialer. Håll pekaren över närvaron för namn och vilken uppgift de har öppen; skärmläsare får samma information. Flera flikar sammanförs till en person. Indikatorn visar om liveuppdateringarna är anslutna eller återansluter. Efter ett avbrott hämtas missade händelser automatiskt; om historiken har gallrats uppdateras projektets data i stället.
+
+Alla läsroller, inklusive Viewer och medlemmar i arkiverade projekt, kan se närvaro och rapportera vilken uppgift de tittar på. Det ger ingen skrivrätt. Närvaron innehåller visningsnamn och uppgiftsreferenser, aldrig e-post eller uppgiftstext. En instans stöds nu; flera instanser kräver C6:s externa broker enligt [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).

@@ -2,6 +2,7 @@ package com.sprintflowinsight.workspace.lifecycle;
 
 import com.sprintflowinsight.workspace.activity.ActivityService;
 import com.sprintflowinsight.workspace.collaboration.RetrospectiveRepository;
+import com.sprintflowinsight.workspace.events.TaskDeleted;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import com.sprintflowinsight.workspace.sprint.Sprint;
@@ -11,7 +12,6 @@ import com.sprintflowinsight.workspace.story.UserStoryRepository;
 import com.sprintflowinsight.workspace.task.Task;
 import com.sprintflowinsight.workspace.task.TaskRepository;
 import com.sprintflowinsight.workspace.task.TaskService;
-import com.sprintflowinsight.workspace.events.TaskDeleted;
 import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.UUID;
@@ -71,8 +71,7 @@ public class LifecycleService {
       Task saved = tasks.saveAndFlush(task);
       Long actorId = access.userId(session);
       if (restore) taskService.updated(saved, actorId, now);
-      else
-        events.publishEvent(new TaskDeleted(UUID.randomUUID(), projectId, actorId, now, id));
+      else events.publishEvent(new TaskDeleted(UUID.randomUUID(), projectId, actorId, now, id));
     } else if (kind.equals("story")) {
       UserStory story = stories.findById(id).orElseThrow(this::missing);
       requireState(story.getTrashedAt(), restore);

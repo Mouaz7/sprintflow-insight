@@ -6,6 +6,8 @@ import java.util.List;
 public record PresenceMessage(long projectId, List<Viewer> viewers) {
   /** One person, however many tabs they have open. Never includes an email address. */
   public record Viewer(long userId, String name, List<Long> taskIds) {
-    public Viewer(long userId,String name){this(userId,name,List.of());}
+    public Viewer(long userId, String name) {
+      this(userId, name, List.of());
+    }
   }
 }

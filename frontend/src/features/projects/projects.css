@@ -1,0 +1,132 @@
+/* Project directory and selected project details. */
+.directory-toolbar,
+.collection-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+.directory-toolbar input {
+  max-width: 440px;
+}
+.project-directory {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.project-directory:empty {
+  display: none;
+}
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px var(--card-space);
+  border-bottom: 1px solid var(--line);
+}
+.project-row:last-child {
+  border-bottom: 0;
+}
+.project-row.selected {
+  background: var(--surface-raised);
+}
+.project-index {
+  flex: 0 0 40px;
+  align-self: flex-start;
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+.project-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.project-row h2 {
+  margin-block: 8px 10px;
+  font-size: var(--text-section);
+}
+.project-row p {
+  color: var(--muted);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.project-row small {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.selected-project-details {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 24px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.selected-project-details h2 {
+  margin-block: 12px;
+  font-size: 20px;
+}
+.selected-project-details > header p {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.member-manager {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.member-manager h2 {
+  margin-block: 8px;
+  font-size: var(--text-section);
+}
+.member-manager > div > p:not(.kicker) {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: 1.8;
+}
+.member-manager form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px auto;
+  align-items: end;
+  gap: 12px;
+}
+.member-list {
+  display: grid;
+  gap: 12px;
+}
+.member-list article {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: var(--text-body);
+}
+.member-list article > span {
+  flex: 1;
+  min-width: 120px;
+  overflow-wrap: anywhere;
+}
+.member-list b {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+.member-list button {
+  min-height: var(--control-height);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 13px;
+}

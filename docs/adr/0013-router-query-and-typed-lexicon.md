@@ -22,11 +22,12 @@ Before A6 the React client had one URL. The current view lived in component stat
 - Project data keys start with `['project', id]`. A write refreshes the keys of its own view and marks the rest of the project stale (`afterProjectWrite`), so other views reload when they open. The defaults keep the old behaviour: no retries, no refetch on focus or reconnect, and a short stale time (5 s) that only merges requests from components mounting together.
 - Signing in or out removes the previous account's cached data. `react-hooks/set-state-in-effect` is enforced again; per-request UI state is derived during render.
 
-### Text: a typed lexicon with a small ICU-style formatter
+### Text: a typed lexicon with precompiled ICU messages
 
 - Each feature declares `defineLexicon({ EN: {...}, SV: {...} })` in `features/<name>/i18n.ts` (shared words in `shared/i18n/common.ts`, shell text in `app/i18n.ts`). Components call `useT(lexicon)`; `LanguageProvider` holds the language, persists it and sets `<html lang>`.
 - The Swedish half is typed from the English half, so a missing key, an unknown key or a wrong argument fails `tsc`. A test uses `@ts-expect-error` to keep that guarantee honest.
-- Entries are strings or functions of typed arguments and a formatter. The formatter is a few dozen lines over `Intl.PluralRules` (CLDR categories, `#` for the localized count), `Intl.DateTimeFormat` and `Intl.NumberFormat` with `en-GB`/`sv-SE`. A library (FormatJS, i18next with ICU) was not used: message strings would lose compile-time argument checks without a code generator, and they would add 10–40 kB gzip for two languages.
+- Entries are strings or functions of typed arguments and a formatter. Plural and date messages use genuine ICU MessageFormat patterns in `shared/i18n/icu.messages.json`, compiled by `@messageformat/core` into a static TypeScript module. `icu.ts` exposes typed message keys and arguments; `icu.types.ts` describes the compiled functions, and the generated module is type-checked against them. Only the small `@messageformat/runtime` helpers reach the browser, with no runtime parser, `eval` or `Function` constructor, so the existing CSP remains enforced. Locale rules and date skeletons use `en-GB`/`sv-SE`.
+- After changing ICU patterns, run `npm run messages:compile`; keep the argument declarations in sync. `npm run messages:check` rejects stale compiled output during both `check` and `build`. Tests cover exact-zero and plural branches, localized counts and date skeletons. Other typed messages can use the shared `Intl.NumberFormat`/`Intl.DateTimeFormat` formatter directly.
 - Server error messages keep their translation table (`localizeMessage`), and the page and form guides keep their existing typed `[sv, en]` copy.
 
 ### Theme and pre-render appearance
@@ -35,7 +36,7 @@ Before A6 the React client had one URL. The current view lived in component stat
 
 ### Large lists: TanStack Virtual
 
-Board columns and the backlog table switch to `@tanstack/react-virtual` above 60 items; shorter lists render exactly as before. The virtualized regions are focusable scroll containers with a label, and the table keeps `aria-rowcount`/`aria-rowindex`. The React Compiler cannot memoize the virtualizer, so those two components opt out with `'use no memo'`.
+Board columns and the backlog table switch to `@tanstack/react-virtual` above 60 items; shorter lists render exactly as before. The virtualized regions are focusable scroll containers with a label, and the table keeps `aria-rowcount`/`aria-rowindex`. Home/End on the viewport target the first/last list index through the virtualizer, so the browser cannot stop at the last currently mounted item. Keys inside child controls retain their normal behaviour. The React Compiler cannot memoize the virtualizer, so those two components opt out with `'use no memo'`.
 
 ### Tests
 
@@ -47,5 +48,5 @@ Vitest talks to the REST client through an MSW server (`src/test/server.ts`, `mo
 - Adding a view means adding a route in `WorkspaceRoutes.tsx`, its path in `CspResources.SPA_ROUTES`, the navigation label and a size budget if it is large.
 - New text cannot be added to only one language. Plural and date formatting follow CLDR rules instead of hand-written variants. Counts of 1,000 or more now get a locale thousands separator.
 - After a write, a list that is refetching keeps its old items visible instead of going blank, and the board's due dates use the selected language's date format instead of the browser default.
-- Initial JavaScript fell from 141 kB to about 117 kB gzip. All route chunks together are about 202 kB, because the router, query cache and virtualizer add about 25 kB and split chunks compress less well than one bundle.
+- Initial JavaScript fell from 141 kB to about 117 kB gzip. All route chunks together are about 203 kB, because the router, query cache and virtualizer add about 25 kB and split chunks compress less well than one bundle.
 - jsdom has no layout, so contrast, target size and real scrolling are covered by the Playwright responsive and guidance checks against built assets, not by the unit-level axe tests.

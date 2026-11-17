@@ -35,6 +35,7 @@ export function VirtualList<T>({
     overscan: 4,
   });
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Home/End scroll this focusable viewport; child controls keep their own keys.
     <div
       ref={scrollRef}
       className="virtual-scroll"
@@ -43,6 +44,16 @@ export function VirtualList<T>({
       tabIndex={0}
       role="group"
       aria-label={label}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key !== 'Home' && event.key !== 'End') return;
+        event.preventDefault();
+        // Native End can stop at the last mounted item in a virtual window.
+        // Target the list index so measurement corrections reach the real edge.
+        virtualizer.scrollToIndex(event.key === 'Home' ? 0 : items.length - 1, {
+          align: event.key === 'Home' ? 'start' : 'end',
+        });
+      }}
     >
       <div
         className="virtual-scroll-content"
@@ -119,6 +130,7 @@ export function VirtualTable<T>({
   const last = items.at(-1);
   const after = last ? virtualizer.getTotalSize() - last.end : 0;
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Home/End scroll this focusable viewport; child controls keep their own keys.
     <div
       ref={scrollRef}
       className="virtual-scroll"
@@ -127,6 +139,16 @@ export function VirtualTable<T>({
       tabIndex={0}
       role="group"
       aria-label={label}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key !== 'Home' && event.key !== 'End') return;
+        event.preventDefault();
+        // Native End can stop at the last mounted item in a virtual window.
+        // Target the list index so measurement corrections reach the real edge.
+        virtualizer.scrollToIndex(event.key === 'Home' ? 0 : rows.length - 1, {
+          align: event.key === 'Home' ? 'start' : 'end',
+        });
+      }}
     >
       <table className={className} aria-rowcount={rows.length + 1}>
         <caption className="sr-only">{label}</caption>

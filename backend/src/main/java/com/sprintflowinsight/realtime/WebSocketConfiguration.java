@@ -5,9 +5,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.task.SimpleAsyncTaskSchedulerBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -59,9 +61,34 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     return builder.build();
   }
 
+  /**
+   * Broker executor beans make Boot back off from application async execution as well. Keep
+   * listeners bounded on virtual threads, but queue nested durable publications instead of blocking
+   * all four listener threads while each tries to submit its follow-up event.
+   */
+  @Bean(name = {"applicationTaskExecutor", "taskExecutor"})
+  static ThreadPoolTaskExecutor taskExecutor(
+      @Value("${spring.task.execution.simple.concurrency-limit:4}") int concurrency,
+      @Value("${app.events.executor-queue-capacity:1000}") int queueCapacity) {
+    if (concurrency < 1 || queueCapacity < 1)
+      throw new IllegalArgumentException("Event concurrency and queue capacity must be positive.");
+    var executor = new ThreadPoolTaskExecutor();
+    executor.setVirtualThreads(true);
+    executor.setThreadNamePrefix("module-events-");
+    executor.setCorePoolSize(concurrency);
+    executor.setMaxPoolSize(concurrency);
+    executor.setQueueCapacity(queueCapacity);
+    executor.setWaitForTasksToCompleteOnShutdown(true);
+    executor.setAwaitTerminationSeconds(10);
+    return executor;
+  }
+
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-    registry.setPreserveReceiveOrder(true);
+    // Inbound frames run on their WebSocket session's caller thread below. Spring 7.0's
+    // OrderedMessageChannelDecorator catches authorization failures and returns true, which
+    // otherwise suppresses ERROR/close and publishes a subscribe event for a denied frame.
+    registry.setPreserveReceiveOrder(false);
     var httpSession = new HttpSessionHandshakeInterceptor();
     httpSession.setCopyAllAttributes(false);
     httpSession.setCopyHttpSessionId(true);
@@ -81,7 +108,8 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
         .enableSimpleBroker("/topic")
         .setHeartbeatValue(new long[] {HEARTBEAT_MS, HEARTBEAT_MS})
         .setTaskScheduler(heartbeats);
-    // The only client SEND destination carries validated open-task presence, never a domain mutation.
+    // The only client SEND destination carries validated open-task presence, never a domain
+    // mutation.
     registry.setApplicationDestinationPrefixes("/app");
   }
 
@@ -97,6 +125,9 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
+    // Preserve each socket's receive order while allowing failures to reach the protocol
+    // handler. Different sockets retain their own transport threads; domain writes use REST.
+    registration.executor(new SyncTaskExecutor());
     registration.interceptors(subscriptionLimit);
   }
 }

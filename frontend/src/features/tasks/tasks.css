@@ -1,0 +1,201 @@
+/* Kanban: the board comes first; creation belongs to its editor. */
+.task-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: var(--space-section);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.task-filters > input {
+  flex: 1 1 230px;
+}
+.task-filters > select {
+  flex: 1 1 150px;
+  width: auto;
+}
+.blocked-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-height);
+  font-size: var(--text-body);
+  white-space: nowrap;
+}
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-grid);
+  align-items: start;
+}
+.task-board > section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+.task-board > section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 16px;
+  color: var(--muted);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+.task-board > section > header b {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding-inline: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: var(--text-small);
+  background: var(--surface);
+}
+.task-board > section > header span::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.task-board > section:nth-child(2) > header span::before {
+  background: var(--chart);
+}
+.task-board > section:nth-child(3) > header span::before {
+  border: 2px solid var(--chart);
+  background: transparent;
+}
+.task-board article {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+}
+.task-board article:last-child {
+  margin-bottom: 0;
+}
+.task-board article:focus-within {
+  box-shadow: var(--surface-shadow);
+}
+.task-board article[draggable='true'] {
+  cursor: grab;
+}
+.task-board article[draggable='true']:active {
+  cursor: grabbing;
+}
+.task-board article > strong {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.task-board article > small {
+  color: var(--muted);
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+.task-board article.is-blocked,
+.task-board article.is-overdue {
+  border-color: var(--danger-line);
+}
+.task-board .blocked-label,
+.task-board article.is-overdue > strong {
+  color: var(--danger-text);
+}
+/* B0: task identifiers (SF-123) and project keys use tabular monospace so they align and scan. */
+.task-board .task-key,
+.project-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.project-key {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  vertical-align: middle;
+}
+.task-status-control {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.task-status-control select {
+  font-size: var(--text-body);
+  min-height: var(--compact-control-height);
+  padding: 5px 8px;
+}
+.task-board .card-actions {
+  gap: 6px;
+}
+.task-board .card-actions button {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: var(--text-small);
+}
+.empty-column {
+  padding: 16px 8px;
+  color: var(--muted);
+  font-size: var(--text-body);
+  text-align: center;
+}
+.task-attachments {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-small);
+}
+.task-attachments > summary {
+  min-height: var(--control-height);
+  cursor: pointer;
+  line-height: 1.7;
+}
+.task-attachments ul {
+  display: grid;
+  gap: 12px;
+  padding-left: 0;
+  list-style: none;
+}
+.task-attachments li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-attachments a {
+  flex: 1;
+  color: var(--accent-text);
+  overflow-wrap: anywhere;
+}
+.task-attachments button {
+  min-height: var(--control-height);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface-raised);
+  font-size: var(--text-small);
+}
+.task-attachments form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.task-attachments label {
+  font-size: var(--text-small);
+}

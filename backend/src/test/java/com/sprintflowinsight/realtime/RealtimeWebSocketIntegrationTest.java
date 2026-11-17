@@ -16,6 +16,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
@@ -38,8 +40,8 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 /**
- * STOMP over a real WebSocket against the running server: handshake authentication, CSRF and
- * Origin checks, subscription authorisation, sequence numbers, rollback and gap filling.
+ * STOMP over a real WebSocket against the running server: handshake authentication, CSRF and Origin
+ * checks, subscription authorisation, sequence numbers, rollback and gap filling.
  */
 class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   private static final Duration WAIT = Duration.ofSeconds(10);
@@ -83,8 +85,12 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
     }
 
     @Override
-    public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command,
-        StompHeaders headers, byte[] payload, Throwable exception) {
+    public void handleException(
+        StompSession session,
+        org.springframework.messaging.simp.stomp.StompCommand command,
+        StompHeaders headers,
+        byte[] payload,
+        Throwable exception) {
       errors.add("CLIENT " + command + " " + exception);
     }
 
@@ -156,11 +162,7 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
               var headers = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
               headers.setDestination(destination);
               var probe = MessageBuilder.createMessage(new byte[0], headers.getMessageHeaders());
-              return broker
-                  .getSubscriptionRegistry()
-                  .findSubscriptions(probe)
-                  .values()
-                  .stream()
+              return broker.getSubscriptionRegistry().findSubscriptions(probe).values().stream()
                   .anyMatch(ids -> ids.contains(subscription.getSubscriptionId()));
             });
     return inbox;
@@ -172,7 +174,8 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   }
 
   private long latestSeq(long projectId) {
-    return jdbc.queryForList(
+    return jdbc
+        .queryForList(
             "select last_seq from realtime_sequence where project_id=?", Long.class, projectId)
         .stream()
         .findFirst()
@@ -222,7 +225,9 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @Test
   void handshakeWithoutSessionIsRejected() {
     assertThatThrownBy(
-            () -> connectAsync(null, false, null, new Probe()).get(WAIT.toSeconds(), TimeUnit.SECONDS))
+            () ->
+                connectAsync(null, false, null, new Probe())
+                    .get(WAIT.toSeconds(), TimeUnit.SECONDS))
         .isInstanceOf(ExecutionException.class);
   }
 
@@ -248,8 +253,17 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @Test
   void outsidersCannotSubscribeAndReceiveNothing() throws Exception {
     String owner = register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Private " + port + System.nanoTime())));
+    long ownerId = userRepository.findByEmail(testEmail).orElseThrow().getId();
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST,
+                "/api/projects",
+                Map.of("name", "Private " + port + System.nanoTime())));
     long taskId = createTask(projectId);
+    StompSession ownerSession = connect(owner, new Probe());
+    Inbox presence = subscribe(ownerSession, ProjectTopics.presence(projectId));
+    subscribe(ownerSession, ProjectTopics.events(projectId));
 
     String outsider = register();
     Probe probe = new Probe();
@@ -257,6 +271,9 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
     Inbox inbox = new Inbox();
     session.subscribe(ProjectTopics.events(projectId), inbox);
     assertThat(probe.errors.poll(WAIT.toSeconds(), TimeUnit.SECONDS)).startsWith("ERROR");
+    ownerSession.send("/app/projects/" + projectId + "/presence", Map.of("taskId", taskId));
+    assertThat(viewerIds(awaitTaskPresence(presence, ownerId, List.of(taskId))))
+        .containsExactly(ownerId);
 
     sessionCookie = owner;
     move(projectId, taskId, "Done");
@@ -274,9 +291,95 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   }
 
   @Test
+  void applicationPresenceDestinationCannotBeSubscribedTo() throws Exception {
+    String cookie = register();
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST,
+                "/api/projects",
+                Map.of("name", "Subscribe " + System.nanoTime())));
+    Probe probe = new Probe();
+    StompSession session = connect(cookie, probe);
+    session.subscribe("/app/projects/" + projectId + "/presence", new Inbox());
+    assertThat(probe.errors.poll(WAIT.toSeconds(), TimeUnit.SECONDS)).startsWith("ERROR");
+  }
+
+  @Test
+  void outsidersCannotSendOpenTaskPresence() throws Exception {
+    register();
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST,
+                "/api/projects",
+                Map.of("name", "Presence ACL " + System.nanoTime())));
+    String outsider = register();
+    Probe probe = new Probe();
+    StompSession session = connect(outsider, probe);
+    session.send("/app/projects/" + projectId + "/presence", Map.of("taskId", 1));
+    assertThat(probe.errors.poll(WAIT.toSeconds(), TimeUnit.SECONDS)).startsWith("ERROR");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"Owner", "Admin", "Member", "Viewer", "Archived"})
+  void readersCanReportAndClearTheOpenTask(String role) throws Exception {
+    String owner = register();
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST,
+                "/api/projects",
+                Map.of("name", "Task presence " + role + System.nanoTime())));
+    long taskId = createTask(projectId);
+    String reader = owner;
+    if (!role.equals("Owner")) {
+      reader = register();
+      String email = testEmail;
+      sessionCookie = owner;
+      addMember(projectId, email, role.equals("Archived") ? "Viewer" : role);
+    }
+    long readerId = userRepository.findByEmail(testEmail).orElseThrow().getId();
+    if (role.equals("Archived"))
+      jdbc.update("update projects set archived_at=now() where id=?", projectId);
+    StompSession session = connect(reader, new Probe());
+    Inbox presence = subscribe(session, ProjectTopics.presence(projectId));
+    subscribe(session, ProjectTopics.events(projectId));
+    session.send("/app/projects/" + projectId + "/presence", Map.of("taskId", taskId));
+    awaitTaskPresence(presence, readerId, List.of(taskId));
+    session.send(
+        "/app/projects/" + projectId + "/presence",
+        java.util.Collections.singletonMap("taskId", null));
+    awaitTaskPresence(presence, readerId, List.of());
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> awaitTaskPresence(Inbox inbox, long userId, List<Long> expected) {
+    return await()
+        .atMost(WAIT)
+        .until(
+            () -> {
+              Map<String, Object> message = inbox.messages.poll(200, TimeUnit.MILLISECONDS);
+              if (message == null) return null;
+              var viewers = (List<Map<String, Object>>) message.get("viewers");
+              var viewer =
+                  viewers.stream()
+                      .filter(v -> ((Number) v.get("userId")).longValue() == userId)
+                      .findFirst();
+              if (viewer.isEmpty()) return null;
+              var taskIds =
+                  ((List<Number>) viewer.orElseThrow().get("taskIds"))
+                      .stream().map(Number::longValue).toList();
+              return taskIds.equals(expected) ? message : null;
+            },
+            java.util.Objects::nonNull);
+  }
+
+  @Test
   void memberReceivesTaskMovedWithTheNextSequenceNumber() throws Exception {
     String owner = register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Live " + System.nanoTime())));
+    long projectId =
+        id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Live " + System.nanoTime())));
     long taskId = createTask(projectId);
     String member = register();
     String memberEmail = testEmail;
@@ -303,7 +406,10 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @Test
   void rolledBackChangesSendNothing() throws Exception {
     register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Rollback " + System.nanoTime())));
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST, "/api/projects", Map.of("name", "Rollback " + System.nanoTime())));
     long taskId = createTask(projectId);
     StompSession session = connect(sessionCookie, new Probe());
     Inbox inbox = subscribe(session, ProjectTopics.events(projectId));
@@ -327,7 +433,8 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @Test
   void gapFillReturnsWhatADisconnectedMemberMissed() throws Exception {
     String owner = register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Gap " + System.nanoTime())));
+    long projectId =
+        id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Gap " + System.nanoTime())));
     long taskId = createTask(projectId);
     String member = register();
     String memberEmail = testEmail;
@@ -346,7 +453,8 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
     await().atMost(WAIT).until(() -> latestSeq(projectId) == seen + 2);
 
     sessionCookie = member;
-    var page = request(HttpMethod.GET, "/api/projects/" + projectId + "/events?after=" + seen, null);
+    var page =
+        request(HttpMethod.GET, "/api/projects/" + projectId + "/events?after=" + seen, null);
     assertThat(page.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(page.getBody())
         .containsEntry("latestSeq", (int) (seen + 2))
@@ -364,7 +472,10 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   void presenceListsEveryViewerOfTheProject() throws Exception {
     String owner = register();
     long ownerId = userRepository.findByEmail(testEmail).orElseThrow().getId();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Presence " + System.nanoTime())));
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST, "/api/projects", Map.of("name", "Presence " + System.nanoTime())));
     String member = register();
     long memberId = userRepository.findByEmail(testEmail).orElseThrow().getId();
     sessionCookie = owner;
@@ -397,15 +508,16 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @SuppressWarnings("unchecked")
   private static List<Long> viewerIds(Map<String, Object> presence) {
     return ((List<Map<String, Object>>) presence.get("viewers"))
-        .stream()
-        .map(viewer -> ((Number) viewer.get("userId")).longValue())
-        .toList();
+        .stream().map(viewer -> ((Number) viewer.get("userId")).longValue()).toList();
   }
 
   @Test
   void connectionsCloseOnceTheirSessionHasEnded() throws Exception {
     String cookie = register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Logout " + System.nanoTime())));
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST, "/api/projects", Map.of("name", "Logout " + System.nanoTime())));
     Probe probe = new Probe();
     StompSession session = connect(cookie, probe);
     subscribe(session, ProjectTopics.events(projectId));
@@ -423,7 +535,10 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
   @Test
   void connectionsCloseOnceTheMemberIsRemoved() throws Exception {
     String owner = register();
-    long projectId = id(request(HttpMethod.POST, "/api/projects", Map.of("name", "Removed " + System.nanoTime())));
+    long projectId =
+        id(
+            request(
+                HttpMethod.POST, "/api/projects", Map.of("name", "Removed " + System.nanoTime())));
     String member = register();
     long memberId = userRepository.findByEmail(testEmail).orElseThrow().getId();
     sessionCookie = owner;
@@ -431,8 +546,7 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
     StompSession session = connect(member, new Probe());
     subscribe(session, ProjectTopics.events(projectId));
 
-    jdbc.update(
-        "delete from project_member where project_id=? and user_id=?", projectId, memberId);
+    jdbc.update("delete from project_member where project_id=? and user_id=?", projectId, memberId);
     realtimeSessions.sweep();
     await().atMost(WAIT).until(() -> !session.isConnected());
   }

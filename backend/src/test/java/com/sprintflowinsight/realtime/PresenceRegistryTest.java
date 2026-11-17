@@ -1,6 +1,7 @@
 package com.sprintflowinsight.realtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,6 +11,27 @@ import org.junit.jupiter.api.Test;
 class PresenceRegistryTest {
   private final Instant t0 = Instant.parse("2026-11-15T10:00:00Z");
   private final PresenceRegistry registry = new PresenceRegistry(Duration.ofSeconds(90));
+
+  @Test
+  void openTasksAreScopedToSubscribedProjectsAndMergedAcrossTabs() {
+    registry.subscribed("s1", "a", 7, true, 1, "Ada", t0);
+    registry.subscribed("s2", "a", 7, true, 1, "Ada", t0);
+    assertThatThrownBy(() -> registry.openTask("unknown", 7, 11L, t0))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> registry.openTask("s1", 8, 11L, t0))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    registry.openTask("s1", 7, 11L, t0);
+    registry.openTask("s2", 7, 12L, t0);
+    assertThat(registry.viewers(7))
+        .containsExactly(new PresenceMessage.Viewer(1, "Ada", java.util.List.of(11L, 12L)));
+    registry.openTask("s1", 7, null, t0);
+    assertThat(registry.viewers(7).getFirst().taskIds()).containsExactly(12L);
+    assertThat(registry.disconnected("s2")).containsExactly(7L);
+    assertThat(registry.viewers(7).getFirst().taskIds()).isEmpty();
+    registry.openTask("s1", 7, 13L, t0);
+    registry.unsubscribed("s1", "a");
+    assertThat(registry.viewers(7)).isEmpty();
+  }
 
   @Test
   void eventsSubscriptionsMakeViewersAndPresenceSubscriptionsDoNot() {

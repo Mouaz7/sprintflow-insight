@@ -30,7 +30,12 @@ export function TasksView(props: TasksViewProps) {
     role,
     setDiscussion,
   } = controller;
-  useTaskPresence(projectId, discussion?.id ?? blocking?.id ?? (panelOpen ? controller.editing?.id : undefined));
+  useTaskPresence(
+    projectId,
+    discussion?.id ??
+      blocking?.id ??
+      (panelOpen ? controller.editing?.id : undefined),
+  );
   return (
     <section className="page tasks-page">
       <PageHeader

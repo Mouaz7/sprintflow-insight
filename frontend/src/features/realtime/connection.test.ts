@@ -95,11 +95,18 @@ describe('ProjectConnection', () => {
     const connect = parseFrames(socket.sent[0]!).frames[0]!;
     expect(connect.headers.get('X-CSRF-TOKEN')).toBe('csrf-token');
     expect(connect.headers.get('accept-version')).toBe('1.2');
-    expect(socket.commands()).toEqual(['CONNECT', 'SUBSCRIBE', 'SUBSCRIBE']);
+    expect(socket.commands()).toEqual([
+      'CONNECT',
+      'SUBSCRIBE',
+      'SUBSCRIBE',
+      'SEND',
+    ]);
     expect(handlers.onStatus).toHaveBeenLastCalledWith('live');
     await vi.waitFor(() =>
       expect(api).toHaveBeenCalledWith('/projects/7/events?after=0'),
     );
+    expect(handlers.onChange).toHaveBeenCalledWith([]);
+    handlers.onChange.mockClear();
 
     socket.receive(
       'MESSAGE',
@@ -223,9 +230,10 @@ describe('ProjectConnection', () => {
       );
       release({ projectId: 7, latestSeq: 1, resync: false, events: [] });
       await vi.waitFor(() =>
-        expect(handlers.onChange).toHaveBeenCalledTimes(2),
+        expect(handlers.onChange).toHaveBeenCalledTimes(3),
       );
       expect(handlers.onChange.mock.calls).toEqual([
+        [[]],
         [[event(2)]],
         [[event(3)]],
       ]);

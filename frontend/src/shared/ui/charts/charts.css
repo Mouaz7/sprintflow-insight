@@ -1,0 +1,135 @@
+.data-chart {
+  margin: 0;
+  min-width: 0;
+}
+.data-chart figcaption {
+  font-size: var(--text-section);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.data-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.chart-grid {
+  stroke: var(--line);
+  stroke-dasharray: 3 5;
+}
+.chart-axis {
+  fill: var(--muted);
+  font-size: 13px;
+}
+.chart-line {
+  fill: none;
+  stroke-width: 3;
+}
+.chart-area {
+  fill-opacity: 0.72;
+  stroke-width: 1.5;
+}
+.chart-ideal {
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+}
+.chart-selected {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 2;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+}
+.chart-swatch {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.chart-color-1 {
+  color: var(--chart-1);
+}
+.chart-color-2 {
+  color: var(--chart-2);
+  border-style: dashed;
+}
+.chart-color-3 {
+  color: var(--chart-3);
+  border-style: dotted;
+}
+.chart-color-4 {
+  color: var(--chart-4);
+  border-radius: 50%;
+}
+.chart-color-5 {
+  color: var(--chart-5);
+  border-style: double;
+}
+.chart-explorer {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.chart-explorer input[type='range'] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  accent-color: var(--accent);
+  background: transparent;
+}
+.chart-explorer output {
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+}
+.chart-explorer p {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.chart-table {
+  border-top: 1px solid var(--line);
+}
+.chart-table summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+}
+.chart-table-scroll {
+  overflow-x: auto;
+}
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+}
+.chart-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-block: 8px;
+}
+.chart-table th,
+.chart-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.chart-table input:focus-visible {
+  outline: 3px solid var(--accent);
+}

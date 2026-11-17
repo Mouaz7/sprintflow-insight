@@ -1,12 +1,10 @@
 import { Fragment } from 'react';
 import type { Task } from '../../api/contracts';
-import { useLanguage } from '../../shared/i18n/LanguageProvider';
 import { VirtualList, VIRTUALIZE_AFTER } from '../../shared/ui/VirtualList';
 import { TaskAttachments } from './TaskAttachments';
 import { TaskMetadata } from './TaskCollaboration';
 import type { UseTaskBoardState } from './useTaskBoard';
 export function Board({ controller }: { controller: UseTaskBoardState }) {
-  const { format } = useLanguage();
   const {
     columns,
     tasks,
@@ -42,7 +40,7 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
       )}
       <small>
         {task.storyPoints} {t('points')}
-        {task.dueAt ? t('due', { date: format.date(task.dueAt) }) : ''}
+        {task.dueAt ? t('due', { date: new Date(task.dueAt) }) : ''}
       </small>
       {task.assigneeEmail && (
         <small>

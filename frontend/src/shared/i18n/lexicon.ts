@@ -1,9 +1,9 @@
 import type { Language } from '../../api/contracts';
 
 /**
- * A small ICU-style formatter. Plural forms follow the CLDR categories from
- * Intl.PluralRules (`#` is replaced by the localized count); dates and numbers
- * use Intl with the locale of the active language.
+ * Locale helpers for typed functional messages. ICU patterns are compiled
+ * separately in icu.ts; these helpers also support direct date/number formatting
+ * and CLDR plural categories for functional entries.
  */
 export type PluralForms = Partial<
   Record<Exclude<Intl.LDMLPluralRule, 'other'>, string>
