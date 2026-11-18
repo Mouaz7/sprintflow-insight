@@ -2,5 +2,5 @@
 # CI separately rejects picomatch in any production dependency tree.
 [[IgnoredVulns]]
 id = "GHSA-fc5q-39xc-vjpf"
-effectiveUntil = 2026-12-02
+ignoreUntil = 2026-12-02T00:00:00Z
 reason = "Development tooling only; repository-owned glob patterns, no application/runtime use. No patched release exists. Reassess by 2026-12-02 or before accepting untrusted patterns; see docs/security-review.md."
