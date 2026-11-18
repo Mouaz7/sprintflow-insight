@@ -23,6 +23,17 @@ public class RealtimeEventListener {
   }
 
   @ApplicationModuleListener
+  public void pokerChanged(com.sprintflowinsight.workspace.events.PokerSessionChanged event) {
+    publisher.publish(
+        event.eventId(),
+        event.projectId(),
+        "PokerSessionChanged",
+        event.sessionId(),
+        event.version(),
+        event.occurredAt());
+  }
+
+  @ApplicationModuleListener
   public void created(TaskCreated event) {
     publisher.publish(
         event.eventId(),

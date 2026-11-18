@@ -467,6 +467,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  poker: [
+    'Välj en berättelse och en kortlek. Varje deltagare röstar dolt. Spelledaren, ägaren eller en administratör avslöjar rösterna, startar en ny runda vid oenighet och sparar överenskomna poäng på berättelsen. Läsbehörighet ger möjlighet att följa sessionen.',
+    'Choose a story and a deck. Participants vote privately. The facilitator, owner or admin reveals the votes, starts another round after disagreement and saves the agreed story points. Viewers can watch the session.',
+  ],
   forecast: [
     'Jämför 50, 85 och 95 procent av simulerade utfall för leveransdatum och mängder. Historiska veckor eller sprintar dras 10 000 gånger. Litet underlag, förändrad kapacitet och arbete som inte delats upp kan göra prognosen missvisande; läs varningarna.',
     'Compare 50, 85 and 95 percent of simulated outcomes for delivery dates and quantities. Historical weeks or sprints are sampled 10,000 times. Small samples, changed capacity and work not yet broken down can make forecasts misleading; read the warnings.',

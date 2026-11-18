@@ -79,7 +79,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           "sprint_points_nonnegative",
           "Story points cannot be negative.",
           "projects_key_unique",
-          "This project key is already in use.");
+          "This project key is already in use.",
+          "poker_session_one_open_per_story",
+          "This story already has an open planning poker session.");
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ProblemDetail> handleIntegrityViolation(

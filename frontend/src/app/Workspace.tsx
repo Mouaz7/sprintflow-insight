@@ -50,6 +50,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'metrics',
   'flow',
   'forecast',
+  'poker',
   'updates',
   'profile',
   'calendar',
@@ -220,7 +221,10 @@ function WorkspaceShell() {
   }
   function setActiveProjectId(id: number) {
     setSelectedProjectId(id);
-    if ((view === 'tasks' || view === 'forecast') && location.search)
+    if (
+      (view === 'tasks' || view === 'forecast' || view === 'poker') &&
+      location.search
+    )
       void navigate(`/${view}`, { replace: true });
   }
   function selectView(next: WorkspaceView) {

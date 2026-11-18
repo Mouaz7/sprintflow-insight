@@ -4,6 +4,16 @@ import { activitySummary } from './activityText';
 describe('Activity language', () => {
   it.each([
     [
+      'POKER_STARTED',
+      'Started planning poker for story “Checkout”.',
+      'Startade planning poker för berättelsen “Checkout”.',
+    ],
+    [
+      'STORY_ESTIMATED',
+      'Estimated story “Checkout” at 5 points in planning poker (was 3).',
+      'Uppskattade berättelsen “Checkout” till 5 poäng i planning poker (tidigare 3).',
+    ],
+    [
       'PROJECT_CREATED',
       'Created project “Mobilkontroll”.',
       'Skapade projektet “Mobilkontroll”.',

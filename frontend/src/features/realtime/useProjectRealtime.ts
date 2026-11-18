@@ -49,7 +49,8 @@ export function useProjectRealtime(
             (type) =>
               !type.startsWith('Task') &&
               !type.startsWith('Comment') &&
-              type !== 'NotificationsChanged',
+              type !== 'NotificationsChanged' &&
+              type !== 'PokerSessionChanged',
           );
           if (resync || aggregate) {
             void client.invalidateQueries({
@@ -76,11 +77,19 @@ export function useProjectRealtime(
               queryKey: ['project', projectId, 'metrics'],
             });
           }
+          if (types.has('PokerSessionChanged'))
+            void client.invalidateQueries({
+              queryKey: ['project', projectId, 'poker'],
+            });
           if (resync || types.has('NotificationsChanged'))
             void client.invalidateQueries({ queryKey: ['notifications'] });
           if (
             resync ||
-            [...types].some((type) => type !== 'NotificationsChanged')
+            [...types].some(
+              (type) =>
+                type !== 'NotificationsChanged' &&
+                type !== 'PokerSessionChanged',
+            )
           ) {
             void client.invalidateQueries({ queryKey: ['workspace-search'] });
             void client.invalidateQueries({

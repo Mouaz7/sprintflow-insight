@@ -1251,6 +1251,268 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/poker-sessions:
+    parameters:
+    - &id001
+      $ref: '#/components/parameters/projectId'
+    get:
+      summary: List up to 100 open sessions or the 20 most recently updated closed sessions
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PokerSessionSummary'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: closed
+        schema:
+          type: boolean
+          default: false
+    post:
+      summary: Start a story session; Owner, Admin or Member on an active project
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartPokerRequest'
+  /api/projects/{projectId}/poker-sessions/{sessionId}:
+    parameters: &id002
+    - *id001
+    - in: path
+      name: sessionId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      summary: Read a caller-specific session, never other unrevealed cards
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Cancel an open session and discard current unrevealed votes
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PokerRoundRequest'
+  /api/projects/{projectId}/poker-sessions/{sessionId}/vote:
+    parameters: *id002
+    put:
+      summary: Cast or replace only your own vote in the named round
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PokerVoteRequest'
+    delete:
+      summary: Retract only your own vote in the named round
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PokerRoundRequest'
+  /api/projects/{projectId}/poker-sessions/{sessionId}/reveal:
+    parameters: *id002
+    post:
+      summary: Reveal the named round; at least one vote is required
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PokerRoundRequest'
+      description: Facilitator, Owner or Admin, active project only. round must match the current round; a delayed
+        command returns 409. Viewer and unrelated Member cannot facilitate.
+  /api/projects/{projectId}/poker-sessions/{sessionId}/revote:
+    parameters: *id002
+    post:
+      summary: Open the next round after revealing; at most 50 rounds
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PokerRoundRequest'
+      description: Facilitator, Owner or Admin, active project only. round must match the current round; a delayed
+        command returns 409. Viewer and unrelated Member cannot facilitate.
+  /api/projects/{projectId}/poker-sessions/{sessionId}/accept:
+    parameters: *id002
+    post:
+      summary: Save an explicitly agreed estimate and record project activity
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerSession'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptPokerRequest'
+      description: Facilitator, Owner or Admin, active project only. round must match the current round; a delayed
+        command returns 409. Viewer and unrelated Member cannot facilitate. storyVersion must match the current story
+        (412 otherwise). At least one estimating vote must have been revealed. Accepting closes the session atomically
+        with the story update and activity.
 components:
   securitySchemes:
     sessionCookie:
@@ -1346,6 +1608,267 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    PokerRoundRequest:
+      type: object
+      required:
+      - round
+      properties:
+        round: &id001
+          type: integer
+          minimum: 1
+          maximum: 50
+    StartPokerRequest:
+      type: object
+      required:
+      - storyId
+      - deck
+      properties:
+        storyId: &id002
+          type: integer
+          format: int64
+        deck: &id008
+          type: string
+          enum:
+          - FIBONACCI
+          - TSHIRT
+          - CUSTOM
+        cards:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 8
+          minItems: 2
+          maxItems: 20
+          uniqueItems: true
+      description: cards is required only for CUSTOM, in estimate order. Fixed decks reject supplied cards. ? and ☕
+        abstain. At least one estimating card is required.
+    PokerVoteRequest:
+      type: object
+      required:
+      - round
+      - card
+      properties:
+        round: *id001
+        card:
+          type: string
+          minLength: 1
+          maxLength: 8
+    AcceptPokerRequest:
+      type: object
+      required:
+      - round
+      - storyPoints
+      - storyVersion
+      properties:
+        round: *id001
+        storyPoints: &id007
+          type: integer
+          enum: &id003
+          - 1
+          - 2
+          - 3
+          - 5
+          - 8
+        storyVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    PokerSessionSummary:
+      type: object
+      required:
+      - id
+      - storyId
+      - storyTitle
+      - status
+      - round
+      - finalStoryPoints
+      properties:
+        id: *id002
+        storyId: *id002
+        storyTitle: &id004
+          type: string
+        status: &id009
+          type: string
+          enum:
+          - VOTING
+          - REVEALED
+          - ACCEPTED
+          - CANCELLED
+        round: *id001
+        finalStoryPoints:
+          type: integer
+          enum: *id003
+          nullable: true
+    PokerVoter:
+      type: object
+      required:
+      - userId
+      - name
+      properties:
+        userId: *id002
+        name: *id004
+    PokerVote:
+      type: object
+      required:
+      - userId
+      - name
+      - card
+      properties:
+        userId: *id002
+        name: *id004
+        card: *id004
+    PokerCardCount:
+      type: object
+      required:
+      - card
+      - count
+      properties:
+        card: *id004
+        count: &id005
+          type: integer
+    PokerStatistics:
+      type: object
+      required:
+      - votes
+      - abstentions
+      - distribution
+      - min
+      - max
+      - median
+      - modes
+      - consensus
+      - agreement
+      - mean
+      - spread
+      - suggestion
+      - suggestedStoryPoints
+      - revoteRecommended
+      properties:
+        votes: *id005
+        abstentions: *id005
+        distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/PokerCardCount'
+        min:
+          type: string
+          nullable: true
+        max:
+          type: string
+          nullable: true
+        median:
+          type: string
+          nullable: true
+        modes:
+          type: array
+          items: *id004
+        consensus: &id006
+          type: boolean
+        agreement:
+          type: number
+        mean:
+          type: number
+          nullable: true
+        spread: *id005
+        suggestion:
+          type: string
+          nullable: true
+        suggestedStoryPoints:
+          type: integer
+          enum: *id003
+          nullable: true
+        revoteRecommended: *id006
+      description: Uses deck order; median is the lower middle estimate. Abstentions are excluded from agreement, mean,
+        median and consensus. mean is null unless all estimating cards are numeric. suggestedStoryPoints is null for
+        unmapped cards; the facilitator explicitly chooses the story estimate.
+    PokerRound:
+      type: object
+      required:
+      - number
+      - votes
+      - statistics
+      properties:
+        number: *id001
+        votes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PokerVote'
+        statistics:
+          $ref: '#/components/schemas/PokerStatistics'
+    PokerSession:
+      type: object
+      required:
+      - id
+      - projectId
+      - storyId
+      - storyTitle
+      - storyPoints
+      - storyVersion
+      - deck
+      - cards
+      - status
+      - round
+      - facilitatorUserId
+      - voters
+      - myCard
+      - rounds
+      - finalValue
+      - finalStoryPoints
+      - canVote
+      - canFacilitate
+      - createdAt
+      - closedAt
+      - version
+      properties:
+        id: *id002
+        projectId: *id002
+        storyId: *id002
+        storyTitle: *id004
+        storyPoints: *id007
+        storyVersion: *id002
+        deck: *id008
+        cards:
+          type: array
+          items: *id004
+        status: *id009
+        round: *id001
+        facilitatorUserId:
+          type: integer
+          format: int64
+          nullable: true
+        voters:
+          type: array
+          items:
+            $ref: '#/components/schemas/PokerVoter'
+        myCard:
+          type: string
+          nullable: true
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/PokerRound'
+        finalValue:
+          type: string
+          nullable: true
+        finalStoryPoints:
+          type: integer
+          enum: *id003
+          nullable: true
+        canVote: *id006
+        canFacilitate: *id006
+        createdAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        version: *id002
+      description: Caller-specific snapshot. Before reveal, voters contain identities only and myCard is only the caller’s
+        card. rounds contains only previously revealed rounds; it never includes current unrevealed votes or statistics.
+        finalValue is the chosen numeric card when present in the deck, otherwise the lower median that informed the
+        explicit story-point mapping. Archived projects are readable; writes are denied.
     ForecastQuery:
       type: object
       required: []

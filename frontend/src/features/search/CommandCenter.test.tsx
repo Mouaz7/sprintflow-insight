@@ -77,7 +77,7 @@ describe('CommandCenter', () => {
     const input = await openPalette();
     const dialog = screen.getByRole('dialog', { name: 'Search and commands' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(input).toHaveFocus();
+    await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveAttribute('aria-expanded', 'true');
     const listbox = screen.getByRole('listbox');
     expect(input).toHaveAttribute('aria-controls', listbox.id);
