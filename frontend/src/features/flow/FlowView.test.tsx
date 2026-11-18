@@ -109,6 +109,7 @@ function mount({
 } = {}) {
   const reads: string[] = [];
   const writes: { path: string; body: unknown }[] = [];
+  let rejectNextSave = stale;
   let settings: WipSettings = {
     version: 4,
     limits: [
@@ -122,8 +123,14 @@ function mount({
       return { token: 'test', headerName: 'X-CSRF-TOKEN' };
     if (request.method !== 'GET') {
       writes.push({ path, body: JSON.parse(request.body ?? '{}') });
-      if (stale)
+      if (rejectNextSave) {
+        rejectNextSave = false;
+        settings = {
+          version: 5,
+          limits: [{ status: 'In Progress', limit: 9 }],
+        };
         return HttpResponse.json({ detail: 'Stale settings' }, { status: 412 });
+      }
       const body = JSON.parse(request.body ?? '{}') as Pick<
         WipSettings,
         'limits'
@@ -204,7 +211,8 @@ describe('Flow analysis', () => {
     },
   );
 
-  it('retains a conflicting WIP draft and its selected fields', async () => {
+  it('retains a conflicting WIP draft and reads current settings when reopened without realtime', async () => {
+    const user = userEvent.setup();
     mount({ stale: true });
     await screen.findByRole('button', { name: 'Set WIP limits' });
     fireEvent.click(screen.getByRole('button', { name: 'Set WIP limits' }));
@@ -220,6 +228,20 @@ describe('Flow analysis', () => {
       await within(dialog).findByText(/Another administrator changed/),
     ).toBeVisible();
     expect(input).toHaveValue(3);
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Close panel' }),
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Confirm',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Set WIP limits' }));
+    expect(
+      await within(screen.getByRole('dialog')).findByRole('spinbutton', {
+        name: 'In Progress',
+      }),
+    ).toHaveValue(9);
   });
 
   it('saves optional limits and allows clearing all three columns', async () => {

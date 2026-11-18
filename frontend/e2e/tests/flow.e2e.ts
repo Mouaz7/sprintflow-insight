@@ -138,6 +138,16 @@ test('preserves a stale administrator draft and makes archived and viewer settin
 }) => {
   test.setTimeout(90_000);
   const context = await browser.newContext({ baseURL });
+  // Drop real sockets so recovery cannot depend on an incoming realtime event.
+  await context.addInitScript(() => {
+    const NativeSocket = window.WebSocket;
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols);
+        this.addEventListener('open', () => this.close());
+      }
+    };
+  });
   const teammate = newAccount('flow-admin');
   const peerApi = new Api(context.request);
   let registered = false;
@@ -189,6 +199,17 @@ test('preserves a stale administrator draft and makes archived and viewer settin
       saved.limits.find((item) => item.status === 'In Progress')?.limit,
     ).toBe(3);
     await expectAccessible(peer, 'flow-stale-draft');
+    await peerPanel.getByRole('button', { name: 'Close panel' }).click();
+    await peer
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Confirm', exact: true })
+      .click();
+    await peer
+      .getByRole('button', { name: 'Set WIP limits', exact: true })
+      .click();
+    await expect(
+      peer.getByRole('dialog').getByLabel('In Progress', { exact: true }),
+    ).toHaveValue('3');
     await api.json(members, 'POST', { email: teammate.email, role: 'Viewer' });
     await peer.reload();
     await expect(
