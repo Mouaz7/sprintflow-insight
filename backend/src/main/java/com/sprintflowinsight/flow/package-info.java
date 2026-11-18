@@ -4,7 +4,7 @@
  *
  * <p>Pure Java with no Spring or persistence dependencies. Callers pass status transitions that
  * were already loaded; every calculation is deterministic. See {@code docs/metrics-definition.md}
- * and ADR 0019.
+ * and ADR 0020.
  */
 @org.springframework.modulith.ApplicationModule(allowedDependencies = {})
 package com.sprintflowinsight.flow;

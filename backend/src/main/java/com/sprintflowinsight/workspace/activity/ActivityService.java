@@ -10,10 +10,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ActivityService {
+  private final org.springframework.context.ApplicationEventPublisher events;
   private final ActivityEventRepository repository;
   private final NotificationRequests notifications;
 
-  public ActivityService(ActivityEventRepository repository, NotificationRequests notifications) {
+  public ActivityService(
+      ActivityEventRepository repository,
+      NotificationRequests notifications,
+      org.springframework.context.ApplicationEventPublisher events) {
+    this.events = events;
     this.repository = repository;
     this.notifications = notifications;
   }
@@ -49,6 +54,16 @@ public class ActivityService {
     event.setEntityId(entityId);
     event.setCreatedAt(timestamp);
     repository.save(event);
+    if (!type.startsWith("TASK_") && !"COMMENT_ADDED".equals(type) && !"SPRINT_STATUS".equals(type))
+      events.publishEvent(
+          new com.sprintflowinsight.workspace.events.WorkspaceChanged(
+              java.util.UUID.randomUUID(),
+              projectId,
+              event.getActorUserId(),
+              timestamp,
+              type,
+              entityType,
+              entityId));
     if ("TASK_BLOCKED".equals(type)
         || "TASK_UNBLOCKED".equals(type)
         || "SPRINT_STATUS".equals(type)) {

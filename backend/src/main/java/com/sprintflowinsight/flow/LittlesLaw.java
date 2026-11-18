@@ -5,9 +5,9 @@ package com.sprintflowinsight.flow;
  *
  * <p>For a stable system that conserves flow, the time-averaged work in progress {@code L} equals
  * the completion rate {@code λ} times the mean time in the system {@code W}. A large mismatch over
- * a window means the status history does not describe the work consistently: missing or
- * back-dated transitions, work abandoned in an active column, many reopened items, or a window too
- * short for the system to be near steady state.
+ * a window means the status history does not describe the work consistently: missing or back-dated
+ * transitions, work abandoned in an active column, many reopened items, or a window too short for
+ * the system to be near steady state.
  *
  * @param status the verdict
  * @param averageWip measured time-averaged WIP, {@code L}
@@ -49,13 +49,17 @@ public record LittlesLaw(
       double averageCycleTimeDays,
       int completions,
       double tolerance) {
-    if (!(tolerance > 0)) throw new IllegalArgumentException("tolerance must be positive");
+    if (!Double.isFinite(tolerance) || !(tolerance > 0))
+      throw new IllegalArgumentException("tolerance must be finite and positive");
+    if (completions < 0) throw new IllegalArgumentException("completions cannot be negative");
     if (!finiteNonNegative(averageWip)
         || !finiteNonNegative(throughputPerDay)
         || !finiteNonNegative(averageCycleTimeDays))
       throw new IllegalArgumentException("inputs must be finite and non-negative");
     double expected = throughputPerDay * averageCycleTimeDays;
     Double ratio = expected > 0 ? averageWip / expected : null;
+    if (!Double.isFinite(expected) || (ratio != null && !Double.isFinite(ratio)))
+      throw new IllegalArgumentException("inputs exceed the numerical range");
     Status status;
     if (completions < MIN_COMPLETIONS) status = Status.INSUFFICIENT_DATA;
     else if (ratio == null) status = averageWip > 0 ? Status.INCONSISTENT : Status.CONSISTENT;
@@ -64,7 +68,8 @@ public record LittlesLaw(
           ratio <= 1 + tolerance && ratio * (1 + tolerance) >= 1
               ? Status.CONSISTENT
               : Status.INCONSISTENT;
-    return new LittlesLaw(status, averageWip, throughputPerDay, averageCycleTimeDays, expected, ratio);
+    return new LittlesLaw(
+        status, averageWip, throughputPerDay, averageCycleTimeDays, expected, ratio);
   }
 
   private static boolean finiteNonNegative(double value) {

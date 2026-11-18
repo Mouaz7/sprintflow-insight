@@ -2,12 +2,12 @@ package com.sprintflowinsight.reporting;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,15 +28,16 @@ public class FlowController {
   }
 
   @GetMapping("/wip-limits")
-  public List<WipLimitResponse> limits(@PathVariable Long projectId, HttpSession session) {
+  public WipSettingsResponse limits(@PathVariable Long projectId, HttpSession session) {
     return service.limits(projectId, session);
   }
 
   @PutMapping("/wip-limits")
-  public List<WipLimitResponse> replaceLimits(
+  public WipSettingsResponse replaceLimits(
       @PathVariable Long projectId,
       @Valid @RequestBody WipLimitsRequest request,
+      @RequestHeader(value = "If-Match", required = false) String ifMatch,
       HttpSession session) {
-    return service.replaceLimits(projectId, request, session);
+    return service.replaceLimits(projectId, request, ifMatch, session);
   }
 }

@@ -1,13 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { Workspace } from './Workspace';
+import { renderWorkspace } from './testWorkspace';
 
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 const projects = [
@@ -58,15 +52,9 @@ beforeEach(() => {
   });
 });
 function workspace() {
-  render(
-    <Workspace
-      session={{ user: { id: 1, email: 'qa@example.com' }, projects }}
-      onProjectsChanged={vi.fn()}
-      onLogout={vi.fn()}
-      onUserChanged={vi.fn()}
-      onAccountDeleted={vi.fn()}
-    />,
-  );
+  renderWorkspace({
+    session: { user: { id: 1, email: 'qa@example.com' }, projects },
+  });
 }
 
 it.each([
@@ -80,7 +68,7 @@ it.each([
     fireEvent.click(
       within(
         screen.getByRole('navigation', { name: 'Main navigation' }),
-      ).getByRole('button', { name: view }),
+      ).getByRole('link', { name: view }),
     );
     const create = await screen.findByRole('button', {
       name: new RegExp(trigger),
@@ -123,9 +111,11 @@ it('does not label a new project as belonging to the previously selected project
   fireEvent.click(
     within(
       screen.getByRole('navigation', { name: 'Main navigation' }),
-    ).getByRole('button', { name: 'Projects' }),
+    ).getByRole('link', { name: 'Projects' }),
   );
-  fireEvent.click(screen.getByRole('button', { name: /Create project/ }));
+  fireEvent.click(
+    await screen.findByRole('button', { name: /Create project/ }),
+  );
   expect(
     screen.getByRole('dialog').querySelector('.editor-project'),
   ).not.toBeInTheDocument();

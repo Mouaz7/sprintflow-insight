@@ -1,10 +1,14 @@
 package com.sprintflowinsight.workspace.sprint;
 
+import com.sprintflowinsight.workspace.NotificationRequests;
 import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.events.SprintStatusChanged;
 import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,13 +16,19 @@ public class SprintService {
   public SprintService(
       ProjectMutationService mutations,
       SprintRepository sprintRepository,
-      ActivityService activityService) {
+      ActivityService activityService,
+      ApplicationEventPublisher events,
+      NotificationRequests users) {
+    this.events = events;
+    this.users = users;
     this.mutations = mutations;
     this.sprintRepository = sprintRepository;
     this.activityService = activityService;
   }
 
   private final ProjectMutationService mutations;
+  private final ApplicationEventPublisher events;
+  private final NotificationRequests users;
 
   private final SprintRepository sprintRepository;
 
@@ -67,13 +77,24 @@ public class SprintService {
       sprint.setCompletedAt(Instant.now());
     if ("Completed".equals(before) && !"Completed".equals(changes.getStatus()))
       sprint.setCompletedAt(null);
-    Sprint saved = sprintRepository.save(sprint);
-    if (!before.equals(changes.getStatus()))
+    Sprint saved = sprintRepository.saveAndFlush(sprint);
+    if (!before.equals(changes.getStatus())) {
+      events.publishEvent(
+          new SprintStatusChanged(
+              UUID.randomUUID(),
+              saved.getProjectId(),
+              users.userId(actorEmail),
+              Instant.now(),
+              saved.getId(),
+              before,
+              saved.getStatus(),
+              saved.getVersion()));
       activityService.record(
           saved.getProjectId(),
           "SPRINT_STATUS",
           "Moved sprint “" + saved.getName() + "” to " + changes.getStatus() + ".",
           actorEmail);
+    }
     return saved;
   }
 

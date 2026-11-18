@@ -13,6 +13,16 @@ servers:
   - url: http://localhost:8081
 security:
   - sessionCookie: []
+x-stomp:
+  endpoint: /ws
+  authentication: Session cookie, allowed Origin and X-CSRF-TOKEN in CONNECT
+  subscribe:
+    - /topic/projects/{projectId}
+    - /topic/projects/{projectId}/presence
+  send:
+    destination: /app/projects/{projectId}/presence
+    schema: '#/components/schemas/OpenTaskPresenceRequest'
+    description: READ membership and an existing project subscription required; task must belong to this project and be outside the recycle bin. Other SEND destinations are denied.
 paths:
   /actuator/health:
     get:
@@ -337,6 +347,52 @@ paths:
               schema: { $ref: '#/components/schemas/Task' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+  /api/search:
+    get:
+      summary: Full-text search across the projects the caller can read
+      description: >-
+        Searches tasks, stories, epics, sprints, comments and projects with PostgreSQL full-text search
+        (Swedish and English stemming, word prefixes) plus pg_trgm trigram similarity on titles for
+        typos. Only members' projects are searched (any role, archived projects included, trashed
+        projects and items excluded); the filter is part of the search statement. Hits are ordered by
+        rank (ts_rank plus trigram similarity), then type, then id. A query that is exactly a task key
+        such as SF-123 returns that task first with exactMatch true. Words are reduced to letters and
+        digits; query operators are not interpreted. A query without letters or digits returns no hits.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200, example: login bug }
+        - in: query
+          name: projectId
+          description: Restrict to one project. Unknown or trashed projects answer 404, projects the caller is not a member of 403.
+          schema: { type: integer, format: int64, minimum: 1 }
+        - in: query
+          name: types
+          description: Comma-separated or repeated. All types when absent.
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 6
+            items: { type: string, enum: [epic, task, story, sprint, comment, project] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+        - in: query
+          name: cursor
+          description: Opaque nextCursor from the previous page (keyset pagination).
+          schema: { type: string, maxLength: 100, pattern: '^[A-Za-z0-9_-]+$' }
+      responses:
+        '200':
+          description: One page of hits, best first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/tasks/{id}:
     get:
       summary: Get an accessible item and its current version
@@ -423,6 +479,32 @@ paths:
       summary: Mark a notification as read
       parameters: [{ $ref: '#/components/parameters/id' }]
       responses: { '204': { description: Notification updated } }
+  /api/projects/{projectId}/events:
+    get:
+      summary: Realtime messages after a sequence number, for filling gaps after a reconnect
+      description: >-
+        Any project member (archived projects included). Live messages arrive over STOMP at /ws
+        on /topic/projects/{projectId}; each carries the per-project sequence number seq. A client
+        that sees a jump in seq, or reconnects, asks for the messages after the last seq it applied.
+        The log keeps 7 days and at most 1000 messages per project. When the range is no longer
+        complete or longer than 200 messages, resync is true, events is empty and the client
+        reloads the project, then continues from latestSeq.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: after
+          description: Last sequence number the client applied; 0 for none
+          schema: { type: integer, format: int64, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Missed messages in sequence order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RealtimeEventPage' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/metrics:
     get:
       summary: Calculate project metrics or selected sprint metrics
@@ -645,7 +727,7 @@ paths:
       responses: { '200': { description: Report metadata without link tokens } }
     post:
       summary: Create a limited public report snapshot as an owner/admin
-      description: Optional sprintId. Returns id, path with a random token, and expiresAt. Tokens are hashed in storage; reports expire after seven days.
+      description: Optional sprintId. Returns id, path (`/report/{token}`, a client route of the web app) with a random token, and expiresAt. Tokens are hashed in storage; reports expire after seven days.
       responses: { '200': { description: New report link }, '403': { $ref: '#/components/responses/Error' } }
   /api/projects/{projectId}/reports/{id}:
     parameters:
@@ -661,6 +743,453 @@ paths:
       parameters: [{ in: path, name: token, required: true, schema: { type: string } }]
       description: No member lists, account credentials or comments. Invalid, revoked, expired or trashed-project links return 404.
       responses: { '200': { description: Public snapshot }, '404': { $ref: '#/components/responses/Error' } }
+  /api/projects/{projectId}/epics:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+    get:
+      summary: List epics (maximum 200)
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: List epics (maximum 200)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EpicView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Create an epic
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '201':
+          description: Create an epic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpicView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EpicRequest'
+  /api/projects/{projectId}/epics/{epicId}:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+      - {"in": "path", "name": "epicId", "required": true, "schema": {"type": "integer", "format": "int64"}}
+    put:
+      summary: Update an epic
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Update an epic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpicView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EpicRequest'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+    delete:
+      summary: Delete an epic; detach stories without deleting them
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '204':
+          description: Delete an epic; detach stories without deleting them
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+  /api/projects/{projectId}/stories/{storyId}/epic:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+      - {"in": "path", "name": "storyId", "required": true, "schema": {"type": "integer", "format": "int64"}}
+    put:
+      summary: Assign or detach a story epic using the story revision
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Assign or detach a story epic using the story revision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoryEpicView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryEpicRequest'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+  /api/projects/{projectId}/roadmap:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+    get:
+      summary: Read progress, timeline, dependencies and PERT forecasts
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Read progress, timeline, dependencies and PERT forecasts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roadmap'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/dependencies:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+    get:
+      summary: Read dependencies and derived board blocks
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Read dependencies and derived board blocks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyOverview'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Add a dependency; 409 includes cycle and cycleKeys for a cycle, maximum 5000 edges
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '201':
+          description: Add a dependency; 409 includes cycle and cycleKeys for a cycle, maximum 5000 edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DependencyRequest'
+  /api/projects/{projectId}/dependencies/{dependencyId}:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+      - {"in": "path", "name": "dependencyId", "required": true, "schema": {"type": "integer", "format": "int64"}}
+    delete:
+      summary: Remove a dependency
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '204':
+          description: Remove a dependency
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/estimates:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+    get:
+      summary: Read three-point estimates
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Read three-point estimates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstimateView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/tasks/{taskId}/estimate:
+    parameters:
+      - { $ref: "#/components/parameters/projectId" }
+      - {"in": "path", "name": "taskId", "required": true, "schema": {"type": "integer", "format": "int64"}}
+    put:
+      summary: Set ordered optimistic, most likely and pessimistic durations
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '200':
+          description: Set ordered optimistic, most likely and pessimistic durations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimateView'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstimateRequest'
+      parameters:
+      - in: header
+        name: If-Match
+        required: false
+        description: Required for an active estimate (428 missing, 412 stale); omit for first creation or a fresh estimate after removal. Revisions increase across removals and replacements; stale edits cannot recreate cleared estimates.
+        schema:
+          type: string
+    delete:
+      summary: Remove an estimate
+      description: READ membership for queries; Owner, Admin or Member in an active project for writes. Foreign
+        or trashed work returns 404. Archived projects remain readable.
+      responses:
+        '204':
+          description: Remove an estimate
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+  /api/projects/{projectId}/flow:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read project flow, distributions, aging, XmR and Little’s law review
+      description: Project READ membership; archived projects remain readable. Trashed projects are unavailable.
+        Durations are hours unless the field name says days.
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+          minimum: 7
+          maximum: 180
+          default: 30
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/wip-limits:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read all three advisory column limits and their collection revision
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WipSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    put:
+      summary: Replace advisory WIP limits as Owner or Admin in an active project
+      description: A project row lock serializes replacements. Omitted columns have no limit; an empty list
+        clears all limits. Limits warn but do not prevent movement. Changes record project activity and
+        invalidate connected views.
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WipLimitsRequest'
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WipSettingsResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     sessionCookie:
@@ -756,6 +1285,837 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    FlowQuery:
+      type: object
+      properties:
+        days:
+          type: integer
+          minimum: 7
+          maximum: 180
+          default: 30
+    WipLimitEntryRequest:
+      type: object
+      required:
+      - status
+      - limit
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+    WipLimitsRequest:
+      type: object
+      required:
+      - limits
+      properties:
+        limits:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/WipLimitEntryRequest'
+    WipLimitResponse:
+      type: object
+      required:
+      - status
+      - limit
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+          nullable: true
+    WipSettingsResponse:
+      type: object
+      required:
+      - version
+      - limits
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/WipLimitResponse'
+      description: Version of the entire collection. Initial unconfigured version is 0. Clearing all limits
+        still advances it, so stale drafts cannot reuse a cleared revision.
+    FlowCumulativeDay:
+      type: object
+      required:
+      - date
+      - toDo
+      - inProgress
+      - review
+      - done
+      properties:
+        date:
+          type: string
+          format: date
+        toDo:
+          type: integer
+          format: int64
+          minimum: 0
+        inProgress:
+          type: integer
+          format: int64
+          minimum: 0
+        review:
+          type: integer
+          format: int64
+          minimum: 0
+        done:
+          type: integer
+          format: int64
+          minimum: 0
+    FlowDistribution:
+      type: object
+      required:
+      - count
+      - mean
+      - p50
+      - p85
+      - p95
+      properties:
+        count:
+          type: integer
+          format: int64
+          minimum: 0
+        mean:
+          type: number
+          format: double
+          nullable: true
+        p50:
+          type: number
+          format: double
+          nullable: true
+        p85:
+          type: number
+          format: double
+          nullable: true
+        p95:
+          type: number
+          format: double
+          nullable: true
+    FlowCompletion:
+      type: object
+      required:
+      - taskId
+      - key
+      - completedAt
+      - cycleTimeHours
+      - leadTimeHours
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        cycleTimeHours:
+          type: number
+          format: double
+          nullable: true
+        leadTimeHours:
+          type: number
+          format: double
+          nullable: true
+    FlowAgingTask:
+      type: object
+      required:
+      - taskId
+      - key
+      - title
+      - status
+      - ageHours
+      - statusAgeHours
+      - band
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        ageHours:
+          type: number
+          format: double
+        statusAgeHours:
+          type: number
+          format: double
+        band:
+          type: string
+          enum:
+          - BELOW_P50
+          - P50_TO_P85
+          - P85_TO_P95
+          - ABOVE_P95
+          - NO_REFERENCE
+    FlowColumn:
+      type: object
+      required:
+      - status
+      - currentWip
+      - averageWip
+      - limit
+      - overLimit
+      - bottleneck
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        currentWip:
+          type: integer
+          format: int64
+          minimum: 0
+        averageWip:
+          type: number
+          format: double
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+          nullable: true
+        overLimit:
+          type: boolean
+        bottleneck:
+          type: string
+          nullable: true
+          enum:
+          - OVER_LIMIT
+          - HIGHEST_AVERAGE_WIP
+    FlowControlPoint:
+      type: object
+      required:
+      - taskId
+      - key
+      - completedAt
+      - cycleTimeHours
+      - movingRange
+      - signals
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        cycleTimeHours:
+          type: number
+          format: double
+        movingRange:
+          type: number
+          format: double
+          nullable: true
+        signals:
+          type: array
+          items:
+            type: string
+            enum:
+            - OUTSIDE_LIMITS
+            - TWO_OF_THREE_BEYOND_TWO_SIGMA
+            - FOUR_OF_FIVE_BEYOND_ONE_SIGMA
+            - RUN_OF_EIGHT
+            - LARGE_MOVING_RANGE
+    FlowControlChart:
+      type: object
+      required:
+      - available
+      - minimumPoints
+      - mean
+      - upperLimit
+      - lowerLimit
+      - movingRangeMean
+      - upperRangeLimit
+      - signalCount
+      - points
+      properties:
+        available:
+          type: boolean
+        minimumPoints:
+          type: integer
+          format: int64
+          minimum: 0
+        mean:
+          type: number
+          format: double
+          nullable: true
+        upperLimit:
+          type: number
+          format: double
+          nullable: true
+        lowerLimit:
+          type: number
+          format: double
+          nullable: true
+        movingRangeMean:
+          type: number
+          format: double
+          nullable: true
+        upperRangeLimit:
+          type: number
+          format: double
+          nullable: true
+        signalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowControlPoint'
+      description: 'Retrospective descriptive XmR with six measured completions minimum. Limits use the whole
+        window, not a pre-calibrated baseline; signals do not prove statistical control or a special cause.
+        Individual limits: mean ±3 MR/1.128; MR upper3.267 MR. Lower individual limit clamped to zero for
+        display only. See ADR0020.'
+    FlowLittlesLaw:
+      type: object
+      required:
+      - status
+      - averageWip
+      - throughputPerDay
+      - averageCycleTimeDays
+      - expectedWip
+      - ratio
+      - tolerance
+      properties:
+        status:
+          type: string
+          enum:
+          - CONSISTENT
+          - INCONSISTENT
+          - INSUFFICIENT_DATA
+        averageWip:
+          type: number
+          format: double
+        throughputPerDay:
+          type: number
+          format: double
+        averageCycleTimeDays:
+          type: number
+          format: double
+        expectedWip:
+          type: number
+          format: double
+        ratio:
+          type: number
+          format: double
+          nullable: true
+        tolerance:
+          type: number
+          format: double
+      description: Heuristic boundary/history review, not a statistical test. Compares time-averaged active
+        WIP with measured-cycle completion rate times mean active-cycle duration. Minimum5 measured completions;
+        ratio0.80–1.25 accepted. Finite-window censoring, reopening and changing demand can explain mismatches
+        without corrupt data.
+    FlowResponse:
+      type: object
+      required:
+      - days
+      - start
+      - end
+      - generatedAt
+      - cumulativeFlow
+      - cycleTimeHours
+      - leadTimeHours
+      - completedTasks
+      - throughputPerDay
+      - completions
+      - agingWip
+      - columns
+      - controlChart
+      - littlesLaw
+      - tasksWithoutHistory
+      properties:
+        days:
+          type: integer
+          minimum: 7
+          maximum: 180
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        generatedAt:
+          type: string
+          format: date-time
+        cumulativeFlow:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowCumulativeDay'
+        cycleTimeHours:
+          $ref: '#/components/schemas/FlowDistribution'
+        leadTimeHours:
+          $ref: '#/components/schemas/FlowDistribution'
+        completedTasks:
+          type: integer
+          format: int64
+          minimum: 0
+        throughputPerDay:
+          type: number
+          format: double
+        completions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowCompletion'
+        agingWip:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowAgingTask'
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowColumn'
+        controlChart:
+          $ref: '#/components/schemas/FlowControlChart'
+        littlesLaw:
+          $ref: '#/components/schemas/FlowLittlesLaw'
+        tasksWithoutHistory:
+          type: integer
+          format: int64
+          minimum: 0
+      description: Whole UTC days ending at generation time, from currently visible project tasks. Missing
+        history is excluded from historical charts/times but current counts include all live tasks. Cycle
+        time is the latest uninterrupted active run ending in Done. Percentiles use type-7 interpolation over
+        window completions; null durations are omitted. Later trash/deletion changes this current-scope historical
+        view.
+    EpicRequest:
+      type: object
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        color:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+      description: 'Optional dates must be between 1900-01-01 and 9999-12-31, target on or after start. Null
+        colour uses #4f46e5.'
+    EpicView:
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - color
+      - startDate
+      - targetDate
+      - version
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        version:
+          type: integer
+          format: int64
+    StoryEpicRequest:
+      type: object
+      properties:
+        epicId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+    StoryEpicView:
+      type: object
+      required:
+      - storyId
+      - epicId
+      - version
+      properties:
+        storyId:
+          type: integer
+          format: int64
+        epicId:
+          type: integer
+          format: int64
+          nullable: true
+        version:
+          type: integer
+          format: int64
+    DependencyRequest:
+      type: object
+      required:
+      - blockerTaskId
+      - blockedTaskId
+      properties:
+        blockerTaskId:
+          type: integer
+          format: int64
+          minimum: 1
+        blockedTaskId:
+          type: integer
+          format: int64
+          minimum: 1
+    EstimateRequest:
+      type: object
+      required:
+      - optimistic
+      - mostLikely
+      - pessimistic
+      properties:
+        optimistic:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.01
+        mostLikely:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.01
+        pessimistic:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.01
+    TaskRef:
+      type: object
+      required:
+      - id
+      - key
+      - title
+      - status
+      - sprintId
+      properties:
+        id:
+          type: integer
+          format: int64
+        key:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        sprintId:
+          type: integer
+          format: int64
+          nullable: true
+    DependencyView:
+      type: object
+      required:
+      - id
+      - blocker
+      - blocked
+      - open
+      properties:
+        id:
+          type: integer
+          format: int64
+        blocker:
+          $ref: '#/components/schemas/TaskRef'
+        blocked:
+          $ref: '#/components/schemas/TaskRef'
+        open:
+          type: boolean
+    ExternalBlock:
+      type: object
+      required:
+      - task
+      - blocker
+      properties:
+        task:
+          $ref: '#/components/schemas/TaskRef'
+        blocker:
+          $ref: '#/components/schemas/TaskRef'
+    DependencyOverview:
+      type: object
+      required:
+      - dependencies
+      - blockedTaskIds
+      - externalBlocks
+      properties:
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DependencyView'
+        blockedTaskIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        externalBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalBlock'
+    EstimateView:
+      type: object
+      required:
+      - taskId
+      - task
+      - optimistic
+      - mostLikely
+      - pessimistic
+      - expected
+      - standardDeviation
+      - version
+      properties:
+        taskId:
+          type: integer
+          format: int64
+        task:
+          $ref: '#/components/schemas/TaskRef'
+        optimistic:
+          type: number
+          format: double
+        mostLikely:
+          type: number
+          format: double
+        pessimistic:
+          type: number
+          format: double
+        expected:
+          type: number
+          format: double
+        standardDeviation:
+          type: number
+          format: double
+        version:
+          type: integer
+          format: int64
+    Forecast:
+      type: object
+      required:
+      - start
+      - expectedDays
+      - standardDeviationDays
+      - expectedFinish
+      - probabilityOnTime
+      - estimatedTasks
+      - openTasks
+      - unplannedStories
+      - criticalPath
+      properties:
+        start:
+          type: string
+          format: date
+          nullable: false
+        expectedDays:
+          type: number
+          format: double
+        standardDeviationDays:
+          type: number
+          format: double
+        expectedFinish:
+          type: string
+          format: date
+          nullable: true
+        probabilityOnTime:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 1
+        estimatedTasks:
+          type: integer
+          format: int64
+        openTasks:
+          type: integer
+          format: int64
+        unplannedStories:
+          type: integer
+          format: int64
+        criticalPath:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskRef'
+      description: Remaining-work PERT normal approximation on the expected critical path. Includes unfinished
+        outside ancestors. Monday-Friday calendar, independent durations, no holiday calendar; near-equal
+        parallel paths may make the probability optimistic. Finish and probability are null for missing estimates
+        or unplanned stories. See ADR 0019.
+    RoadmapEpic:
+      type: object
+      required:
+      - epic
+      - plannedStart
+      - plannedEnd
+      - storyCount
+      - totalPoints
+      - donePoints
+      - taskCount
+      - doneTaskCount
+      - progress
+      - storyIds
+      - sprintIds
+      - forecast
+      properties:
+        epic:
+          $ref: '#/components/schemas/EpicView'
+        plannedStart:
+          type: string
+          format: date
+          nullable: true
+        plannedEnd:
+          type: string
+          format: date
+          nullable: true
+        storyCount:
+          type: integer
+          format: int64
+        totalPoints:
+          type: integer
+          format: int64
+        donePoints:
+          type: integer
+          format: int64
+        taskCount:
+          type: integer
+          format: int64
+        doneTaskCount:
+          type: integer
+          format: int64
+        progress:
+          type: number
+          format: double
+        storyIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        sprintIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        forecast:
+          $ref: '#/components/schemas/Forecast'
+    RoadmapSprint:
+      type: object
+      required:
+      - id
+      - name
+      - status
+      - startDate
+      - endDate
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        status:
+          type: string
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+    EpicLink:
+      type: object
+      required:
+      - fromEpicId
+      - toEpicId
+      - dependencies
+      - open
+      properties:
+        fromEpicId:
+          type: integer
+          format: int64
+        toEpicId:
+          type: integer
+          format: int64
+        dependencies:
+          type: integer
+          format: int64
+        open:
+          type: integer
+          format: int64
+    Roadmap:
+      type: object
+      required:
+      - today
+      - epics
+      - sprints
+      - epicLinks
+      - dependencies
+      - project
+      properties:
+        today:
+          type: string
+          format: date
+          nullable: false
+        epics:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoadmapEpic'
+        sprints:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoadmapSprint'
+        epicLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/EpicLink'
+        dependencies:
+          $ref: '#/components/schemas/DependencyOverview'
+        project:
+          $ref: '#/components/schemas/Forecast'
     ProjectRequest:
       type: object
       description: Client-settable project fields. The owner is always the signed-in user.
@@ -784,6 +2144,44 @@ components:
         version: { type: integer, format: int64 }
         archivedAt: { type: string, format: date-time, nullable: true }
         trashedAt: { type: string, format: date-time, nullable: true }
+    SearchResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SearchHit' }
+        nextCursor:
+          type: string
+          nullable: true
+          description: Pass as cursor for the next page; null on the last page.
+    SearchHit:
+      type: object
+      required: [type, id, projectId, projectKey, projectName, title, titleSegments, snippet, exactMatch]
+      properties:
+        type: { type: string, enum: [epic, task, story, sprint, comment, project] }
+        id: { type: integer, format: int64, description: Id of the matched item; for a comment the comment id. }
+        projectId: { type: integer, format: int64 }
+        projectKey: { type: string, example: SF }
+        projectName: { type: string }
+        taskId: { type: integer, format: int64, nullable: true, description: The task to open for task and comment hits. }
+        key: { type: string, nullable: true, example: SF-123, description: Task key for task and comment hits. }
+        title: { type: string, description: Title or name; for a comment its task's title. }
+        titleSegments:
+          type: array
+          items: { $ref: '#/components/schemas/SearchSegment' }
+        snippet:
+          type: array
+          description: A short extract of the body; empty when the item has no body.
+          items: { $ref: '#/components/schemas/SearchSegment' }
+        exactMatch: { type: boolean, description: True when the query was exactly this task's key. }
+    SearchSegment:
+      type: object
+      description: Plain text; match marks words that matched the query. Never markup.
+      required: [text, match]
+      properties:
+        text: { type: string }
+        match: { type: boolean }
     Task:
       type: object
       description: A task as returned by the API. number, projectKey and key are server owned.
@@ -866,6 +2264,49 @@ components:
           type: string
           maxLength: 30000
           description: JSON array (max 30) of objects with non-blank `id` and `name` (max 80 characters).
+    RealtimeMessage:
+      type: object
+      description: Names what changed, never its content. Clients reload the entity through the REST API.
+      required: [projectId, seq, type]
+      properties:
+        projectId: { type: integer, format: int64 }
+        seq: { type: integer, format: int64, description: Strictly increasing per project }
+        type:
+          type: string
+          example: TaskMoved
+          description: TaskCreated, TaskMoved, TaskUpdated, TaskDeleted, CommentAdded, CommentUpdated, CommentDeleted, SprintStatusChanged, NotificationsChanged, or an aggregate activity event such as STORY_DELETED.
+        entityId: { type: integer, format: int64, nullable: true, description: Entity id according to type (task/sprint/story/project); comment events identify the task and notification events have no entity id. }
+        version: { type: integer, format: int64, nullable: true, description: Entity version after the change; null when deleted or unknown }
+    RealtimeEventPage:
+      type: object
+      required: [projectId, latestSeq, resync, events]
+      properties:
+        projectId: { type: integer, format: int64 }
+        latestSeq: { type: integer, format: int64, description: Newest sequence number, 0 before the first message }
+        resync: { type: boolean, description: The range is incomplete; reload the project and continue from latestSeq }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/RealtimeMessage' }
+    OpenTaskPresenceRequest:
+      type: object
+      properties:
+        taskId: { type: integer, format: int64, minimum: 1, nullable: true, description: Null clears the open task. }
+    PresenceMessage:
+      type: object
+      required: [projectId, viewers]
+      properties:
+        projectId: { type: integer, format: int64 }
+        viewers:
+          type: array
+          items:
+            type: object
+            required: [userId, name, taskIds]
+            properties:
+              userId: { type: integer, format: int64 }
+              name: { type: string, description: Display name only; never email. }
+              taskIds:
+                type: array
+                items: { type: integer, format: int64 }
     Problem:
       type: object
       required: [type, title, status, detail, code, message]
@@ -891,6 +2332,14 @@ components:
             properties:
               field: { type: string }
               message: { type: string }
+        cycle:
+          type: array
+          description: Present for a dependency-cycle CONFLICT; task IDs in traversal order with the first repeated at the end.
+          items: { type: integer, format: int64 }
+        cycleKeys:
+          type: array
+          description: The same scoped cycle as human task keys, suitable for plain-text feedback.
+          items: { type: string }
         errorId: { type: string, description: Present for INTERNAL_ERROR; quote it when reporting a problem. }
     Registration:
       type: object

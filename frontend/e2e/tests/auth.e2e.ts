@@ -32,7 +32,8 @@ test('registers, signs out and signs in again through the UI', async ({
     registered = true;
     await expectAccessible(page, 'overview-empty');
 
-    await page.getByRole('button', { name: /· Profile$/ }).click();
+    // Since A6 the account entry is a link to /profile.
+    await page.getByRole('link', { name: /· Profile$/ }).click();
     await page.getByRole('button', { name: 'Log out', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Log in', exact: true }),

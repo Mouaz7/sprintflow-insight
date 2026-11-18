@@ -12,6 +12,12 @@ npm run check
 
 The development server proxies API requests to Spring Boot on port 8081. `npm run check` runs ESLint, Prettier, the TypeScript check, Vitest, the production build of `dist` (which Maven includes in the server package) and the bundle size limits; `npm run format` fixes formatting. Code is organised in `src/app`, `src/features/<name>`, `src/shared` and `src/api` ([ADR 0008](../docs/adr/0008-frontend-feature-folders-and-lint.md)). Do not commit `node_modules` or `dist`.
 
+### Routes, data and text
+
+Every workspace view has a URL (`/tasks`, `/backlog`, …), `/report/:token` opens a shared report and `/reset-password?token=…` the new-password form; old `?report=`/`?resetToken=` links redirect. Views are lazy chunks. Read server data with TanStack Query hooks (`src/api/queries.ts`, `features/<name>/queries.ts`) and refresh after writes with `afterProjectWrite` or `setQueryData`; do not fetch in effects (`react-hooks/set-state-in-effect` is on). Put user-facing text in the feature's typed lexicon (`features/<name>/i18n.ts`, `defineLexicon({ EN, SV })`) and read it with `useT`; a key missing from either language does not compile. Plurals and dates use the lexicon formatter (`f.plural`, `f.date`). Tests answer API calls through MSW (`mockApi` in `src/test/api.ts`) and render with `renderWithProviders`. See [ADR 0013](../docs/adr/0013-router-query-and-typed-lexicon.md).
+
+The checks below that use API fixtures can also run against the production build without a backend: `npm run build && npx vite preview --port 4173`, then set `SPRINTFLOW_QA_URL=http://127.0.0.1:4173`.
+
 ### Responsive layout verification
 
 With the app running, run `npm run responsive --prefix scripts` from the repository root

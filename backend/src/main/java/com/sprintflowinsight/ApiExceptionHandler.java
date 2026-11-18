@@ -256,6 +256,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     if (code == ErrorCode.FORBIDDEN) SECURITY_LOG.warn("Denied API operation.");
     ProblemDetail problem = Problems.of(code, detail);
     problem.setInstance(URI.create(path(request)));
+    if (exception instanceof ApiException api && api.getBody().getProperties() != null)
+      api.getBody().getProperties().forEach(problem.getProperties()::putIfAbsent);
     ResponseEntity<ProblemDetail> response = Problems.response(problem);
     return ResponseEntity.status(response.getStatusCode())
         .headers(headers)

@@ -18,6 +18,7 @@ public record FlowResponse(
     Distribution leadTimeHours,
     int completedTasks,
     double throughputPerDay,
+    List<Completion> completions,
     List<AgingTask> agingWip,
     List<Column> columns,
     ControlChart controlChart,
@@ -29,6 +30,10 @@ public record FlowResponse(
 
   /** Percentiles use linear interpolation (Hyndman–Fan type 7); all null when count is 0. */
   public record Distribution(int count, Double mean, Double p50, Double p85, Double p95) {}
+
+  /** Window completions behind both distributions; null durations are omitted from that metric. */
+  public record Completion(
+      long taskId, String key, Instant completedAt, Double cycleTimeHours, Double leadTimeHours) {}
 
   /**
    * @param band {@code BELOW_P50}, {@code P50_TO_P85}, {@code P85_TO_P95}, {@code ABOVE_P95} or

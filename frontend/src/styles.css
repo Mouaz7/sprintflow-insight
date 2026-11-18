@@ -1,168 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-
-* {
-  box-sizing: border-box;
-}
-html {
-  margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--text, #243047);
-  background: var(--canvas, #faf8f5);
-  -webkit-font-smoothing: antialiased;
-}
-body {
-  margin: 0;
-  min-width: 0;
-}
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-button,
-a,
-summary {
-  -webkit-tap-highlight-color: transparent;
-}
-button {
-  cursor: pointer;
-}
-button:disabled {
-  cursor: not-allowed;
-}
-button,
-input,
-select,
-textarea {
-  min-width: 0;
-}
-img {
-  max-width: 100%;
-}
-svg {
-  flex-shrink: 0;
-}
-h1,
-h2,
-h3 {
-  font-family: Manrope, Inter, Arial, sans-serif;
-  line-height: 1.25;
-  letter-spacing: -0.035em;
-  overflow-wrap: anywhere;
-}
-p,
-h1,
-h2,
-h3 {
-  margin: 0;
-}
-fieldset {
-  display: grid;
-  gap: 20px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-label {
-  display: grid;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-}
-textarea {
-  resize: vertical;
-}
-[hidden] {
-  display: none !important;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-.skip-link {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  padding: 12px 20px;
-  z-index: 150;
-  background: #ffffff;
-  color: #243047;
-  border-radius: 8px;
-  transform: translateY(-200%);
-}
-.skip-link:focus {
-  transform: translateY(0);
-}
-button:focus-visible,
-a:focus-visible,
-summary:focus-visible {
-  outline: 3px solid var(--accent, #bf4b2b);
-  outline-offset: 4px;
-}
-button {
-  transition:
-    background-color 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-}
-.app-loading {
-  display: grid;
-  min-height: 100dvh;
-  place-items: center;
-  color: #faf8f5;
-  background: #151d2a;
-}
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-.date-input-control {
-  position: relative;
-  display: block;
-}
-.date-input-control > input[type='text'] {
-  width: 100%;
-  padding-right: 44px;
-}
-.date-input-control > .date-input-source {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  width: 1px;
-  min-width: 0;
-  height: 1px;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-.date-input-picker {
-  position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  padding: 7px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-}
+/* Cascade order is explicit: accessibility rules win without !important. */
+@layer design, accessibility;
+@import './shared/styles/fonts.css';
+@import './shared/styles/components.css' layer(design);
+@import './shared/styles/tokens.css' layer(design);
+@import './shared/styles/controls.css' layer(design);
+@import './app/shell.css' layer(design);
+@import './features/insights/overview.css' layer(design);
+@import './features/projects/projects.css' layer(design);
+@import './shared/ui/editor.css' layer(design);
+@import './features/planning/planning.css' layer(design);
+@import './features/tasks/tasks.css' layer(design);
+@import './features/insights/metrics.css' layer(design);
+@import './features/insights/activity.css' layer(design);
+@import './features/profile/profile.css' layer(design);
+@import './features/auth/auth.css' layer(design);
+@import './app/navigation.css' layer(design);
+@import './shared/styles/feedback.css' layer(design);
+@import './shared/styles/base.css' layer(design);
+@import './shared/ui/charts/charts.css' layer(design);
+@import './shared/ui/states.css' layer(design);
+@import './features/search/search.css' layer(design);
+@import './features/realtime/realtime.css' layer(design);
+@import './features/roadmap/roadmap.css' layer(design);
+@import './features/flow/flow.css' layer(design);
+@import './shared/styles/accessibility.css' layer(accessibility);

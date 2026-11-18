@@ -8,12 +8,12 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * An XmR (individuals and moving range) process-behaviour chart, after Wheeler.
+ * A descriptive XmR chart with the four Western Electric individual-chart rules and an MR rule.
  *
  * <p>The centre line is the mean {@code X̄}; the moving ranges are {@code |xᵢ − xᵢ₋₁|} with mean
- * {@code MR̄}. Natural process limits are {@code X̄ ± 2.66·MR̄} (three sigma, with {@code σ̂ =
- * MR̄/1.128}) and the upper range limit is {@code 3.268·MR̄}. The limits are computed from all
- * values passed in.
+ * {@code MR̄}. Individual limits are {@code X̄ ± 3·MR̄/1.128}; the upper MR limit is {@code
+ * 3.267·MR̄}. Limits use this whole retrospective window, not a previously calibrated baseline.
+ * Signals invite inspection; they do not prove a special cause or stable process.
  *
  * @param mean centre line
  * @param movingRangeMean mean moving range
@@ -31,10 +31,10 @@ public record XmrChart(
     List<Point> points) {
 
   /** Scaling constant for natural process limits: 3 / d₂ with d₂ = 1.128 for n = 2. */
-  public static final double LIMIT_FACTOR = 2.66;
+  public static final double LIMIT_FACTOR = 3d / 1.128d;
 
   /** Upper range limit factor D₄ for n = 2. */
-  public static final double RANGE_FACTOR = 3.268;
+  public static final double RANGE_FACTOR = 3.267;
 
   /** Fewest values for which a chart is produced. */
   public static final int MIN_POINTS = 6;
@@ -46,11 +46,10 @@ public record XmrChart(
   public enum Signal {
     /** Rule 1: the value lies outside the natural process limits. */
     OUTSIDE_LIMITS,
-    /**
-     * Rule 2: at least three of four successive values lie on the same side, beyond the midpoint
-     * between the centre line and that limit (more than 1.5σ̂ from the mean).
-     */
-    THREE_OF_FOUR_BEYOND_HALF,
+    /** At least two of three successive values lie beyond two sigma on the same side. */
+    TWO_OF_THREE_BEYOND_TWO_SIGMA,
+    /** At least four of five successive values lie beyond one sigma on the same side. */
+    FOUR_OF_FIVE_BEYOND_ONE_SIGMA,
     /** Rule 3: eight or more successive values lie strictly on the same side of the centre line. */
     RUN_OF_EIGHT,
     /** Rule 4: the moving range ending at this value exceeds the upper range limit. */
@@ -82,7 +81,6 @@ public record XmrChart(
    */
   public static Optional<XmrChart> of(List<Double> values) {
     int n = values.size();
-    if (n < MIN_POINTS) return Optional.empty();
     double[] x = new double[n];
     for (int i = 0; i < n; i++) {
       Double value = values.get(i);
@@ -90,6 +88,7 @@ public record XmrChart(
         throw new IllegalArgumentException("values must be finite");
       x[i] = value;
     }
+    if (n < MIN_POINTS) return Optional.empty();
     double mean = 0;
     for (double value : x) mean += value;
     mean /= n;
@@ -100,11 +99,13 @@ public record XmrChart(
       rangeSum += ranges[i];
     }
     double mrBar = rangeSum / (n - 1);
+    // Repeated decimal durations can otherwise acquire a false signal from summation rounding.
+    if (mrBar == 0) mean = x[0];
     double spread = LIMIT_FACTOR * mrBar;
     double upper = mean + spread;
     double lower = mean - spread;
     double rangeLimit = RANGE_FACTOR * mrBar;
-    double half = spread / 2;
+    double sigma = spread / 3;
 
     List<EnumSet<Signal>> signals = new ArrayList<>(n);
     for (int i = 0; i < n; i++) signals.add(EnumSet.noneOf(Signal.class));
@@ -113,14 +114,8 @@ public record XmrChart(
       if (i > 0 && ranges[i] > rangeLimit) signals.get(i).add(Signal.LARGE_MOVING_RANGE);
     }
     for (int side = -1; side <= 1; side += 2) {
-      // Rule 2: windows of four with at least three values beyond the half-way line.
-      for (int start = 0; start + 4 <= n; start++) {
-        int beyond = 0;
-        for (int i = start; i < start + 4; i++) if (side * (x[i] - mean) > half) beyond++;
-        if (beyond >= 3)
-          for (int i = start; i < start + 4; i++)
-            if (side * (x[i] - mean) > half) signals.get(i).add(Signal.THREE_OF_FOUR_BEYOND_HALF);
-      }
+      zoneSignals(x, signals, mean, sigma * 2, side, 3, 2, Signal.TWO_OF_THREE_BEYOND_TWO_SIGMA);
+      zoneSignals(x, signals, mean, sigma, side, 5, 4, Signal.FOUR_OF_FIVE_BEYOND_ONE_SIGMA);
       // Rule 3: maximal runs strictly on this side.
       int runStart = -1;
       for (int i = 0; i <= n; i++) {
@@ -137,6 +132,25 @@ public record XmrChart(
     for (int i = 0; i < n; i++)
       points.add(new Point(x[i], i == 0 ? null : ranges[i], signals.get(i)));
     return Optional.of(new XmrChart(mean, mrBar, upper, lower, rangeLimit, points));
+  }
+
+  private static void zoneSignals(
+      double[] values,
+      List<EnumSet<Signal>> signals,
+      double mean,
+      double distance,
+      int side,
+      int window,
+      int required,
+      Signal signal) {
+    for (int start = 0; start + window <= values.length; start++) {
+      int beyond = 0;
+      for (int i = start; i < start + window; i++)
+        if (side * (values[i] - mean) > distance) beyond++;
+      if (beyond >= required)
+        for (int i = start; i < start + window; i++)
+          if (side * (values[i] - mean) > distance) signals.get(i).add(signal);
+    }
   }
 
   /** Number of points that raise at least one signal. */

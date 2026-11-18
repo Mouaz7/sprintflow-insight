@@ -1,0 +1,43 @@
+.error-state {
+  border: 1px solid var(--danger-line);
+  border-radius: 12px;
+  padding: var(--card-space);
+  color: var(--danger-text);
+  background: var(--danger-soft);
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.error-state h2 {
+  font-size: var(--text-section);
+}
+.skeleton {
+  padding: var(--card-space);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.skeleton > div {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.skeleton-line {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--surface-raised);
+}
+.skeleton-line:nth-child(even) {
+  width: 80%;
+}
+
+.story-surface {
+  max-width: 960px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: var(--card-space);
+  margin: auto;
+}

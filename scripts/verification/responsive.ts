@@ -8,7 +8,7 @@ import { responsiveFixture } from './responsive-fixtures.ts';
 const base = process.env.SPRINTFLOW_QA_URL || 'http://127.0.0.1:8081';
 const out = fileURLToPath(new URL('../../artifacts/responsive/', import.meta.url));
 const widths = [320, 390, 767, 768, 1023, 1024, 1279, 1280, 1920, 2560];
-const views = ['overview', 'projects', 'backlog', 'sprints', 'tasks', 'metrics', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
+const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'flow', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
 fs.mkdirSync(out, { recursive: true });
 const results: { label: string; width: number; height: number }[] = [];
 
@@ -27,7 +27,7 @@ async function checkLayout(page: Page, label: string, workspace = true) {
       contentBottom: content && content.bottom + scrollY,
       clipped: [...document.querySelectorAll('button:not(.notification-bell),h1,h2,h3,p')].filter(el => visible(el) && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2).map(el => ({ tag: el.tagName, class: el.className, text: el.textContent?.slice(0, 70) })),
       smallTargets: matchMedia('(pointer: coarse)').matches || innerWidth < 768
-        ? [...document.querySelectorAll('button,summary,.export-actions a')].filter(el => visible(el) && (el.getBoundingClientRect().height < 43.9 || el.getBoundingClientRect().width < 43.9)).map(el => el.textContent?.slice(0, 50)) : [],
+        ? [...document.querySelectorAll('button,summary,.export-actions a,nav a,.account-profile')].filter(el => visible(el) && (el.getBoundingClientRect().height < 43.9 || el.getBoundingClientRect().width < 43.9)).map(el => el.textContent?.slice(0, 50)) : [],
       tinyFields: innerWidth < 768 ? [...document.querySelectorAll('input:not([type=checkbox]):not([type=hidden]),select,textarea')].filter(el => visible(el) && getComputedStyle(el).opacity !== '0' && parseFloat(getComputedStyle(el).fontSize) < 16).map(el => el.className) : [],
     };
   });
@@ -47,7 +47,12 @@ async function checkLayout(page: Page, label: string, workspace = true) {
       const contentWidth = await page.locator('.page').evaluate(el => el.getBoundingClientRect().width);
       assert.ok(contentWidth <= 1800, `${label}: content exceeds 1800px`);
       if (geometry.width >= 768 && geometry.width < 1024) {
-        const row = await page.locator('.header-controls').evaluate(el => [...el.children].map(child => child.getBoundingClientRect().top));
+        // Controls have different heights (the presence dot is intentionally small).
+        // Compare centre lines so actual wrapping fails without treating centred icons as a row.
+        const row = await page.locator('.header-controls').evaluate(el => [...el.children].map(child => {
+          const bounds = child.getBoundingClientRect();
+          return bounds.top + bounds.height / 2;
+        }));
         assert.ok(Math.max(...row) - Math.min(...row) < 10, `${label}: tablet controls wrap`);
       }
     }
@@ -61,7 +66,9 @@ async function checkLayout(page: Page, label: string, workspace = true) {
 async function navigate(page: Page, view: number) {
   // Switch views at desktop width; then exercise the responsive layout itself.
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.locator('.header-navigation nav button').nth(view).click();
+  await page.locator('.header-navigation nav a').nth(view).click();
+  // Views are lazy route chunks: wait until the new route has committed.
+  await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', view);
   await page.locator('.page h1').waitFor();
   await page.waitForLoadState('networkidle');
 }
@@ -96,15 +103,15 @@ async function checkOverlay(page: Page, selector: string) {
           await page.setViewportSize({ width, height: 900 });
           const label = `${language}/${theme}/${empty ? 'empty' : 'populated'}/${views[view]}`;
           await checkLayout(page, label);
-          if (!empty && view === 4) {
+          if (!empty && views[view] === 'tasks') {
             const columns = await page.locator('.task-board').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
             assert.equal(columns, width >= 1280 ? 4 : width >= 768 ? 2 : 1, `${label}: board columns`);
           }
-          if (!empty && view === 8) {
+          if (!empty && views[view] === 'calendar') {
             const columns = await page.locator('.calendar-grid').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
             assert.equal(columns, width < 768 ? 1 : 7, `${label}: calendar columns`);
           }
-          if (language === 'SV' && theme === 'light' && !empty && [0, 4, 8].includes(view) && [320, 768, 1024, 2560].includes(width)) {
+          if (language === 'SV' && theme === 'light' && !empty && ['overview', 'roadmap', 'tasks', 'calendar'].includes(views[view]) && [320, 768, 1024, 2560].includes(width)) {
             await page.screenshot({ path: path.join(out, `${views[view]}-${width}.png`), fullPage: true });
           }
         }
@@ -149,7 +156,7 @@ async function checkOverlay(page: Page, selector: string) {
       await page.setViewportSize({ width: 1024, height: 900 });
       await page.locator('.mobile-menu').waitFor({ state: 'detached' });
       await page.waitForFunction(() => document.activeElement?.matches('.header-navigation [aria-current="page"]'));
-      await navigate(page, 4);
+      await navigate(page, views.indexOf('tasks'));
       await page.locator('.page-heading .primary-action').focus(); await page.keyboard.press('Enter');
       await page.locator('.editor-drawer').waitFor();
       for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }]) {

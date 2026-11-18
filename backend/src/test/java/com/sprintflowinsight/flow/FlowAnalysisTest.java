@@ -69,13 +69,8 @@ class FlowAnalysisTest {
     Report report = report(Map.of());
     assertThat(report.cumulativeFlow()).hasSize(10);
     assertThat(report.cumulativeFlow().getFirst().counts())
-        .containsExactlyEntriesOf(
-            Map.of("To Do", 3, "In Progress", 0, "Review", 0, "Done", 1).entrySet().stream()
-                .collect(
-                    java.util.stream.Collectors.toMap(
-                        Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a,
-                        java.util.LinkedHashMap::new)))
-        .containsEntry("To Do", 3);
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("To Do", 3, "In Progress", 0, "Review", 0, "Done", 1));
     assertThat(report.cumulativeFlow().get(1).counts())
         .containsEntry("To Do", 1)
         .containsEntry("In Progress", 2)
@@ -93,7 +88,8 @@ class FlowAnalysisTest {
   @Test
   void percentilesCoverCompletionsInsideTheWindowOnly() {
     Report report = report(Map.of());
-    assertThat(report.completions()).extracting(FlowAnalysis.CompletedItem::taskId)
+    assertThat(report.completions())
+        .extracting(FlowAnalysis.CompletedItem::taskId)
         .containsExactly(1L, 2L);
     assertThat(report.cycleTime().count()).isEqualTo(2);
     assertThat(report.cycleTime().mean()).isCloseTo(48, within(1e-9));
@@ -120,7 +116,8 @@ class FlowAnalysisTest {
   @Test
   void columnsReportLimitsAverageWipAndTheBottleneck() {
     Report report = report(Map.of("In Progress", 1, "To Do", 5));
-    assertThat(report.columns()).extracting(Column::status)
+    assertThat(report.columns())
+        .extracting(Column::status)
         .containsExactly("To Do", "In Progress", "Review");
     Column inProgress = report.columns().get(1);
     assertThat(inProgress.currentWip()).isEqualTo(1);
@@ -189,7 +186,8 @@ class FlowAnalysisTest {
             new Column("To Do", 3, 3, null, false, null),
             new Column("In Progress", 0, 0, null, false, null),
             new Column("Review", 0, 0, null, false, null));
-    assertThat(FlowAnalysis.markBottleneck(columns)).extracting(Column::bottleneck)
+    assertThat(FlowAnalysis.markBottleneck(columns))
+        .extracting(Column::bottleneck)
         .containsOnlyNulls();
   }
 
@@ -207,8 +205,7 @@ class FlowAnalysisTest {
   @Test
   void theWindowStopsAtNowAndMustNotBeReversed() {
     Report report =
-        FlowAnalysis.analyse(
-            fixture(), START, LocalDate.parse("2026-03-20"), NOW, Map.of());
+        FlowAnalysis.analyse(fixture(), START, LocalDate.parse("2026-03-20"), NOW, Map.of());
     assertThat(report.cumulativeFlow().getLast().date()).isEqualTo(END);
     assertThatThrownBy(() -> FlowAnalysis.analyse(fixture(), END, START, NOW, Map.of()))
         .isInstanceOf(IllegalArgumentException.class);

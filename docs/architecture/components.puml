@@ -8,6 +8,7 @@ top to bottom direction
   root {
     BackgroundColor: #ffffff
     FontColor: #444444
+    Component(SprintFlowApplication.SprintFlowApplication.Flow, "Flow", $techn="Module", $descr="", $tags="", $link="")
   }
 </style>
 
@@ -22,6 +23,8 @@ System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags
     Component(SprintFlowApplication.SprintFlowApplication.Workspace, "Workspace", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Notifications, "Notifications", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Reporting, "Reporting", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Search, "Search", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Realtime, "Realtime", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
@@ -38,6 +41,13 @@ Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication
 Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Notifications, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Search, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Search, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Workspace, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Notifications, "listens to", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Flow, "depends on", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

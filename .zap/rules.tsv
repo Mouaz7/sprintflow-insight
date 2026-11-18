@@ -12,3 +12,7 @@
 10055	INFO	(CSP: Wildcard Directive)
 # Product decision pending: COEP require-corp would block Google sign-in, Google Fonts and remote images.
 90004	INFO	(Cross-Origin-Embedder-Policy Header Missing or Invalid)
+# False positive limited to built, minified bundles: Vite strips all source comments, so the only
+# matches are string and regex literals in React DOM/React Router (e.g. "http://www.w3.org/...",
+# the "/*" route pattern) that the scanner reads as comments. HTML pages are still checked.
+10027	OUTOFSCOPE	http://127\.0\.0\.1:8081/assets/[^/]+\.js

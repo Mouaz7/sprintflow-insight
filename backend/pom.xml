@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.9</version>
+        <version>4.1.2</version>
         <relativePath/>
     </parent>
 
@@ -19,14 +19,14 @@
 
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.0.9</spring-modulith.version>
-        <jqwik.version>1.10.1</jqwik.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
+        <jqwik.version>1.10.2</jqwik.version>
         <coverage.minimum.lines>0.90</coverage.minimum.lines>
         <coverage.minimum.branches>0.65</coverage.minimum.branches>
         <mutation.threshold>50</mutation.threshold>
-        <jacoco.version>0.8.15</jacoco.version>
-        <pitest.version>1.30.1</pitest.version>
-        <pitest-junit5.version>1.2.2</pitest-junit5.version>
+        <jacoco.version>0.8.16</jacoco.version>
+        <pitest.version>1.30.2</pitest.version>
+        <pitest-junit5.version>1.2.3</pitest-junit5.version>
         <!-- OR-Tools 9.15 (Jan 2026): CP-SAT for sprint optimisation, see ADR 0011. -->
         <ortools.version>9.15.6755</ortools.version>
         <!-- Slow, opt-in JUnit tags; run with -Dtest.excludedGroups=none. -->
@@ -43,7 +43,7 @@
         <!-- EventPublicationMaintenance gives up expired publications through the registry API. -->
         <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-events-core</artifactId></dependency>
         <dependency><groupId>org.springframework.modulith</groupId><artifactId>spring-modulith-starter-test</artifactId><scope>test</scope></dependency>
-        <dependency><groupId>org.apache.tika</groupId><artifactId>tika-core</artifactId><version>4.1.0</version></dependency>
+        <dependency><groupId>org.apache.tika</groupId><artifactId>tika-core</artifactId><version>4.2.0</version></dependency>
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>
         <dependency><groupId>com.twelvemonkeys.imageio</groupId><artifactId>imageio-webp</artifactId><version>3.15.3</version></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
@@ -88,8 +88,13 @@
              can be revoked per user (password change/reset). -->
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-session-jdbc</artifactId></dependency>
 
+        <!-- Realtime (B1): STOMP over WebSocket with the in-memory simple broker, authorised per
+             frame by Spring Security messaging. C6 replaces the broker with a RabbitMQ relay. -->
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-websocket</artifactId></dependency>
+        <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-messaging</artifactId></dependency>
+
         <!-- Token-bucket rate limiting (local buckets; a JDBC ProxyManager can share them across instances). -->
-        <dependency><groupId>com.bucket4j</groupId><artifactId>bucket4j_jdk17-core</artifactId><version>8.21.0</version></dependency>
+        <dependency><groupId>com.bucket4j</groupId><artifactId>bucket4j_jdk17-core</artifactId><version>8.22.0</version></dependency>
 
         <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-flyway</artifactId></dependency>
@@ -250,6 +255,11 @@
                         <param>com.sprintflowinsight.forecast.*</param>
                         <param>com.sprintflowinsight.risk.*</param>
                         <param>com.sprintflowinsight.planning.optimizer.*</param>
+                        <param>com.sprintflowinsight.search.SearchQuery</param>
+                        <param>com.sprintflowinsight.search.SearchCursor</param>
+                        <param>com.sprintflowinsight.search.SearchType</param>
+                        <param>com.sprintflowinsight.workspace.roadmap.schedule.*</param>
+                        <param>com.sprintflowinsight.flow.*</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.sprintflowinsight.*Test</param>

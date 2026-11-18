@@ -17,7 +17,7 @@ describe('App.navigation', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Project' }), {
       target: { value: '2' },
     });
-    fireEvent.click(within(navigation).getByRole('button', { name: 'Tasks' }));
+    fireEvent.click(within(navigation).getByRole('link', { name: 'Tasks' }));
     await screen.findByRole('heading', { name: 'Tasks' });
     first.unmount();
 
@@ -27,7 +27,7 @@ describe('App.navigation', () => {
     expect(
       within(
         screen.getByRole('navigation', { name: 'Main navigation' }),
-      ).getByRole('button', { name: 'Tasks' }),
+      ).getByRole('link', { name: 'Tasks' }),
     ).toHaveAttribute('aria-current', 'page');
   });
   it.each(['not-a-view', 'constructor'])(
@@ -40,7 +40,7 @@ describe('App.navigation', () => {
         name: 'Main navigation',
       });
       expect(
-        within(navigation).getByRole('button', { name: 'Overview' }),
+        within(navigation).getByRole('link', { name: 'Overview' }),
       ).toHaveAttribute('aria-current', 'page');
     },
   );
@@ -52,7 +52,7 @@ describe('App.navigation', () => {
       name: 'Main navigation',
     });
     expect(
-      within(navigation).getByRole('button', { name: 'Overview' }),
+      within(navigation).getByRole('link', { name: 'Overview' }),
     ).toHaveAttribute('aria-current', 'page');
   });
   it('marks the current workspace page and provides a profile link in mobile navigation', async () => {
@@ -61,18 +61,18 @@ describe('App.navigation', () => {
     const navigation = await screen.findByRole('navigation', {
       name: 'Main navigation',
     });
-    const overview = within(navigation).getByRole('button', {
+    const overview = within(navigation).getByRole('link', {
       name: 'Overview',
     });
     expect(overview).toHaveAttribute('aria-current', 'page');
-    const tasks = within(navigation).getByRole('button', { name: 'Tasks' });
+    const tasks = within(navigation).getByRole('link', { name: 'Tasks' });
     fireEvent.click(tasks);
     expect(tasks).toHaveAttribute('aria-current', 'page');
     expect(overview).not.toHaveAttribute('aria-current');
-    const profile = within(navigation).getByRole('button', { name: 'Profile' });
+    const profile = within(navigation).getByRole('link', { name: 'Profile' });
     fireEvent.click(profile);
     expect(
-      screen.getByRole('heading', { name: 'Your profile' }),
+      await screen.findByRole('heading', { name: 'Your profile' }),
     ).toBeInTheDocument();
     expect(profile).toHaveAttribute('aria-current', 'page');
     expect(tasks).not.toHaveAttribute('aria-current');

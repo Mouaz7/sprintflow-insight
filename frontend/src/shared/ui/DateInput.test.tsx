@@ -10,7 +10,7 @@ function DateEditor() {
   return (
     <label>
       Start date
-      <DateInput value={date} onChange={setDate} language="EN" />
+      <DateInput value={date} onChange={setDate} />
     </label>
   );
 }

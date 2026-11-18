@@ -21,7 +21,11 @@ public final class FlowAnalysis {
   private FlowAnalysis() {}
 
   /** A task and its timeline. */
-  public record Item(long taskId, TaskTimeline timeline) {}
+  public record Item(long taskId, TaskTimeline timeline, String currentStatus) {
+    public Item(long taskId, TaskTimeline timeline) {
+      this(taskId, timeline, null);
+    }
+  }
 
   /**
    * @param count values behind the percentiles
@@ -46,7 +50,8 @@ public final class FlowAnalysis {
   public record DailyCounts(LocalDate date, Map<String, Integer> counts) {}
 
   /** A completion inside the window, in completion order. */
-  public record CompletedItem(long taskId, Instant doneAt, Double cycleTimeHours, Double leadTimeHours) {}
+  public record CompletedItem(
+      long taskId, Instant doneAt, Double cycleTimeHours, Double leadTimeHours) {}
 
   /** How an active task's age compares with the window's cycle-time percentiles. */
   public enum AgeBand {
@@ -108,7 +113,11 @@ public final class FlowAnalysis {
     if (to.isBefore(from)) to = from;
     double windowDays = Math.max(Duration.between(from, to).toMillis() / MILLIS_PER_DAY, 1d / 24);
 
-    List<Item> tracked = items.stream().filter(item -> item.timeline().hasHistory()).toList();
+    List<Item> observed =
+        items.stream()
+            .map(item -> new Item(item.taskId(), item.timeline().before(now), item.currentStatus()))
+            .toList();
+    List<Item> tracked = observed.stream().filter(item -> item.timeline().hasHistory()).toList();
     int withoutHistory = items.size() - tracked.size();
 
     List<DailyCounts> cfd = new ArrayList<>();
@@ -160,10 +169,17 @@ public final class FlowAnalysis {
       current.put(status, 0);
       statusMillis.put(status, 0d);
     }
+    // Current task counts do not require reconstructed history; they must match the board.
+    for (Item item : observed) {
+      String status =
+          item.currentStatus() != null
+              ? item.currentStatus()
+              : item.timeline().currentStatus().orElse(null);
+      if (status != null && FlowStatus.ALL.contains(status)) current.merge(status, 1, Integer::sum);
+    }
     for (Item item : tracked) {
       TaskTimeline timeline = item.timeline();
       String status = timeline.currentStatus().orElseThrow();
-      current.merge(status, 1, Integer::sum);
       Instant windowEnd = to;
       timeline
           .timeInStatus(from, windowEnd)
@@ -187,7 +203,12 @@ public final class FlowAnalysis {
       int wip = current.get(status);
       columns.add(
           new Column(
-              status, wip, statusMillis.get(status) / windowMillis, limit, limit != null && wip > limit, null));
+              status,
+              wip,
+              statusMillis.get(status) / windowMillis,
+              limit,
+              limit != null && wip > limit,
+              null));
     }
     columns = markBottleneck(columns);
 
@@ -199,7 +220,11 @@ public final class FlowAnalysis {
     double meanCycleDays = cycleTime.mean() == null ? 0 : cycleTime.mean() / 24d;
     LittlesLaw littlesLaw =
         LittlesLaw.check(
-            averageWip, cycleThroughput, meanCycleDays, cycles.size(), LittlesLaw.DEFAULT_TOLERANCE);
+            averageWip,
+            cycleThroughput,
+            meanCycleDays,
+            cycles.size(),
+            LittlesLaw.DEFAULT_TOLERANCE);
 
     return new Report(
         start,

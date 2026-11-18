@@ -10,3 +10,10 @@ CREATE TABLE project_wip_limit (
   wip_limit INTEGER NOT NULL CHECK (wip_limit BETWEEN 1 AND 999),
   PRIMARY KEY (project_id, status)
 );
+
+-- A settings revision survives clearing all limits, preventing stale drafts from overwriting
+-- another administrator's changes. Missing row means the initial, unconfigured revision 0.
+CREATE TABLE project_wip_settings (
+  project_id BIGINT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+  version BIGINT NOT NULL CHECK (version > 0)
+);

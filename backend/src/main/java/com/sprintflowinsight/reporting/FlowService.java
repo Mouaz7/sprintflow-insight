@@ -1,5 +1,6 @@
 package com.sprintflowinsight.reporting;
 
+import com.sprintflowinsight.VersionPrecondition;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.flow.FlowAnalysis;
@@ -8,8 +9,10 @@ import com.sprintflowinsight.flow.LittlesLaw;
 import com.sprintflowinsight.flow.TaskTimeline;
 import com.sprintflowinsight.flow.Transition;
 import com.sprintflowinsight.flow.XmrChart;
+import com.sprintflowinsight.workspace.activity.ActivityService;
 import com.sprintflowinsight.workspace.project.AccessContext.Need;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
+import com.sprintflowinsight.workspace.project.ProjectMutationService;
 import com.sprintflowinsight.workspace.task.Task;
 import com.sprintflowinsight.workspace.task.TaskRepository;
 import com.sprintflowinsight.workspace.task.TaskStatusHistory;
@@ -43,14 +46,20 @@ public class FlowService {
   private final TaskStatusHistoryRepository history;
   private final ProjectWipLimitRepository limits;
   private final Clock clock;
+  private final ProjectMutationService mutations;
+  private final ProjectWipSettingsRepository settings;
+  private final ActivityService activity;
 
   @Autowired
   public FlowService(
       ProjectAccessService access,
       TaskRepository tasks,
       TaskStatusHistoryRepository history,
-      ProjectWipLimitRepository limits) {
-    this(access, tasks, history, limits, Clock.systemUTC());
+      ProjectWipLimitRepository limits,
+      ProjectMutationService mutations,
+      ProjectWipSettingsRepository settings,
+      ActivityService activity) {
+    this(access, tasks, history, limits, mutations, settings, activity, Clock.systemUTC());
   }
 
   FlowService(
@@ -58,12 +67,18 @@ public class FlowService {
       TaskRepository tasks,
       TaskStatusHistoryRepository history,
       ProjectWipLimitRepository limits,
+      ProjectMutationService mutations,
+      ProjectWipSettingsRepository settings,
+      ActivityService activity,
       Clock clock) {
     this.access = access;
     this.tasks = tasks;
     this.history = history;
     this.limits = limits;
     this.clock = clock;
+    this.mutations = mutations;
+    this.settings = settings;
+    this.activity = activity;
   }
 
   @Transactional(readOnly = true)
@@ -95,23 +110,26 @@ public class FlowService {
                     new FlowAnalysis.Item(
                         task.getId(),
                         TaskTimeline.of(
-                            task.getCreatedAt(),
-                            transitions.getOrDefault(task.getId(), List.of()))))
+                            task.getCreatedAt(), transitions.getOrDefault(task.getId(), List.of())),
+                        task.getStatus()))
             .toList();
     FlowAnalysis.Report report = FlowAnalysis.analyse(items, start, end, now, limitMap(projectId));
     return response(days, now, report, byId);
   }
 
   @Transactional(readOnly = true)
-  public List<WipLimitResponse> limits(Long projectId, HttpSession session) {
+  public WipSettingsResponse limits(Long projectId, HttpSession session) {
     access.require(projectId, session, Need.READ);
-    return limitResponses(limitMap(projectId));
+    return new WipSettingsResponse(revision(projectId), limitResponses(limitMap(projectId)));
   }
 
   @Transactional
-  public List<WipLimitResponse> replaceLimits(
-      Long projectId, WipLimitsRequest request, HttpSession session) {
+  public WipSettingsResponse replaceLimits(
+      Long projectId, WipLimitsRequest request, String ifMatch, HttpSession session) {
     access.require(projectId, session, Need.MANAGE);
+    mutations.lock(projectId);
+    long version = revision(projectId);
+    VersionPrecondition.require(ifMatch, version);
     Set<String> seen = new HashSet<>();
     for (WipLimitsRequest.Entry entry : request.limits())
       if (!seen.add(entry.status()))
@@ -124,7 +142,14 @@ public class FlowService {
             .toList());
     Map<String, Integer> saved = new LinkedHashMap<>();
     request.limits().forEach(entry -> saved.put(entry.status(), entry.limit()));
-    return limitResponses(saved);
+    settings.saveAndFlush(new ProjectWipSettings(projectId, version + 1));
+    activity.record(
+        projectId, "WIP_LIMITS_UPDATED", "Updated the board's WIP limits.", access.email(session));
+    return new WipSettingsResponse(version + 1, limitResponses(saved));
+  }
+
+  private long revision(Long projectId) {
+    return settings.findById(projectId).map(ProjectWipSettings::getVersion).orElse(0L);
   }
 
   private Map<String, Integer> limitMap(Long projectId) {
@@ -191,6 +216,16 @@ public class FlowService {
         distribution(report.leadTime()),
         report.completions().size(),
         round(report.throughputPerDay()),
+        report.completions().stream()
+            .map(
+                item ->
+                    new FlowResponse.Completion(
+                        item.taskId(),
+                        tasks.get(item.taskId()).getKey(),
+                        item.doneAt(),
+                        round(item.cycleTimeHours()),
+                        round(item.leadTimeHours())))
+            .toList(),
         aging,
         columns,
         controlChart(report, tasks),
@@ -240,7 +275,11 @@ public class FlowService {
 
   private static FlowResponse.Distribution distribution(FlowAnalysis.Distribution value) {
     return new FlowResponse.Distribution(
-        value.count(), round(value.mean()), round(value.p50()), round(value.p85()), round(value.p95()));
+        value.count(),
+        round(value.mean()),
+        round(value.p50()),
+        round(value.p85()),
+        round(value.p95()));
   }
 
   private static Double round(Double value) {

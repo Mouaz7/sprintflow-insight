@@ -46,8 +46,8 @@ _Others_
 
 * `c.s.w.task.TaskNumberAllocator`
 |Bean references
-|* `c.s.a.SessionUser` (in Auth)
-* `c.s.a.UserRepository` (in Auth)
+|* `c.s.a.UserRepository` (in Auth)
+* `c.s.a.SessionUser` (in Auth)
 |Aggregate roots
 |* `c.s.w.activity.ActivityEvent`
 * `c.s.w.project.Project`

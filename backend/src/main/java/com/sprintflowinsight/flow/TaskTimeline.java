@@ -36,8 +36,7 @@ public final class TaskTimeline {
       if (previous != null && transition.at().isBefore(previous))
         throw new IllegalArgumentException("transitions must be in chronological order");
       previous = transition.at();
-      if (collapsed.isEmpty()
-          || !Objects.equals(collapsed.getLast().status(), transition.status()))
+      if (collapsed.isEmpty() || !Objects.equals(collapsed.getLast().status(), transition.status()))
         collapsed.add(transition);
     }
     return new TaskTimeline(createdAt, List.copyOf(collapsed));
@@ -53,12 +52,19 @@ public final class TaskTimeline {
 
   /** The status in force just before {@code instant}: the latest transition strictly before it. */
   public Optional<String> statusBefore(Instant instant) {
-    String status = null;
-    for (Transition transition : transitions) {
-      if (!transition.at().isBefore(instant)) break;
-      status = transition.status();
+    int low = 0, high = transitions.size();
+    while (low < high) {
+      int middle = (low + high) >>> 1;
+      if (transitions.get(middle).at().isBefore(instant)) low = middle + 1;
+      else high = middle;
     }
-    return Optional.ofNullable(status);
+    return low == 0 ? Optional.empty() : Optional.of(transitions.get(low - 1).status());
+  }
+
+  /** A read made at an evaluation instant must not use future imported transitions. */
+  public TaskTimeline before(Instant instant) {
+    return new TaskTimeline(
+        createdAt, transitions.stream().takeWhile(t -> t.at().isBefore(instant)).toList());
   }
 
   /** The current status according to the history. */

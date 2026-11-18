@@ -18,13 +18,11 @@ describe('App.workspace', () => {
     mockSignedIn([]);
     render(<App />);
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: /Leo.*Profile/i }),
-    );
+    fireEvent.click(await screen.findByRole('link', { name: /Leo.*Profile/i }));
 
     expect(document.querySelector('.workspace-online')).toBeNull();
     expect(
-      screen.getByRole('tab', { name: 'Personal details' }),
+      await screen.findByRole('tab', { name: 'Personal details' }),
     ).toHaveAttribute('aria-selected', 'true');
     const profilePage = screen
       .getByRole('heading', { name: 'Your profile' })
@@ -44,15 +42,15 @@ describe('App.workspace', () => {
     expect(picker).toHaveValue('1');
     fireEvent.change(picker, { target: { value: '2' } });
     expect(localStorage.getItem('sprintflow-active-project')).toBe('2');
-    expect(
-      screen.getByRole('combobox', { name: 'Current project' }),
-    ).toHaveValue('2');
+    expect(screen.getAllByRole('combobox', { name: /project/i })).toHaveLength(
+      1,
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tasks' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Tasks' }));
     await waitFor(() => expect(requests).toContain('/api/tasks?projectId=2'));
     expect(screen.queryByRole('combobox', { name: 'Project' })).toBe(picker);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Backlog' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Backlog' }));
     await waitFor(() => expect(requests).toContain('/api/stories/project/2'));
     expect(
       screen.getByRole('combobox', { name: 'Project' }),
@@ -61,14 +59,14 @@ describe('App.workspace', () => {
       screen.getByRole('combobox', { name: 'Language' }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sprints' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Sprints' }));
     await waitFor(() => expect(requests).toContain('/api/sprints?projectId=2'));
-    fireEvent.click(screen.getByRole('button', { name: 'Metrics' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Metrics' }));
     await waitFor(() => expect(requests).toContain('/api/projects/2/metrics'));
-    fireEvent.click(screen.getByRole('button', { name: 'Updates' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Updates' }));
     await waitFor(() => expect(requests).toContain('/api/projects/2/activity'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Projects' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Projects' }));
     expect(
       await screen.findByRole('heading', { name: 'Alpha' }),
     ).toBeInTheDocument();

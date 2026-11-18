@@ -18,6 +18,15 @@ public class ApiException extends ResponseStatusException {
     return code;
   }
 
+  /**
+   * Adds a machine-readable extension member to the problem document, e.g. the task ids of a
+   * dependency cycle. Values must be safe to show to the caller.
+   */
+  public ApiException with(String name, Object value) {
+    getBody().setProperty(name, value);
+    return this;
+  }
+
   public static ApiException notFound(String message) {
     return new ApiException(ErrorCode.NOT_FOUND, message);
   }

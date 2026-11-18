@@ -1,12 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
+import { renderWithProviders as render } from '../../test/render';
 import { ConfirmProvider, Drawer, EditorProjectContext } from './ui';
 
 function Editor({ busy = false }: { busy?: boolean }) {
@@ -106,10 +101,11 @@ describe('Form panels', () => {
 it('labels the current project in Swedish inside a project-scoped panel', () => {
   render(
     <EditorProjectContext.Provider value={{ id: 2, name: 'Test' }}>
-      <Drawer title="Ny berättelse" language="SV" onClose={() => {}}>
+      <Drawer title="Ny berättelse" onClose={() => {}}>
         <p>Formulär</p>
       </Drawer>
     </EditorProjectContext.Provider>,
+    { language: 'SV' },
   );
   expect(
     screen.getByRole('dialog').querySelector('.editor-project'),

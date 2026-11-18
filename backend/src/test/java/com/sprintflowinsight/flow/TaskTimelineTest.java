@@ -23,9 +23,9 @@ class TaskTimelineTest {
   void collapsesSnapshotsWithTheSameStatus() {
     TaskTimeline timeline =
         TaskTimeline.of(
-            T0,
-            List.of(t("To Do", 0), t("To Do", 1), t("In Progress", 2), t("In Progress", 3)));
-    assertThat(timeline.transitions()).extracting(Transition::status)
+            T0, List.of(t("To Do", 0), t("To Do", 1), t("In Progress", 2), t("In Progress", 3)));
+    assertThat(timeline.transitions())
+        .extracting(Transition::status)
         .containsExactly("To Do", "In Progress");
     assertThat(timeline.currentStatusSince()).contains(h(2));
   }
@@ -116,6 +116,19 @@ class TaskTimelineTest {
     assertThat(time.get("In Progress")).isEqualTo(Duration.ofHours(4));
     assertThat(time.get("Done")).isEqualTo(Duration.ofHours(2));
     assertThat(timeline.timeInStatus(h(8), h(8))).isEmpty();
+  }
+
+  @Test
+  void evaluationExcludesFutureChangesAndResolvesEqualTimestampRowsInPersistedOrder() {
+    TaskTimeline timeline =
+        TaskTimeline.of(
+            T0, List.of(t("To Do", 0), t("In Progress", 1), t("Review", 1), t("Done", 5)));
+    assertThat(timeline.statusBefore(h(1))).contains("To Do");
+    assertThat(timeline.statusBefore(h(2))).contains("Review");
+    TaskTimeline frozen = timeline.before(h(3));
+    assertThat(frozen.currentStatus()).contains("Review");
+    assertThat(frozen.completion()).isEmpty();
+    assertThat(frozen.activeSince()).contains(h(1));
   }
 
   @Test

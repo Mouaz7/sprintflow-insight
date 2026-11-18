@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.Objects;
 
-/** A WIP limit for one board column of one project (V19). */
+/** A WIP limit for one board column of one project (V21). */
 @Entity
 @Table(name = "project_wip_limit")
 @IdClass(ProjectWipLimit.Key.class)
@@ -40,11 +40,11 @@ class ProjectWipLimit {
   }
 
   /** Composite primary key. */
-  static class Key implements Serializable {
+  public static class Key implements Serializable {
     private Long projectId;
     private String status;
 
-    protected Key() {}
+    public Key() {}
 
     @Override
     public boolean equals(Object other) {

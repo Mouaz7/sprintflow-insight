@@ -1,47 +1,51 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FormEvent, useState } from 'react';
 import { api } from '../../api/client';
 import type { Project, ProjectMember } from '../../api/contracts';
+import { membersQuery, queryKeys } from '../../api/queries';
 import { localizeMessage, roleLabel } from '../../shared/i18n/messages';
+import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { FormGuide } from '../../shared/ui/Guidance';
+import { projectsText } from './i18n';
 import { useConfirm } from '../../shared/ui/ui';
 
 export function MemberManager({
   project,
   userEmail,
-  language,
   onChanged,
 }: {
   project?: Project | undefined;
   userEmail: string;
-  language: 'EN' | 'SV';
   onChanged: () => Promise<void>;
 }) {
   const confirm = useConfirm();
-  const sv = language === 'SV';
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const { language } = useLanguage();
+  const t = useT(projectsText);
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'Admin' | 'Member' | 'Viewer'>('Member');
-  const [error, setError] = useState('');
+  // Write errors belong to the project they happened in.
+  const [writeError, setWriteError] = useState<{ id: number; text: string }>();
   const projectId = project?.id;
-  useEffect(() => {
-    let cancelled = false;
-    setMembers([]);
-    setError('');
-    if (!projectId)
-      return () => {
-        cancelled = true;
-      };
-    api<ProjectMember[]>(`/projects/${projectId}/members`)
-      .then((result) => {
-        if (!cancelled) setMembers(result);
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
+  const membersResult = useQuery({
+    ...membersQuery(projectId ?? 0),
+    enabled: !!projectId,
+  });
+  const members = membersResult.data ?? [];
+  const error =
+    (writeError?.id === projectId ? writeError?.text : '') ||
+    membersResult.error?.message ||
+    '';
+  function setError(text: string) {
+    setWriteError(projectId ? { id: projectId, text } : undefined);
+  }
+  function setMembers(update: (items: ProjectMember[]) => ProjectMember[]) {
+    if (!projectId) return;
+    queryClient.setQueryData<ProjectMember[]>(
+      queryKeys.members(projectId),
+      (items) => update(items ?? []),
+    );
+  }
   if (
     !project ||
     (project.ownerEmail.toLowerCase() !== userEmail.toLowerCase() &&
@@ -75,13 +79,7 @@ export function MemberManager({
     }
   }
   async function remove(member: ProjectMember) {
-    if (
-      !(await confirm(
-        sv
-          ? `Ta bort ${member.email} från projektet?`
-          : `Remove ${member.email} from this project?`,
-      ))
-    )
+    if (!(await confirm(t('confirmRemoveMember', { email: member.email }))))
       return;
     try {
       await api<unknown>(
@@ -96,14 +94,7 @@ export function MemberManager({
     }
   }
   async function transfer(member: ProjectMember) {
-    if (
-      !(await confirm(
-        sv
-          ? `Överföra ägarskapet till ${member.email}?`
-          : `Transfer ownership to ${member.email}?`,
-      ))
-    )
-      return;
+    if (!(await confirm(t('confirmTransfer', { email: member.email })))) return;
     try {
       await api<Project>(`/projects/${activeProject.id}/owner`, {
         method: 'PUT',
@@ -121,20 +112,14 @@ export function MemberManager({
   return (
     <section className="member-manager">
       <div>
-        <p className="kicker">{sv ? 'ÅTKOMST' : 'ACCESS'}</p>
-        <h2>
-          {sv ? `Medlemmar · ${project.name}` : `Members · ${project.name}`}
-        </h2>
-        <p>
-          {sv
-            ? 'Bjud in registrerade användare med administratörs-, arbets- eller läsbehörighet.'
-            : 'Invite registered users as admins, contributors or read-only viewers.'}
-        </p>
+        <p className="kicker">{t('access')}</p>
+        <h2>{t('members', { name: project.name })}</h2>
+        <p>{t('membersHelp')}</p>
       </div>
-      <FormGuide topic="member" language={language} />
+      <FormGuide topic="member" />
       <form onSubmit={invite}>
         <label>
-          {sv ? 'E-post' : 'Email'}
+          {t('email')}
           <input
             required
             type="email"
@@ -144,9 +129,9 @@ export function MemberManager({
           />
         </label>
         <label>
-          {sv ? 'Roll' : 'Role'}
+          {t('role')}
           <select
-            aria-label={sv ? 'Roll' : 'Role'}
+            aria-label={t('role')}
             value={role}
             onChange={(event) =>
               setRole(event.target.value as 'Admin' | 'Member' | 'Viewer')
@@ -157,13 +142,11 @@ export function MemberManager({
             <option value="Viewer">{roleLabel('Viewer', language)}</option>
           </select>
         </label>
-        <button className="primary-action">
-          {sv ? 'Spara medlem' : 'Add member'}
-        </button>
+        <button className="primary-action">{t('addMember')}</button>
       </form>
       {error && (
         <p className="form-message error" role="alert">
-          {localizeMessage(error, sv ? 'SV' : 'EN')}
+          {localizeMessage(error, language)}
         </p>
       )}
       <div className="member-list">
@@ -176,7 +159,7 @@ export function MemberManager({
                 {project.ownerEmail.toLowerCase() ===
                   userEmail.toLowerCase() && (
                   <button type="button" onClick={() => transfer(member)}>
-                    {sv ? 'Gör till ägare' : 'Make owner'}
+                    {t('makeOwner')}
                   </button>
                 )}
                 <button
@@ -184,7 +167,7 @@ export function MemberManager({
                   className="danger-action"
                   onClick={() => remove(member)}
                 >
-                  {sv ? 'Ta bort' : 'Remove'}
+                  {t('remove')}
                 </button>
               </>
             )}

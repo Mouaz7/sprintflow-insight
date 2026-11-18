@@ -1,0 +1,128 @@
+/* Backlog as an information-first list. */
+.backlog-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.backlog-toolbar input {
+  flex: 1;
+}
+.backlog-toolbar select {
+  width: min(220px, 40%);
+}
+.backlog-table {
+  width: 100%;
+  border-spacing: 0;
+  table-layout: fixed;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.backlog-table th,
+.backlog-table td {
+  padding: 16px 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.backlog-table th {
+  color: var(--muted);
+  background: var(--surface-raised);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.backlog-table th:first-child {
+  width: 36%;
+}
+.backlog-table th:nth-child(3),
+.backlog-table th:nth-child(4) {
+  width: 8%;
+}
+.backlog-table th:last-child {
+  width: 155px;
+}
+.backlog-table td {
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+  font-size: var(--text-body);
+}
+.backlog-table h2 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.backlog-table p {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: 1.7;
+}
+.backlog-table details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.backlog-table details summary {
+  cursor: pointer;
+  min-height: var(--control-height);
+  padding-block: 12px;
+}
+.priority-1 {
+  color: var(--accent-text);
+  border-color: var(--line);
+  background: var(--accent-soft);
+}
+.sprint-collection {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.sprint-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.sprint-card.active-sprint {
+  grid-column: 1 / -1;
+  border-left: 4px solid var(--accent);
+  background: var(--surface-raised);
+}
+.sprint-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sprint-card h2 {
+  margin-block: 16px 12px;
+  font-size: 20px;
+}
+.active-sprint h2 {
+  font-size: var(--text-heading);
+}
+.sprint-card > p {
+  max-width: 75ch;
+  color: var(--muted);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.sprint-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-block: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.sprint-details > span {
+  display: grid;
+  gap: 8px;
+}
+.sprint-details small {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.sprint-details strong {
+  font-size: var(--text-body);
+  font-weight: 600;
+}

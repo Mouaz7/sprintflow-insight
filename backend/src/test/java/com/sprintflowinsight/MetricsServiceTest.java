@@ -329,6 +329,14 @@ class MetricsServiceTest {
             List.of(
                 history(1L, "In Progress", now.minus(35, ChronoUnit.DAYS).toString()),
                 history(1L, "In Progress", now.minus(31, ChronoUnit.DAYS).toString()),
+                history(
+                    1L,
+                    "Review",
+                    now.minus(31, ChronoUnit.DAYS).plus(1, ChronoUnit.HOURS).toString()),
+                history(
+                    1L,
+                    "In Progress",
+                    now.minus(31, ChronoUnit.DAYS).plus(2, ChronoUnit.HOURS).toString()),
                 history(1L, "Done", now.minus(30, ChronoUnit.DAYS).toString()),
                 history(1L, "Done", now.minus(1, ChronoUnit.HOURS).toString()),
                 history(2L, "Review", now.minus(48, ChronoUnit.HOURS).toString()),
