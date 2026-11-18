@@ -16,6 +16,7 @@ export function DateInput({
   min = MIN_DATE,
   max = MAX_DATE,
   onBlur,
+  ariaLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -23,13 +24,21 @@ export function DateInput({
   min?: string;
   max?: string;
   onBlur?: () => void;
+  ariaLabel?: string;
 }) {
   const picker = useRef<HTMLInputElement>(null);
+  const text = useRef<HTMLInputElement>(null);
   const t = useT(uiText);
+  const change = (next: string) => {
+    text.current?.setCustomValidity('');
+    onChange(next);
+  };
   return (
     <span className="date-input-control">
       <input
+        ref={text}
         type="text"
+        aria-label={ariaLabel}
         inputMode="numeric"
         placeholder={t('datePlaceholder')}
         maxLength={10}
@@ -39,7 +48,7 @@ export function DateInput({
         onBlur={onBlur}
         onChange={(event) => {
           if (/^[0-9-]*$/.test(event.target.value))
-            onChange(normalizeDate(event.target.value));
+            change(normalizeDate(event.target.value));
         }}
       />
       <input
@@ -51,7 +60,15 @@ export function DateInput({
         min={min}
         max={max}
         value={validDate(value) ? value : ''}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => change(event.target.value)}
+        onInvalid={(event) => {
+          event.preventDefault();
+          const input = text.current;
+          if (input) {
+            input.setCustomValidity(event.currentTarget.validationMessage);
+            input.reportValidity();
+          }
+        }}
       />
       <button
         type="button"

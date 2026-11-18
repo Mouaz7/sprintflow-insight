@@ -152,3 +152,13 @@ Cykeltid omfattar den senaste sammanhängande perioden Pågår/Granskning som sl
 Ägare och administratörer kan välja **Ange WIP-gränser**. Ange 1–999 uppgifter per kolumn eller lämna tomt för att ta bort gränsen. Gränserna varnar men hindrar inte flytt. Tavlans WIP-antal gäller hela kolumnen även när korten filtreras. Arkiverade projekt och läsroller behåller tillgång till analysen. Vid en versionskonflikt finns utkastet kvar; jämför med senaste inställningarna innan du sparar igen.
 
 XmR-diagrammet visar variation och statistiska signaler. Gränserna är beskrivande och beräknas från den valda perioden; en signal bevisar ingen särskild orsak. Little's lag hjälper er att granska om pågående arbete, avslutstakt och cykeltid använder samma processgräns. En avvikelse kan bero på periodens gränser, återöppningar eller förändrat inflöde. Se [metodbeslutet](adr/0020-flow-history-wip-and-statistical-review.md) för antaganden och begränsningar.
+
+## Leveransprognoser (B6)
+
+Öppna **Prognoser** i projektet. Välj uppgifter per hel historisk vecka eller storypoäng per avslutad sprint. Ett epic-val avgränsar det återstående arbetet; kapacitetshistoriken kommer fortfarande från hela projektet. Läs varningen om parallellt arbete innan du tolkar en epic-prognos.
+
+Lämna mängder tomma för registrerat återstående arbete, eller ange 0–10 000 enheter. **Uppdatera prognosen** tillämpar frågan och sparar den i sidans adress för omladdning och delning. Byte av underlag eller epic rensar egna mängder; byte av projekt återställer frågan. Alla läsroller, även Viewer och medlemmar i arkiverade projekt, får utforska prognoser utan att ändra sparat arbete.
+
+Datumen för 50/85/95 procent täcker motsvarande andel simulerade utfall. Mängderna till ett datum är försiktiga miniminivåer: högre procent ger lägre mängd. Histogrammen har tabellalternativ och tangentbordsstyrning. Den aktiva sprintens registrerade återstående mängd och slutdatum är standardmål; annars används fyra perioder framåt. Sannolikheten bedömer mängden, inte om ett kvalitativt sprintmål eller acceptanskriterier uppfylls.
+
+Modellen drar 10 000 gemensamma framtida förlopp. Kalenderdagar omfattar helger, och leveransen antas vara jämnt fördelad inom perioden. Färre än sex perioder, saknad historik, stories utan uppgifter och nollpoängsarbete ger varningar. Ofullständiga förlopp räknas fortfarande med; ett saknat datum betyder att den valda sannolikheten inte nås inom femårshorisonten. Historiken och antagandena kan vara missvisande vid förändrad kapacitet eller beroenden. Se [metoden](metrics-definition.md#delivery-forecasts-b6) och [ADR 0021](adr/0021-joint-bootstrap-delivery-forecasts.md).

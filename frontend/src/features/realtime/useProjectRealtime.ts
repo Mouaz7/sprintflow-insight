@@ -70,6 +70,9 @@ export function useProjectRealtime(
               queryKey: queryKeys.flow(projectId),
             });
             void client.invalidateQueries({
+              queryKey: queryKeys.forecast(projectId),
+            });
+            void client.invalidateQueries({
               queryKey: ['project', projectId, 'metrics'],
             });
           }

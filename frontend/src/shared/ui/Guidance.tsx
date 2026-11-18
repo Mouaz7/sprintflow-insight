@@ -86,6 +86,28 @@ const points: Field = [
   ],
 ];
 const formGuides = {
+  forecast: {
+    intro: [
+      'Utforska möjliga leveranser utan att ändra sparat arbete.',
+      'Explore possible deliveries without changing saved work.',
+    ],
+    fields: [
+      [
+        ['Underlag och arbetsurval', 'History and work scope'],
+        [
+          'Välj uppgifter per vecka eller storypoäng per avslutad sprint. En epic avgränsar återstående arbete; historiken kommer fortfarande från hela projektet.',
+          'Choose tasks per week or story points per completed sprint. An epic narrows remaining work; history still comes from the whole project.',
+        ],
+      ],
+      [
+        ['Mängd och datum', 'Amount and date'],
+        [
+          'Mängder från 0 till 10 000 är tillåtna. Tomt ger registrerat arbete och aktiv sprint eller fyra perioder. Egna datum gäller idag till fem år framåt i UTC. Tom målmängd använder återstående mängd.',
+          'Amounts from 0 to 10,000 are allowed. Empty values use recorded work and the active sprint or four periods. Custom dates range from today to five years ahead in UTC. An empty target amount uses the remaining amount.',
+        ],
+      ],
+    ],
+  },
   wipLimits: {
     intro: [
       'WIP-gränser hjälper teamet att se när för mycket arbete samlas i en kolumn.',
@@ -445,6 +467,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  forecast: [
+    'Jämför 50, 85 och 95 procent av simulerade utfall för leveransdatum och mängder. Historiska veckor eller sprintar dras 10 000 gånger. Litet underlag, förändrad kapacitet och arbete som inte delats upp kan göra prognosen missvisande; läs varningarna.',
+    'Compare 50, 85 and 95 percent of simulated outcomes for delivery dates and quantities. Historical weeks or sprints are sampled 10,000 times. Small samples, changed capacity and work not yet broken down can make forecasts misleading; read the warnings.',
+  ],
   flow: [
     'Följ hur arbetet rör sig mellan kolumner. Jämför avslutade uppgifters tider med pågående arbete och sätt rådgivande WIP-gränser. Statistiska signaler hjälper er att undersöka variation; de bevisar inte att processen eller historiken är fel.',
     'Follow work across columns. Compare completed-task durations with aging work and set advisory WIP limits. Statistical signals invite investigation; they do not prove that the process or history is wrong.',

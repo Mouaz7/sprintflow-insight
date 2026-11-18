@@ -7,6 +7,8 @@
 
 * `c.s.w.project.ProjectController`
 * `c.s.w.project.ProjectTemplateController`
+* `c.s.w.roadmap.EpicController`
+* `c.s.w.roadmap.RoadmapController`
 * `c.s.w.sprint.SprintController`
 * `c.s.w.story.UserStoryController`
 * `c.s.w.task.TaskController`
@@ -22,6 +24,9 @@ _Services_
 * `c.s.w.project.ProjectMutationService`
 * `c.s.w.project.ProjectService`
 * `c.s.w.project.ProjectTemplateService`
+* `c.s.w.roadmap.DependencyService`
+* `c.s.w.roadmap.EpicService`
+* `c.s.w.roadmap.RoadmapService`
 * `c.s.w.sprint.SprintApplicationService`
 * `c.s.w.sprint.SprintService`
 * `c.s.w.story.UserStoryService`
@@ -52,6 +57,9 @@ _Others_
 |* `c.s.w.activity.ActivityEvent`
 * `c.s.w.project.Project`
 * `c.s.w.project.ProjectMember`
+* `c.s.w.roadmap.Epic`
+* `c.s.w.roadmap.TaskDependency`
+* `c.s.w.roadmap.TaskEstimate`
 * `c.s.w.sprint.Sprint`
 * `c.s.w.story.UserStory`
 * `c.s.w.task.Task`

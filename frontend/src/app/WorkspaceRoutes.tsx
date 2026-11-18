@@ -35,6 +35,11 @@ const RoadmapView = lazy(() =>
 const FlowView = lazy(() =>
   import('../features/flow/FlowView').then((m) => ({ default: m.FlowView })),
 );
+const ForecastView = lazy(() =>
+  import('../features/forecast/ForecastView').then((m) => ({
+    default: m.ForecastView,
+  })),
+);
 const CalendarView = lazy(() =>
   import('../features/planning/CalendarView').then((m) => ({
     default: m.CalendarView,
@@ -99,6 +104,11 @@ function RoadmapRoute() {
 function FlowRoute() {
   const { activeProject } = useWorkspace();
   return <FlowView project={activeProject} />;
+}
+
+function ForecastRoute() {
+  const { activeProject } = useWorkspace();
+  return <ForecastView project={activeProject} />;
 }
 
 function ProjectsRoute() {
@@ -211,6 +221,7 @@ const routes: Record<WorkspaceView, ReactNode> = {
   tasks: <TasksRoute />,
   metrics: <InsightRoute view="metrics" />,
   flow: <FlowRoute />,
+  forecast: <ForecastRoute />,
   updates: <InsightRoute view="updates" />,
   profile: <ProfileRoute />,
   calendar: <CalendarRoute />,

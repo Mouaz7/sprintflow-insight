@@ -14,6 +14,7 @@ import type {
   Task,
   User,
   WipSettings,
+  Epic,
 } from './contracts';
 
 /**
@@ -51,6 +52,8 @@ export const queryKeys = {
   estimates: (id: number) => ['project', id, 'estimates'] as const,
   wipLimits: (id: number) => ['project', id, 'wip-limits'] as const,
   flow: (id: number) => ['project', id, 'flow'] as const,
+  forecast: (id: number) => ['project', id, 'forecast'] as const,
+  epics: (id: number) => ['project', id, 'epics'] as const,
 };
 
 /** The signed-in user, or `null` when the server reports no session. */
@@ -111,6 +114,12 @@ export const wipLimitsQuery = (projectId: number) =>
   queryOptions({
     queryKey: queryKeys.wipLimits(projectId),
     queryFn: () => api<WipSettings>(`/projects/${projectId}/wip-limits`),
+  });
+
+export const epicsQuery = (projectId: number) =>
+  queryOptions({
+    queryKey: queryKeys.epics(projectId),
+    queryFn: () => api<Epic[]>(`/projects/${projectId}/epics`),
   });
 
 export const tasksQuery = (projectId: number) =>

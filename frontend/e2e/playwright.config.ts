@@ -12,7 +12,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  timeout: 60_000,
+  // A fixture may need to wait one registration refill window on the shared IP.
+  timeout: 120_000,
   expect: { timeout: 10_000 },
   reporter: process.env.CI
     ? [

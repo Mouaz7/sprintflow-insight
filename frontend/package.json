@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "255 kB",
+      "limit": "270 kB",
       "gzip": true
     },
     {
@@ -124,6 +124,12 @@
     {
       "name": "Flow analysis route chunk (gzip)",
       "path": "dist/assets/FlowView-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Forecast route chunk (gzip)",
+      "path": "dist/assets/ForecastView-*.js",
       "limit": "20 kB",
       "gzip": true
     }

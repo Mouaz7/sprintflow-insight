@@ -1190,6 +1190,67 @@ paths:
           $ref: '#/components/responses/Error'
         '428':
           $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/forecast:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read Monte Carlo delivery forecasts and a work-target probability
+      description: All project members may read, including archived projects. Outsiders and trashed projects
+        are denied. The query never changes recorded work. Full ISO weeks (up to 104) or completed-sprint
+        velocity (up to 52) form the history. Dates use UTC calendar days. Custom target dates range from
+        today to 1825 days ahead. Independent period resampling and uniform accrual within a period are
+        assumptions; history may not represent future capacity. Default amounts exceeding 10,000 are rejected,
+        never truncated.
+      parameters:
+      - in: query
+        name: basis
+        schema:
+          type: string
+          enum:
+          - THROUGHPUT
+          - VELOCITY
+      - in: query
+        name: remaining
+        schema:
+          type: integer
+          minimum: 0
+          nullable: true
+          maximum: 10000
+      - in: query
+        name: targetItems
+        schema:
+          type: integer
+          minimum: 0
+          nullable: true
+          maximum: 10000
+      - in: query
+        name: targetDate
+        schema:
+          type: string
+          format: date
+          nullable: true
+      - in: query
+        name: epicId
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+      responses:
+        '200':
+          description: Reproducible forecast and data-quality warnings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForecastResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     sessionCookie:
@@ -1285,6 +1346,305 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    ForecastQuery:
+      type: object
+      required: []
+      properties:
+        basis:
+          type: string
+          enum:
+          - THROUGHPUT
+          - VELOCITY
+        remaining:
+          type: integer
+          minimum: 0
+          nullable: true
+          maximum: 10000
+        targetItems:
+          type: integer
+          minimum: 0
+          nullable: true
+          maximum: 10000
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        epicId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+    ForecastResponse:
+      type: object
+      required:
+      - basis
+      - unit
+      - periodDays
+      - start
+      - seed
+      - simulations
+      - minimumPeriods
+      - history
+      - warnings
+      - scope
+      - remaining
+      - completionDates
+      - completionHistogram
+      - beyondHorizon
+      - horizonDays
+      - itemsByDate
+      - target
+      properties:
+        basis:
+          type: string
+          enum:
+          - THROUGHPUT
+          - VELOCITY
+        unit:
+          type: string
+          enum:
+          - ITEMS
+          - STORY_POINTS
+        periodDays:
+          type: integer
+          minimum: 1
+        start:
+          type: string
+          format: date
+        seed:
+          type: string
+          description: Unsigned 64-bit history seed encoded as decimal text to preserve precision.
+        simulations:
+          type: integer
+          minimum: 0
+          enum:
+          - 0
+          - 10000
+        minimumPeriods:
+          type: integer
+          minimum: 0
+          enum:
+          - 6
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForecastHistoryPeriod'
+        warnings:
+          type: array
+          items:
+            type: string
+            enum:
+            - NO_HISTORY
+            - NO_COMPLETIONS
+            - INSUFFICIENT_HISTORY
+            - MISSING_TASK_HISTORY
+            - UNPLANNED_STORIES
+            - ZERO_POINT_TASKS
+            - EPIC_USES_PROJECT_HISTORY
+            - PAST_SPRINT_DEADLINE
+            - TARGET_BEYOND_HORIZON
+        scope:
+          $ref: '#/components/schemas/ForecastWorkScope'
+        remaining:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        completionDates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForecastCompletionDate'
+          minItems: 3
+          maxItems: 3
+        completionHistogram:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForecastBin'
+          maxItems: 20
+        beyondHorizon:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        horizonDays:
+          type: integer
+          minimum: 0
+          enum:
+          - 1825
+        itemsByDate:
+          $ref: '#/components/schemas/ForecastItemsByDate'
+        target:
+          $ref: '#/components/schemas/ForecastTarget'
+      description: B6 bootstrap forecast from 10,000 shared paths when usable history exists. With no history
+        or no observed completions there are zero simulations, null positive-work probabilities and no by-date
+        distribution; a zero-work target remains trivially certain. Dates are empirical upper delivery quantiles;
+        quantities are largest counts reached in at least the stated share of paths. Missing/censored completions
+        remain in the denominator. No backtesting/model selection is performed here. Six periods is guidance,
+        not a validated baseline.
+    ForecastHistoryPeriod:
+      type: object
+      required:
+      - start
+      - end
+      - count
+      - label
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        count:
+          type: integer
+          minimum: 0
+        label:
+          type: string
+          nullable: true
+    ForecastWorkScope:
+      type: object
+      required:
+      - epicId
+      - epicTitle
+      - openTasks
+      - openStoryPoints
+      - unplannedStories
+      - zeroPointTasks
+      - tasksWithoutHistory
+      properties:
+        epicId:
+          type: integer
+          format: int64
+          nullable: true
+        epicTitle:
+          type: string
+          nullable: true
+        openTasks:
+          type: integer
+          minimum: 0
+        openStoryPoints:
+          type: integer
+          minimum: 0
+          format: int64
+        unplannedStories:
+          type: integer
+          minimum: 0
+        zeroPointTasks:
+          type: integer
+          minimum: 0
+        tasksWithoutHistory:
+          type: integer
+          minimum: 0
+      description: Recorded remaining work. An epic narrows future work only; all project history is used,
+        conditional on capacity being assigned to that work. Stories without tasks and zero-point tasks generate
+        explicit warnings.
+    ForecastCompletionDate:
+      type: object
+      required:
+      - confidence
+      - date
+      properties:
+        confidence:
+          type: number
+          enum:
+          - 0.5
+          - 0.85
+          - 0.95
+        date:
+          type: string
+          format: date
+          nullable: true
+    ForecastBin:
+      type: object
+      required:
+      - from
+      - to
+      - count
+      properties:
+        from:
+          type: integer
+          minimum: 0
+          format: int64
+        to:
+          type: integer
+          minimum: 0
+          format: int64
+        count:
+          type: integer
+          minimum: 0
+          maximum: 10000
+      description: Inclusive integer range with its simulation count. Histograms have at most 20 bins; completion
+        bins exclude beyondHorizon paths, which remain in the probability denominator.
+    ForecastItemsAtConfidence:
+      type: object
+      required:
+      - confidence
+      - items
+      properties:
+        confidence:
+          type: number
+          enum:
+          - 0.5
+          - 0.85
+          - 0.95
+        items:
+          type: integer
+          minimum: 0
+          format: int64
+    ForecastItemsByDate:
+      type: object
+      required:
+      - date
+      - source
+      - items
+      - histogram
+      properties:
+        date:
+          type: string
+          format: date
+        source:
+          type: string
+          enum:
+          - REQUEST
+          - ACTIVE_SPRINT
+          - DEFAULT
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForecastItemsAtConfidence'
+        histogram:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForecastBin'
+          maxItems: 20
+      nullable: true
+    ForecastTarget:
+      type: object
+      required:
+      - items
+      - date
+      - source
+      - probability
+      properties:
+        items:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        date:
+          type: string
+          format: date
+        source:
+          type: string
+          enum:
+          - REQUEST
+          - ACTIVE_SPRINT
+          - DEFAULT
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+      description: Requested quantity, active-sprint remaining quantity, or remaining quantity four periods
+        ahead. It assesses the quantity rather than qualitative goal acceptance. Past sprint deadlines allow
+        no additional delivery. A sprint deadline beyond five years yields null probability and itemsByDate.
     FlowQuery:
       type: object
       properties:

@@ -19,6 +19,21 @@ including tasks already in the recycle bin; deletion markers remain unchanged.
 Tasks linked to a story must have exactly the story's sprint, including a null sprint
 for an unplanned story. Only standalone tasks can choose a sprint independently.
 
+## Delivery forecasts (B6)
+
+The project forecast API uses 10,000 joint bootstrap paths when history contains completed work. Without usable history or observed completions, it reports zero simulations and unknown positive-work probabilities; zero work is trivially complete. It uses an injected RandomGenerator and a reproducible history seed. It samples complete historical period counts with replacement and assumes uniform accrual within each future period. Calendar days include weekends. All questions share the same paths, so changing a deadline leaves completion dates unchanged and changing remaining work leaves by-date amounts unchanged.
+
+Throughput counts each currently visible Done task once at its latest real Done transition, collapsing same-status snapshots. It includes zero-completion weeks but excludes the first partially observed ISO week and current incomplete week, retaining at most 104 full UTC weeks. Velocity replays retained status/point/sprint snapshots at completed-sprint closure, retaining at most 52 sprints. Future period length is the lower median valid scheduled sprint length, or 14 days if unavailable. These histories use current retrospective scope: later reopen/trash/deletion can change them.
+
+- Completion dates at 50/85/95% are empirical quantiles of path completion days. Paths unfinished after 1,825 days stay in the denominator; a confidence level requiring one has no reported date.
+- By-date quantities are the largest x reached in at least the selected share of paths. Thus higher confidence produces a lower, more cautious amount. A target probability is the fraction reaching its quantity by its date.
+- Histograms return at most 20 inclusive integer ranges. Completion histograms omit censored paths only visually; their count is shown separately and is retained in all probability calculations.
+- Dates use UTC calendar-day differences. Today allows zero additional days. The active sprint's remaining recorded quantity/deadline supplies the default target, otherwise remaining work is tested four periods ahead. Past sprint deadlines permit no additional delivery; deadlines beyond the horizon have no target probability. Custom dates outside the horizon are rejected.
+
+An epic filters remaining tasks through its stories while using whole-project capacity history. Forecast dates therefore assume that capacity is assigned to the chosen work. Missing task history, taskless stories and zero-point open work are disclosed; an explicit planning amount can include work not yet recorded. Automatic amounts exceeding 10,000 units are rejected instead of truncated. The sprint target is a quantity proxy, not a judgement of qualitative goal acceptance.
+
+The six-period minimum warning is guidance, not validation. Period independence, stable capacity and within-period uniform delivery are assumptions. Seasonality, autocorrelation, varying sprint cadence, dependency constraints and unseen capacity changes can make the ranges misleading. A constant history can yield 100% simulation probability without guaranteeing delivery. No model comparison or out-of-sample calibration is claimed here. See [ADR 0021](adr/0021-joint-bootstrap-delivery-forecasts.md) for decisions and methodological context; C2/E1 retain responsibility for comparison and evaluation.
+
 ## Probabilistic forecasts and backtesting (C2)
 
 The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput history into a **predictive distribution** of the number of items completed in the next *t* periods. Planning answers are derived from it. The algorithms are pure Java; the REST endpoints and the UI come in a later C2 step. ADR 0010 explains the model choice.
@@ -33,7 +48,7 @@ The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput hist
 
 All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteDistribution`: a pmf on a contiguous integer range with its cdf, quantiles, mean and variance.
 
-1. **Bootstrap Monte Carlo** (`bootstrap-monte-carlo`, from B6). Each of 10 000 trials (the default) sums ⌊t⌋ periods drawn with replacement from the history. For a fractional remainder *f*, each item of one more drawn period is kept with probability *f* (binomial thinning). The result is the empirical distribution of the trial sums. It needs no distributional assumption, but it can never forecast a period larger than the largest one observed. It also gives no weight to recency.
+1. **Bootstrap Monte Carlo** (`bootstrap-monte-carlo`, C2 reference core). Each of 10 000 trials (the default) sums ⌊t⌋ periods drawn with replacement from the history. For a fractional remainder *f*, each item of one more drawn period is kept with probability *f* (binomial thinning). The result is the empirical distribution of the trial sums. It needs no distributional assumption, but it can never forecast a period larger than the largest one observed. It also gives no weight to recency.
 2. **Bayesian Gamma-Poisson** (`gamma-poisson`). Weekly counts are modelled as *x*ᵢ ~ Poisson(λ) with prior λ ~ Gamma(α₀, β₀) (shape, rate). The conjugate update after *n* periods with total *s* gives the posterior Gamma(α₀ + *s*, β₀ + *n*). The posterior predictive total over *t* periods is **negative binomial** with *r* = α₀ + *s* and *p* = (β₀ + *n*)/(β₀ + *n* + *t*):
 
    P(K = *k*) = Γ(*k* + *r*) / (*k*! Γ(*r*)) · *p*^*r* (1 − *p*)^*k*, with mean *r*(1 − *p*)/*p* = *t*(α₀ + *s*)/(β₀ + *n*).
@@ -41,7 +56,9 @@ All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteD
    It is computed exactly, not sampled. The pmf starts at the mode, uses the ratio P(*k*+1)/P(*k*) = (*k* + *r*)/(*k* + 1)·(1 − *p*) in both directions, and is normalised. Tails are truncated once a term falls below 10⁻¹⁷ of the modal probability, so the lost mass is about 10⁻¹⁵. Starting at the mode keeps every term ≤ 1, so there is no underflow even for means in the thousands. The default prior is α₀ = β₀ = 0.5: a mean of one item per period, weighted as half an observed period. Both are configurable.
 3. **Exponentially weighted Poisson** (`ewma-poisson`). The rate is the weighted mean λ̂ = Σ *w*ᵢ*x*ᵢ / Σ *w*ᵢ with *w*ᵢ = *d*^(*n*−1−*i*) and *d* = 0.5^(1/*h*). The default half-life is *h* = 4 periods. The forecast is Poisson(λ̂·*t*), computed exactly the same way. It reacts quickly to level shifts, but it treats λ̂ as known, so its intervals are too narrow when data are scarce or over-dispersed.
 
-### Derived answers (`ForecastAnswers`)
+The C2 reference bootstrap uses binomial thinning for fractional periods; the B6 web API above uses uniform accrual along shared paths. C2 wiring must evaluate and reconcile this difference before exposing model selection.
+
+### Derived answers (`ForecastAnswers`, C2 core)
 
 - **(a) Completion date for *N* items** at confidence *c* ∈ {50, 85, 95 %}: the first day *d* with P(*S*(*d*) ≥ *N*) ≥ *c*, where *S*(*d*) is the predictive total for *d* days. The search doubles *d*, then bisects. The answer is empty when even five years are not enough. For the bootstrap model, Monte Carlo noise can move the answer by about one day near the threshold.
 - **(b) Items by a date** at confidence *c*: the largest *x* with P(*S* ≥ *x*) ≥ *c*. Higher confidence never gives more items.

@@ -241,7 +241,9 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:8081
-        run: npm run e2e
+        run: |
+          export E2E_DB_CONTAINER="$(docker compose -p sprintflow-ci ps -q postgres)"
+          npm run e2e
       - name: Logs
         if: failure()
         run: docker compose -p sprintflow-ci logs --tail 150

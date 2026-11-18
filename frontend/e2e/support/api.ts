@@ -3,6 +3,7 @@ import {
   type APIRequestContext,
   type APIResponse,
 } from '@playwright/test';
+import { setTimeout } from 'node:timers/promises';
 
 interface Csrf {
   headerName: string;
@@ -67,9 +68,10 @@ export class Api {
     data?: unknown,
   ): Promise<Record<string, string>> {
     if (method !== 'PUT' && method !== 'DELETE') return {};
+    const assignment = /^\/projects\/\d+\/stories\/(\d+)\/epic$/.exec(path);
     const resource =
       /^\/(tasks|sprints|stories|projects)\/(\d+)(?:\/(?:block|unblock|status))?(?:\?.*)?$/.exec(
-        path,
+        assignment ? `/stories/${assignment[1]}` : path,
       );
     const trash = /^\/workspace\/trash\/(task|sprint|story)\/(\d+)$/.exec(path);
     if (!resource && !trash) return {};
@@ -118,7 +120,22 @@ export function newAccount(label: string): Account {
 }
 
 export async function register(api: Api, account: Account): Promise<void> {
-  await api.json('/auth/register', 'POST', account);
+  let response = await api.call('/auth/register', 'POST', account);
+  if (response.status() === 429) {
+    // All disposable users share the runner's client address. Keep the app's
+    // real 20/minute registration protection and respect its refill interval.
+    const seconds = Number(response.headers()['retry-after']);
+    expect(Number.isInteger(seconds) && seconds >= 1 && seconds <= 60).toBe(
+      true,
+    );
+    expect((await response.json()).code).toBe('RATE_LIMITED');
+    await setTimeout(seconds * 1000);
+    response = await api.call('/auth/register', 'POST', account);
+  }
+  expect(
+    response.ok(),
+    `Registration: ${response.status()} ${await response.text()}`,
+  ).toBe(true);
 }
 
 /** Deletes every project the account owns, then the account itself. */

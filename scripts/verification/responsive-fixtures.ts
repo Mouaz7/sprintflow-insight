@@ -100,6 +100,15 @@ export async function responsiveFixture(page: Page, options: Options) {
       sprints, epicLinks: [], dependencies: { dependencies: [], blockedTaskIds: [], externalBlocks: [] },
       project: { start: '2026-10-05', expectedDays: 6, standardDeviationDays: 1, expectedFinish: '2026-10-12', probabilityOnTime: null, estimatedTasks: 3, openTasks: 3, unplannedStories: 0, criticalPath: [] },
     };
+    else if (pathname.endsWith('/epics')) body = [{ id: 1, title: 'Customer portal · Gemensam leverans och uppföljning', description: null, color: '#4f46e5', startDate: null, targetDate: null, version: 0 }];
+    else if (pathname.endsWith('/forecast')) body = {
+      basis: 'THROUGHPUT', unit: 'ITEMS', periodDays: 7, start: '2026-10-05', seed: '18446744073709551615', simulations: empty ? 0 : 10000, minimumPeriods: 6,
+      history: empty ? [] : Array.from({ length: 6 }, (_,i) => ({ start: new Date(Date.UTC(2026,7,24)+i*7*86400000).toISOString().slice(0,10), end: new Date(Date.UTC(2026,7,30)+i*7*86400000).toISOString().slice(0,10), count: 7, label: null })),
+      warnings: empty ? ['NO_HISTORY'] : [], scope: { epicId: null, epicTitle: null, openTasks: empty ? 0 : 10, openStoryPoints: empty ? 0 : 20, unplannedStories: 0, zeroPointTasks: 0, tasksWithoutHistory: 0 }, remaining: empty ? 0 : 10,
+      completionDates: [.5,.85,.95].map(confidence => ({ confidence, date: empty ? null : '2026-10-15' })), completionHistogram: empty ? [] : [{ from: 10, to: 10, count: 10000 }], beyondHorizon: 0, horizonDays: 1825,
+      itemsByDate: empty ? null : { date: '2026-10-19', source: 'DEFAULT', items: [.5,.85,.95].map(confidence => ({ confidence, items: 14 })), histogram: [{ from: 14, to: 14, count: 10000 }] },
+      target: { items: empty ? 0 : 10, date: '2026-10-19', source: 'DEFAULT', probability: 1 },
+    };
     else if (pathname.endsWith('/wip-limits')) body = { version: 0, limits: ['To Do','In Progress','Review'].map(status => ({ status, limit: status === 'In Progress' ? 2 : null })) };
     else if (pathname.endsWith('/flow')) body = {
       days: 30, start: '2026-10-01', end: '2026-10-30', generatedAt: '2026-10-30T12:00:00Z',

@@ -38,7 +38,7 @@ try {
       await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
       await page.locator('.page h1').waitFor();
     }
-    for (let index = 0; index < 13; index++) {
+    for (let index = 0; index < 14; index++) {
       await nav(index);
       const guide = page.locator('.page-guide');
       assert.equal(await guide.count(), 1);
@@ -69,7 +69,7 @@ try {
       [4, /Uppskatta en uppgift|Estimate a task/, 'estimate'],
       [5, /Ny uppgift|New task/, 'task'],
       [7, /Ange WIP-gränser|Set WIP limits/, 'wipLimits'],
-      [11, /Ny anteckning|New note/, 'retro'],
+      [12, /Ny anteckning|New note/, 'retro'],
     ] as const) {
       await nav(view);
       const button = page.getByRole('button', { name: trigger }).first();
@@ -110,11 +110,31 @@ try {
       assert.equal(await page.getByRole('alertdialog').count(), 0, 'Help must not dirty the form');
       forms++;
     }
+    await nav(8);
+    const forecastForm = page.locator('.forecast-form');
+    const forecastGuide = forecastForm.locator('.form-guide');
+    const forecastValues = () => forecastForm.locator('input,select').evaluateAll(elements => elements.map(el => (el as HTMLInputElement).value));
+    const forecastBefore = await forecastValues();
+    assert.deepEqual(await forecastForm.locator('input').evaluateAll(elements => elements.map(el => (el as HTMLInputElement).value)), ['', '', '', ''], 'Forecast examples must not become amounts or dates');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await layout(page);
+    await forecastGuide.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await forecastGuide.locator('details').evaluate(el => (el as HTMLDetailsElement).open), true);
+    assert.deepEqual(await forecastValues(), forecastBefore, 'Reading forecast help must preserve query values');
+    await page.keyboard.press('Tab');
+    assert.ok(await forecastForm.evaluate(el => el.contains(document.activeElement)));
+    for (const width of [320, 390, 768, 1440, 844]) {
+      await page.setViewportSize({ width, height: width === 844 ? 390 : 900 });
+      await layout(page);
+    }
+    if (language === 'SV' && theme === 'light') await forecastGuide.screenshot({ path: `${out}forecast-help-sv.png` });
+    forms++;
     await context.close();
   }
   assert.deepEqual(errors, []);
   fs.writeFileSync(`${out}results.json`, JSON.stringify({ layouts, forms, errors, api: 'fixtures only' }, null, 2));
-  console.log(`PASS: guidance on all 13 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
+  console.log(`PASS: guidance on all 14 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
 } finally {
   await browser.close();
 }

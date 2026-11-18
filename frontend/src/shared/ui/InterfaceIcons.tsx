@@ -9,6 +9,7 @@ type IconName =
   | 'tasks'
   | 'metrics'
   | 'flow'
+  | 'forecast'
   | 'updates'
   | 'profile'
   | 'sun'
@@ -18,6 +19,12 @@ type IconName =
   | 'trash';
 
 const paths: Record<IconName, ReactNode> = {
+  forecast: (
+    <>
+      <path d="M3 20h18M4 16l5-5 4 2" />
+      <path d="m13 13 7-8m-7 8 7-2m-7 2 7 4" strokeDasharray="2 2" />
+    </>
+  ),
   flow: (
     <>
       <path d="M3 20h18M4 16l5-7 5 4 6-9" />

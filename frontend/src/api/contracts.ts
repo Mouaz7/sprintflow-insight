@@ -53,6 +53,7 @@ export type WorkspaceView =
   | 'tasks'
   | 'metrics'
   | 'flow'
+  | 'forecast'
   | 'updates'
   | 'profile'
   | 'calendar'
@@ -313,4 +314,60 @@ export type FlowReport = {
     tolerance: number;
   };
   tasksWithoutHistory: number;
+};
+
+export type ForecastBasis = 'THROUGHPUT' | 'VELOCITY';
+export type ForecastWarning =
+  | 'NO_HISTORY'
+  | 'NO_COMPLETIONS'
+  | 'INSUFFICIENT_HISTORY'
+  | 'MISSING_TASK_HISTORY'
+  | 'UNPLANNED_STORIES'
+  | 'ZERO_POINT_TASKS'
+  | 'EPIC_USES_PROJECT_HISTORY'
+  | 'PAST_SPRINT_DEADLINE'
+  | 'TARGET_BEYOND_HORIZON';
+export type ForecastBin = { from: number; to: number; count: number };
+export type ForecastTargetSource = 'REQUEST' | 'ACTIVE_SPRINT' | 'DEFAULT';
+export type ForecastReport = {
+  basis: ForecastBasis;
+  unit: 'ITEMS' | 'STORY_POINTS';
+  periodDays: number;
+  start: string;
+  seed: string;
+  simulations: number;
+  minimumPeriods: number;
+  history: {
+    start: string;
+    end: string;
+    count: number;
+    label: string | null;
+  }[];
+  warnings: ForecastWarning[];
+  scope: {
+    epicId: number | null;
+    epicTitle: string | null;
+    openTasks: number;
+    openStoryPoints: number;
+    unplannedStories: number;
+    zeroPointTasks: number;
+    tasksWithoutHistory: number;
+  };
+  remaining: number;
+  completionDates: { confidence: number; date: string | null }[];
+  completionHistogram: ForecastBin[];
+  beyondHorizon: number;
+  horizonDays: number;
+  itemsByDate: {
+    date: string;
+    source: ForecastTargetSource;
+    items: { confidence: number; items: number }[];
+    histogram: ForecastBin[];
+  } | null;
+  target: {
+    items: number;
+    date: string;
+    source: ForecastTargetSource;
+    probability: number | null;
+  };
 };
