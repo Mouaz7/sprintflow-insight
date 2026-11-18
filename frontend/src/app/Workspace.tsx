@@ -48,6 +48,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'roadmap',
   'tasks',
   'metrics',
+  'flow',
   'updates',
   'profile',
   'calendar',

@@ -13,6 +13,7 @@ import type {
   Story,
   Task,
   User,
+  WipSettings,
 } from './contracts';
 
 /**
@@ -48,6 +49,8 @@ export const queryKeys = {
   dependencies: (id: number) => ['project', id, 'dependencies'] as const,
   roadmap: (id: number) => ['project', id, 'roadmap'] as const,
   estimates: (id: number) => ['project', id, 'estimates'] as const,
+  wipLimits: (id: number) => ['project', id, 'wip-limits'] as const,
+  flow: (id: number) => ['project', id, 'flow'] as const,
 };
 
 /** The signed-in user, or `null` when the server reports no session. */
@@ -102,6 +105,12 @@ export const dependenciesQuery = (projectId: number) =>
     queryKey: queryKeys.dependencies(projectId),
     queryFn: () =>
       api<DependencyOverview>(`/projects/${projectId}/dependencies`),
+  });
+
+export const wipLimitsQuery = (projectId: number) =>
+  queryOptions({
+    queryKey: queryKeys.wipLimits(projectId),
+    queryFn: () => api<WipSettings>(`/projects/${projectId}/wip-limits`),
   });
 
 export const tasksQuery = (projectId: number) =>

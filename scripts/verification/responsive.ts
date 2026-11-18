@@ -8,7 +8,7 @@ import { responsiveFixture } from './responsive-fixtures.ts';
 const base = process.env.SPRINTFLOW_QA_URL || 'http://127.0.0.1:8081';
 const out = fileURLToPath(new URL('../../artifacts/responsive/', import.meta.url));
 const widths = [320, 390, 767, 768, 1023, 1024, 1279, 1280, 1920, 2560];
-const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
+const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'flow', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
 fs.mkdirSync(out, { recursive: true });
 const results: { label: string; width: number; height: number }[] = [];
 

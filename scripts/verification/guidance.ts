@@ -38,7 +38,7 @@ try {
       await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
       await page.locator('.page h1').waitFor();
     }
-    for (let index = 0; index < 12; index++) {
+    for (let index = 0; index < 13; index++) {
       await nav(index);
       const guide = page.locator('.page-guide');
       assert.equal(await guide.count(), 1);
@@ -68,7 +68,8 @@ try {
       [4, /Lägg till beroende|Add dependency/, 'dependency'],
       [4, /Uppskatta en uppgift|Estimate a task/, 'estimate'],
       [5, /Ny uppgift|New task/, 'task'],
-      [10, /Ny anteckning|New note/, 'retro'],
+      [7, /Ange WIP-gränser|Set WIP limits/, 'wipLimits'],
+      [11, /Ny anteckning|New note/, 'retro'],
     ] as const) {
       await nav(view);
       const button = page.getByRole('button', { name: trigger }).first();
@@ -113,7 +114,7 @@ try {
   }
   assert.deepEqual(errors, []);
   fs.writeFileSync(`${out}results.json`, JSON.stringify({ layouts, forms, errors, api: 'fixtures only' }, null, 2));
-  console.log(`PASS: guidance on all 12 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
+  console.log(`PASS: guidance on all 13 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
 } finally {
   await browser.close();
 }

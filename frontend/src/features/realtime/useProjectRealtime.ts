@@ -67,6 +67,9 @@ export function useProjectRealtime(
               queryKey: queryKeys.roadmap(projectId),
             });
             void client.invalidateQueries({
+              queryKey: queryKeys.flow(projectId),
+            });
+            void client.invalidateQueries({
               queryKey: ['project', projectId, 'metrics'],
             });
           }

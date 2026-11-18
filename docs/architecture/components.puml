@@ -8,6 +8,7 @@ top to bottom direction
   root {
     BackgroundColor: #ffffff
     FontColor: #444444
+    Component(SprintFlowApplication.SprintFlowApplication.Flow, "Flow", $techn="Module", $descr="", $tags="", $link="")
   }
 </style>
 
@@ -46,6 +47,7 @@ Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.
 Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Notifications, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Realtime, SprintFlowApplication.SprintFlowApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Flow, "depends on", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

@@ -86,6 +86,21 @@ const points: Field = [
   ],
 ];
 const formGuides = {
+  wipLimits: {
+    intro: [
+      'WIP-gränser hjälper teamet att se när för mycket arbete samlas i en kolumn.',
+      'WIP limits help the team see when too much work gathers in a column.',
+    ],
+    fields: [
+      [
+        ['Antal uppgifter', 'Task counts'],
+        [
+          'Ange en valfri gräns från 1 till 999 för varje kolumn, eller lämna tomt för att ta bort gränsen. Tavlan varnar men hindrar inte flytt. Ditt utkast behålls vid en versionskonflikt.',
+          'Set an optional limit from 1 to 999 for each column, or leave empty to remove it. The board warns without blocking movement. A revision conflict preserves your draft.',
+        ],
+      ],
+    ],
+  },
   epic: {
     intro: [
       'En epic samlar stories kring ett leveransmål. Uppgifter och storypoäng räknas ihop automatiskt.',
@@ -430,6 +445,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  flow: [
+    'Följ hur arbetet rör sig mellan kolumner. Jämför avslutade uppgifters tider med pågående arbete och sätt rådgivande WIP-gränser. Statistiska signaler hjälper er att undersöka variation; de bevisar inte att processen eller historiken är fel.',
+    'Follow work across columns. Compare completed-task durations with aging work and set advisory WIP limits. Statistical signals invite investigation; they do not prove that the process or history is wrong.',
+  ],
   roadmap: [
     'Samla stories i epics och se planerade datum, sprintar och beroenden. En pil betyder att den första uppgiften måste vara klar före den andra. PERT använder tre uppskattningar i arbetsdagar; sannolikheten är ungefärlig och visas först när arbetet är uppdelat och uppskattat.',
     'Group stories into epics and see planned dates, sprints and dependencies. An arrow means the first task must finish before the second. PERT uses three estimates in working days; probability is approximate and appears only when work is broken down and estimated.',

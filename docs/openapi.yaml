@@ -1108,6 +1108,88 @@ paths:
           $ref: '#/components/responses/Error'
       parameters:
       - $ref: '#/components/parameters/ifMatch'
+  /api/projects/{projectId}/flow:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read project flow, distributions, aging, XmR and Little’s law review
+      description: Project READ membership; archived projects remain readable. Trashed projects are unavailable.
+        Durations are hours unless the field name says days.
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+          minimum: 7
+          maximum: 180
+          default: 30
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/wip-limits:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read all three advisory column limits and their collection revision
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WipSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    put:
+      summary: Replace advisory WIP limits as Owner or Admin in an active project
+      description: A project row lock serializes replacements. Omitted columns have no limit; an empty list
+        clears all limits. Limits warn but do not prevent movement. Changes record project activity and
+        invalidate connected views.
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WipLimitsRequest'
+      responses:
+        '200':
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WipSettingsResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     sessionCookie:
@@ -1203,6 +1285,430 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    FlowQuery:
+      type: object
+      properties:
+        days:
+          type: integer
+          minimum: 7
+          maximum: 180
+          default: 30
+    WipLimitEntryRequest:
+      type: object
+      required:
+      - status
+      - limit
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+    WipLimitsRequest:
+      type: object
+      required:
+      - limits
+      properties:
+        limits:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/WipLimitEntryRequest'
+    WipLimitResponse:
+      type: object
+      required:
+      - status
+      - limit
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+          nullable: true
+    WipSettingsResponse:
+      type: object
+      required:
+      - version
+      - limits
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/WipLimitResponse'
+      description: Version of the entire collection. Initial unconfigured version is 0. Clearing all limits
+        still advances it, so stale drafts cannot reuse a cleared revision.
+    FlowCumulativeDay:
+      type: object
+      required:
+      - date
+      - toDo
+      - inProgress
+      - review
+      - done
+      properties:
+        date:
+          type: string
+          format: date
+        toDo:
+          type: integer
+          format: int64
+          minimum: 0
+        inProgress:
+          type: integer
+          format: int64
+          minimum: 0
+        review:
+          type: integer
+          format: int64
+          minimum: 0
+        done:
+          type: integer
+          format: int64
+          minimum: 0
+    FlowDistribution:
+      type: object
+      required:
+      - count
+      - mean
+      - p50
+      - p85
+      - p95
+      properties:
+        count:
+          type: integer
+          format: int64
+          minimum: 0
+        mean:
+          type: number
+          format: double
+          nullable: true
+        p50:
+          type: number
+          format: double
+          nullable: true
+        p85:
+          type: number
+          format: double
+          nullable: true
+        p95:
+          type: number
+          format: double
+          nullable: true
+    FlowCompletion:
+      type: object
+      required:
+      - taskId
+      - key
+      - completedAt
+      - cycleTimeHours
+      - leadTimeHours
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        cycleTimeHours:
+          type: number
+          format: double
+          nullable: true
+        leadTimeHours:
+          type: number
+          format: double
+          nullable: true
+    FlowAgingTask:
+      type: object
+      required:
+      - taskId
+      - key
+      - title
+      - status
+      - ageHours
+      - statusAgeHours
+      - band
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        ageHours:
+          type: number
+          format: double
+        statusAgeHours:
+          type: number
+          format: double
+        band:
+          type: string
+          enum:
+          - BELOW_P50
+          - P50_TO_P85
+          - P85_TO_P95
+          - ABOVE_P95
+          - NO_REFERENCE
+    FlowColumn:
+      type: object
+      required:
+      - status
+      - currentWip
+      - averageWip
+      - limit
+      - overLimit
+      - bottleneck
+      properties:
+        status:
+          type: string
+          enum:
+          - To Do
+          - In Progress
+          - Review
+        currentWip:
+          type: integer
+          format: int64
+          minimum: 0
+        averageWip:
+          type: number
+          format: double
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 999
+          nullable: true
+        overLimit:
+          type: boolean
+        bottleneck:
+          type: string
+          nullable: true
+          enum:
+          - OVER_LIMIT
+          - HIGHEST_AVERAGE_WIP
+    FlowControlPoint:
+      type: object
+      required:
+      - taskId
+      - key
+      - completedAt
+      - cycleTimeHours
+      - movingRange
+      - signals
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          minimum: 0
+        key:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        cycleTimeHours:
+          type: number
+          format: double
+        movingRange:
+          type: number
+          format: double
+          nullable: true
+        signals:
+          type: array
+          items:
+            type: string
+            enum:
+            - OUTSIDE_LIMITS
+            - TWO_OF_THREE_BEYOND_TWO_SIGMA
+            - FOUR_OF_FIVE_BEYOND_ONE_SIGMA
+            - RUN_OF_EIGHT
+            - LARGE_MOVING_RANGE
+    FlowControlChart:
+      type: object
+      required:
+      - available
+      - minimumPoints
+      - mean
+      - upperLimit
+      - lowerLimit
+      - movingRangeMean
+      - upperRangeLimit
+      - signalCount
+      - points
+      properties:
+        available:
+          type: boolean
+        minimumPoints:
+          type: integer
+          format: int64
+          minimum: 0
+        mean:
+          type: number
+          format: double
+          nullable: true
+        upperLimit:
+          type: number
+          format: double
+          nullable: true
+        lowerLimit:
+          type: number
+          format: double
+          nullable: true
+        movingRangeMean:
+          type: number
+          format: double
+          nullable: true
+        upperRangeLimit:
+          type: number
+          format: double
+          nullable: true
+        signalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowControlPoint'
+      description: 'Retrospective descriptive XmR with six measured completions minimum. Limits use the whole
+        window, not a pre-calibrated baseline; signals do not prove statistical control or a special cause.
+        Individual limits: mean ±3 MR/1.128; MR upper3.267 MR. Lower individual limit clamped to zero for
+        display only. See ADR0020.'
+    FlowLittlesLaw:
+      type: object
+      required:
+      - status
+      - averageWip
+      - throughputPerDay
+      - averageCycleTimeDays
+      - expectedWip
+      - ratio
+      - tolerance
+      properties:
+        status:
+          type: string
+          enum:
+          - CONSISTENT
+          - INCONSISTENT
+          - INSUFFICIENT_DATA
+        averageWip:
+          type: number
+          format: double
+        throughputPerDay:
+          type: number
+          format: double
+        averageCycleTimeDays:
+          type: number
+          format: double
+        expectedWip:
+          type: number
+          format: double
+        ratio:
+          type: number
+          format: double
+          nullable: true
+        tolerance:
+          type: number
+          format: double
+      description: Heuristic boundary/history review, not a statistical test. Compares time-averaged active
+        WIP with measured-cycle completion rate times mean active-cycle duration. Minimum5 measured completions;
+        ratio0.80–1.25 accepted. Finite-window censoring, reopening and changing demand can explain mismatches
+        without corrupt data.
+    FlowResponse:
+      type: object
+      required:
+      - days
+      - start
+      - end
+      - generatedAt
+      - cumulativeFlow
+      - cycleTimeHours
+      - leadTimeHours
+      - completedTasks
+      - throughputPerDay
+      - completions
+      - agingWip
+      - columns
+      - controlChart
+      - littlesLaw
+      - tasksWithoutHistory
+      properties:
+        days:
+          type: integer
+          minimum: 7
+          maximum: 180
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        generatedAt:
+          type: string
+          format: date-time
+        cumulativeFlow:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowCumulativeDay'
+        cycleTimeHours:
+          $ref: '#/components/schemas/FlowDistribution'
+        leadTimeHours:
+          $ref: '#/components/schemas/FlowDistribution'
+        completedTasks:
+          type: integer
+          format: int64
+          minimum: 0
+        throughputPerDay:
+          type: number
+          format: double
+        completions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowCompletion'
+        agingWip:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowAgingTask'
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowColumn'
+        controlChart:
+          $ref: '#/components/schemas/FlowControlChart'
+        littlesLaw:
+          $ref: '#/components/schemas/FlowLittlesLaw'
+        tasksWithoutHistory:
+          type: integer
+          format: int64
+          minimum: 0
+      description: Whole UTC days ending at generation time, from currently visible project tasks. Missing
+        history is excluded from historical charts/times but current counts include all live tasks. Cycle
+        time is the latest uninterrupted active run ending in Done. Percentiles use type-7 interpolation over
+        window completions; null durations are omitted. Later trash/deletion changes this current-scope historical
+        view.
     EpicRequest:
       type: object
       required:

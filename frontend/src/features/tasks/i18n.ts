@@ -24,6 +24,9 @@ export const tasksText = defineLexicon({
     blockReason: 'Block reason',
     saving: 'Saving…',
     blockedLabel: 'BLOCKED',
+    wipCount: ({ count, limit }: { count: number; limit: number }, f) =>
+      `WIP: ${f.number(count)} / ${f.number(limit)}`,
+    wipOver: 'Over the WIP limit',
     dependencyBlocked: 'WAITING ON DEPENDENCIES',
     points: 'pts',
     due: icu('dueDate'),
@@ -131,6 +134,9 @@ export const tasksText = defineLexicon({
     blockReason: 'Orsak till blockering',
     saving: 'Sparar…',
     blockedLabel: 'BLOCKERAD',
+    wipCount: ({ count, limit }, f) =>
+      `WIP: ${f.number(count)} / ${f.number(limit)}`,
+    wipOver: 'Över WIP-gränsen',
     dependencyBlocked: 'VÄNTAR PÅ BEROENDEN',
     points: 'poäng',
     due: icu('dueDate'),

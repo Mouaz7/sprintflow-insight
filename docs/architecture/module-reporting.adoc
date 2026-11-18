@@ -5,11 +5,13 @@
 |Spring components
 |_Controllers_
 
+* `c.s.r.FlowController`
 * `c.s.r.MetricsController`
 * `c.s.r.SharedReportController`
 
 _Services_
 
+* `c.s.r.FlowService`
 * `c.s.r.MetricsExportService`
 * `c.s.r.MetricsService`
 * `c.s.r.SharedReportService`
@@ -26,6 +28,7 @@ _Others_
 * `c.s.w.activity.ActivityService` (in Workspace)
 * `c.s.w.task.TaskRepository` (in Workspace)
 * `c.s.w.project.ProjectAccessService` (in Workspace)
+* `c.s.w.project.ProjectMutationService` (in Workspace)
 * `c.s.w.sprint.SprintRepository` (in Workspace)
 * `c.s.w.task.TaskStatusHistoryRepository` (in Workspace)
 * `c.s.w.story.UserStoryRepository` (in Workspace)

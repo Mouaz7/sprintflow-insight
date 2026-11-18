@@ -9,6 +9,7 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
     columns,
     tasks,
     dependencyBlocked,
+    wipLimits,
     draggedTaskId,
     updateTask,
     setDraggedTaskId,
@@ -24,6 +25,17 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
   } = controller;
   const columnTasks = (column: Task['status']) =>
     filtered.filter((task) => task.status === column);
+  const renderWip = (column: Task['status']) => {
+    const limit = wipLimits.find((row) => row.status === column)?.limit;
+    if (limit == null) return null;
+    const count = tasks.filter((task) => task.status === column).length;
+    return (
+      <p className={count > limit ? 'board-wip-over' : 'board-wip-count'}>
+        {t('wipCount', { count, limit })}
+        {count > limit ? ` · ${t('wipOver')}` : ''}
+      </p>
+    );
+  };
   const renderCard = (task: Task) => (
     <article
       aria-busy={busyTasks.has(task.id)}
@@ -132,6 +144,7 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
             <span>{labels[column]}</span>
             <b>{columnTasks(column).length}</b>
           </header>
+          {renderWip(column)}
           {columnTasks(column).length > VIRTUALIZE_AFTER ? (
             <VirtualList
               items={columnTasks(column)}

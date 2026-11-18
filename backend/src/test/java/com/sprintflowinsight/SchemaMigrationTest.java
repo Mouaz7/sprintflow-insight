@@ -31,6 +31,7 @@ class SchemaMigrationTest {
                 + " task_estimate(task_id,project_id,optimistic_days,most_likely_days,pessimistic_days,updated_at)"
                 + " values (1,1,1.25,2.50,5.75,now())");
         assertThat(db.migrateTo("20").migrationsExecuted).isEqualTo(1);
+        db.migrateTo(null);
         db.flyway().validate();
         try (var rows =
             sql.executeQuery(
@@ -42,6 +43,56 @@ class SchemaMigrationTest {
           assertThat(rows.getBigDecimal(3)).isEqualByComparingTo("5.75");
           assertThat(rows.getLong(4)).isZero();
           assertThat(rows.getBoolean(5)).isTrue();
+        }
+      }
+    }
+  }
+
+  @Test
+  void v21AddsScopedWipSettingsWithoutRewritingWorkflowHistory() throws Exception {
+    try (var db = new MigrationFixture()) {
+      db.migrateTo("20");
+      try (var sql = db.connection().createStatement()) {
+        sql.executeUpdate(
+            "insert into projects(id,name,owner_email,version,key) values"
+                + " (1,'Flow','owner@example.com',4,'FF')");
+        sql.executeUpdate(
+            "insert into task(id,project_id,number,title,status,is_blocked,story_points,version)"
+                + " values (1,1,1,'Existing','In Progress',false,3,7)");
+        sql.executeUpdate(
+            "insert into"
+                + " task_status_history(task_id,project_id,status,changed_at,actor_email,story_points)"
+                + " values (1,1,'In Progress','2025-01-01T12:00:00Z','owner@example.com',3)");
+        assertThat(db.migrateTo("21").migrationsExecuted).isEqualTo(1);
+        db.migrateTo(null);
+        db.flyway().validate();
+        try (var rows =
+            sql.executeQuery(
+                "select status,story_points from task_status_history where task_id=1")) {
+          assertThat(rows.next()).isTrue();
+          assertThat(rows.getString(1)).isEqualTo("In Progress");
+          assertThat(rows.getInt(2)).isEqualTo(3);
+        }
+        sql.executeUpdate(
+            "insert into projects(id,name,owner_email,version,key) values (2,'Limits"
+                + " only','owner@example.com',0,'WW')");
+        sql.executeUpdate("insert into project_wip_settings(project_id,version) values (2,1)");
+        sql.executeUpdate(
+            "insert into project_wip_limit(project_id,status,wip_limit) values (2,'In"
+                + " Progress',2)");
+        try (var rows =
+            sql.executeQuery(
+                "select count(*) from pg_indexes where schemaname=current_schema() and"
+                    + " indexname='history_project_time_idx'")) {
+          assertThat(rows.next()).isTrue();
+          assertThat(rows.getInt(1)).isEqualTo(1);
+        }
+        sql.executeUpdate("delete from projects where id=2");
+        for (String table : java.util.List.of("project_wip_limit", "project_wip_settings")) {
+          try (var rows = sql.executeQuery("select count(*) from " + table)) {
+            assertThat(rows.next()).isTrue();
+            assertThat(rows.getLong(1)).isZero();
+          }
         }
       }
     }

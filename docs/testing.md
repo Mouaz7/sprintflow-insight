@@ -255,3 +255,24 @@ Frontend tests verify project-scoped Query invalidation, specific comment-thread
 Pure scheduling properties compare DFS with an independent transitive-closure oracle and critical duration with exhaustive paths; unit cases include a 20,000-node chain, normal-CDF reference values and weekday boundaries. PIT now targets `workspace.roadmap.schedule.*` as part of the repository's mutation check.
 
 `frontend/e2e/tests/roadmap.e2e.ts` runs against the packaged app and PostgreSQL. It creates epics, assigns stories, rejects a cycle while retaining choices, enters estimates, reads PERT/table/arrows, follows a deep link through reload, completes a blocker on the board and checks Viewer/archived views. It also runs axe in editor, desktop and mobile states, in English and Swedish and both themes. The separate responsive/guidance sweeps use API fixtures and include the new page and four editor types.
+
+## Flow analysis (B5)
+
+`flow/*Test` and `FlowProperties` compare fixed histories, independent hourly ledgers, type-7 percentiles, NIST reference limits and all configured XmR rules. `FlowIntegrationTest` exercises PostgreSQL as Owner/Admin/Member/Viewer/outsider and in archived/trashed projects, missing history, invalid limits, concurrent and stale collection revisions (including clearing), and a constant query count with 1,000 extra tasks. `FlowContractTest` checks every new request/response record against OpenAPI; `SchemaMigrationTest` verifies V21 upgrades and project-scoped constraints. The frontend MSW tests cover EN/SV, window routing, read-only settings, rejected drafts and WIP warnings independent of board filtering.
+
+`frontend/e2e/tests/flow.e2e.ts` uses real REST/history, charts and their complete table/keyboard controls, window links and reload, WIP editing, advisory board warnings, two administrators with a stale draft, Viewer/archived views, axe and Swedish mobile dark mode. No response is mocked. The responsive and guidance sweeps also include `/flow` and the WIP editor.
+
+For the performance profile, start the packaged application and a disposable local PostgreSQL database. Node 22+ and k6 are required. Use the PostgreSQL container attached to that exact application; the fixture verifies its newly created API project and owner in the database before inserting anything. It creates its own disposable account, 1,000 tasks and about 49,000 status snapshots across 730 days. Repeated same-status snapshots exercise history collapse.
+
+```sh
+export BASE_URL=http://127.0.0.1:8081
+export FLOW_DB_CONTAINER="$(docker compose -p sprintflow-ci ps -q postgres)"
+export FLOW_FIXTURE_FILE="$PWD/artifacts/flow-performance/fixture.json"
+node scripts/performance/flow-fixture.ts seed
+k6 run --summary-export artifacts/flow-performance/summary.json scripts/performance/flow-read.k6.ts
+node scripts/performance/flow-fixture.ts cleanup
+```
+
+An isolated local PostgreSQL server can instead use `FLOW_PG_URL=postgresql://postgres@127.0.0.1:15495/b5_qa` with `psql` installed. Both application and database URLs must be local. `FLOW_TASKS` optionally raises the fixture to 10,000 tasks. The ignored fixture file contains disposable credentials and must not be uploaded; CI uploads only k6 summaries and always runs cleanup. The file is created exclusively with mode 0600, so even a concurrent creator or symlink cannot be overwritten. Both tools reject non-local origins and redirects. Storing the newly created session and reading it back for local authenticated test requests is intentional; no existing user credentials or application records are exported. Cleanup validates metadata and ownership before removing only the fixture-owned project and account.
+
+The profile warms up three iterations, then uses two concurrent users for 20 seconds, reading both 30- and 180-day windows. It requires zero request failures, correct coverage/window responses and measured p95 below 500 ms. The initial PostgreSQL 16.10 container run (48,898 history rows) passed with p95 313.63 ms over 140 measured reads. A PostgreSQL 16 local rerun (48,883 rows) passed with p95 281.51 ms over 172 measured reads. These are local reproducibility measurements, not a production capacity claim. The `k6-smoke` CI job runs the same fixture/profile against the built container.

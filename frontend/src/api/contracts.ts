@@ -52,6 +52,7 @@ export type WorkspaceView =
   | 'roadmap'
   | 'tasks'
   | 'metrics'
+  | 'flow'
   | 'updates'
   | 'profile'
   | 'calendar'
@@ -222,3 +223,94 @@ export type Activity = {
   createdAt: string;
 };
 export type Metrics = Record<string, unknown>;
+
+export type WipSettings = {
+  version: number;
+  limits: {
+    status: 'To Do' | 'In Progress' | 'Review';
+    limit: number | null;
+  }[];
+};
+export type FlowDistribution = {
+  count: number;
+  mean: number | null;
+  p50: number | null;
+  p85: number | null;
+  p95: number | null;
+};
+export type FlowSignal =
+  | 'OUTSIDE_LIMITS'
+  | 'TWO_OF_THREE_BEYOND_TWO_SIGMA'
+  | 'FOUR_OF_FIVE_BEYOND_ONE_SIGMA'
+  | 'RUN_OF_EIGHT'
+  | 'LARGE_MOVING_RANGE';
+export type FlowReport = {
+  days: number;
+  start: string;
+  end: string;
+  generatedAt: string;
+  cumulativeFlow: {
+    date: string;
+    toDo: number;
+    inProgress: number;
+    review: number;
+    done: number;
+  }[];
+  cycleTimeHours: FlowDistribution;
+  leadTimeHours: FlowDistribution;
+  completedTasks: number;
+  throughputPerDay: number;
+  completions: {
+    taskId: number;
+    key: string;
+    completedAt: string;
+    cycleTimeHours: number | null;
+    leadTimeHours: number | null;
+  }[];
+  agingWip: {
+    taskId: number;
+    key: string;
+    title: string;
+    status: string;
+    ageHours: number;
+    statusAgeHours: number;
+    band:
+      'BELOW_P50' | 'P50_TO_P85' | 'P85_TO_P95' | 'ABOVE_P95' | 'NO_REFERENCE';
+  }[];
+  columns: {
+    status: string;
+    currentWip: number;
+    averageWip: number;
+    limit: number | null;
+    overLimit: boolean;
+    bottleneck: 'OVER_LIMIT' | 'HIGHEST_AVERAGE_WIP' | null;
+  }[];
+  controlChart: {
+    available: boolean;
+    minimumPoints: number;
+    mean: number | null;
+    upperLimit: number | null;
+    lowerLimit: number | null;
+    movingRangeMean: number | null;
+    upperRangeLimit: number | null;
+    signalCount: number;
+    points: {
+      taskId: number;
+      key: string;
+      completedAt: string;
+      cycleTimeHours: number;
+      movingRange: number | null;
+      signals: FlowSignal[];
+    }[];
+  };
+  littlesLaw: {
+    status: 'CONSISTENT' | 'INCONSISTENT' | 'INSUFFICIENT_DATA';
+    averageWip: number;
+    throughputPerDay: number;
+    averageCycleTimeDays: number;
+    expectedWip: number;
+    ratio: number | null;
+    tolerance: number;
+  };
+  tasksWithoutHistory: number;
+};

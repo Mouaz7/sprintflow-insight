@@ -199,3 +199,14 @@
 .task-attachments label {
   font-size: var(--text-small);
 }
+.task-board .board-wip-count,
+.task-board .board-wip-over {
+  padding: 10px 12px;
+  margin: 0;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.task-board .board-wip-over {
+  color: var(--danger-text);
+  background: var(--danger-soft);
+}

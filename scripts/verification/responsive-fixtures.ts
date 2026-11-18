@@ -100,6 +100,18 @@ export async function responsiveFixture(page: Page, options: Options) {
       sprints, epicLinks: [], dependencies: { dependencies: [], blockedTaskIds: [], externalBlocks: [] },
       project: { start: '2026-10-05', expectedDays: 6, standardDeviationDays: 1, expectedFinish: '2026-10-12', probabilityOnTime: null, estimatedTasks: 3, openTasks: 3, unplannedStories: 0, criticalPath: [] },
     };
+    else if (pathname.endsWith('/wip-limits')) body = { version: 0, limits: ['To Do','In Progress','Review'].map(status => ({ status, limit: status === 'In Progress' ? 2 : null })) };
+    else if (pathname.endsWith('/flow')) body = {
+      days: 30, start: '2026-10-01', end: '2026-10-30', generatedAt: '2026-10-30T12:00:00Z',
+      cumulativeFlow: Array.from({ length: 30 }, (_,i) => ({ date: `2026-10-${String(i+1).padStart(2,'0')}`, toDo: 6, inProgress: 2, review: 1, done: Math.floor(i/3) })),
+      cycleTimeHours: { count: 8, mean: 24, p50: 24, p85: 28, p95: 30 }, leadTimeHours: { count: 8, mean: 48, p50: 48, p85: 52, p95: 54 },
+      completedTasks: 8, throughputPerDay: .27,
+      completions: Array.from({ length: 8 }, (_,i) => ({ taskId: i+10, key: `QA-${i+10}`, completedAt: `2026-10-${String(i+1).padStart(2,'0')}T12:00:00Z`, cycleTimeHours: 20+i, leadTimeHours: 44+i })),
+      agingWip: [{ taskId: 2, key: 'QA-2', title: 'Build the project dashboard', status: 'In Progress', ageHours: 72, statusAgeHours: 24, band: 'ABOVE_P95' }],
+      columns: ['To Do','In Progress','Review'].map(status => ({ status, currentWip: 1, averageWip: 1.5, limit: status === 'In Progress' ? 2 : null, overLimit: false, bottleneck: status === 'Review' ? 'HIGHEST_AVERAGE_WIP' : null })),
+      controlChart: { available: true, minimumPoints: 6, mean: 24, upperLimit: 32, lowerLimit: 16, movingRangeMean: 3, upperRangeLimit: 9.8, signalCount: 0, points: Array.from({ length: 8 }, (_,i) => ({ taskId: i+10, key: `QA-${i+10}`, completedAt: `2026-10-${String(i+1).padStart(2,'0')}T12:00:00Z`, cycleTimeHours: 20+i, movingRange: i ? 1 : null, signals: [] })) },
+      littlesLaw: { status: 'INCONSISTENT', averageWip: 2.5, throughputPerDay: .27, averageCycleTimeDays: 1, expectedWip: .27, ratio: 9.26, tolerance: .25 }, tasksWithoutHistory: 0,
+    };
     else if (pathname.endsWith('/dependencies')) body = { dependencies: [], blockedTaskIds: [], externalBlocks: [] };
     else if (pathname.endsWith('/estimates')) body = [];
     else if (pathname.endsWith('/role')) body = { role: 'Owner' };

@@ -10,6 +10,7 @@ import {
   sprintsQuery,
   storiesQuery,
   tasksQuery,
+  wipLimitsQuery,
 } from '../../api/queries';
 import { localizeMessage } from '../../shared/i18n/messages';
 import {
@@ -66,6 +67,7 @@ export function useTaskBoard({
       { ...membersQuery(projectId ?? 0), enabled: !!projectId },
       { ...roleQuery(projectId ?? 0), enabled: !!projectId },
       { ...dependenciesQuery(projectId ?? 0), enabled: !!projectId },
+      { ...wipLimitsQuery(projectId ?? 0), enabled: !!projectId },
     ],
   });
   const [
@@ -75,6 +77,7 @@ export function useTaskBoard({
     memberResult,
     roleResult,
     dependencyResult,
+    wipResult,
   ] = board;
   // As before, one failed request leaves the whole board empty with its message.
   const loadError = board.find((result) => result.isError)?.error;
@@ -408,6 +411,7 @@ export function useTaskBoard({
     loading,
     tasks,
     dependencyBlocked,
+    wipLimits: wipResult.data?.limits ?? [],
     setTasks,
     stories,
     sprints,

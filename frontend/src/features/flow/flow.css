@@ -1,0 +1,97 @@
+.flow-page {
+  display: grid;
+  gap: var(--space-section);
+  min-width: 0;
+}
+.flow-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-grid);
+}
+.flow-toolbar label {
+  display: grid;
+  gap: 6px;
+}
+.flow-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: var(--card-space);
+  min-width: 0;
+}
+.flow-panel h2 {
+  font-size: var(--text-section);
+  margin: 0 0 12px;
+}
+.flow-help {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.flow-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: var(--space-section);
+}
+.flow-statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: var(--space-grid);
+  margin-block: 0;
+}
+.flow-statistics dt {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.flow-statistics dd {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 8px 0 16px;
+}
+.flow-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-grid);
+}
+.flow-columns article {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.flow-columns article.flow-column-over {
+  border-color: var(--danger-line);
+}
+.flow-warning {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  line-height: 1.6;
+}
+.flow-work-list {
+  list-style: none;
+  padding: 0;
+}
+.flow-work-list li {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 14px 8px;
+  overflow-wrap: anywhere;
+}
+.flow-work-list a {
+  color: var(--accent-text);
+  text-underline-offset: 3px;
+}
+.flow-work-list span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.flow-work-list .flow-aging-old {
+  border-inline-start: 3px solid var(--danger-text);
+  background: var(--danger-soft);
+}
+.flow-page .data-chart {
+  margin-inline: 0;
+}

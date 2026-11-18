@@ -44,3 +44,5 @@ See [`architecture.md`](architecture.md) for the service boundaries and [`openap
 
 
 B3 uses the V17 epic/story relation, task_dependency and task_estimate foundation delivered with B9. V20 adds task_estimate.version (initially 0) and active (initially true) for If-Match updates. Clearing an estimate retains an inactive revision marker, excluded from API reads and forecasts; replacement revisions increase instead of resetting. Permanent task deletion cascades to this marker. Cross-project relations are prevented by composite foreign keys; deleting an epic detaches its stories. Applied V17–V19 migrations are unchanged.
+
+B5 adds V21: `history_project_time_idx` on `task_status_history(project_id,changed_at)`; `project_wip_limit(project_id,status,wip_limit)` and `project_wip_settings(project_id,version)`. Both new tables cascade on project deletion. The settings revision survives clearing limits and is checked using If-Match under the project row lock. Existing workflow history is not rewritten.

@@ -21,3 +21,5 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0016](0016-postgresql-full-text-search.md) | PostgreSQL full-text search with trigram fallback and in-statement access filtering | Accepted |
 | [0017](0017-realtime-stomp-and-sequence-numbers.md) | Session-authenticated STOMP, durable project sequences, replay and task presence | Accepted |
 | [0018](0018-design-system-charts-and-visual-baselines.md) | Design foundations, accessible SVG charts and visual baselines | Accepted |
+| [0019](0019-epics-dependencies-and-pert.md) | Epics, dependencies and PERT | Accepted |
+| [0020](0020-flow-history-wip-and-statistical-review.md) | Flow history, advisory WIP and statistical review | Accepted |
