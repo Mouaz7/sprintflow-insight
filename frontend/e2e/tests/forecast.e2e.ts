@@ -160,9 +160,27 @@ test('forecasts real project and epic work from historical throughput and sprint
   await page
     .getByRole('spinbutton', { name: 'Remaining work (optional)', exact: true })
     .fill('10');
+  const deadline = page.getByRole('textbox', {
+    name: 'Target date (optional)',
+    exact: true,
+  });
+  await deadline.fill(isoDate(-1));
+  await page
+    .getByRole('button', { name: 'Update forecast', exact: true })
+    .click();
+  await expect(deadline).toBeFocused();
+  expect(
+    await deadline.evaluate(
+      (input: HTMLInputElement) => input.validationMessage,
+    ),
+  ).not.toBe('');
+  await expect(page).not.toHaveURL(/targetDate=/);
   await page
     .getByRole('textbox', { name: 'Target date (optional)', exact: true })
     .fill(isoDate(28));
+  expect(
+    await deadline.evaluate((input: HTMLInputElement) => input.validity.valid),
+  ).toBe(true);
   await page
     .getByRole('spinbutton', { name: 'Target amount (optional)', exact: true })
     .fill('8');
