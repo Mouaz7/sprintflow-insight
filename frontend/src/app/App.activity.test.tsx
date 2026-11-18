@@ -1,6 +1,8 @@
+import { HttpResponse } from 'msw';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { mockApi } from '../test/api';
 import { projects } from './appTestFixtures';
 describe('App.activity', () => {
   beforeEach(() => {
@@ -31,58 +33,37 @@ describe('App.activity', () => {
       },
     ];
 
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockImplementation(
-          async (input: RequestInfo | URL, init: RequestInit = {}) => {
-            const url = String(input);
-            const method = init.method ?? 'GET';
-            requests.push({
-              url,
-              method,
-              body: init.body as string | undefined,
-            });
-            let payload: unknown = [];
-            if (url.endsWith('/auth/me'))
-              payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
-            else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
-            else if (url.endsWith('/projects/1/role'))
-              payload = { role: 'Owner' };
-            else if (
-              url.endsWith('/projects/1/activity') &&
-              method === 'DELETE'
-            )
-              updates = [];
-            else if (
-              url.endsWith('/projects/1/activity/71') &&
-              method === 'PUT'
-            ) {
-              updates = updates.map((item) =>
-                item.id === 71
-                  ? { ...item, ...JSON.parse(String(init.body)) }
-                  : item,
-              );
-              payload = updates[0];
-            } else if (
-              url.endsWith('/projects/1/activity/71') &&
-              method === 'DELETE'
-            )
-              updates = updates.filter((item) => item.id !== 71);
-            else if (url.endsWith('/projects/1/activity')) payload = updates;
-            else if (url.endsWith('/auth/csrf'))
-              payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
-            return {
-              ok: true,
-              status: method === 'DELETE' ? 204 : 200,
-              json: async () => payload,
-            };
-          },
-        ),
-    );
+    mockApi(async (input, init) => {
+      const url = String(input);
+      const method = init.method ?? 'GET';
+      requests.push({
+        url,
+        method,
+        body: init.body,
+      });
+      let payload: unknown = [];
+      if (url.endsWith('/auth/me'))
+        payload = { id: 1, email: 'leo@example.com', displayName: 'Leo' };
+      else if (url.endsWith('/projects')) payload = projects.slice(0, 1);
+      else if (url.endsWith('/projects/1/role')) payload = { role: 'Owner' };
+      else if (url.endsWith('/projects/1/activity') && method === 'DELETE')
+        updates = [];
+      else if (url.endsWith('/projects/1/activity/71') && method === 'PUT') {
+        updates = updates.map((item) =>
+          item.id === 71 ? { ...item, ...JSON.parse(String(init.body)) } : item,
+        );
+        payload = updates[0];
+      } else if (url.endsWith('/projects/1/activity/71') && method === 'DELETE')
+        updates = updates.filter((item) => item.id !== 71);
+      else if (url.endsWith('/projects/1/activity')) payload = updates;
+      else if (url.endsWith('/auth/csrf'))
+        payload = { token: 'csrf', headerName: 'X-CSRF-TOKEN' };
+      return method === 'DELETE'
+        ? new HttpResponse(null, { status: 204 })
+        : payload;
+    });
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Updates' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Updates' }));
     const originalHeading = await screen.findByRole('heading', {
       name: 'Created task “Draft plan”.',
     });
@@ -154,32 +135,29 @@ describe('App.activity', () => {
       date: `2026-10-${String(index + 1).padStart(2, '0')}`,
       remainingPoints: 0,
     }));
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        const payload = url.endsWith('/auth/me')
-          ? { id: 1, email: 'leo@example.com', displayName: 'Leo' }
-          : url.endsWith('/projects')
-            ? projects.slice(0, 1)
-            : url.includes('/metrics')
-              ? {
-                  taskCount: 1,
-                  completedTasks: 1,
-                  completionRate: 100,
-                  throughputLast14Days: 1,
-                  velocityStoryPoints: 3,
-                  burndownAvailable: true,
-                  burndown: zeroBurndown,
-                  statusCounts: { Done: 1 },
-                  sprintHealth: { status: 'Healthy' },
-                }
-              : [];
-        return { ok: true, status: 200, json: async () => payload };
-      }),
-    );
+    mockApi(async (input) => {
+      const url = String(input);
+      const payload = url.endsWith('/auth/me')
+        ? { id: 1, email: 'leo@example.com', displayName: 'Leo' }
+        : url.endsWith('/projects')
+          ? projects.slice(0, 1)
+          : url.includes('/metrics')
+            ? {
+                taskCount: 1,
+                completedTasks: 1,
+                completionRate: 100,
+                throughputLast14Days: 1,
+                velocityStoryPoints: 3,
+                burndownAvailable: true,
+                burndown: zeroBurndown,
+                statusCounts: { Done: 1 },
+                sprintHealth: { status: 'Healthy' },
+              }
+            : [];
+      return payload;
+    });
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Metrics' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Metrics' }));
     expect(await screen.findByRole('status')).toHaveTextContent(
       'All work is complete',
     );

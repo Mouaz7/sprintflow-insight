@@ -1,37 +1,40 @@
 import { useRef } from 'react';
-import type { Language } from '../../api/contracts';
 import {
   MAX_DATE,
   MIN_DATE,
   normalizeDate,
   validDate,
 } from '../lib/formValues';
+import { useT } from '../i18n/LanguageProvider';
+import { uiText } from './i18n';
 import { InterfaceIcon } from './InterfaceIcons';
 
 export function DateInput({
   value,
   onChange,
-  language,
   required,
   min = MIN_DATE,
   max = MAX_DATE,
   onBlur,
+  ariaLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
-  language: Language;
   required?: boolean;
   min?: string;
   max?: string;
   onBlur?: () => void;
+  ariaLabel?: string;
 }) {
   const picker = useRef<HTMLInputElement>(null);
+  const t = useT(uiText);
   return (
     <span className="date-input-control">
       <input
         type="text"
+        aria-label={ariaLabel}
         inputMode="numeric"
-        placeholder={language === 'SV' ? 'ÅÅÅÅ-MM-DD' : 'YYYY-MM-DD'}
+        placeholder={t('datePlaceholder')}
         maxLength={10}
         pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
         required={required}
@@ -56,11 +59,7 @@ export function DateInput({
       <button
         type="button"
         className="date-input-picker"
-        aria-label={
-          language === 'SV'
-            ? 'Välj datum i kalender'
-            : 'Choose date from calendar'
-        }
+        aria-label={t('chooseDate')}
         onClick={() => {
           const input = picker.current;
           if (input?.showPicker) input.showPicker();

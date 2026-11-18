@@ -1,5 +1,7 @@
 package com.sprintflowinsight.reporting;
 
+import com.sprintflowinsight.flow.TaskTimeline;
+import com.sprintflowinsight.flow.Transition;
 import com.sprintflowinsight.forecast.ThroughputHistory;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -68,35 +70,54 @@ final class ThroughputDerivation {
   }
 
   /**
-   * Completion instants of the tasks that are done now: the time of each task's latest status
-   * snapshot, provided that snapshot is {@code Done}. This is the same rule as the throughput
-   * metric, so a task reopened and completed again counts once, at its latest completion.
+   * Latest real completion transitions of currently done tasks. Consecutive Done snapshots do not
+   * move completion into another week. Reopened tasks count once at their latest completion.
    */
   static List<Instant> completions(Set<Long> doneTaskIds, Collection<StatusEvent> events) {
-    Map<Long, StatusEvent> latest = new HashMap<>();
+    Map<Long, List<StatusEvent>> byTask = new HashMap<>();
     for (StatusEvent event : events) {
-      if (event.changedAt() == null || !doneTaskIds.contains(event.taskId())) continue;
-      latest.merge(
-          event.taskId(), event, (a, b) -> EVENT_ORDER.compare(a, b) >= 0 ? a : b);
+      if (event.changedAt() == null
+          || event.status() == null
+          || !doneTaskIds.contains(event.taskId())) continue;
+      byTask.computeIfAbsent(event.taskId(), key -> new ArrayList<>()).add(event);
     }
-    return latest.values().stream()
-        .filter(event -> DONE.equals(event.status()))
-        .map(StatusEvent::changedAt)
+    return byTask.values().stream()
+        .map(
+            rows ->
+                TaskTimeline.of(
+                    null,
+                    rows.stream()
+                        .sorted(EVENT_ORDER)
+                        .map(row -> new Transition(row.status(), row.changedAt()))
+                        .toList()))
+        .flatMap(timeline -> timeline.completion().stream())
+        .map(TaskTimeline.Completion::doneAt)
         .sorted()
         .toList();
   }
 
   /**
-   * Items completed per full ISO week, from the week of the first completion to the last week
-   * that has ended before {@code today}. The current, unfinished week is left out because it would
-   * look like a slow week. Weeks without completions count as zero.
+   * Items completed per full ISO week, from the week of the first completion to the last week that
+   * has ended before {@code today}. The current, unfinished week is left out because it would look
+   * like a slow week. Weeks without completions count as zero.
    */
   static Derived weekly(List<Instant> completions, LocalDate today) {
+    return weekly(completions, today, null);
+  }
+
+  /** Includes observed zero-completion weeks before the first completion, when known. */
+  static Derived weekly(List<Instant> completions, LocalDate today, Instant observedSince) {
     LocalDate currentWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-    LocalDate first = null;
+    LocalDate first = observedSince == null ? null : weekOf(observedSince);
     for (Instant completion : completions) {
       LocalDate week = weekOf(completion);
       if (first == null || week.isBefore(first)) first = week;
+    }
+    if (observedSince != null) {
+      LocalDate coverage = weekOf(observedSince);
+      if (!observedSince.equals(coverage.atStartOfDay(ZoneOffset.UTC).toInstant()))
+        coverage = coverage.plusWeeks(1);
+      if (first == null || first.isBefore(coverage)) first = coverage;
     }
     if (first == null || !first.isBefore(currentWeek)) {
       return Derived.empty(7, com.sprintflowinsight.forecast.ThroughputUnit.ITEMS);
@@ -135,8 +156,7 @@ final class ThroughputDerivation {
                     sprint.createdAt() == null
                         || !sprint.completedAt().isBefore(sprint.createdAt()))
             .sorted(
-                Comparator.comparing(SprintRecord::completedAt)
-                    .thenComparingLong(SprintRecord::id))
+                Comparator.comparing(SprintRecord::completedAt).thenComparingLong(SprintRecord::id))
             .toList();
     if (completed.size() > MAX_SPRINTS) {
       completed = completed.subList(completed.size() - MAX_SPRINTS, completed.size());

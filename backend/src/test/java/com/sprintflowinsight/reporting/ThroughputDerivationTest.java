@@ -20,12 +20,13 @@ class ThroughputDerivationTest {
   private static final Instant NOW = Instant.parse("2026-11-18T12:00:00Z");
 
   @Test
-  void countsATaskOnceAtItsLatestDoneSnapshot() {
+  void countsATaskOnceAtItsLatestRealDoneTransition() {
     List<StatusEvent> events =
         List.of(
             event(1, 1, "Done", "2026-11-02T10:00:00Z"),
             event(1, 2, "In Progress", "2026-11-03T10:00:00Z"),
             event(1, 3, "Done", "2026-11-04T10:00:00Z"),
+            event(1, 8, "Done", "2026-11-17T10:00:00Z"),
             event(2, 4, "Done", "2026-11-05T10:00:00Z"),
             event(2, 5, "Review", "2026-11-05T10:00:00Z"),
             event(3, 6, "Done", "2026-11-06T10:00:00Z"),
@@ -80,6 +81,19 @@ class ThroughputDerivationTest {
   }
 
   @Test
+  void includesLeadingAndEntirelyEmptyObservedWeeks() {
+    var since = Instant.parse("2026-10-26T00:00:00Z");
+    var completed = List.of(Instant.parse("2026-11-10T08:00:00Z"));
+    assertThat(ThroughputDerivation.weekly(completed, TODAY, since).history().counts())
+        .containsExactly(0, 0, 1);
+    assertThat(ThroughputDerivation.weekly(List.of(), TODAY, since).history().counts())
+        .containsExactly(0, 0, 0);
+    assertThat(
+            ThroughputDerivation.weekly(completed, TODAY, since.plusSeconds(1)).history().counts())
+        .containsExactly(0, 1);
+  }
+
+  @Test
   void keepsOnlyTheLatestTwoYearsOfWeeks() {
     List<Instant> completions = new ArrayList<>();
     completions.add(Instant.parse("2020-01-06T00:00:00Z"));
@@ -95,10 +109,8 @@ class ThroughputDerivationTest {
 
   @Test
   void velocityReplaysDeliveredPointsAtEachSprintsClosure() {
-    SprintRecord first =
-        sprint(10, "S1", "2026-10-05", "2026-10-18", "2026-10-18T16:00:00Z");
-    SprintRecord second =
-        sprint(11, "S2", "2026-10-19", "2026-11-01", "2026-11-01T16:00:00Z");
+    SprintRecord first = sprint(10, "S1", "2026-10-05", "2026-10-18", "2026-10-18T16:00:00Z");
+    SprintRecord second = sprint(11, "S2", "2026-10-19", "2026-11-01", "2026-11-01T16:00:00Z");
     List<StatusEvent> events =
         List.of(
             // Done in S1 before closure: counts for S1.

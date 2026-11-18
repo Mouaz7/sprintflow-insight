@@ -1,0 +1,48 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.sprintflowinsight.realtime`
+|Spring components
+|_Controllers_
+
+* `c.s.r.PresenceController`
+* `c.s.r.RealtimeController`
+
+_Services_
+
+* `c.s.r.RealtimeEventService`
+
+_Repositories_
+
+* `c.s.r.RealtimeEventLog`
+
+_Event listeners_
+
+* `c.s.r.RealtimeEventListener`
+* `c.s.r.RealtimeSessions`
+
+_Others_
+
+* `c.s.r.RealtimePublisher`
+* `c.s.r.RealtimeRetention`
+* `c.s.r.RealtimeSecurityConfiguration`
+* `c.s.r.SubscriptionLimit`
+* `c.s.r.WebSocketConfiguration`
+|Bean references
+|* `c.s.w.project.ProjectAccessService` (in Workspace)
+* `c.s.a.UserRepository` (in Auth)
+* `c.s.w.task.TaskRepository` (in Workspace)
+|Events listened to
+|* `c.s.w.events.WorkspaceChanged` (async)
+* `c.s.w.events.CommentAdded` (async)
+* `c.s.w.events.TaskCreated` (async)
+* `c.s.w.events.TaskDeleted` (async)
+* `c.s.w.events.TaskMoved` (async)
+* `c.s.n.NotificationDelivered` (async)
+* `c.s.w.events.SprintStatusChanged` (async)
+* `c.s.w.events.TaskUpdated` (async)
+* `org.springframework.web.socket.messaging.SessionDisconnectEvent`
+* `org.springframework.web.socket.messaging.SessionSubscribeEvent`
+* `org.springframework.web.socket.messaging.SessionUnsubscribeEvent`
+* `org.springframework.context.event.ContextClosedEvent`
+|===

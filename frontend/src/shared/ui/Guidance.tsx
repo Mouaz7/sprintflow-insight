@@ -1,4 +1,7 @@
 import type { Language, WorkspaceView } from '../../api/contracts';
+import { useLanguage, useT } from '../i18n/LanguageProvider';
+import { translator } from '../i18n/lexicon';
+import { uiText } from './i18n';
 
 type Copy = readonly [sv: string, en: string];
 const text = (copy: Copy, language: Language) =>
@@ -57,7 +60,13 @@ const examples = {
 } satisfies Record<string, Copy>;
 
 export function fieldExample(field: keyof typeof examples, language: Language) {
-  return `${language === 'SV' ? 'Exempel: ' : 'E.g. '}${text(examples[field], language)}`;
+  return `${translator(uiText, language)('example')}${text(examples[field], language)}`;
+}
+
+/** `fieldExample` in the current language. */
+export function useFieldExample() {
+  const { language } = useLanguage();
+  return (field: keyof typeof examples) => fieldExample(field, language);
 }
 
 type Field = readonly [label: Copy, description: Copy];
@@ -77,6 +86,113 @@ const points: Field = [
   ],
 ];
 const formGuides = {
+  forecast: {
+    intro: [
+      'Utforska möjliga leveranser utan att ändra sparat arbete.',
+      'Explore possible deliveries without changing saved work.',
+    ],
+    fields: [
+      [
+        ['Underlag och arbetsurval', 'History and work scope'],
+        [
+          'Välj uppgifter per vecka eller storypoäng per avslutad sprint. En epic avgränsar återstående arbete; historiken kommer fortfarande från hela projektet.',
+          'Choose tasks per week or story points per completed sprint. An epic narrows remaining work; history still comes from the whole project.',
+        ],
+      ],
+      [
+        ['Mängd och datum', 'Amount and date'],
+        [
+          'Mängder från 0 till 10 000 är tillåtna. Tomt ger registrerat arbete och aktiv sprint eller fyra perioder. Egna datum gäller idag till fem år framåt i UTC. Tom målmängd använder återstående mängd.',
+          'Amounts from 0 to 10,000 are allowed. Empty values use recorded work and the active sprint or four periods. Custom dates range from today to five years ahead in UTC. An empty target amount uses the remaining amount.',
+        ],
+      ],
+    ],
+  },
+  wipLimits: {
+    intro: [
+      'WIP-gränser hjälper teamet att se när för mycket arbete samlas i en kolumn.',
+      'WIP limits help the team see when too much work gathers in a column.',
+    ],
+    fields: [
+      [
+        ['Antal uppgifter', 'Task counts'],
+        [
+          'Ange en valfri gräns från 1 till 999 för varje kolumn, eller lämna tomt för att ta bort gränsen. Tavlan varnar men hindrar inte flytt. Ditt utkast behålls vid en versionskonflikt.',
+          'Set an optional limit from 1 to 999 for each column, or leave empty to remove it. The board warns without blocking movement. A revision conflict preserves your draft.',
+        ],
+      ],
+    ],
+  },
+  epic: {
+    intro: [
+      'En epic samlar stories kring ett leveransmål. Uppgifter och storypoäng räknas ihop automatiskt.',
+      'An epic groups stories around a delivery goal. Tasks and story points are rolled up automatically.',
+    ],
+    fields: [
+      [
+        ['Namn och beskrivning', 'Title and description'],
+        [
+          'Beskriv resultatet ni vill leverera. Färgen skiljer staplar åt; namnet visas alltid som text.',
+          'Describe the outcome you want to deliver. Colour distinguishes bars; the name is always shown as text.',
+        ],
+      ],
+      [
+        ['Planerade datum', 'Planned dates'],
+        [
+          'Datum är valfria. Saknas de används sprintarnas datum. Måldatumet används för PERT-prognosen.',
+          'Dates are optional. Sprint dates provide a fallback. The target date is used for the PERT forecast.',
+        ],
+      ],
+    ],
+  },
+  storyEpic: {
+    intro: [
+      'Koppla en story till en epic, eller välj Ingen epic för att ta bort kopplingen.',
+      'Assign a story to an epic, or select No epic to detach it.',
+    ],
+    fields: [
+      [
+        ['Story och epic', 'Story and epic'],
+        [
+          'Sök efter storyns namn. Sprint och uppgifter finns kvar när epicen ändras.',
+          'Search by the story’s title. Changing its epic preserves its sprint and tasks.',
+        ],
+      ],
+    ],
+  },
+  dependency: {
+    intro: [
+      'Ett beroende visar vilken uppgift som måste bli klar först.',
+      'A dependency shows which task must finish first.',
+    ],
+    fields: [
+      [
+        ['Blockerare och väntande uppgift', 'Blocker and waiting task'],
+        [
+          'Välj två uppgifter i samma projekt. Cykler avvisas med hela kedjan. Klara blockerare blockerar inte längre tavlan.',
+          'Choose two tasks in the same project. Cycles are rejected with their chain. Finished blockers no longer block the board.',
+        ],
+      ],
+    ],
+  },
+  estimate: {
+    intro: [
+      'Trepunktsestimat beskriver osäkerheten i uppgiftens återstående arbetstid.',
+      'Three-point estimates describe uncertainty in a task’s remaining duration.',
+    ],
+    fields: [
+      [
+        [
+          'Optimistisk, troligast och pessimistisk',
+          'Optimistic, most likely and pessimistic',
+        ],
+        [
+          'Ange arbetsdagar i stigande ordning. PERT använder viktat medelvärde och varians. Prognosen är ungefärlig och kräver att alla återstående uppgifter uppskattas.',
+          'Enter working days in increasing order. PERT uses a weighted mean and variance. The forecast is approximate and requires estimates for all remaining tasks.',
+        ],
+      ],
+    ],
+  },
   project: {
     intro: [
       'Ett projekt samlar teamet och arbetet mot ett gemensamt mål. Skriv vad ni vill bygga och varför.',
@@ -328,26 +444,15 @@ const formGuides = {
   },
 } satisfies Record<string, Guide>;
 
-export function FormGuide({
-  topic,
-  language,
-}: {
-  topic: keyof typeof formGuides;
-  language: Language;
-}) {
+export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
   const guide: Guide = formGuides[topic];
+  const { language } = useLanguage();
+  const t = useT(uiText);
   return (
-    <aside
-      className="form-guide"
-      aria-label={language === 'SV' ? 'Hjälp med formuläret' : 'Form help'}
-    >
+    <aside className="form-guide" aria-label={t('formHelp')}>
       <p>{text(guide.intro, language)}</p>
       <details className="guidance">
-        <summary>
-          {language === 'SV'
-            ? 'Förklaringar och exempel'
-            : 'Explanations and examples'}
-        </summary>
+        <summary>{t('explanations')}</summary>
         <dl>
           {guide.fields.map(([label, description]) => (
             <div key={label[1]}>
@@ -362,6 +467,18 @@ export function FormGuide({
 }
 
 const pageGuides = {
+  forecast: [
+    'Jämför 50, 85 och 95 procent av simulerade utfall för leveransdatum och mängder. Historiska veckor eller sprintar dras 10 000 gånger. Litet underlag, förändrad kapacitet och arbete som inte delats upp kan göra prognosen missvisande; läs varningarna.',
+    'Compare 50, 85 and 95 percent of simulated outcomes for delivery dates and quantities. Historical weeks or sprints are sampled 10,000 times. Small samples, changed capacity and work not yet broken down can make forecasts misleading; read the warnings.',
+  ],
+  flow: [
+    'Följ hur arbetet rör sig mellan kolumner. Jämför avslutade uppgifters tider med pågående arbete och sätt rådgivande WIP-gränser. Statistiska signaler hjälper er att undersöka variation; de bevisar inte att processen eller historiken är fel.',
+    'Follow work across columns. Compare completed-task durations with aging work and set advisory WIP limits. Statistical signals invite investigation; they do not prove that the process or history is wrong.',
+  ],
+  roadmap: [
+    'Samla stories i epics och se planerade datum, sprintar och beroenden. En pil betyder att den första uppgiften måste vara klar före den andra. PERT använder tre uppskattningar i arbetsdagar; sannolikheten är ungefärlig och visas först när arbetet är uppdelat och uppskattat.',
+    'Group stories into epics and see planned dates, sprints and dependencies. An arrow means the first task must finish before the second. PERT uses three estimates in working days; probability is approximate and appears only when work is broken down and estimated.',
+  ],
   overview: [
     'Välj först ett projekt. Skapa berättelser i backloggen, planera dem i sprintar och följ uppgifternas status på tavlan. Översikten visar hur arbetet går i det valda projektet.',
     'Choose a project first. Create stories in the backlog, plan them into sprints and track task status on the board. The overview summarises the selected project.',
@@ -408,18 +525,12 @@ const pageGuides = {
   ],
 } satisfies Record<WorkspaceView, Copy>;
 
-export function PageGuide({
-  view,
-  language,
-}: {
-  view: WorkspaceView;
-  language: Language;
-}) {
+export function PageGuide({ view }: { view: WorkspaceView }) {
+  const { language } = useLanguage();
+  const t = useT(uiText);
   return (
     <details className="guidance page-guide">
-      <summary>
-        {language === 'SV' ? 'Så fungerar sidan' : 'How this page works'}
-      </summary>
+      <summary>{t('howPageWorks')}</summary>
       <p>{text(pageGuides[view], language)}</p>
     </details>
   );

@@ -5,31 +5,45 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run messages:check && vite build",
     "test": "vitest run",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run size",
+    "check": "npm run messages:check && npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run size",
     "lint": "eslint . --max-warnings 0 && node scripts/check-boundaries.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "size": "size-limit",
-    "e2e": "npm --prefix e2e test"
+    "e2e": "npm --prefix e2e test",
+    "storybook": "storybook dev -p 6006 --ci --no-open",
+    "storybook:build": "storybook build --disable-telemetry",
+    "visual": "npm --prefix e2e run visual",
+    "messages:compile": "node scripts/compile-messages.ts",
+    "messages:check": "node scripts/compile-messages.ts --check"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/manrope": "5.3.0",
+    "@tanstack/react-query": "5.107.1",
+    "@tanstack/react-virtual": "3.14.26",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-router": "7.18.5",
+    "@messageformat/runtime": "3.0.3"
   },
   "devDependencies": {
     "@babel/core": "7.29.13",
+    "@csstools/postcss-global-data": "4.0.0",
     "@eslint/js": "9.39.5",
     "@rolldown/plugin-babel": "0.2.4",
     "@size-limit/file": "14.3.0",
+    "@storybook/react-vite": "10.6.7",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",
     "@testing-library/user-event": "14.5.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "axe-core": "4.14.0",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
@@ -39,29 +53,84 @@
     "globals": "17.14.0",
     "jiti": "2.6.1",
     "jsdom": "25.0.1",
+    "msw": "2.15.0",
+    "postcss-custom-media": "12.0.3",
     "prettier": "3.10.1",
     "size-limit": "14.3.0",
+    "storybook": "10.6.7",
     "typescript": "5.7.2",
     "typescript-eslint": "8.72.2",
     "vite": "8.3.4",
-    "vitest": "4.1.12"
+    "vitest": "4.1.12",
+    "@messageformat/core": "3.4.1"
   },
   "overrides": {
     "@typescript-eslint/typescript-estree": {
       "minimatch": "11.0.1"
+    },
+    "@joshwooding/vite-plugin-react-docgen-typescript": {
+      "glob": "14.0.6"
     }
   },
   "size-limit": [
     {
-      "name": "Application JavaScript (gzip)",
+      "name": "Initial JavaScript: entry chunk (gzip)",
+      "path": "dist/assets/index-*.js",
+      "limit": "125 kB",
+      "gzip": true
+    },
+    {
+      "name": "Tasks route chunk (gzip)",
+      "path": "dist/assets/TasksView-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Backlog/sprints/metrics/updates route chunk (gzip)",
+      "path": "dist/assets/ProjectInsights-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "150 kB",
+      "limit": "270 kB",
       "gzip": true
     },
     {
       "name": "Application CSS (gzip)",
       "path": "dist/assets/*.css",
       "limit": "15 kB",
+      "gzip": true
+    },
+    {
+      "name": "Search palette (gzip)",
+      "path": "dist/assets/CommandPalette-*.js",
+      "limit": "10 kB",
+      "gzip": true
+    },
+    {
+      "name": "Keyboard shortcut help (gzip)",
+      "path": "dist/assets/ShortcutHelp-*.js",
+      "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "Roadmap route chunk (gzip)",
+      "path": "dist/assets/RoadmapView-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Flow analysis route chunk (gzip)",
+      "path": "dist/assets/FlowView-*.js",
+      "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Forecast route chunk (gzip)",
+      "path": "dist/assets/ForecastView-*.js",
+      "limit": "20 kB",
       "gzip": true
     }
   ]

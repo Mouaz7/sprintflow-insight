@@ -80,12 +80,28 @@ public class CollaborationService {
           org.springframework.http.HttpStatus.CONFLICT,
           "This item was changed by someone else. Refresh and try again.");
     comment.setMessage(request.message().trim());
-    return comments.save(comment);
+    TaskComment saved = comments.saveAndFlush(comment);
+    changed(saved, "CommentUpdated", session);
+    return saved;
   }
 
   public ResponseEntity<Void> deleteComment(Long taskId, Long id, HttpSession session) {
-    comments.delete(editable(taskId, id, session));
+    TaskComment comment = editable(taskId, id, session);
+    comments.delete(comment);
+    changed(comment, "CommentDeleted", session);
     return ResponseEntity.noContent().build();
+  }
+
+  private void changed(TaskComment comment, String type, HttpSession session) {
+    events.publishEvent(
+        new com.sprintflowinsight.workspace.events.WorkspaceChanged(
+            java.util.UUID.randomUUID(),
+            comment.getProjectId(),
+            access.userId(session),
+            Instant.now(),
+            type,
+            "task",
+            comment.getTaskId()));
   }
 
   private TaskComment editable(Long taskId, Long id, HttpSession session) {

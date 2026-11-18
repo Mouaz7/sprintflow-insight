@@ -12,7 +12,7 @@ Add a dependency-free Modulith module `forecast` with three models behind one in
 
 | Model | Why it is included |
 | --- | --- |
-| Bootstrap Monte Carlo (10 000 trials, injected `RandomGenerator`) | Continuity with B6; assumption-free baseline |
+| Bootstrap Monte Carlo (10 000 trials, injected `RandomGenerator`) | Empirical baseline with exchangeability assumptions; B6 web paths are detailed in ADR 0021 |
 | Gamma-Poisson with conjugate update, exact negative-binomial predictive | Propagates rate uncertainty, so intervals widen when history is short; closed form, so results are exact and need no sampling |
 | Exponentially weighted Poisson (half-life 4 periods) | Adapts quickly to level shifts such as team growth |
 

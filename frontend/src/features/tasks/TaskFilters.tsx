@@ -4,7 +4,6 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
   const {
     projectId,
     userEmail,
-    language,
     query,
     statusFilter,
     sprintFilter,
@@ -19,7 +18,7 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
     setDueFilter,
     setBlockedOnly,
     setLabelFilter,
-    sv,
+    t,
     tasks,
     columns,
     labels,
@@ -33,7 +32,6 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
       <SavedFilters
         projectId={projectId}
         userEmail={userEmail}
-        language={language}
         current={{
           query,
           status: statusFilter,
@@ -55,11 +53,11 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
       />
       <div className="task-toolbar task-filters">
         <select
-          aria-label={sv ? 'Filtrera etikett' : 'Filter label'}
+          aria-label={t('filterLabel')}
           value={labelFilter}
           onChange={(event) => setLabelFilter(event.target.value)}
         >
-          <option value="">{sv ? 'Alla etiketter' : 'All labels'}</option>
+          <option value="">{t('allLabels')}</option>
           {[...new Set(tasks.flatMap((task) => task.labels ?? []))]
             .sort()
             .map((label) => (
@@ -72,15 +70,15 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={sv ? 'Sök uppgifter…' : 'Search tasks…'}
-          aria-label={sv ? 'Sök uppgifter' : 'Search tasks'}
+          placeholder={t('searchPlaceholder')}
+          aria-label={t('searchTasks')}
         />
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
-          aria-label={sv ? 'Filtrera status' : 'Filter status'}
+          aria-label={t('filterStatus')}
         >
-          <option value="">{sv ? 'Alla statusar' : 'All statuses'}</option>
+          <option value="">{t('allStatuses')}</option>
           {columns.map((column) => (
             <option key={column} value={column}>
               {labels[column]}
@@ -90,12 +88,10 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
         <select
           value={sprintFilter}
           onChange={(event) => setSprintFilter(event.target.value)}
-          aria-label={sv ? 'Filtrera sprint' : 'Filter sprint'}
+          aria-label={t('filterSprint')}
         >
-          <option value="">{sv ? 'Alla sprintar' : 'All sprints'}</option>
-          <option value="unassigned">
-            {sv ? 'Produktbacklogg' : 'Product backlog'}
-          </option>
+          <option value="">{t('allSprints')}</option>
+          <option value="unassigned">{t('productBacklogFilter')}</option>
           {sprints.map((sprint) => (
             <option key={sprint.id} value={sprint.id}>
               {sprint.name}
@@ -105,12 +101,10 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
         <select
           value={assigneeFilter}
           onChange={(event) => setAssigneeFilter(event.target.value)}
-          aria-label={sv ? 'Filtrera ansvarig' : 'Filter assignee'}
+          aria-label={t('filterAssignee')}
         >
-          <option value="">{sv ? 'Alla ansvariga' : 'All assignees'}</option>
-          <option value="unassigned">
-            {sv ? 'Ingen ansvarig' : 'Unassigned'}
-          </option>
+          <option value="">{t('allAssignees')}</option>
+          <option value="unassigned">{t('noAssignee')}</option>
           {members.map((member) => (
             <option key={member.id} value={member.email}>
               {member.email}
@@ -120,16 +114,12 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
         <select
           value={dueFilter}
           onChange={(event) => setDueFilter(event.target.value)}
-          aria-label={sv ? 'Filtrera slutdatum' : 'Filter due date'}
+          aria-label={t('filterDue')}
         >
-          <option value="">{sv ? 'Alla slutdatum' : 'All due dates'}</option>
-          <option value="overdue">{sv ? 'Försenade' : 'Overdue'}</option>
-          <option value="has-date">
-            {sv ? 'Har slutdatum' : 'Has due date'}
-          </option>
-          <option value="no-date">
-            {sv ? 'Inget slutdatum' : 'No due date'}
-          </option>
+          <option value="">{t('allDueDates')}</option>
+          <option value="overdue">{t('overdue')}</option>
+          <option value="has-date">{t('hasDueDate')}</option>
+          <option value="no-date">{t('noDueDate')}</option>
         </select>
         <label className="blocked-filter">
           <input
@@ -137,7 +127,7 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
             checked={blockedOnly}
             onChange={(event) => setBlockedOnly(event.target.checked)}
           />
-          {sv ? 'Blockerade' : 'Blocked'}
+          {t('blocked')}
         </label>
       </div>
       <div className="export-actions">
@@ -145,17 +135,13 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
           className="secondary-action"
           href={`/api/projects/${projectId}/export.csv${exportQuery}`}
         >
-          {sv
-            ? 'Exportera filtrerade uppgifter (CSV)'
-            : 'Export filtered tasks (CSV)'}
+          {t('exportCsv')}
         </a>
         <a
           className="secondary-action"
           href={`/api/projects/${projectId}/export.pdf${exportQuery}`}
         >
-          {sv
-            ? 'Exportera filtrerade uppgifter (PDF)'
-            : 'Export filtered tasks (PDF)'}
+          {t('exportPdf')}
         </a>
       </div>
     </>

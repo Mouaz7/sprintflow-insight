@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -80,6 +80,30 @@ class SecurityConfigurationTest {
             new org.springframework.http.HttpEntity<>(headers),
             String.class);
     assertThat(conditional.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  void clientRoutesServeTheNonceDocumentAndKeepLinkTokensOutOfReferrers() {
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        new org.springframework.core.io.ClassPathResource("static/index.html").exists(),
+        "Build frontend first to exercise its packaged document.");
+    for (String path :
+        java.util.List.of(
+            "/tasks",
+            "/roadmap?epic=1",
+            "/report/private-share-token",
+            "/reset-password?token=private-reset")) {
+      ResponseEntity<String> response = rest.getForEntity(url(path), String.class);
+      assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+      var nonce =
+          java.util.regex.Pattern.compile("'nonce-([A-Za-z0-9_-]{32})'")
+              .matcher(response.getHeaders().getFirst("Content-Security-Policy"));
+      assertThat(nonce.find()).isTrue();
+      assertThat(response.getBody()).contains("nonce=\"" + nonce.group(1) + "\"");
+      assertThat(response.getHeaders().getCacheControl()).contains("no-store");
+      assertThat(response.getHeaders().getFirst("Referrer-Policy"))
+          .isEqualTo("strict-origin-when-cross-origin");
+    }
   }
 
   @Test

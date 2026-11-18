@@ -1,1 +1,6 @@
-# No advisory exceptions. Audit the Boot 4 dependency graph in CI.
+# Reviewed 2026-11-18; no upstream patched release exists. See docs/security-review.md.
+# CI separately rejects picomatch in any production dependency tree.
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2026-12-02T00:00:00Z
+reason = "Development tooling only; repository-owned glob patterns, no application/runtime use. No patched release exists. Reassess by 2026-12-02 or before accepting untrusted patterns; see docs/security-review.md."

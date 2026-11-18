@@ -67,9 +67,10 @@ export class Api {
     data?: unknown,
   ): Promise<Record<string, string>> {
     if (method !== 'PUT' && method !== 'DELETE') return {};
+    const assignment = /^\/projects\/\d+\/stories\/(\d+)\/epic$/.exec(path);
     const resource =
       /^\/(tasks|sprints|stories|projects)\/(\d+)(?:\/(?:block|unblock|status))?(?:\?.*)?$/.exec(
-        path,
+        assignment ? `/stories/${assignment[1]}` : path,
       );
     const trash = /^\/workspace\/trash\/(task|sprint|story)\/(\d+)$/.exec(path);
     if (!resource && !trash) return {};

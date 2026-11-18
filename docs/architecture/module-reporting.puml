@@ -17,13 +17,16 @@ top to bottom direction
 
 System_Boundary("SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
   Container_Boundary("SprintFlowApplication.SprintFlowApplication_boundary", "SprintFlowApplication", $tags="") {
+    Component(SprintFlowApplication.SprintFlowApplication.Flow, "Flow", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Workspace, "Workspace", $techn="Module", $descr="", $tags="", $link="")
     Component(SprintFlowApplication.SprintFlowApplication.Reporting, "Reporting", $techn="Module", $descr="", $tags="", $link="")
+    Component(SprintFlowApplication.SprintFlowApplication.Forecast, "Forecast", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
+
 
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Workspace, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
@@ -33,6 +36,8 @@ Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication
 Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Auth, "listens to", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Common, "depends on", $techn="", $tags="", $link="")
 Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Workspace, "uses", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Flow, "depends on", $techn="", $tags="", $link="")
+Rel(SprintFlowApplication.SprintFlowApplication.Reporting, SprintFlowApplication.SprintFlowApplication.Forecast, "depends on", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

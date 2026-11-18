@@ -5,6 +5,10 @@ plantuml::components.puml[,,format=svg]
 plantuml::module-common.puml[,,format=svg]
 include::module-common.adoc[]
 
+== Flow
+plantuml::module-flow.puml[,,format=svg]
+include::module-flow.adoc[]
+
 == Forecast
 plantuml::module-forecast.puml[,,format=svg]
 include::module-forecast.adoc[]
@@ -30,4 +34,12 @@ include::module-notifications.adoc[]
 == Reporting
 plantuml::module-reporting.puml[,,format=svg]
 include::module-reporting.adoc[]
+
+== Search
+plantuml::module-search.puml[,,format=svg]
+include::module-search.adoc[]
+
+== Realtime
+plantuml::module-realtime.puml[,,format=svg]
+include::module-realtime.adoc[]
 

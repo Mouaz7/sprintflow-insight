@@ -49,8 +49,11 @@ export type WorkspaceView =
   | 'projects'
   | 'backlog'
   | 'sprints'
+  | 'roadmap'
   | 'tasks'
   | 'metrics'
+  | 'flow'
+  | 'forecast'
   | 'updates'
   | 'profile'
   | 'calendar'
@@ -108,6 +111,7 @@ export type ProjectMember = {
   role: 'Owner' | 'Admin' | 'Member' | 'Viewer';
 };
 export type Story = {
+  epicId?: number | null;
   backlogPosition?: number;
   id: number;
   title: string;
@@ -119,6 +123,87 @@ export type Story = {
   sprintId?: number;
   projectId: number;
   version?: number;
+};
+export type Epic = {
+  id: number;
+  title: string;
+  description: string | null;
+  color: string;
+  startDate: string | null;
+  targetDate: string | null;
+  version: number;
+};
+export type RoadmapTask = {
+  id: number;
+  key: string;
+  title: string;
+  status: string;
+  sprintId: number | null;
+};
+export type TaskDependency = {
+  id: number;
+  blocker: RoadmapTask;
+  blocked: RoadmapTask;
+  open: boolean;
+};
+export type DependencyOverview = {
+  dependencies: TaskDependency[];
+  blockedTaskIds: number[];
+  externalBlocks: { task: RoadmapTask; blocker: RoadmapTask }[];
+};
+export type TaskEstimate = {
+  taskId: number;
+  task: RoadmapTask;
+  optimistic: number;
+  mostLikely: number;
+  pessimistic: number;
+  expected: number;
+  standardDeviation: number;
+  version: number;
+};
+export type PertForecast = {
+  start: string;
+  expectedDays: number;
+  standardDeviationDays: number;
+  expectedFinish: string | null;
+  probabilityOnTime: number | null;
+  estimatedTasks: number;
+  openTasks: number;
+  unplannedStories: number;
+  criticalPath: RoadmapTask[];
+};
+export type RoadmapEpic = {
+  epic: Epic;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  storyCount: number;
+  totalPoints: number;
+  donePoints: number;
+  taskCount: number;
+  doneTaskCount: number;
+  progress: number;
+  storyIds: number[];
+  sprintIds: number[];
+  forecast: PertForecast;
+};
+export type RoadmapSnapshot = {
+  today: string;
+  epics: RoadmapEpic[];
+  sprints: {
+    id: number;
+    name: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+  }[];
+  epicLinks: {
+    fromEpicId: number;
+    toEpicId: number;
+    dependencies: number;
+    open: number;
+  }[];
+  dependencies: DependencyOverview;
+  project: PertForecast;
 };
 export type Sprint = {
   id: number;
@@ -139,3 +224,150 @@ export type Activity = {
   createdAt: string;
 };
 export type Metrics = Record<string, unknown>;
+
+export type WipSettings = {
+  version: number;
+  limits: {
+    status: 'To Do' | 'In Progress' | 'Review';
+    limit: number | null;
+  }[];
+};
+export type FlowDistribution = {
+  count: number;
+  mean: number | null;
+  p50: number | null;
+  p85: number | null;
+  p95: number | null;
+};
+export type FlowSignal =
+  | 'OUTSIDE_LIMITS'
+  | 'TWO_OF_THREE_BEYOND_TWO_SIGMA'
+  | 'FOUR_OF_FIVE_BEYOND_ONE_SIGMA'
+  | 'RUN_OF_EIGHT'
+  | 'LARGE_MOVING_RANGE';
+export type FlowReport = {
+  days: number;
+  start: string;
+  end: string;
+  generatedAt: string;
+  cumulativeFlow: {
+    date: string;
+    toDo: number;
+    inProgress: number;
+    review: number;
+    done: number;
+  }[];
+  cycleTimeHours: FlowDistribution;
+  leadTimeHours: FlowDistribution;
+  completedTasks: number;
+  throughputPerDay: number;
+  completions: {
+    taskId: number;
+    key: string;
+    completedAt: string;
+    cycleTimeHours: number | null;
+    leadTimeHours: number | null;
+  }[];
+  agingWip: {
+    taskId: number;
+    key: string;
+    title: string;
+    status: string;
+    ageHours: number;
+    statusAgeHours: number;
+    band:
+      'BELOW_P50' | 'P50_TO_P85' | 'P85_TO_P95' | 'ABOVE_P95' | 'NO_REFERENCE';
+  }[];
+  columns: {
+    status: string;
+    currentWip: number;
+    averageWip: number;
+    limit: number | null;
+    overLimit: boolean;
+    bottleneck: 'OVER_LIMIT' | 'HIGHEST_AVERAGE_WIP' | null;
+  }[];
+  controlChart: {
+    available: boolean;
+    minimumPoints: number;
+    mean: number | null;
+    upperLimit: number | null;
+    lowerLimit: number | null;
+    movingRangeMean: number | null;
+    upperRangeLimit: number | null;
+    signalCount: number;
+    points: {
+      taskId: number;
+      key: string;
+      completedAt: string;
+      cycleTimeHours: number;
+      movingRange: number | null;
+      signals: FlowSignal[];
+    }[];
+  };
+  littlesLaw: {
+    status: 'CONSISTENT' | 'INCONSISTENT' | 'INSUFFICIENT_DATA';
+    averageWip: number;
+    throughputPerDay: number;
+    averageCycleTimeDays: number;
+    expectedWip: number;
+    ratio: number | null;
+    tolerance: number;
+  };
+  tasksWithoutHistory: number;
+};
+
+export type ForecastBasis = 'THROUGHPUT' | 'VELOCITY';
+export type ForecastWarning =
+  | 'NO_HISTORY'
+  | 'NO_COMPLETIONS'
+  | 'INSUFFICIENT_HISTORY'
+  | 'MISSING_TASK_HISTORY'
+  | 'UNPLANNED_STORIES'
+  | 'ZERO_POINT_TASKS'
+  | 'EPIC_USES_PROJECT_HISTORY'
+  | 'PAST_SPRINT_DEADLINE'
+  | 'TARGET_BEYOND_HORIZON';
+export type ForecastBin = { from: number; to: number; count: number };
+export type ForecastTargetSource = 'REQUEST' | 'ACTIVE_SPRINT' | 'DEFAULT';
+export type ForecastReport = {
+  basis: ForecastBasis;
+  unit: 'ITEMS' | 'STORY_POINTS';
+  periodDays: number;
+  start: string;
+  seed: string;
+  simulations: number;
+  minimumPeriods: number;
+  history: {
+    start: string;
+    end: string;
+    count: number;
+    label: string | null;
+  }[];
+  warnings: ForecastWarning[];
+  scope: {
+    epicId: number | null;
+    epicTitle: string | null;
+    openTasks: number;
+    openStoryPoints: number;
+    unplannedStories: number;
+    zeroPointTasks: number;
+    tasksWithoutHistory: number;
+  };
+  remaining: number;
+  completionDates: { confidence: number; date: string | null }[];
+  completionHistogram: ForecastBin[];
+  beyondHorizon: number;
+  horizonDays: number;
+  itemsByDate: {
+    date: string;
+    source: ForecastTargetSource;
+    items: { confidence: number; items: number }[];
+    histogram: ForecastBin[];
+  } | null;
+  target: {
+    items: number;
+    date: string;
+    source: ForecastTargetSource;
+    probability: number | null;
+  };
+};

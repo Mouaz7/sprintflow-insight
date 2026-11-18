@@ -11,6 +11,9 @@ public interface TaskStatusHistoryRepository extends JpaRepository<TaskStatusHis
 
   List<TaskStatusHistory> findByTaskIdOrderByChangedAtDesc(Long taskId);
 
+  /** The project's history in persisted order; served by the (project_id, changed_at) index. */
+  List<TaskStatusHistory> findByProjectIdOrderByChangedAtAscIdAsc(Long projectId);
+
   void deleteByTaskId(Long taskId);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)

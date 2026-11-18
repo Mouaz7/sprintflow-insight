@@ -2,6 +2,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly problem: Readonly<Record<string, unknown>> = {},
   ) {
     super(message);
   }
@@ -61,6 +62,11 @@ async function csrfToken(): Promise<Csrf> {
   return csrf;
 }
 
+/** The session's CSRF header, e.g. for the realtime STOMP CONNECT frame. */
+export function csrfHeader(): Promise<Csrf> {
+  return csrfToken();
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);
@@ -85,17 +91,23 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     requestFailed(cause);
   }
   if (response.status === 204) return undefined as T;
-  const payload = (await response.json().catch(() => ({}))) as T & {
-    message?: string;
-    detail?: string;
-    error?: string | undefined;
-  };
+  const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload.message ?? payload.detail;
+    const problem =
+      payload !== null && typeof payload === 'object' && !Array.isArray(payload)
+        ? (payload as Record<string, unknown>)
+        : {};
+    const message =
+      typeof problem.message === 'string'
+        ? problem.message
+        : typeof problem.detail === 'string'
+          ? problem.detail
+          : '';
     throw new ApiError(
       message || fallbackErrorMessage(response.status),
       response.status,
+      problem,
     );
   }
-  return payload;
+  return payload as T;
 }

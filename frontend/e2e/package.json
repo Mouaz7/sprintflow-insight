@@ -5,7 +5,8 @@
   "scripts": {
     "test": "playwright test",
     "typecheck": "tsc --noEmit",
-    "lighthouse": "node lighthouse.ts"
+    "lighthouse": "node lighthouse.ts",
+    "visual": "playwright test -c playwright.visual.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

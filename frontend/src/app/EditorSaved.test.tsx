@@ -1,10 +1,6 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+// Feature components need the query client and language providers.
+import { renderWithProviders as render } from '../test/render';
 import { useState } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
@@ -30,14 +26,7 @@ it.each(['backlog', 'sprints'] as const)(
         throw new Error('The list could not refresh.');
       return [];
     });
-    render(
-      <ProjectInsightView
-        view={view}
-        projectId={2}
-        hasProjects
-        language="EN"
-      />,
-    );
+    render(<ProjectInsightView view={view} projectId={2} hasProjects />);
     fireEvent.click(
       await screen.findByRole('button', {
         name: view === 'backlog' ? /New story/ : /New sprint/,
@@ -89,7 +78,7 @@ it('reveals a created task when search and a saved blocked filter would hide it'
     if (path === '/auth/preferences') return { savedFilters: '[]' };
     return [];
   });
-  render(<TasksView hasProjects projectId={2} language="EN" />);
+  render(<TasksView hasProjects projectId={2} />);
   await waitFor(() =>
     expect(screen.getByRole('button', { name: /New task/ })).toBeEnabled(),
   );
@@ -109,7 +98,9 @@ it('reveals a created task when search and a saved blocked filter would hide it'
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Search tasks')).toHaveValue('');
   expect(screen.getByLabelText('Saved filters')).toHaveValue('');
-  expect(screen.getByLabelText('Blocked', { exact: true })).not.toBeChecked();
+  expect(
+    screen.getByLabelText('Manually blocked', { exact: true }),
+  ).not.toBeChecked();
 });
 
 it('reveals and selects a new project despite search and archived-project filters', async () => {
@@ -123,7 +114,6 @@ it('reveals and selects a new project despite search and archived-project filter
       <ProjectsView
         projects={projects}
         user={{ id: 1, email: 'qa@example.com' }}
-        language="EN"
         onSelect={select}
         onChanged={async () => {
           setProjects([alpha, beta]);

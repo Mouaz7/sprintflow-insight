@@ -1,7 +1,26 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { useLocation } from 'react-router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api, ApiError } from '../../api/client';
+import { renderWithProviders } from '../../test/render';
 import { AuthScreen } from './AuthScreen';
+
+const resetLink = '/reset-password?token=test-token';
+
+function CurrentLocation() {
+  const location = useLocation();
+  return <p data-testid="location">{location.pathname + location.search}</p>;
+}
+
+function renderAuth(path = resetLink) {
+  return renderWithProviders(
+    <>
+      <AuthScreen initialError="" onSignedIn={vi.fn()} />
+      <CurrentLocation />
+    </>,
+    { path },
+  );
+}
 
 vi.mock('../../api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api/client')>()),
@@ -11,15 +30,12 @@ describe('Account recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    window.history.replaceState(null, '', '/?resetToken=test-token');
   });
-  afterEach(() => window.history.replaceState(null, '', '/'));
   it('switches an existing sign-in error and theme controls between English and Swedish', async () => {
-    window.history.replaceState(null, '', '/');
     vi.mocked(api).mockRejectedValue(
       new ApiError('Incorrect email or password.', 401),
     );
-    render(<AuthScreen initialError="" onSignedIn={vi.fn()} />);
+    renderAuth('/');
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'missing@example.com' },
     });
@@ -51,7 +67,7 @@ describe('Account recovery', () => {
   });
   it('checks password confirmation before sending a reset and shows success', async () => {
     vi.mocked(api).mockResolvedValue({});
-    render(<AuthScreen initialError="" onSignedIn={vi.fn()} />);
+    renderAuth();
     expect(
       screen.getByRole('heading', { name: 'Choose a new password.' }),
     ).toBeInTheDocument();
@@ -80,7 +96,7 @@ describe('Account recovery', () => {
       }),
     });
     fireEvent.click(screen.getByRole('button', { name: /Back to log in/ }));
-    expect(window.location.search).toBe('');
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
     expect(
       screen.getByRole('heading', { name: 'Welcome back.' }),
     ).toBeInTheDocument();
@@ -89,7 +105,7 @@ describe('Account recovery', () => {
     vi.mocked(api).mockRejectedValue(
       new Error('This reset link is invalid or has expired.'),
     );
-    render(<AuthScreen initialError="" onSignedIn={vi.fn()} />);
+    renderAuth();
     for (const label of ['Password', 'Confirm new password'])
       fireEvent.change(screen.getByLabelText(label), {
         target: { value: 'reset-password-123' },
@@ -106,7 +122,7 @@ describe('Account recovery', () => {
   it('restores Swedish and a dark theme on the reset link', () => {
     localStorage.setItem('sprintflow-language', 'SV');
     localStorage.setItem('sprintflow-theme', 'dark');
-    render(<AuthScreen initialError="" onSignedIn={vi.fn()} />);
+    renderAuth();
     expect(
       screen.getByRole('heading', { name: 'Välj ett nytt lösenord.' }),
     ).toBeInTheDocument();

@@ -1,5 +1,7 @@
 package com.sprintflowinsight.reporting;
 
+import com.sprintflowinsight.flow.TaskTimeline;
+import com.sprintflowinsight.flow.Transition;
 import com.sprintflowinsight.workspace.sprint.Sprint;
 import com.sprintflowinsight.workspace.sprint.SprintRepository;
 import com.sprintflowinsight.workspace.story.UserStory;
@@ -242,19 +244,25 @@ public class MetricsService {
         completed.stream()
             .map(
                 item ->
-                    historyByTask.getOrDefault(item.task().getId(), List.of()).stream()
-                        .filter(
-                            event ->
-                                "In Progress".equals(event.getStatus())
-                                    && event.getChangedAt() != null
-                                    && !event
-                                        .getChangedAt()
-                                        .isAfter(item.completedAt().getChangedAt()))
-                        .max(EVENT_ORDER)
+                    TaskTimeline.of(
+                            item.task().getCreatedAt(),
+                            historyByTask.getOrDefault(item.task().getId(), List.of()).stream()
+                                .filter(
+                                    event ->
+                                        event.getStatus() != null
+                                            && event.getChangedAt() != null
+                                            && !event
+                                                .getChangedAt()
+                                                .isAfter(item.completedAt().getChangedAt()))
+                                .sorted(EVENT_ORDER)
+                                .map(
+                                    event ->
+                                        new Transition(event.getStatus(), event.getChangedAt()))
+                                .toList())
+                        .completion()
                         .map(
-                            event ->
-                                validMinutes(
-                                    event.getChangedAt(), item.completedAt().getChangedAt()))
+                            completion ->
+                                validMinutes(completion.cycleStart(), completion.doneAt()))
                         .orElse(null))
             .filter(java.util.Objects::nonNull)
             .toList();

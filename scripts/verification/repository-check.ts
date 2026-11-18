@@ -25,6 +25,18 @@ for (const file of files) {
   }
 }
 assert.deepEqual(missing, [], 'Broken relative documentation links.');
+// The short-lived picomatch advisory review only applies to development tooling.
+// Fail if a future lockfile change moves it into any production dependency tree.
+for (const lockfile of ['frontend/package-lock.json', 'frontend/e2e/package-lock.json', 'scripts/package-lock.json']) {
+  const lock = JSON.parse(readFileSync(join(root, lockfile), 'utf8')) as {
+    packages: Record<string, { dev?: boolean }>;
+  };
+  for (const [name, dependency] of Object.entries(lock.packages)) {
+    if (/(^|\/)node_modules\/picomatch$/.test(name)) {
+      assert.equal(dependency.dev, true, `picomatch must remain development-only: ${lockfile}:${name}. Reassess GHSA-fc5q-39xc-vjpf before changing the boundary.`);
+    }
+  }
+}
 const workflows = readdirSync(join(root, '.github/workflows')).filter(name => name.endsWith('.yml'));
 const actionDirectory = join(root, '.github/actions');
 const actions = existsSync(actionDirectory)
@@ -54,4 +66,4 @@ for (const name of tracked) {
   assert.ok(!basename(name).startsWith('client_secret'), name);
   assert.ok(!/\.(?:py|js|cjs|mjs)$/.test(name), "Use TypeScript for tracked verification/source code: " + name);
 }
-console.log('PASS: relative documentation links, Linux line endings, private/runtime file exclusions, pinned actions and base images.');
+console.log('PASS: relative documentation links, development-only advisory boundary, Linux line endings, private/runtime file exclusions, pinned actions and base images.');

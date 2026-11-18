@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
-import { Workspace } from './Workspace';
+import { renderWorkspace } from './testWorkspace';
 
 vi.mock('../api/client', () => ({ api: vi.fn() }));
 
@@ -39,19 +39,11 @@ describe('Task identifiers', () => {
   });
 
   function openTasks() {
-    render(
-      <Workspace
-        session={{ user, projects }}
-        onProjectsChanged={vi.fn()}
-        onLogout={vi.fn()}
-        onUserChanged={vi.fn()}
-        onAccountDeleted={vi.fn()}
-      />,
-    );
+    renderWorkspace({ session: { user, projects } });
     fireEvent.click(
       within(
         screen.getByRole('navigation', { name: 'Main navigation' }),
-      ).getByRole('button', {
+      ).getByRole('link', {
         name: 'Tasks',
       }),
     );

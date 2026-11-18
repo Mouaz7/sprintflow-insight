@@ -7,7 +7,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Language, Project, WorkspaceView } from '../../api/contracts';
+import type { Project, WorkspaceView } from '../../api/contracts';
+import { useLanguage, useT } from '../i18n/LanguageProvider';
+import { useTheme } from '../theme/ThemeProvider';
+import { uiText } from './i18n';
 import { localizeMessage } from '../i18n/messages';
 import { PageGuide } from './Guidance';
 
@@ -104,13 +107,7 @@ export function useModalFocus(
   }, [root]);
 }
 
-export function ConfirmProvider({
-  children,
-  language = 'EN',
-}: {
-  children: ReactNode;
-  language?: Language | undefined;
-}) {
+export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<{
     message: string;
     resolve: (value: boolean) => void;
@@ -137,13 +134,7 @@ export function ConfirmProvider({
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      {request && (
-        <Confirmation
-          message={request.message}
-          onFinish={finish}
-          language={language}
-        />
-      )}
+      {request && <Confirmation message={request.message} onFinish={finish} />}
     </ConfirmContext.Provider>
   );
 }
@@ -151,22 +142,19 @@ export function ConfirmProvider({
 function Confirmation({
   message,
   onFinish,
-  language,
 }: {
   message: string;
   onFinish: (value: boolean) => void;
-  language: Language;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
-  const sv = language === 'SV';
+  const t = useT(uiText);
+  const { theme } = useTheme();
   useModalFocus(() => onFinish(false), root);
   return (
     <div
-      data-theme={
-        localStorage.getItem('sprintflow-theme') === 'dark' ? 'dark' : 'light'
-      }
+      data-theme={theme}
       role="presentation"
       className="modal-backdrop confirmation-backdrop"
       onMouseDown={(e) => {
@@ -182,10 +170,8 @@ function Confirmation({
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
-        <span className="eyebrow">{sv ? 'BEKRÄFTELSE' : 'CONFIRMATION'}</span>
-        <h2 id={titleId}>
-          {sv ? 'Vill du fortsätta?' : 'Do you want to continue?'}
-        </h2>
+        <span className="eyebrow">{t('confirmation')}</span>
+        <h2 id={titleId}>{t('confirmTitle')}</h2>
         <p id={descriptionId}>{message}</p>
         <div className="form-actions">
           <button
@@ -193,14 +179,14 @@ function Confirmation({
             className="secondary-action"
             onClick={() => onFinish(false)}
           >
-            {sv ? 'Avbryt' : 'Cancel'}
+            {t('cancel')}
           </button>
           <button
             type="button"
             className="danger-button"
             onClick={() => onFinish(true)}
           >
-            {sv ? 'Bekräfta' : 'Confirm'}
+            {t('confirm')}
           </button>
         </div>
       </div>
@@ -214,7 +200,6 @@ export function Drawer({
   onClose,
   dirty = false,
   busy = false,
-  language = 'EN',
   projectSelection,
 }: {
   title: string;
@@ -222,7 +207,6 @@ export function Drawer({
   onClose: () => void;
   dirty?: boolean | undefined;
   busy?: boolean | undefined;
-  language?: Language | undefined;
   projectSelection?:
     | {
         projects: Project[];
@@ -235,7 +219,7 @@ export function Drawer({
   const root = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const confirm = useConfirm();
-  const sv = language === 'SV';
+  const t = useT(uiText);
   const project = useContext(EditorProjectContext);
   const projectHelpId = useId();
   const closing = useRef(false);
@@ -243,15 +227,7 @@ export function Drawer({
     if (busy || closing.current) return;
     closing.current = true;
     try {
-      if (
-        !dirty ||
-        (await confirm(
-          sv
-            ? 'Du har osparade ändringar. Vill du kasta dem och stänga?'
-            : 'You have unsaved changes. Discard them and close?',
-        ))
-      )
-        onClose();
+      if (!dirty || (await confirm(t('discardChanges')))) onClose();
     } finally {
       closing.current = false;
     }
@@ -276,15 +252,13 @@ export function Drawer({
       >
         <header>
           <div>
-            <span className="eyebrow">
-              {sv ? 'ARBETSUTRYMME' : 'WORKSPACE EDITOR'}
-            </span>
+            <span className="eyebrow">{t('workspaceEditor')}</span>
             <h2 id={titleId}>{title}</h2>
           </div>
           <button
             className="icon-button"
             type="button"
-            aria-label={sv ? 'Stäng panel' : 'Close panel'}
+            aria-label={t('closePanel')}
             disabled={busy}
             onClick={close}
           >
@@ -294,9 +268,9 @@ export function Drawer({
         <div className="drawer-body">
           {projectSelection ? (
             <label className="editor-project">
-              <span>{sv ? 'Projekt' : 'Project'}</span>
+              <span>{t('project')}</span>
               <select
-                aria-label={sv ? 'Projekt' : 'Project'}
+                aria-label={t('project')}
                 aria-describedby={projectHelpId}
                 value={
                   projectSelection.projects.some(
@@ -311,7 +285,7 @@ export function Drawer({
                 }
               >
                 <option value="" disabled>
-                  {sv ? 'Välj projekt' : 'Choose project'}
+                  {t('chooseProject')}
                 </option>
                 {projectSelection.projects.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -319,16 +293,12 @@ export function Drawer({
                   </option>
                 ))}
               </select>
-              <small id={projectHelpId}>
-                {sv
-                  ? 'Här sparas det du skapar. Välj projekt innan du väljer sprint eller berättelse.'
-                  : 'New work is saved here. Choose the project before selecting a sprint or story.'}
-              </small>
+              <small id={projectHelpId}>{t('projectHelp')}</small>
             </label>
           ) : (
             project && (
               <p className="editor-project">
-                <span>{sv ? 'Projekt' : 'Project'}:</span>
+                <span>{t('project')}:</span>
                 <strong>{project.name}</strong>
               </p>
             )
@@ -346,14 +316,12 @@ export function PageHeader({
   description,
   action,
   guide,
-  language = 'EN',
 }: {
   eyebrow: string;
   title: string;
   description?: string | undefined;
   action?: ReactNode | undefined;
   guide?: WorkspaceView | undefined;
-  language?: Language | undefined;
 }) {
   return (
     <header className="page-heading">
@@ -361,7 +329,7 @@ export function PageHeader({
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         {description && <p className="page-lede">{description}</p>}
-        {guide && <PageGuide view={guide} language={language} />}
+        {guide && <PageGuide view={guide} />}
       </div>
       {action && <div className="page-heading-action">{action}</div>}
     </header>
@@ -371,12 +339,11 @@ export function PageHeader({
 export function Notice({
   error,
   success,
-  language = 'EN',
 }: {
   error?: string | undefined;
   success?: string | undefined;
-  language?: Language | undefined;
 }) {
+  const { language } = useLanguage();
   return error ? (
     <p className="form-message error" role="alert">
       {localizeMessage(error, language)}

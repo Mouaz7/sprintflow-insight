@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /** {@code GET /api/projects/{id}/forecast}: data derivation, roles, validation and query cost. */
@@ -30,9 +31,97 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
   @Autowired private TaskStatusHistoryRepository history;
   @Autowired private SprintRepository sprints;
   @Autowired private TaskNumberAllocator numbers;
+  @Autowired private JdbcTemplate jdbc;
 
   @Test
-  void forecastsFromWeeklyThroughputWithABacktestedModelChoice() throws Exception {
+  void scopesRecordedWorkToAnEpicButKeepsProjectCapacityAndRejectsForeignEpics() throws Exception {
+    User owner = user();
+    Project own = project(owner, null), foreign = project(user(), null);
+    completeWeeks(own, 8);
+    long epic =
+        jdbc.queryForObject(
+            "insert into epic(project_id,title,created_at) values (?,'Release',now()) returning id",
+            Long.class,
+            own.getId());
+    long foreignEpic =
+        jdbc.queryForObject(
+            "insert into epic(project_id,title,created_at) values (?,'Secret',now()) returning id",
+            Long.class,
+            foreign.getId());
+    long story =
+        jdbc.queryForObject(
+            "insert into"
+                + " user_stories(project_id,title,acceptance_criteria,story_points,priority_id,epic_id,version)"
+                + " values (?,'Planned','Ready',3,1,?,0) returning id",
+            Long.class,
+            own.getId(),
+            epic);
+    jdbc.update(
+        "insert into"
+            + " user_stories(project_id,title,acceptance_criteria,story_points,priority_id,epic_id,version)"
+            + " values (?,'Not split','Ready',3,1,?,0)",
+        own.getId(),
+        epic);
+    Task scoped = task(own, "To Do", null);
+    scoped.setStoryId(story);
+    tasks.save(scoped);
+    task(own, "To Do", null);
+    mvc.perform(forecast(own).param("epicId", Long.toString(epic)).with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.remaining").value(1))
+        .andExpect(jsonPath("$.scope.epicTitle").value("Release"))
+        .andExpect(jsonPath("$.scope.unplannedStories").value(1))
+        .andExpect(jsonPath("$.history", hasSize(8)));
+    mvc.perform(forecast(own).param("epicId", Long.toString(foreignEpic)).with(as(owner)))
+        .andExpect(status().isNotFound());
+    mvc.perform(forecast(foreign).param("epicId", Long.toString(epic)).with(as(owner)))
+        .andExpect(status().isForbidden());
+    jdbc.update("update epic set title='Renamed release' where id=?", epic);
+    mvc.perform(forecast(own).param("epicId", Long.toString(epic)).with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.scope.epicTitle").value("Renamed release"));
+  }
+
+  @Test
+  void ignoresFutureTransitionsAndDoneSnapshotsAndRefreshesCachedWork() throws Exception {
+    User owner = user();
+    Project project = project(owner, null);
+    completeWeeks(project, 6);
+    Long oldestId =
+        history.findByProjectIdOrderByChangedAtAscIdAsc(project.getId()).stream()
+            .filter(row -> "Done".equals(row.getStatus()))
+            .findFirst()
+            .orElseThrow()
+            .getTaskId();
+    Task oldest = tasks.findById(oldestId).orElseThrow();
+    event(oldest, "Done", null, Instant.now().minusSeconds(2), 1);
+    event(oldest, "To Do", null, Instant.now().plus(2, ChronoUnit.DAYS), 1);
+    Task open = task(project, "To Do", null);
+    mvc.perform(forecast(project).with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.remaining").value(1))
+        .andExpect(jsonPath("$.history[0].count").value(3));
+    var before =
+        mvc.perform(forecast(project).with(as(owner)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    open = tasks.findById(open.getId()).orElseThrow();
+    open.setStatus("Done");
+    tasks.save(open);
+    event(open, "Done", null, Instant.now().minusSeconds(1), 1);
+    var after =
+        mvc.perform(forecast(project).with(as(owner)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.remaining").value(0))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(after).isNotEqualTo(before);
+  }
+
+  @Test
+  void forecastsFromWeeklyThroughputWithTenThousandBootstrapPaths() throws Exception {
     User owner = user();
     Project project = project(owner, null);
     int done = completeWeeks(project, 20);
@@ -45,19 +134,23 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.periodDays").value(7))
         .andExpect(jsonPath("$.remaining").value(5))
         .andExpect(jsonPath("$.history", hasSize(20)))
-        .andExpect(jsonPath("$.model.status").value("SELECTED"))
-        .andExpect(jsonPath("$.model.backtest", hasSize(3)))
-        .andExpect(jsonPath("$.model.backtest[0].selected").value(true))
+        .andExpect(jsonPath("$.simulations").value(10000))
         .andExpect(jsonPath("$.completionDates", hasSize(3)))
         .andExpect(jsonPath("$.completionDates[0].confidence").value(0.5))
-        .andExpect(jsonPath("$.fan", hasSize(ForecastCalculator.FAN_PERIODS)))
-        .andExpect(jsonPath("$.target").doesNotExist());
+        .andExpect(jsonPath("$.completionHistogram").isArray())
+        .andExpect(jsonPath("$.target.source").value("DEFAULT"));
     assertThat(done).isPositive();
 
     String first =
-        mvc.perform(forecast(project).with(as(owner))).andReturn().getResponse().getContentAsString();
+        mvc.perform(forecast(project).with(as(owner)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
     String second =
-        mvc.perform(forecast(project).with(as(owner))).andReturn().getResponse().getContentAsString();
+        mvc.perform(forecast(project).with(as(owner)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
     assertThat(second).as("deterministic for the same data").isEqualTo(first);
   }
 
@@ -77,9 +170,7 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
 
     mvc.perform(forecast(project).with(as(owner)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.model.status").value("INSUFFICIENT_HISTORY"))
-        .andExpect(jsonPath("$.model.name").value("gamma-poisson"))
-        .andExpect(jsonPath("$.model.requiredPeriods").value(15))
+        .andExpect(jsonPath("$.minimumPeriods").value(6))
         .andExpect(jsonPath("$.remaining").value(4))
         .andExpect(jsonPath("$.target.source").value("ACTIVE_SPRINT"))
         .andExpect(jsonPath("$.target.items").value(3))
@@ -140,9 +231,12 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
 
     mvc.perform(forecast(project).with(as(owner)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.model.status").value("NO_HISTORY"))
-        .andExpect(jsonPath("$.completionDates", hasSize(0)))
-        .andExpect(jsonPath("$.fan", hasSize(0)));
+        .andExpect(jsonPath("$.warnings[0]").value("NO_HISTORY"))
+        .andExpect(jsonPath("$.simulations").value(0))
+        .andExpect(jsonPath("$.target.probability").doesNotExist())
+        .andExpect(jsonPath("$.completionDates", hasSize(3)))
+        .andExpect(jsonPath("$.completionDates[0].date").doesNotExist())
+        .andExpect(jsonPath("$.completionHistogram", hasSize(0)));
   }
 
   @Test
@@ -161,10 +255,12 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     mvc.perform(forecast(project)).andExpect(status().isUnauthorized());
 
+    project = projects.findById(project.getId()).orElseThrow();
     project.setArchivedAt(Instant.now());
     projects.save(project);
     mvc.perform(forecast(project).with(as(owner))).andExpect(status().isOk());
 
+    project = projects.findById(project.getId()).orElseThrow();
     project.setTrashedAt(Instant.now());
     projects.save(project);
     mvc.perform(forecast(project).with(as(owner)))
@@ -182,6 +278,10 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
     mvc.perform(forecast(project).param("remaining", "-1").with(as(owner)))
         .andExpect(status().isBadRequest());
     mvc.perform(forecast(project).param("remaining", "10001").with(as(owner)))
+        .andExpect(status().isBadRequest());
+    mvc.perform(forecast(project).param("epicId", "0").with(as(owner)))
+        .andExpect(status().isBadRequest());
+    mvc.perform(forecast(project).param("remaining", "1.5").with(as(owner)))
         .andExpect(status().isBadRequest());
     mvc.perform(forecast(project).param("basis", "GUESS").with(as(owner)))
         .andExpect(status().isBadRequest());
@@ -204,13 +304,32 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
     completeWeeks(small, 2);
     Project large = project(owner, null);
     completeWeeks(large, 30);
-    for (int i = 0; i < 20; i++) task(large, "To Do", null);
+    for (int i = 0; i < 1000; i++) task(large, "To Do", null);
 
     long smallCost = statementsFor(() -> mvc.perform(forecast(small).with(as(owner))));
     long largeCost = statementsFor(() -> mvc.perform(forecast(large).with(as(owner))));
     assertThat(largeCost).isEqualTo(smallCost);
-    // user lookup + access row + tasks + status history + sprints
-    assertThat(largeCost).isLessThanOrEqualTo(5);
+    // user lookup + access row + tasks + status history + sprints + stories
+    assertThat(largeCost).isLessThanOrEqualTo(8);
+  }
+
+  @Test
+  void rejectsOversizedAutomaticWorkWithoutSilentlyTruncatingIt() throws Exception {
+    User owner = user();
+    Project project = project(owner, null);
+    for (int i = 0; i < 21; i++) {
+      Task open = task(project, "To Do", null);
+      open.setStoryPoints(500);
+      tasks.save(open);
+    }
+    mvc.perform(forecast(project).param("basis", "VELOCITY").with(as(owner)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    mvc.perform(
+            forecast(project).param("basis", "VELOCITY").param("remaining", "10").with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.remaining").value(10))
+        .andExpect(jsonPath("$.scope.openStoryPoints").value(10500));
   }
 
   private MockHttpServletRequestBuilder forecast(Project project) {
@@ -224,6 +343,14 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
     for (int week = 1; week <= weeks; week++) {
       for (int i = 0; i <= week % 4; i++) {
         Task task = task(project, "Done", null);
+        if (week == weeks && i == 0) {
+          var firstDay =
+              LocalDate.ofInstant(now.minus(7L * week, ChronoUnit.DAYS), ZoneOffset.UTC)
+                  .with(
+                      java.time.temporal.TemporalAdjusters.previousOrSame(
+                          java.time.DayOfWeek.MONDAY));
+          event(task, "To Do", null, firstDay.atStartOfDay(ZoneOffset.UTC).toInstant(), 1);
+        }
         event(task, "Done", null, now.minus(7L * week, ChronoUnit.DAYS), 1);
         total++;
       }

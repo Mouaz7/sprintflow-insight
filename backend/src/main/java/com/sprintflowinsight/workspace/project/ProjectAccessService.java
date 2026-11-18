@@ -68,6 +68,19 @@ public class ProjectAccessService {
     return context;
   }
 
+  /**
+   * Whether {@code userId} may read the project, for callers without an HTTP request such as
+   * WebSocket subscriptions. Same rule as {@link Need#READ}: any member, archived projects
+   * included, never a project in the recycle bin. Not memoised.
+   */
+  public boolean canRead(Long projectId, Long userId) {
+    if (projectId == null || userId == null) return false;
+    return projects
+        .findAccessRow(projectId, userId)
+        .map(row -> row.trashedAt() == null && row.memberRole() != null)
+        .orElse(false);
+  }
+
   public String role(Long projectId, HttpSession session) {
     return require(projectId, session, Need.READ).role().label();
   }

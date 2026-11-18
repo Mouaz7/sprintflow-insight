@@ -1,0 +1,106 @@
+.forecast-page {
+  display: grid;
+  gap: var(--space-section);
+  min-width: 0;
+}
+.forecast-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: var(--space-section);
+  background: var(--surface);
+  min-width: 0;
+}
+.forecast-panel h2 {
+  font-size: var(--text-section);
+  margin: 0 0 12px;
+}
+.forecast-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: var(--card-space);
+}
+.forecast-fields label {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 650;
+}
+.forecast-fields input,
+.forecast-fields select {
+  width: 100%;
+  min-width: 0;
+}
+.forecast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-grid);
+  margin-top: var(--card-space);
+}
+.forecast-help {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.forecast-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--card-space);
+}
+.forecast-stats > div {
+  min-width: 0;
+}
+.forecast-stats dt {
+  color: var(--muted);
+}
+.forecast-stats dd {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.forecast-warnings {
+  border-left: 4px solid var(--accent);
+  padding: var(--space-grid) var(--card-space);
+  background: var(--surface);
+  line-height: 1.7;
+}
+.forecast-warnings li + li {
+  margin-top: 8px;
+}
+.forecast-probability {
+  font-size: 30px;
+  font-weight: 700;
+}
+.forecast-history {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: var(--space-grid);
+}
+.forecast-history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.forecast-history th,
+.forecast-history td {
+  text-align: left;
+  padding: var(--space-grid);
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.forecast-panel > details > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+}
+@media (width < 768px) {
+  .forecast-stats {
+    grid-template-columns: 1fr;
+  }
+  .forecast-panel {
+    padding: var(--card-space);
+  }
+  .forecast-actions > button {
+    flex: 1 1 100%;
+  }
+}

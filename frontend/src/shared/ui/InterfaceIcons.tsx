@@ -5,8 +5,11 @@ type IconName =
   | 'projects'
   | 'backlog'
   | 'sprints'
+  | 'roadmap'
   | 'tasks'
   | 'metrics'
+  | 'flow'
+  | 'forecast'
   | 'updates'
   | 'profile'
   | 'sun'
@@ -16,6 +19,18 @@ type IconName =
   | 'trash';
 
 const paths: Record<IconName, ReactNode> = {
+  forecast: (
+    <>
+      <path d="M3 20h18M4 16l5-5 4 2" />
+      <path d="m13 13 7-8m-7 8 7-2m-7 2 7 4" strokeDasharray="2 2" />
+    </>
+  ),
+  flow: (
+    <>
+      <path d="M3 20h18M4 16l5-7 5 4 6-9" />
+      <path d="M16 4h4v4" />
+    </>
+  ),
   overview: (
     <>
       <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -38,6 +53,14 @@ const paths: Record<IconName, ReactNode> = {
   sprints: (
     <>
       <path d="M13 2 4 14h7l-1 8 10-13h-7Z" />
+    </>
+  ),
+  roadmap: (
+    <>
+      <path d="M3 6h12M9 12h12M3 18h14" />
+      <circle cx="17" cy="6" r="2" />
+      <circle cx="7" cy="12" r="2" />
+      <circle cx="19" cy="18" r="2" />
     </>
   ),
   tasks: (

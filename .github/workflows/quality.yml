@@ -241,7 +241,9 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:8081
-        run: npm run e2e
+        run: |
+          export E2E_DB_CONTAINER="$(docker compose -p sprintflow-ci ps -q postgres)"
+          npm run e2e
       - name: Logs
         if: failure()
         run: docker compose -p sprintflow-ci logs --tail 150
@@ -333,6 +335,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/start-app
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
       - uses: grafana/setup-k6-action@c47136d33d365efbeb9ae7266908b5dcf98cdece # v1.3.0
         with:
           k6-version: '2.4.0'
@@ -341,11 +346,27 @@ jobs:
           BASE_URL: http://127.0.0.1:8081
           K6_PROFILE: smoke
         run: k6 run --summary-export k6-summary.json scripts/performance/workspace-read.k6.ts
+      - name: Seed two years of flow history and measure 30/180-day reads
+        env:
+          BASE_URL: http://127.0.0.1:8081
+          FLOW_FIXTURE_FILE: ${{ runner.temp }}/flow-fixture.json
+        run: |
+          export FLOW_DB_CONTAINER="$(docker compose -p sprintflow-ci ps -q postgres)"
+          node scripts/performance/flow-fixture.ts seed
+          k6 run --summary-export flow-k6-summary.json scripts/performance/flow-read.k6.ts
+      - name: Remove the disposable flow fixture
+        if: always()
+        env:
+          BASE_URL: http://127.0.0.1:8081
+          FLOW_FIXTURE_FILE: ${{ runner.temp }}/flow-fixture.json
+        run: node scripts/performance/flow-fixture.ts cleanup
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: k6-smoke-summary
-          path: k6-summary.json
+          path: |
+            k6-summary.json
+            flow-k6-summary.json
           if-no-files-found: ignore
           retention-days: 7
 
@@ -435,3 +456,36 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           sbom-path: ${{ runner.temp }}/image-scan/image.cdx.json
           push-to-registry: true
+
+  storybook:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/e2e/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm ci --prefix frontend/e2e
+      - name: Build the component catalogue
+        run: npm run storybook:build --prefix frontend
+      - name: Install the pinned Chromium
+        working-directory: frontend/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Compare light/dark stories and verify accessibility and keyboard controls
+        run: npm run visual --prefix frontend
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: storybook-visual-report
+          path: |
+            frontend/e2e/playwright-report/visual/
+            frontend/e2e/test-results/visual/
+          retention-days: 7

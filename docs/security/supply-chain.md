@@ -7,7 +7,7 @@ This page describes how SprintFlow's build inputs and outputs are protected. The
 - **Actions** are pinned to full commit SHAs with a version comment. `scripts/verification/repository-check.ts` fails CI for an unpinned `uses:` in a workflow or local composite action.
 - **Images**: the Dockerfile's base images and the Compose PostgreSQL image are pinned by digest, and the repository check fails for a `FROM` without one. The ZAP scanner image is pinned by digest as well.
 - **Scanner binaries** (gitleaks, osv-scanner, Trivy) are downloaded by exact version and verified against a SHA-256 before use.
-- **Packages**: npm and Maven resolve from lockfiles and the Boot BOM. Exact versions are used for test tooling. A transitive package with a known advisory is overridden (for example `basic-ftp`, pulled in by Lighthouse CI's proxy support) instead of being waived.
+- **Packages**: npm and Maven resolve from lockfiles and the Boot BOM. Exact versions are used for test tooling. When a corrected transitive release exists, it is overridden (for example `basic-ftp`, pulled in by Lighthouse CI's proxy support). A reviewed development-only finding without a fixed release has a short expiry and an enforced production-dependency boundary; see [current applicability decisions](../security-review.md#reviewed-applicability-exceptions). No whole package or severity class is excluded from scanning.
 - **Dependabot** (`.github/dependabot.yml`) proposes weekly grouped updates for Maven, npm (`frontend`, `frontend/e2e`, `scripts`), GitHub Actions, Dockerfile and Compose images. Each update waits for a seven-day cooldown first.
 
 ## Pipeline
@@ -42,5 +42,6 @@ The runtime stage is the Temurin 25 JRE on Ubuntu Jammy, running as UID 1000 wit
 | 90005 Sec-Fetch-Dest Header is Missing | Ignore | Concerns headers in ZAP's own requests, not server behaviour |
 | 10055 CSP: Wildcard Directive | Info (pending) | `img-src` allows any `https:` image. Narrowing it needs a decision on which image sources the product supports |
 | 90004 Cross-Origin-Embedder-Policy missing | Info (pending) | `require-corp` would block Google sign-in, Google Fonts and remote images unless they send CORP headers |
+| 10027 Suspicious Comments | Out of scope for `/assets/*.js` only | Built bundles contain no source comments (Vite strips them). The matches are string and regex literals in React DOM and React Router, such as `http://www.w3.org/...` and the `/*` route pattern. The rule still applies to every HTML page and other response |
 
 The two pending items are product decisions, not code defects. Change a rule back to `WARN` once it is resolved.
