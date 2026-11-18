@@ -7,7 +7,7 @@ This page describes how SprintFlow's build inputs and outputs are protected. The
 - **Actions** are pinned to full commit SHAs with a version comment. `scripts/verification/repository-check.ts` fails CI for an unpinned `uses:` in a workflow or local composite action.
 - **Images**: the Dockerfile's base images and the Compose PostgreSQL image are pinned by digest, and the repository check fails for a `FROM` without one. The ZAP scanner image is pinned by digest as well.
 - **Scanner binaries** (gitleaks, osv-scanner, Trivy) are downloaded by exact version and verified against a SHA-256 before use.
-- **Packages**: npm and Maven resolve from lockfiles and the Boot BOM. Exact versions are used for test tooling. A transitive package with a known advisory is overridden (for example `basic-ftp`, pulled in by Lighthouse CI's proxy support) instead of being waived.
+- **Packages**: npm and Maven resolve from lockfiles and the Boot BOM. Exact versions are used for test tooling. When a corrected transitive release exists, it is overridden (for example `basic-ftp`, pulled in by Lighthouse CI's proxy support). A reviewed development-only finding without a fixed release has a short expiry and an enforced production-dependency boundary; see [current applicability decisions](../security-review.md#reviewed-applicability-exceptions). No whole package or severity class is excluded from scanning.
 - **Dependabot** (`.github/dependabot.yml`) proposes weekly grouped updates for Maven, npm (`frontend`, `frontend/e2e`, `scripts`), GitHub Actions, Dockerfile and Compose images. Each update waits for a seven-day cooldown first.
 
 ## Pipeline

@@ -1,6 +1,6 @@
 # Dependency and secret review
 
-The dependency check covers both npm lockfiles and the resolved Maven dependency graph using OSV.
+The dependency check covers all three npm lockfiles and the resolved Maven dependency graph using OSV.
 The release gate rejects untreated high/critical findings; lower-severity findings also require review.
 Keep the raw report as a CI artifact, and reassess when code or dependency versions change.
 
@@ -9,18 +9,15 @@ and the PostgreSQL driver. Exact versions are pinned in the Maven properties and
 
 ## Reviewed applicability exceptions
 
-Two Spring Framework 6.2 advisories require features absent from this application:
+The former Spring 6 exceptions were removed by the Boot 4 upgrade. One development-tooling applicability decision is currently active:
 
-| Advisory                                                     | Required feature                                  | Evidence and review limit                                                                                   |
-| ------------------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [CVE-2026-47890](https://spring.io/security/cve-2026-47890/) | Streaming server-rendered view fragments over SSE | No ResponseBodyEmitter/FragmentsRendering handlers; enforced by SecurityConfigurationTest                   |
-| [CVE-2026-47884](https://spring.io/security/cve-2026-47884/) | XsltView with an implicit wildcard view mapping   | No XsltViewResolver; SPA forwarding names the static view explicitly; enforced by SecurityConfigurationTest |
+| Advisory | Assessment | Review limit |
+| --- | --- | --- |
+| [GHSA-fc5q-39xc-vjpf / CVE-2026-112366](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) | `picomatch` 4.0.7 can backtrack excessively when given hostile repeated-extglob **patterns**. It is used only by Vite/Vitest, Storybook/Rollup, Babel and ESLint tooling with repository-owned configuration patterns. `npm --prefix frontend ls --omit=dev picomatch` is empty; application source has no picomatch/glob API, and the Java runtime ships no Node tooling. Application search/filters do not use it. | Reviewed 2026-11-18; OSV exception expires 2026-12-02. Reassess earlier if tool patterns can come from users or dependencies change. |
 
-OSV/GitHub severity differs from the vendor classification. These are applicability decisions, not claims
-that the affected library version contains a fix. The exceptions were reassessed on 2026-11-14, expire on 2027-01-31 and must be
-reassessed before adding SSE, server-rendered views or XSLT. The open-source fixes are in Spring 7.0.9;
-the Spring 6 fix requires the vendor's enterprise distribution. The planned Spring Boot 4 upgrade removes
-the need for these exceptions. Do not suppress future findings automatically.
+The [upstream releases](https://github.com/micromatch/picomatch/releases) and advisory list no patched version as of the review; npm's latest is 4.0.7. This decision does **not** claim the library is fixed. It accepts the bounded development-tooling exposure while an upstream fix is unavailable. Contributor-controlled build configuration already executes within the isolated CI job; do not feed application input to these glob parsers or expose development servers as production services.
+
+`scripts/verification/repository-check.ts` rejects a picomatch entry without `dev: true` in any of the three lockfiles. This guard runs before builds and prevents the exception silently spreading into production dependencies. The exception names only this advisory, expires automatically in OSV and leaves all other dependency/secret gates enabled. Replace it with a pinned corrected package when available; do not suppress future findings automatically.
 
 ## Secret checks
 
