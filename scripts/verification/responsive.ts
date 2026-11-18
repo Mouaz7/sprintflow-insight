@@ -8,7 +8,7 @@ import { responsiveFixture } from './responsive-fixtures.ts';
 const base = process.env.SPRINTFLOW_QA_URL || 'http://127.0.0.1:8081';
 const out = fileURLToPath(new URL('../../artifacts/responsive/', import.meta.url));
 const widths = [320, 390, 767, 768, 1023, 1024, 1279, 1280, 1920, 2560];
-const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'flow', 'forecast', 'updates', 'profile', 'calendar', 'retrospective', 'trash'];
+const views = ['overview', 'projects', 'backlog', 'sprints', 'roadmap', 'tasks', 'metrics', 'flow', 'forecast', 'updates', 'profile', 'calendar', 'retrospective', 'trash', 'fields'];
 fs.mkdirSync(out, { recursive: true });
 const results: { label: string; width: number; height: number }[] = [];
 
@@ -66,6 +66,12 @@ async function checkLayout(page: Page, label: string, workspace = true) {
 async function navigate(page: Page, view: number) {
   // Switch views at desktop width; then exercise the responsive layout itself.
   await page.setViewportSize({ width: 1280, height: 900 });
+  if (views[view] === 'fields') {
+    await page.goto(new URL('/fields', base).href);
+    await page.locator('.page h1').waitFor();
+    await page.waitForLoadState('networkidle');
+    return;
+  }
   await page.locator('.header-navigation nav a').nth(view).click();
   // Views are lazy route chunks: wait until the new route has committed.
   await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', view);

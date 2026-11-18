@@ -1,0 +1,47 @@
+.custom-fields-page {
+  display: grid;
+  gap: var(--card-space);
+  min-width: 0;
+}
+.custom-fields-back {
+  justify-self: start;
+}
+.custom-fields-help {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.custom-field-definitions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--card-space);
+}
+.custom-field-definitions > li {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: var(--card-space);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--card-space);
+  min-width: 0;
+}
+.custom-field-definitions h2 {
+  margin: 0;
+  font-size: var(--text-section);
+  overflow-wrap: anywhere;
+}
+.custom-field-definitions p {
+  color: var(--muted);
+}
+.custom-field-definitions li li {
+  overflow-wrap: anywhere;
+}
+.custom-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 8px;
+}

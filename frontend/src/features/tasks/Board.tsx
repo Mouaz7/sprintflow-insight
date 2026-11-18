@@ -4,7 +4,13 @@ import { VirtualList, VIRTUALIZE_AFTER } from '../../shared/ui/VirtualList';
 import { TaskAttachments } from './TaskAttachments';
 import { TaskMetadata } from './TaskCollaboration';
 import type { UseTaskBoardState } from './useTaskBoard';
-export function Board({ controller }: { controller: UseTaskBoardState }) {
+export function Board({
+  controller,
+  onCustomFields,
+}: {
+  controller: UseTaskBoardState;
+  onCustomFields?: ((task: Task) => void) | undefined;
+}) {
   const {
     columns,
     tasks,
@@ -83,6 +89,11 @@ export function Board({ controller }: { controller: UseTaskBoardState }) {
         </select>
       </label>
       <div className="card-actions">
+        {onCustomFields && (
+          <button type="button" onClick={() => onCustomFields(task)}>
+            {t('customFields')}
+          </button>
+        )}
         <button
           type="button"
           disabled={!canWrite || busyTasks.has(task.id)}

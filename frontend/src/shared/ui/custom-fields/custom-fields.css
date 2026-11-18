@@ -1,0 +1,65 @@
+.custom-field-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 650;
+}
+.custom-field-input > span {
+  overflow-wrap: anywhere;
+}
+.custom-field-input input,
+.custom-field-input select,
+.custom-field-input textarea {
+  min-width: 0;
+  width: 100%;
+}
+.custom-field-input small {
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.6;
+}
+.custom-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--card-space);
+  min-width: 0;
+}
+.custom-fields-grid > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.custom-field-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: start;
+  margin-block: 12px;
+  min-width: 0;
+}
+.custom-field-filter > label {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.custom-field-filter select {
+  width: 100%;
+  min-width: 0;
+}
+.custom-field-filter > small,
+.custom-field-filter > p {
+  flex-basis: 100%;
+}
+.command-palette > .custom-field-filter {
+  padding-inline: 16px;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.export-actions a[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
