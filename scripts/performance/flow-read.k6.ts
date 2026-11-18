@@ -13,6 +13,13 @@ if (
 )
   throw new Error("The two-year fixture is required.");
 const base = __ENV.BASE_URL || fixture.base;
+if (
+  !/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\/?$/.test(base) ||
+  base !== fixture.base
+)
+  throw new Error(
+    "The load test must use the fixture’s local application origin.",
+  );
 export const options = {
   scenarios: {
     warmup: {
@@ -41,6 +48,7 @@ export function readFlow() {
       `${base}/api/projects/${fixture.projectId}/flow?days=${days}`,
       {
         headers: { Cookie: fixture.cookie },
+        redirects: 0,
         tags: { name: `flow-${days}-days` },
       },
     );

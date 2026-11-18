@@ -59,6 +59,7 @@ async function api(
   const response = await fetch(base + "/api" + path, {
     method,
     headers,
+    redirect: "error",
     ...(data === undefined ? {} : { body: JSON.stringify(data) }),
   });
   for (const value of response.headers.getSetCookie()) {
@@ -79,7 +80,9 @@ if (mode === "cleanup") {
   if (
     fixture.source !== "b5-flow-load-v1" ||
     fixture.base !== base ||
-    !/^flow-perf-.*@example\.com$/.test(fixture.email)
+    !/^flow-perf-\d+@example\.com$/.test(fixture.email) ||
+    !Number.isSafeInteger(fixture.projectId) ||
+    fixture.projectId <= 0
   )
     throw new Error("Unrecognised fixture metadata.");
   loadCookie(fixture.cookie);
@@ -187,7 +190,10 @@ if (mode === "cleanup") {
     historyDays: 730,
   };
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(fixture, null, 2) + "\n", { mode: 0o600 });
+  writeFileSync(file, JSON.stringify(fixture, null, 2) + "\n", {
+    mode: 0o600,
+    flag: "wx",
+  });
   console.log(
     JSON.stringify({
       projectId: project.id,
