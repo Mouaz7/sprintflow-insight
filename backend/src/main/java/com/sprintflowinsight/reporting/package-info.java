@@ -8,6 +8,7 @@
       "workspace :: sprint",
       "workspace :: story",
       "workspace :: activity",
-      "workspace :: events"
+      "workspace :: events",
+      "forecast"
     })
 package com.sprintflowinsight.reporting;
