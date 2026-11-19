@@ -1,0 +1,19 @@
+# ADR 0023: Planning poker with private votes and guarded rounds
+
+Status: Accepted
+
+Planning poker estimates one existing story per session. The server must never disclose another participant's unrevealed card through REST, events, logs or error messages.
+
+`poker_session` and `poker_vote` live in the workspace module. Every write takes the project lock followed by the session row lock. A vote either commits before reveal and is included, or observes the revealed state and fails. All commands name the round they observed; a delayed vote, retraction or facilitator command cannot act on a later round. Reads use a repeatable-read snapshot so the session state, voter list and revealed history describe one database state. Votes are selected only up to `revealed_round`, apart from a separate caller-only lookup. Lists return summaries with no votes or histories. Controllers return records, never JPA entities.
+
+Project writers can start and vote. Only the original facilitator (while still a writer), Owner or Admin may reveal, revote, accept or cancel. Viewers and archived projects stay readable. Project and story identity is enforced by a composite foreign key. One open session per story is enforced by a partial unique index. Project deletion and permanent story deletion cascade to sessions/votes; account deletion nulls the facilitator and removes that account's votes. Removed project members cannot continue interacting through the API.
+
+Each session freezes its deck. Fibonacci includes 13 as a split-story signal; the existing story domain accepts only 1, 2, 3, 5 or 8 points. T-shirt and custom decks deliberately have no automatic numeric mapping. The facilitator explicitly chooses the agreed points; a statistical suggestion never saves itself. At least one estimating vote must be revealed. Saving checks the story revision and atomically writes the estimate, activity and session closure. Conflicts preserve the UI draft and require an explicit reload. Unrevealed votes are deleted on cancellation; previously revealed rounds remain available.
+
+The lower median and spread follow deck order. `?` and `☕` abstain; they do not affect consensus, agreement, median or mean. Numeric mean exists only for plain numeric cards. Custom cards are bounded to 2–20 unique tokens of at most 8 characters. Sessions have at most 50 rounds; projects have at most 100 open sessions. The list is a single summary query; detailed history is fetched only for the selected session.
+
+`PokerSessionChanged` uses the durable Modulith registry and existing authenticated WebSocket transport. It carries identifiers and revision only. Clients invalidate only poker queries for that project; accepting the estimate also refreshes the story and aggregates through the activity event. Five-second detail and ten-second list polling provide a fallback without requiring socket connectivity. Session URLs persist selection and project switching clears the old session parameter.
+
+V23 is reserved for this migration because the earlier B16 PR (#70) owns V22. Merge and deploy B16 before B7 so existing Flyway installations apply V22 before V23. No dependency or coverage threshold changes are required. The new lazy poker route measures 11.43 kB gzip; all routes together measure 273.82 kB gzip. The aggregate bundle ceiling grows from 270 to 280 kB and the poker route has its own 15 kB ceiling. Entry, task-route and CSS ceilings remain unchanged.
+
+Integration with B16 (PR #70) was verified together: V22 and V23 apply from the same migration set, both field and poker routes remain lazy, and the combined JavaScript measures 289.19 kB gzip. The combined aggregate ceiling is 300 kB; the existing entry, task, CSS and individual route ceilings remain unchanged.

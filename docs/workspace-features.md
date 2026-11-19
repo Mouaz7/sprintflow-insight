@@ -163,6 +163,16 @@ Datumen för 50/85/95 procent täcker motsvarande andel simulerade utfall. Mäng
 
 Modellen drar 10 000 gemensamma framtida förlopp. Kalenderdagar omfattar helger, och leveransen antas vara jämnt fördelad inom perioden. Färre än sex perioder, saknad historik, stories utan uppgifter och nollpoängsarbete ger varningar. Ofullständiga förlopp räknas fortfarande med; ett saknat datum betyder att den valda sannolikheten inte nås inom femårshorisonten. Historiken och antagandena kan vara missvisande vid förändrad kapacitet eller beroenden. Se [metoden](metrics-definition.md#delivery-forecasts-b6) och [ADR 0021](adr/0021-joint-bootstrap-delivery-forecasts.md).
 
+## Planning poker (B7)
+
+Öppna **Planning poker** (`/poker`) i ett valt projekt. Ägare, administratörer och medlemmar kan starta en session för en berättelse i backloggen. Välj Fibonacci, T-shirt eller 2–20 unika egna kort i stigande uppskattningsordning. `?` och `☕` avstår från uppskattningen; Fibonacci-kortet 13 påminner om att dela upp berättelsen.
+
+Alla deltagare röstar självständigt och kan ändra eller ta tillbaka sin egen röst. Servern visar vilka som röstat och den egna rösten. Andras kort och statistik lämnar servern först när spelledaren, ägaren eller en administratör avslöjar rundan. Läsbehörighet ger möjlighet att följa sessionen; arkiverade projekt är läsbara.
+
+Efter avslöjandet visas kortfördelning, lägsta/högsta kort, lägre median, enighet och numeriskt medelvärde när det är meningsfullt. Avståenden ingår inte i uppskattningsstatistiken. Diskutera skillnaderna och starta en ny runda vid behov. Tidigare avslöjade rundor finns kvar. T-shirt och egna kort får ingen automatisk poängmappning: teamet väljer uttryckligen 1, 2, 3, 5 eller 8 överenskomna poäng. Sparandet uppdaterar berättelsen och aktivitetsloggen atomiskt. Ett lokalt utkast bevaras om någon ändrar berättelsen; ladda om uppskattningen innan du försöker spara igen.
+
+Sessionslänkar använder `/poker?session=<id>`; deltagarna väljer samma projekt innan de öppnar länken. Realtidsmeddelanden innehåller bara ändringsmetadata; API:t avgör vad varje läsare får se. Aktiv session uppdateras även var femte sekund som reserv när realtid saknas. Varje kommando anger rundan för att fördröjda anrop inte ska påverka en senare runda. Avbrytande raderar den aktuella rundans ännu dolda röster. Högst 100 öppna sessioner per projekt, en per berättelse och 50 rundor per session tillåts. Listan visar högst 20 nyligen ändrade avslutade sessioner. Se [ADR 0023](adr/0023-planning-poker.md).
+
 ## B16 — project custom fields
 
 Open **Tasks → Custom fields** (`/fields`). Owners and administrators can create up to 20 fields per active project: Text, Number, Date, Select or Project member. Names are unique ignoring case. Types stay fixed after saving. Select fields allow up to 30 unique options; an option used by a live or recycled task cannot be removed. Deleting a field asks for confirmation and removes its saved values.

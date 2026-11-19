@@ -54,6 +54,7 @@ export type WorkspaceView =
   | 'tasks'
   | 'metrics'
   | 'flow'
+  | 'poker'
   | 'forecast'
   | 'updates'
   | 'profile'

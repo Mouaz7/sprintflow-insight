@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "285 kB",
+      "limit": "300 kB",
       "gzip": true
     },
     {
@@ -143,6 +143,12 @@
       "name": "Forecast route chunk (gzip)",
       "path": "dist/assets/ForecastView-*.js",
       "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Planning poker route chunk (gzip)",
+      "path": "dist/assets/PokerView-*.js",
+      "limit": "15 kB",
       "gzip": true
     }
   ]

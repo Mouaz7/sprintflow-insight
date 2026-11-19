@@ -1,0 +1,141 @@
+.poker-page,
+.poker-panel,
+.poker-results,
+.poker-start fieldset,
+.poker-consensus {
+  display: grid;
+  gap: var(--space-4, 16px);
+}
+.poker-panel {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel, 16px);
+  background: var(--surface);
+  align-content: start;
+  overflow-wrap: anywhere;
+}
+.poker-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+.poker-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2.4fr);
+  align-items: start;
+  gap: 24px;
+}
+.poker-actions,
+.poker-room-heading,
+.poker-cards {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.poker-room-heading {
+  justify-content: space-between;
+}
+.poker-session-list ul,
+.poker-voters {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.poker-session-list button {
+  display: grid;
+  width: 100%;
+  text-align: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.poker-session-list button[aria-pressed='true'] {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.poker-session-list button span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.poker-card {
+  min-height: 78px;
+  min-width: 54px;
+  max-width: 100%;
+  padding: 12px;
+  border: 2px solid var(--input-line);
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--input-bg);
+  overflow-wrap: anywhere;
+}
+.poker-card[aria-pressed='true'] {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+  box-shadow: inset 0 -4px 0 var(--accent-text);
+}
+.poker-voters li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.poker-voters span {
+  min-width: 0;
+}
+.poker-statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.poker-statistics dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.poker-statistics dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+.poker-distribution {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+.poker-distribution th,
+.poker-distribution td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.poker-distribution caption {
+  text-align: start;
+  font-weight: 600;
+}
+.poker-history > section {
+  margin-top: 24px;
+}
+.poker-consensus {
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.poker-start {
+  max-width: 680px;
+}
+@media (max-width: 850px) {
+  .poker-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .poker-panel {
+    padding: 16px;
+  }
+}

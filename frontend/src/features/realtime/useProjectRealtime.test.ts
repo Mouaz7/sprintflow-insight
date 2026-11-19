@@ -58,6 +58,44 @@ describe('useProjectRealtime', () => {
     vi.unstubAllGlobals();
   });
 
+  it('coalesces poker messages into a project-scoped refresh without reloading the board or role', async () => {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    const { client, unmount } = setup(7);
+    const socket = sockets[0]!;
+    await act(async () => {
+      socket.onopen?.();
+      socket.receive('CONNECTED', {});
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    const keys = [
+      ['project', 7, 'poker'],
+      ['project', 8, 'poker'],
+      ['project', 7, 'tasks'],
+      ['project', 7, 'role'],
+      ['workspace-search'],
+    ];
+    keys.forEach((key) => client.setQueryData(key, []));
+    await act(async () => {
+      for (let seq = 1; seq <= 2; seq++)
+        socket.receive(
+          'MESSAGE',
+          { subscription: 'events' },
+          JSON.stringify({
+            projectId: 7,
+            seq,
+            type: 'PokerSessionChanged',
+            entityId: 9,
+            version: seq,
+          }),
+        );
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(client.getQueryState(keys[0]!)?.isInvalidated).toBe(true);
+    for (const key of keys.slice(1))
+      expect(client.getQueryState(key)?.isInvalidated).toBe(false);
+    unmount();
+  });
+
   it('stays idle without a project or WebSocket support', () => {
     const { result } = setup(7);
     expect(result.current).toEqual({

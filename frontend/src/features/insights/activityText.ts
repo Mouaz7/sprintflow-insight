@@ -3,6 +3,10 @@ import type { Activity, Language } from '../../api/contracts';
 const namedEvents: Record<string, readonly [string, string]> = {
   PROJECT_CREATED: ['Created project', 'Skapade projektet'],
   PROJECT_UPDATED: ['Updated project', 'Uppdaterade projektet'],
+  POKER_STARTED: [
+    'Started planning poker for story',
+    'Startade planning poker för berättelsen',
+  ],
   STORY_CREATED: ['Created story', 'Skapade berättelsen'],
   STORY_UPDATED: ['Updated story', 'Uppdaterade berättelsen'],
   SPRINT_CREATED: ['Created sprint', 'Skapade sprinten'],
@@ -45,6 +49,15 @@ export function activitySummary(
 ): string {
   const { summary, eventType } = activity;
   if (language !== 'SV' || !eventType) return summary;
+
+  if (eventType === 'STORY_ESTIMATED') {
+    const estimate =
+      /^Estimated story “([\s\S]+)” at (1|2|3|5|8) points in planning poker \(was (\d+)\)\.$/.exec(
+        summary,
+      );
+    if (estimate)
+      return `Uppskattade berättelsen “${estimate[1]}” till ${estimate[2]} poäng i planning poker (tidigare ${estimate[3]}).`;
+  }
 
   if (eventType === 'PROJECT_CREATED') {
     const template =

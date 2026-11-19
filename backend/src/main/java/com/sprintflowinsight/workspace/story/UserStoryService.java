@@ -171,6 +171,42 @@ public class UserStoryService {
     return ResponseEntity.noContent().build();
   }
 
+  /**
+   * Writes an estimate agreed in planning poker (B7) and logs it. The caller has checked write
+   * access and holds the project lock.
+   */
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+  public UserStory applyEstimate(
+      Long projectId, Long storyId, int storyPoints, Long expectedVersion, String actorEmail) {
+    if (!VALID_STORY_POINTS.contains(storyPoints))
+      throw ApiException.badRequest("Story points must be 1, 2, 3, 5, or 8.");
+    UserStory story =
+        userStoryRepository
+            .findById(storyId)
+            .filter(item -> item.getTrashedAt() == null && projectId.equals(item.getProjectId()))
+            .orElseThrow(() -> ApiException.notFound("Story not found."));
+    com.sprintflowinsight.VersionPrecondition.require(
+        "\"" + expectedVersion + "\"", story.getVersion());
+    int previous = story.getStoryPoints();
+    story.setStoryPoints(storyPoints);
+    UserStory saved = userStoryRepository.saveAndFlush(story);
+    activityService.record(
+        projectId,
+        "STORY_ESTIMATED",
+        "Estimated story “"
+            + saved.getTitle()
+            + "” at "
+            + storyPoints
+            + " points in planning poker (was "
+            + previous
+            + ").",
+        actorEmail,
+        "story",
+        storyId,
+        Instant.now());
+    return saved;
+  }
+
   private ResponseEntity<?> validateStory(UserStory story) {
     if (!VALID_STORY_POINTS.contains(story.getStoryPoints()))
       return com.sprintflowinsight.ApiExceptionHandler.error(

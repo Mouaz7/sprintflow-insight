@@ -518,6 +518,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  poker: [
+    'Välj en berättelse och en kortlek. Varje deltagare röstar dolt. Spelledaren, ägaren eller en administratör avslöjar rösterna, startar en ny runda vid oenighet och sparar överenskomna poäng på berättelsen. Läsbehörighet ger möjlighet att följa sessionen.',
+    'Choose a story and a deck. Participants vote privately. The facilitator, owner or admin reveals the votes, starts another round after disagreement and saves the agreed story points. Viewers can watch the session.',
+  ],
   fields: [
     'Ägare och administratörer kan lägga till upp till 20 extra fält för projektet. Ange värden via uppgiftens anpassade fält och använd dem i tavlans filter, sökningen och CSV-exporten. Projektets medlemmar kan läsa fälten; arkiverade projekt är skrivskyddade.',
     'Owners and administrators can add up to 20 extra fields to a project. Fill values through a task’s custom fields, then use them in board filters, search and CSV export. Project members can read fields; archived projects are read-only.',
