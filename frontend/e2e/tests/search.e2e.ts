@@ -130,9 +130,12 @@ test('keeps the active search option visible when keyboard navigation crosses th
   await page.getByRole('button', { name: 'Search', exact: true }).waitFor();
   await page.keyboard.press('Control+K');
   const palette = page.getByRole('dialog', { name: 'Search and commands' });
-  const input = palette.getByRole('combobox');
+  const input = palette.getByRole('combobox', {
+    name: 'Search or run a command',
+    exact: true,
+  });
   await input.fill(word);
-  const options = palette.getByRole('option');
+  const options = palette.getByRole('listbox').getByRole('option');
   await expect(options).toHaveCount(12);
   const visibleSelection = () =>
     palette

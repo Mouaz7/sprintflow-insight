@@ -262,6 +262,10 @@
                         <param>com.sprintflowinsight.search.SearchType</param>
                         <param>com.sprintflowinsight.workspace.roadmap.schedule.*</param>
                         <param>com.sprintflowinsight.flow.*</param>
+                        <param>com.sprintflowinsight.workspace.customfield.FieldValue</param>
+                        <param>com.sprintflowinsight.workspace.customfield.FieldCondition</param>
+                        <param>com.sprintflowinsight.workspace.customfield.FieldOperator</param>
+                        <param>com.sprintflowinsight.workspace.customfield.FieldDefinitionRequest</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.sprintflowinsight.*Test</param>

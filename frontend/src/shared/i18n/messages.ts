@@ -4,6 +4,51 @@ import { defineLexicon, translator } from './lexicon';
 // Keep the original message in state and translate when rendering, so switching
 // language also updates an error that is already visible. Never translate user data.
 const swedish: Record<string, string> = {
+  'Use a field name of 1–80 characters.': 'Ange ett fältnamn med 1–80 tecken.',
+  'Choose a field type.': 'Välj en fälttyp.',
+  'Use at most 30 options of 1–80 characters each.':
+    'Ange högst 30 val med 1–80 tecken vardera.',
+  'Field options must be unique.': 'Varje fältval måste vara unikt.',
+  'A select field needs at least one option.':
+    'Ett valfält behöver minst ett val.',
+  'Only select fields have options.': 'Endast valfält kan ha val.',
+  'A project can have at most 20 custom fields.':
+    'Ett projekt kan ha högst 20 anpassade fält.',
+  'Create a new field to change its type.':
+    'Skapa ett nytt fält för att byta typ.',
+  'An option is still used by a task, including recycled tasks.':
+    'Valet används fortfarande av en uppgift, även uppgifter i papperskorgen räknas.',
+  'Provide a complete snapshot of at most 20 custom values.':
+    'Ange samtliga värden, högst 20 anpassade fält.',
+  'Provide each custom field at most once.':
+    'Ange varje anpassat fält högst en gång.',
+  'Custom field not found in this project.':
+    'Det anpassade fältet finns inte i projektet.',
+  'Choose a current member of this project.':
+    'Välj en nuvarande medlem i projektet.',
+  'Choose a custom field for this condition.':
+    'Välj ett anpassat fält för villkoret.',
+  'Custom field values cannot contain null characters.':
+    'Fältvärden får inte innehålla nulltecken.',
+  'A custom field value can be at most 2000 characters.':
+    'Ett fältvärde får innehålla högst 2000 tecken.',
+  "Choose one of this field's current options.":
+    'Välj ett av fältets nuvarande val.',
+  'Use a decimal number with at most 18 whole digits and 6 decimal places.':
+    'Ange ett tal med högst 18 heltalssiffror och 6 decimaler.',
+  'Use a real date in YYYY-MM-DD format, with year 0001–9999.':
+    'Ange ett giltigt datum i formatet ÅÅÅÅ-MM-DD med år 0001–9999.',
+  'Choose both a custom field and an operator.':
+    'Välj både ett anpassat fält och ett villkor.',
+  'A filter value can be at most 200 characters.':
+    'Ett filtervärde får innehålla högst 200 tecken.',
+  'Choose a valid field and an operator supported by its type.':
+    'Välj ett giltigt fält och ett villkor som stöds av fälttypen.',
+  'Provide a value only when the selected operator needs one.':
+    'Ange ett värde endast när det valda villkoret behöver ett.',
+  'Choose a project before filtering by a custom field.':
+    'Välj ett projekt när du filtrerar på ett anpassat fält.',
+
   'Enter a valid date with a four-digit year.':
     'Ange ett giltigt datum med fyrsiffrigt år.',
   'This item was changed by someone else. Reload it and review your changes.':

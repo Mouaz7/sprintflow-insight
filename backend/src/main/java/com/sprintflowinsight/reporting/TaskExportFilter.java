@@ -1,6 +1,10 @@
 package com.sprintflowinsight.reporting;
 
+import com.sprintflowinsight.workspace.customfield.FieldCondition;
+import com.sprintflowinsight.workspace.customfield.FieldOperator;
 import com.sprintflowinsight.workspace.task.Task;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
@@ -15,7 +19,25 @@ public record TaskExportFilter(
     String due,
     Boolean blocked,
     String label,
-    String q) {
+    String q,
+    @Positive Long customFieldId,
+    FieldOperator customOperator,
+    @Size(max = FieldCondition.MAX_FILTER_VALUE) String customValue) {
+  public TaskExportFilter(
+      String status,
+      String sprint,
+      String assignee,
+      String due,
+      Boolean blocked,
+      String label,
+      String q) {
+    this(status, sprint, assignee, due, blocked, label, q, null, null, null);
+  }
+
+  public FieldCondition customCondition() {
+    return FieldCondition.optional(customFieldId, customOperator, customValue);
+  }
+
   public TaskExportFilter {
     status = clean(status);
     sprint = clean(sprint);
@@ -73,6 +95,14 @@ public record TaskExportFilter(
         + "; label="
         + label
         + "; search="
-        + q;
+        + q
+        + (customCondition() == null
+            ? ""
+            : "; custom field="
+                + customFieldId
+                + "; operator="
+                + customOperator
+                + "; value="
+                + clean(customValue));
   }
 }

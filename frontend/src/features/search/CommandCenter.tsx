@@ -18,6 +18,7 @@ const ShortcutHelp = lazy(() =>
 export type { SearchTarget } from './CommandPalette';
 
 type Props = {
+  projectId?: number | undefined;
   canCreateTask: boolean;
   onNavigate: (target: SearchTarget) => void;
   onNewTask: () => void;
@@ -27,7 +28,12 @@ type Props = {
  * The workspace's single mount point for search: a header button, the Ctrl/⌘+K
  * command palette, the shortcut help dialog and the global keyboard listener.
  */
-export function CommandCenter({ canCreateTask, onNavigate, onNewTask }: Props) {
+export function CommandCenter({
+  projectId,
+  canCreateTask,
+  onNavigate,
+  onNewTask,
+}: Props) {
   const { language } = useLanguage();
   const [open, setOpen] = useState<'palette' | 'help' | null>(null);
   const t = useT(searchLexicon);
@@ -89,6 +95,8 @@ export function CommandCenter({ canCreateTask, onNavigate, onNewTask }: Props) {
       >
         {open === 'palette' && (
           <CommandPalette
+            key={projectId}
+            projectId={projectId}
             canCreateTask={canCreateTask}
             language={language}
             t={t}

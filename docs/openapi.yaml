@@ -347,6 +347,142 @@ paths:
               schema: { $ref: '#/components/schemas/Task' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/custom-fields:
+    parameters:
+      - { $ref: '#/components/parameters/projectId' }
+    get:
+      summary: List project custom field definitions, including archived projects, for any member
+      responses:
+        '200':
+          description: Definitions ordered by id; at most 20
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/CustomFieldDefinition' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Owner/Admin creates a field in an active project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CustomFieldDefinitionRequest' }
+      responses:
+        '200': { description: Definition, content: { application/json: { schema: { $ref: '#/components/schemas/CustomFieldDefinition' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Archived project, duplicate name or limit reached }
+  /api/projects/{projectId}/custom-fields/{fieldId}:
+    parameters:
+      - { $ref: '#/components/parameters/projectId' }
+      - in: path
+        name: fieldId
+        required: true
+        schema: { type: integer, format: int64, minimum: 1 }
+      - in: header
+        name: If-Match
+        required: true
+        description: Quoted current definition version
+        schema: { type: string, example: '"0"' }
+    put:
+      summary: Owner/Admin renames a field or updates options in an active project
+      description: Type is immutable. An option used by live or recycled tasks cannot be removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CustomFieldDefinitionRequest' }
+      responses:
+        '200': { description: Updated definition, content: { application/json: { schema: { $ref: '#/components/schemas/CustomFieldDefinition' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Archive, duplicate name, type change or option still in use }
+        '412': { description: Stale definition version }
+        '428': { description: Missing If-Match }
+    delete:
+      summary: Owner/Admin deletes a definition and all its values in an active project
+      responses:
+        '204': { description: Definition and values removed }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Archived project }
+        '412': { description: Stale definition version }
+        '428': { description: Missing If-Match }
+  /api/projects/{projectId}/custom-fields/matches:
+    get:
+      summary: Match live task ids with a typed field condition for any project reader
+      description: B15 may reuse the same typed FieldCondition and pure matcher. Missing values match only IS_NOT_SET; CONTAINS treats percent and underscore literally.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - in: query
+          name: fieldId
+          required: true
+          schema: { type: integer, format: int64, minimum: 1 }
+        - in: query
+          name: operator
+          required: true
+          schema: { $ref: '#/components/schemas/CustomFieldOperator' }
+        - in: query
+          name: value
+          schema: { type: string, maxLength: 200 }
+      responses:
+        '200': { description: Matching task ids, content: { application/json: { schema: { $ref: '#/components/schemas/CustomFieldMatches' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/tasks/{taskId}/custom-fields:
+    parameters:
+      - in: path
+        name: taskId
+        required: true
+        schema: { type: integer, format: int64, minimum: 1 }
+    get:
+      summary: Read task values and the current task revision for any project reader
+      responses:
+        '200':
+          description: Typed snapshot; decimals and member ids are strings
+          headers: { ETag: { description: Quoted task version, schema: { type: string } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskCustomFields' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Owner/Admin/Member atomically replaces all task values in an active project
+      description: Missing or empty entries clear values. Changed values increment the parent task version, unchanged canonical values do not. No status-history entry is created. USER values reference current project membership ids; removing membership clears the value.
+      parameters:
+        - in: header
+          name: If-Match
+          required: true
+          description: Quoted current task version, shared with ordinary task editing
+          schema: { type: string, example: '"0"' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CustomFieldValuesRequest' }
+      responses:
+        '200':
+          description: Saved snapshot
+          headers: { ETag: { schema: { type: string } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskCustomFields' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: Archived project }
+        '412': { description: Stale task version }
+        '428': { description: Missing If-Match }
   /api/search:
     get:
       summary: Full-text search across the projects the caller can read
@@ -383,6 +519,17 @@ paths:
           name: cursor
           description: Opaque nextCursor from the previous page (keyset pagination).
           schema: { type: string, maxLength: 100, pattern: '^[A-Za-z0-9_-]+$' }
+        - in: query
+          name: customFieldId
+          description: Project custom field. Requires projectId in search; restricts hits to tasks.
+          schema: { type: integer, format: int64, minimum: 1 }
+        - in: query
+          name: customOperator
+          schema: { $ref: '#/components/schemas/CustomFieldOperator' }
+        - in: query
+          name: customValue
+          description: Exact string operand, required except IS_SET/IS_NOT_SET. Text is case-sensitive; unset values match only IS_NOT_SET.
+          schema: { type: string, maxLength: 200 }
       responses:
         '200':
           description: One page of hits, best first
@@ -613,6 +760,17 @@ paths:
         - { $ref: '#/components/parameters/exportBlocked' }
         - { $ref: '#/components/parameters/exportLabel' }
         - { $ref: '#/components/parameters/exportQ' }
+        - in: query
+          name: customFieldId
+          description: Project custom field. Requires projectId in search; restricts hits to tasks.
+          schema: { type: integer, format: int64, minimum: 1 }
+        - in: query
+          name: customOperator
+          schema: { $ref: '#/components/schemas/CustomFieldOperator' }
+        - in: query
+          name: customValue
+          description: Exact string operand, required except IS_SET/IS_NOT_SET. Text is case-sensitive; unset values match only IS_NOT_SET.
+          schema: { type: string, maxLength: 200 }
       responses: { '200': { description: CSV report, content: { text/csv: { schema: { type: string } } } } }
   /api/projects/{projectId}/export.pdf:
     get:
@@ -630,6 +788,17 @@ paths:
         - { $ref: '#/components/parameters/exportBlocked' }
         - { $ref: '#/components/parameters/exportLabel' }
         - { $ref: '#/components/parameters/exportQ' }
+        - in: query
+          name: customFieldId
+          description: Project custom field. Requires projectId in search; restricts hits to tasks.
+          schema: { type: integer, format: int64, minimum: 1 }
+        - in: query
+          name: customOperator
+          schema: { $ref: '#/components/schemas/CustomFieldOperator' }
+        - in: query
+          name: customValue
+          description: Exact string operand, required except IS_SET/IS_NOT_SET. Text is case-sensitive; unset values match only IS_NOT_SET.
+          schema: { type: string, maxLength: 200 }
       responses:
         '200':
           description: PDF report
@@ -2856,6 +3025,59 @@ components:
         card. rounds contains only previously revealed rounds; it never includes current unrevealed votes or statistics.
         finalValue is the chosen numeric card when present in the deck, otherwise the lower median that informed the
         explicit story-point mapping. Archived projects are readable; writes are denied.
+    CustomFieldKind:
+      type: string
+      enum: [TEXT, NUMBER, DATE, SELECT, USER]
+    CustomFieldOperator:
+      type: string
+      enum: [EQUALS, NOT_EQUALS, CONTAINS, LESS_THAN, AT_MOST, GREATER_THAN, AT_LEAST, IS_SET, IS_NOT_SET]
+    CustomFieldDefinitionRequest:
+      type: object
+      required: [name, kind]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        kind: { $ref: '#/components/schemas/CustomFieldKind' }
+        options: { type: array, maxItems: 30, items: { type: string, minLength: 1, maxLength: 80 } }
+    CustomFieldDefinition:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        projectId: { type: integer, format: int64 }
+        name: { type: string }
+        kind: { $ref: '#/components/schemas/CustomFieldKind' }
+        options: { type: array, items: { type: string } }
+        version: { type: integer, format: int64 }
+    CustomFieldValuesRequest:
+      type: object
+      required: [values]
+      properties:
+        values: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/CustomFieldValueEntry' } }
+    CustomFieldValueEntry:
+      type: object
+      required: [fieldId]
+      properties:
+        fieldId: { type: integer, format: int64, minimum: 1 }
+        value:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: 'TEXT max 2000; NUMBER exact decimal with 18 whole/6 fractional digits; DATE ISO years 0001–9999; SELECT exact option; USER positive project membership id. Empty clears.'
+    CustomFieldValue:
+      type: object
+      properties:
+        fieldId: { type: integer, format: int64 }
+        value: { type: string }
+        displayValue: { type: string }
+    TaskCustomFields:
+      type: object
+      properties:
+        taskId: { type: integer, format: int64 }
+        version: { type: integer, format: int64 }
+        values: { type: array, items: { $ref: '#/components/schemas/CustomFieldValue' } }
+    CustomFieldMatches:
+      type: object
+      properties:
+        taskIds: { type: array, items: { type: integer, format: int64 } }
     ForecastQuery:
       type: object
       required: []

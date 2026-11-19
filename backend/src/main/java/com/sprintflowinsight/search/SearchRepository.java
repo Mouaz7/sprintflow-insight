@@ -1,5 +1,6 @@
 package com.sprintflowinsight.search;
 
+import com.sprintflowinsight.workspace.customfield.PreparedFieldFilter;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.List;
@@ -46,6 +47,7 @@ public class SearchRepository {
                task.title, task.description AS body, %d AS score, true AS exact
         FROM task JOIN readable ON readable.id = task.project_id
         WHERE :wantTask AND :hasKey AND task.trashed_at IS NULL
+          AND /* customFieldFilter */
           AND readable.key = :keyProject AND task.number = :keyNumber
         UNION ALL
         SELECT 5, task.id, task.project_id, task.id, task.number, task.title, task.description,
@@ -53,6 +55,7 @@ public class SearchRepository {
                  + extensions.word_similarity(:text, task.title), false
         FROM task JOIN readable ON readable.id = task.project_id CROSS JOIN query
         WHERE :wantTask AND task.trashed_at IS NULL
+          AND /* customFieldFilter */
           AND (task.search_vector @@ query.terms OR :text OPERATOR(extensions.<%%) task.title)
           AND NOT (:hasKey AND readable.key = :keyProject AND task.number = :keyNumber)
         UNION ALL
@@ -133,11 +136,26 @@ public class SearchRepository {
       Set<SearchType> types,
       SearchCursor cursor,
       int limit) {
+    return search(userId, projectId, query, types, cursor, limit, null);
+  }
+
+  public List<Row> search(
+      long userId,
+      Long projectId,
+      SearchQuery query,
+      Set<SearchType> types,
+      SearchCursor cursor,
+      int limit,
+      PreparedFieldFilter filter) {
     var key = query.taskKey();
+    var statement =
+        entities.createNativeQuery(
+            SQL.replace(
+                "/* customFieldFilter */", filter == null ? "true" : filter.taskPredicate()));
+    if (filter != null) filter.bind(statement);
     @SuppressWarnings("unchecked")
     List<Object[]> rows =
-        entities
-            .createNativeQuery(SQL)
+        statement
             .setParameter("userId", userId)
             .setParameter("projectId", projectId == null ? 0L : projectId)
             .setParameter("terms", query.tsquery())

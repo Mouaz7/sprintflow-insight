@@ -4,5 +4,10 @@
  * typos) and the access filtering, in one statement per request. See ADR 0016.
  */
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = {"common :: errors", "workspace :: project", "workspace :: task"})
+    allowedDependencies = {
+      "common :: errors",
+      "workspace :: project",
+      "workspace :: task",
+      "workspace :: customfields"
+    })
 package com.sprintflowinsight.search;
