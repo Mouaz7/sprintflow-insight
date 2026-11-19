@@ -467,6 +467,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  time: [
+    'Logga minuter manuellt eller starta en timer på en uppgift. Jämför uppskattat mot faktiskt och exportera rapporten. Välj en sprint för att ange tillgänglighet och frånvaro och se var planerat arbete överskrider kapaciteten. Vardagar räknas; helgdagar behöver anges som frånvaro.',
+    'Log minutes manually or start a task timer. Compare estimates with actual time and export the report. Choose a sprint to enter availability and absence and see where committed work exceeds capacity. Weekdays count; enter public holidays as days off.',
+  ],
   poker: [
     'Välj en berättelse och en kortlek. Varje deltagare röstar dolt. Spelledaren, ägaren eller en administratör avslöjar rösterna, startar en ny runda vid oenighet och sparar överenskomna poäng på berättelsen. Läsbehörighet ger möjlighet att följa sessionen.',
     'Choose a story and a deck. Participants vote privately. The facilitator, owner or admin reveals the votes, starts another round after disagreement and saves the agreed story points. Viewers can watch the session.',

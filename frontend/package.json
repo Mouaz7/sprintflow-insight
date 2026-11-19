@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "280 kB",
+      "limit": "295 kB",
       "gzip": true
     },
     {
@@ -137,6 +137,12 @@
       "name": "Planning poker route chunk (gzip)",
       "path": "dist/assets/PokerView-*.js",
       "limit": "15 kB",
+      "gzip": true
+    },
+    {
+      "name": "Time and capacity route chunk (gzip)",
+      "path": "dist/assets/TimeView-*.js",
+      "limit": "20 kB",
       "gzip": true
     }
   ]

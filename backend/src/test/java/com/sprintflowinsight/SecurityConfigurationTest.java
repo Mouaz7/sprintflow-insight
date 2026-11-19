@@ -91,6 +91,7 @@ class SecurityConfigurationTest {
         java.util.List.of(
             "/tasks",
             "/poker?session=1",
+            "/time?sprint=1",
             "/roadmap?epic=1",
             "/report/private-share-token",
             "/reset-password?token=private-reset")) {

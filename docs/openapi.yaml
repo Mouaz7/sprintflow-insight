@@ -1253,7 +1253,7 @@ paths:
           $ref: '#/components/responses/Error'
   /api/projects/{projectId}/poker-sessions:
     parameters:
-    - &id001
+    - &pokerPath001
       $ref: '#/components/parameters/projectId'
     get:
       summary: List up to 100 open sessions or the 20 most recently updated closed sessions
@@ -1308,8 +1308,8 @@ paths:
             schema:
               $ref: '#/components/schemas/StartPokerRequest'
   /api/projects/{projectId}/poker-sessions/{sessionId}:
-    parameters: &id002
-    - *id001
+    parameters: &pokerPath002
+    - *pokerPath001
     - in: path
       name: sessionId
       required: true
@@ -1361,7 +1361,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PokerRoundRequest'
   /api/projects/{projectId}/poker-sessions/{sessionId}/vote:
-    parameters: *id002
+    parameters: *pokerPath002
     put:
       summary: Cast or replace only your own vote in the named round
       responses:
@@ -1417,7 +1417,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PokerRoundRequest'
   /api/projects/{projectId}/poker-sessions/{sessionId}/reveal:
-    parameters: *id002
+    parameters: *pokerPath002
     post:
       summary: Reveal the named round; at least one vote is required
       responses:
@@ -1448,7 +1448,7 @@ paths:
       description: Facilitator, Owner or Admin, active project only. round must match the current round; a delayed
         command returns 409. Viewer and unrelated Member cannot facilitate.
   /api/projects/{projectId}/poker-sessions/{sessionId}/revote:
-    parameters: *id002
+    parameters: *pokerPath002
     post:
       summary: Open the next round after revealing; at most 50 rounds
       responses:
@@ -1479,7 +1479,7 @@ paths:
       description: Facilitator, Owner or Admin, active project only. round must match the current round; a delayed
         command returns 409. Viewer and unrelated Member cannot facilitate.
   /api/projects/{projectId}/poker-sessions/{sessionId}/accept:
-    parameters: *id002
+    parameters: *pokerPath002
     post:
       summary: Save an explicitly agreed estimate and record project activity
       responses:
@@ -1513,6 +1513,437 @@ paths:
         command returns 409. Viewer and unrelated Member cannot facilitate. storyVersion must match the current story
         (412 otherwise). At least one estimating vote must have been revealed. Accepting closes the session atomically
         with the story update and activity.
+  /api/projects/{projectId}/time-entries:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: List live-task time entries with keyset pagination
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryPage'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: taskId
+        schema:
+          type: integer
+          format: int64
+      - in: query
+        name: sprintId
+        schema:
+          type: integer
+          format: int64
+      - in: query
+        name: userId
+        schema:
+          type: integer
+          format: int64
+      - in: query
+        name: before
+        schema:
+          type: integer
+          format: int64
+      - in: query
+        name: size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+    post:
+      summary: Log manual time
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEntryRequest'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/time-entries/{entryId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - in: path
+      name: entryId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      summary: Correct a logged period
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEntryUpdateRequest'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+    delete:
+      summary: Delete a period or discard a timer
+      responses:
+        '204':
+          description: Success
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/timer:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read your running timer in this project
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '204':
+          description: No timer running in this project
+    post:
+      summary: Start your timer; one running timer per account across all projects
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimerStartRequest'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/timer/stop:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    post:
+      summary: Stop your timer, round up to whole minutes (1–1440)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/tasks/{taskId}/time-estimate:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - in: path
+      name: taskId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      summary: Set or remove the task time estimate; separate from PERT working-day estimates
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskTimeEstimate'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEstimateRequest'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/sprints/{sprintId}/capacity:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - in: path
+      name: sprintId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      summary: Read member and team availability, committed work and warnings
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintCapacity'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/sprints/{sprintId}/capacity/{userId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - in: path
+      name: sprintId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - in: path
+      name: userId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      summary: Set your own capacity, or manage writers as Owner/Admin
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintCapacity'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintCapacityRequest'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+      parameters:
+      - in: header
+        name: If-Match
+        required: false
+        description: Omit for a new row. Existing rows require their quoted current revision (428 missing, 412 stale).
+        schema:
+          type: string
+    delete:
+      summary: Remove configured capacity
+      responses:
+        '204':
+          description: Success
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '412':
+          $ref: '#/components/responses/Error'
+        '428':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      description: Writes require an active project. Project writers act on their own time/capacity; Owner/Admin can
+        manage others. Recycled projects are inaccessible.
+  /api/projects/{projectId}/time-report:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Compare estimated and logged minutes on current live tasks
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeReport'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: sprintId
+        schema:
+          type: integer
+          format: int64
+  /api/projects/{projectId}/time-report.csv:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Compare estimated and logged minutes on current live tasks
+      responses:
+        '200':
+          description: UTF-8 CSV attachment with quoted, formula-neutralized text
+          content:
+            text/csv:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: sprintId
+        schema:
+          type: integer
+          format: int64
 components:
   securitySchemes:
     sessionCookie:
@@ -1608,12 +2039,473 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    TimeEntry:
+      type: object
+      required:
+      - id
+      - taskId
+      - taskKey
+      - taskTitle
+      - userId
+      - userEmail
+      - spentOn
+      - minutes
+      - running
+      - startedAt
+      - note
+      - version
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        taskId:
+          type: integer
+          format: int64
+          nullable: true
+        taskKey:
+          type: string
+          nullable: true
+        taskTitle:
+          type: string
+          nullable: true
+        userId:
+          type: integer
+          format: int64
+          nullable: true
+        userEmail:
+          type: string
+          nullable: true
+        spentOn:
+          type: string
+          format: date
+          nullable: true
+        minutes:
+          type: integer
+          nullable: true
+        running:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          nullable: true
+      description: One manual, stopped or running entry. userEmail is null for former members. Only the caller or Owner/Admin
+        may correct/delete; stopped entries retain original task/person. If-Match guards corrections, deletion and stopping.
+    TimeEntryPage:
+      type: object
+      required:
+      - items
+      - nextBefore
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeEntry'
+        nextBefore:
+          type: integer
+          format: int64
+          nullable: true
+    TimeReport:
+      type: object
+      required:
+      - sprintId
+      - rows
+      - estimatedMinutes
+      - loggedMinutes
+      - loggedOnEstimatedMinutes
+      - unestimatedTasks
+      - varianceMinutes
+      - variancePercent
+      properties:
+        sprintId:
+          type: integer
+          format: int64
+          nullable: true
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeReportRow'
+        estimatedMinutes:
+          type: integer
+          format: int64
+        loggedMinutes:
+          type: integer
+          format: int64
+        loggedOnEstimatedMinutes:
+          type: integer
+          format: int64
+        unestimatedTasks:
+          type: integer
+          format: int64
+        varianceMinutes:
+          type: integer
+          format: int64
+        variancePercent:
+          type: integer
+          nullable: true
+      description: Only current live tasks in the selected sprint or project. Logged time excludes running timers. Variance
+        compares only estimated tasks; null differs from zero. Moving/trashing tasks changes scope retroactively. CSV
+        quotes and formula-neutralizes text cells.
+    TimeReportRow:
+      type: object
+      required:
+      - taskId
+      - key
+      - title
+      - status
+      - assigneeEmail
+      - estimateMinutes
+      - loggedMinutes
+      - varianceMinutes
+      - variancePercent
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          nullable: true
+        key:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        assigneeEmail:
+          type: string
+          nullable: true
+        estimateMinutes:
+          type: integer
+          nullable: true
+        loggedMinutes:
+          type: integer
+          format: int64
+        varianceMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        variancePercent:
+          type: integer
+          nullable: true
+    SprintCapacity:
+      type: object
+      required:
+      - sprintId
+      - sprintName
+      - startDate
+      - endDate
+      - workingDays
+      - members
+      - team
+      - warnings
+      properties:
+        sprintId:
+          type: integer
+          format: int64
+          nullable: true
+        sprintName:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        workingDays:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberCapacity'
+        team:
+          $ref: '#/components/schemas/TeamCapacity'
+          nullable: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityWarning'
+    MemberCapacity:
+      type: object
+      required:
+      - userId
+      - email
+      - role
+      - configured
+      - minutesPerDay
+      - availabilityPercent
+      - pointCapacity
+      - daysOff
+      - version
+      - availableDays
+      - availableMinutes
+      - effectivePoints
+      - committedMinutes
+      - committedPoints
+      - unestimatedTasks
+      - loggedMinutes
+      - loadPercent
+      - overbooked
+      - pointsLoadPercent
+      - pointsOverbooked
+      properties:
+        userId:
+          type: integer
+          format: int64
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        configured:
+          type: boolean
+        minutesPerDay:
+          type: integer
+          nullable: true
+        availabilityPercent:
+          type: integer
+          nullable: true
+        pointCapacity:
+          type: integer
+          nullable: true
+        daysOff:
+          type: array
+          items:
+            type: string
+            format: date
+        version:
+          type: integer
+          format: int64
+          nullable: true
+        availableDays:
+          type: integer
+        availableMinutes:
+          type: integer
+          format: int64
+        effectivePoints:
+          type: integer
+          nullable: true
+        committedMinutes:
+          type: integer
+          format: int64
+        committedPoints:
+          type: integer
+          format: int64
+        unestimatedTasks:
+          type: integer
+          format: int64
+        loggedMinutes:
+          type: integer
+          format: int64
+        loadPercent:
+          type: integer
+          nullable: true
+        overbooked:
+          type: boolean
+        pointsLoadPercent:
+          type: integer
+          nullable: true
+        pointsOverbooked:
+          type: boolean
+    TeamCapacity:
+      type: object
+      required:
+      - availableMinutes
+      - effectivePoints
+      - committedMinutes
+      - committedPoints
+      - unassignedMinutes
+      - unassignedPoints
+      - loggedMinutes
+      - loadPercent
+      - overbooked
+      - pointsLoadPercent
+      - pointsOverbooked
+      properties:
+        availableMinutes:
+          type: integer
+          format: int64
+        effectivePoints:
+          type: integer
+          nullable: true
+        committedMinutes:
+          type: integer
+          format: int64
+        committedPoints:
+          type: integer
+          format: int64
+        unassignedMinutes:
+          type: integer
+          format: int64
+        unassignedPoints:
+          type: integer
+          format: int64
+        loggedMinutes:
+          type: integer
+          format: int64
+        loadPercent:
+          type: integer
+          nullable: true
+        overbooked:
+          type: boolean
+        pointsLoadPercent:
+          type: integer
+          nullable: true
+        pointsOverbooked:
+          type: boolean
+    CapacityWarning:
+      type: object
+      required:
+      - code
+      - userId
+      properties:
+        code:
+          type: string
+          enum:
+          - SPRINT_DATES_MISSING
+          - CAPACITY_NOT_SET
+          - MEMBER_OVERBOOKED
+          - MEMBER_POINTS_OVERBOOKED
+          - TEAM_OVERBOOKED
+          - TEAM_POINTS_OVERBOOKED
+          - UNESTIMATED_TASKS
+          - UNASSIGNED_WORK
+          nullable: true
+        userId:
+          type: integer
+          format: int64
+          nullable: true
+    SprintCapacityRequest:
+      type: object
+      required:
+      - minutesPerDay
+      - availabilityPercent
+      properties:
+        minutesPerDay:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        availabilityPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        pointCapacity:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10000
+        daysOff:
+          type: array
+          items:
+            type: string
+            format: date
+          maxItems: 366
+      description: Current project writers may set their own capacity; Owner/Admin may set other writers. Existing rows
+        require If-Match; creates omit it. Weekdays only; duplicate/weekend/out-of-sprint dates do not reduce capacity.
+        Public holidays must be entered explicitly.
+    TimeEntryRequest:
+      type: object
+      required:
+      - taskId
+      - minutes
+      - spentOn
+      properties:
+        taskId:
+          type: integer
+          format: int64
+        minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        spentOn:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        userId:
+          type: integer
+          format: int64
+          nullable: true
+      description: Log for yourself by omitting userId. Owner/Admin may log for another current project writer. spentOn
+        must be between 2000-01-01 and tomorrow in UTC (one day of timezone slack).
+    TimeEntryUpdateRequest:
+      type: object
+      required:
+      - minutes
+      - spentOn
+      properties:
+        minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        spentOn:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+    TimerStartRequest:
+      type: object
+      required:
+      - taskId
+      properties:
+        taskId:
+          type: integer
+          format: int64
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+    TimeEstimateRequest:
+      type: object
+      required: []
+      properties:
+        estimateMinutes:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 600000
+      description: null removes the estimate, zero is an explicit zero estimate. Requires the task revision; ordinary
+        task updates preserve this independent field.
+    TaskTimeEstimate:
+      type: object
+      required:
+      - taskId
+      - estimateMinutes
+      - version
+      properties:
+        taskId:
+          type: integer
+          format: int64
+          nullable: true
+        estimateMinutes:
+          type: integer
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          nullable: true
     PokerRoundRequest:
       type: object
       required:
       - round
       properties:
-        round: &id001
+        round: &pokerSchema001
           type: integer
           minimum: 1
           maximum: 50
@@ -1623,10 +2515,10 @@ components:
       - storyId
       - deck
       properties:
-        storyId: &id002
+        storyId: &pokerSchema002
           type: integer
           format: int64
-        deck: &id008
+        deck: &pokerSchema008
           type: string
           enum:
           - FIBONACCI
@@ -1649,7 +2541,7 @@ components:
       - round
       - card
       properties:
-        round: *id001
+        round: *pokerSchema001
         card:
           type: string
           minLength: 1
@@ -1661,10 +2553,10 @@ components:
       - storyPoints
       - storyVersion
       properties:
-        round: *id001
-        storyPoints: &id007
+        round: *pokerSchema001
+        storyPoints: &pokerSchema007
           type: integer
-          enum: &id003
+          enum: &pokerSchema003
           - 1
           - 2
           - 3
@@ -1684,21 +2576,21 @@ components:
       - round
       - finalStoryPoints
       properties:
-        id: *id002
-        storyId: *id002
-        storyTitle: &id004
+        id: *pokerSchema002
+        storyId: *pokerSchema002
+        storyTitle: &pokerSchema004
           type: string
-        status: &id009
+        status: &pokerSchema009
           type: string
           enum:
           - VOTING
           - REVEALED
           - ACCEPTED
           - CANCELLED
-        round: *id001
+        round: *pokerSchema001
         finalStoryPoints:
           type: integer
-          enum: *id003
+          enum: *pokerSchema003
           nullable: true
     PokerVoter:
       type: object
@@ -1706,8 +2598,8 @@ components:
       - userId
       - name
       properties:
-        userId: *id002
-        name: *id004
+        userId: *pokerSchema002
+        name: *pokerSchema004
     PokerVote:
       type: object
       required:
@@ -1715,17 +2607,17 @@ components:
       - name
       - card
       properties:
-        userId: *id002
-        name: *id004
-        card: *id004
+        userId: *pokerSchema002
+        name: *pokerSchema004
+        card: *pokerSchema004
     PokerCardCount:
       type: object
       required:
       - card
       - count
       properties:
-        card: *id004
-        count: &id005
+        card: *pokerSchema004
+        count: &pokerSchema005
           type: integer
     PokerStatistics:
       type: object
@@ -1745,8 +2637,8 @@ components:
       - suggestedStoryPoints
       - revoteRecommended
       properties:
-        votes: *id005
-        abstentions: *id005
+        votes: *pokerSchema005
+        abstentions: *pokerSchema005
         distribution:
           type: array
           items:
@@ -1762,23 +2654,23 @@ components:
           nullable: true
         modes:
           type: array
-          items: *id004
-        consensus: &id006
+          items: *pokerSchema004
+        consensus: &pokerSchema006
           type: boolean
         agreement:
           type: number
         mean:
           type: number
           nullable: true
-        spread: *id005
+        spread: *pokerSchema005
         suggestion:
           type: string
           nullable: true
         suggestedStoryPoints:
           type: integer
-          enum: *id003
+          enum: *pokerSchema003
           nullable: true
-        revoteRecommended: *id006
+        revoteRecommended: *pokerSchema006
       description: Uses deck order; median is the lower middle estimate. Abstentions are excluded from agreement, mean,
         median and consensus. mean is null unless all estimating cards are numeric. suggestedStoryPoints is null for
         unmapped cards; the facilitator explicitly chooses the story estimate.
@@ -1789,7 +2681,7 @@ components:
       - votes
       - statistics
       properties:
-        number: *id001
+        number: *pokerSchema001
         votes:
           type: array
           items:
@@ -1821,18 +2713,18 @@ components:
       - closedAt
       - version
       properties:
-        id: *id002
-        projectId: *id002
-        storyId: *id002
-        storyTitle: *id004
-        storyPoints: *id007
-        storyVersion: *id002
-        deck: *id008
+        id: *pokerSchema002
+        projectId: *pokerSchema002
+        storyId: *pokerSchema002
+        storyTitle: *pokerSchema004
+        storyPoints: *pokerSchema007
+        storyVersion: *pokerSchema002
+        deck: *pokerSchema008
         cards:
           type: array
-          items: *id004
-        status: *id009
-        round: *id001
+          items: *pokerSchema004
+        status: *pokerSchema009
+        round: *pokerSchema001
         facilitatorUserId:
           type: integer
           format: int64
@@ -1853,10 +2745,10 @@ components:
           nullable: true
         finalStoryPoints:
           type: integer
-          enum: *id003
+          enum: *pokerSchema003
           nullable: true
-        canVote: *id006
-        canFacilitate: *id006
+        canVote: *pokerSchema006
+        canFacilitate: *pokerSchema006
         createdAt:
           type: string
           format: date-time
@@ -1864,7 +2756,7 @@ components:
           type: string
           format: date-time
           nullable: true
-        version: *id002
+        version: *pokerSchema002
       description: Caller-specific snapshot. Before reveal, voters contain identities only and myCard is only the caller’s
         card. rounds contains only previously revealed rounds; it never includes current unrevealed votes or statistics.
         finalValue is the chosen numeric card when present in the deck, otherwise the lower median that informed the
@@ -3080,6 +3972,7 @@ components:
           description: Per-project sequence number, allocated once and never reused.
         projectKey: { type: string, example: SF }
         key: { type: string, example: SF-123, description: 'Human identifier: projectKey-number.' }
+        estimateMinutes: { type: integer, minimum: 0, maximum: 600000, nullable: true, readOnly: true, description: Changed through the time-estimate endpoint using the task revision. }
         version: { type: integer, format: int64 }
     StoryRequest:
       type: object

@@ -51,6 +51,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'flow',
   'forecast',
   'poker',
+  'time',
   'updates',
   'profile',
   'calendar',
@@ -222,7 +223,10 @@ function WorkspaceShell() {
   function setActiveProjectId(id: number) {
     setSelectedProjectId(id);
     if (
-      (view === 'tasks' || view === 'forecast' || view === 'poker') &&
+      (view === 'tasks' ||
+        view === 'forecast' ||
+        view === 'poker' ||
+        view === 'time') &&
       location.search
     )
       void navigate(`/${view}`, { replace: true });

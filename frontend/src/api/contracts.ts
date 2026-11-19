@@ -30,6 +30,7 @@ export type Task = {
   /** Human identifier such as SF-123. */
   key?: string;
   storyPoints: number;
+  estimateMinutes?: number | null;
   dueAt?: string;
   sprintId?: number;
   storyId?: number;
@@ -54,6 +55,7 @@ export type WorkspaceView =
   | 'metrics'
   | 'flow'
   | 'poker'
+  | 'time'
   | 'forecast'
   | 'updates'
   | 'profile'

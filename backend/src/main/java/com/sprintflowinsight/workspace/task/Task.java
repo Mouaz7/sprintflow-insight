@@ -52,6 +52,14 @@ public class Task {
   private Instant dueAt;
   @Version private Long version;
 
+  /**
+   * Estimate in minutes, {@code null} when not estimated. Changed only through the estimate
+   * endpoint, so a task update from an older client cannot clear it.
+   */
+  @com.fasterxml.jackson.annotation.JsonProperty(
+      access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+  private Integer estimateMinutes;
+
   /** Per-project sequence number, allocated once at creation; the {@code 123} in SF-123. */
   @jakarta.persistence.Column(nullable = false, updatable = false)
   @com.fasterxml.jackson.annotation.JsonProperty(
@@ -218,6 +226,14 @@ public class Task {
 
   public void setDueAt(Instant dueAt) {
     this.dueAt = dueAt;
+  }
+
+  public Integer getEstimateMinutes() {
+    return estimateMinutes;
+  }
+
+  public void setEstimateMinutes(Integer estimateMinutes) {
+    this.estimateMinutes = estimateMinutes;
   }
 
   public Long getVersion() {
