@@ -27,6 +27,7 @@ public class CspResources implements WebMvcConfigurer {
           "/forecast",
           "/poker",
           "/time",
+          "/dashboard",
           "/updates",
           "/profile",
           "/calendar",

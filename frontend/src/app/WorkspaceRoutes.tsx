@@ -35,6 +35,11 @@ const RoadmapView = lazy(() =>
 const PokerView = lazy(() =>
   import('../features/poker/PokerView').then((m) => ({ default: m.PokerView })),
 );
+const DashboardView = lazy(() =>
+  import('../features/dashboard/DashboardView').then((m) => ({
+    default: m.DashboardView,
+  })),
+);
 const TimeView = lazy(() =>
   import('../features/time/TimeView').then((m) => ({ default: m.TimeView })),
 );
@@ -112,6 +117,10 @@ function PokerRoute() {
   return <PokerView project={activeProject} />;
 }
 
+function DashboardRoute() {
+  const { activeProject, session } = useWorkspace();
+  return <DashboardView project={activeProject} user={session.user} />;
+}
 function TimeRoute() {
   const { activeProject, session } = useWorkspace();
   return <TimeView project={activeProject} user={session.user} />;
@@ -238,6 +247,7 @@ const routes: Record<WorkspaceView, ReactNode> = {
   metrics: <InsightRoute view="metrics" />,
   poker: <PokerRoute />,
   time: <TimeRoute />,
+  dashboard: <DashboardRoute />,
   flow: <FlowRoute />,
   forecast: <ForecastRoute />,
   updates: <InsightRoute view="updates" />,

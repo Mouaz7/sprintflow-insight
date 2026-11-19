@@ -26,4 +26,5 @@
 @import './features/forecast/forecast.css' layer(design);
 @import './features/poker/poker.css' layer(design);
 @import './features/time/time.css' layer(design);
+@import './features/dashboard/dashboard.css' layer(design);
 @import './shared/styles/accessibility.css' layer(accessibility);

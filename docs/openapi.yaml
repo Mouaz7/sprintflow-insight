@@ -1944,6 +1944,44 @@ paths:
         schema:
           type: integer
           format: int64
+  /api/projects/{projectId}/dashboard:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read your personal project dashboard layout
+      description: Any project member may read. Returns six default widgets with version zero until saved; reading never inserts a row. Layouts are private to the authenticated account.
+      responses:
+        '200':
+          description: Layout with opaque revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardLayout' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Save your personal project dashboard layout
+      description: All current members including Viewer may customize their own layout. Archived and trashed projects reject writes. No other account id is accepted. Widget types must be unique; order is display order, wide spans both desktop columns. An empty layout is valid.
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DashboardLayoutRequest' }
+      responses:
+        '200':
+          description: Saved layout; revisions start at one
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardLayout' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     sessionCookie:
@@ -4124,3 +4162,27 @@ components:
         email: { type: string, format: email }
         password: { type: string, minLength: 6, maxLength: 72 }
         displayName: { type: string, minLength: 1, maxLength: 80 }
+
+    DashboardWidget:
+      type: object
+      required: [type, wide]
+      properties:
+        type: { type: string, enum: [BURNDOWN, CFD, FORECAST, WIP, MY_TASKS, SPRINT_GOAL] }
+        wide: { type: boolean }
+    DashboardLayoutRequest:
+      type: object
+      required: [widgets]
+      properties:
+        widgets:
+          type: array
+          maxItems: 6
+          items: { $ref: '#/components/schemas/DashboardWidget' }
+    DashboardLayout:
+      type: object
+      required: [version, widgets]
+      properties:
+        version: { type: integer, format: int64, minimum: 0 }
+        widgets:
+          type: array
+          maxItems: 6
+          items: { $ref: '#/components/schemas/DashboardWidget' }

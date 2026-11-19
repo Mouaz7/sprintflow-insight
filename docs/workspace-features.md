@@ -184,3 +184,11 @@ Rapporten **Uppskattat mot faktiskt** låter dig ange tidsuppskattningar per upp
 Välj en sprint för **Sprintkapacitet**. Ange arbetsminuter per dag, tillgänglighet i procent, valfria poäng för en hel sprint och frånvarodatum. Kapaciteten räknar vardagar från måndag till fredag, inklusive sprintens start och slut. Dubbletter, helger och datum utanför sprinten räknas inte som extra frånvaro. Ange röda dagar manuellt. Klara uppgifter ingår fortfarande i sprintens planerade arbete. Varningar visar överbokning, saknad kapacitet, uppskattningar som saknas och otilldelat arbete. Medlemmar ändrar sin egen kapacitet; ägare och administratörer kan ändra teamets.
 
 Tidposter och kapacitet sparas på servern och uppdateras mellan deltagarnas webbläsare. Radering av ett konto anonymiserar färdigloggade timmar; de finns kvar i projektets totalsummor. Se [ADR 0024](adr/0024-time-tracking-and-capacity.md).
+
+## Personliga dashboards (B18)
+
+Öppna **Dashboard** i projektets navigering. Varje konto har en egen layout per projekt; även läsbehörighet ger möjlighet att anpassa den egna vyn. **Anpassa dashboard** väljer widgets, ändrar deras ordning med upp/ned-knappar och väljer breda kort. Spara för att behålla layouten efter omladdning. Standardlayouten kan återställas i redigeraren; en tom layout går också att spara. På mobil staplas alla kort i samma ordning.
+
+Sprintvalet styr burndown och sprintmål. Kumulativt flöde och WIP visar projektets senaste 30 dagar, prognosen använder historisk genomströmning för projektets oavslutade arbete och **Mina öppna uppgifter** visar högst 20 av dina tilldelade oavslutade uppgifter. Diagrammens datatabeller visar samma värden utan grafik. Saknad historik visas uttryckligen; prognoser är simulerade utfall och ska läsas tillsammans med varningarna i den detaljerade prognosvyn.
+
+Layouten delas aldrig med andra konton. Ändringar i två fönster skyddas med versionskontroll: vid konflikt finns utkastet kvar; stäng och öppna redigeraren igen för att läsa den senaste layouten. Arkiverade projekt går att läsa men layouten kan inte ändras där. Återställ projektet innan du anpassar vyn.

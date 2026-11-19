@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "295 kB",
+      "limit": "305 kB",
       "gzip": true
     },
     {
@@ -143,6 +143,12 @@
       "name": "Time and capacity route chunk (gzip)",
       "path": "dist/assets/TimeView-*.js",
       "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Dashboard route chunk (gzip)",
+      "path": "dist/assets/DashboardView-*.js",
+      "limit": "15 kB",
       "gzip": true
     }
   ]
