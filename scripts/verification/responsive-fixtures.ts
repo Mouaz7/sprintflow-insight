@@ -92,6 +92,16 @@ export async function responsiveFixture(page: Page, options: Options) {
         message: 'En längre avisering som behöver kunna radbrytas och läsas även i ett lågt fönster.',
         read: false, createdAt: '2026-10-22T12:00:00Z',
       }));
+    } else if (/\/tasks\/\d+\/custom-fields$/.test(pathname)) {
+      body = { taskId: 1, version: 0, values: [] };
+    } else if (pathname.endsWith('/custom-fields')) {
+      body = empty ? [] : [
+        { id: 8, projectId: 1, name: 'Kostnadsställe'.repeat(7).slice(0, 80), kind: 'TEXT', options: [], version: 0 },
+        { id: 9, projectId: 1, name: 'Budget', kind: 'NUMBER', options: [], version: 0 },
+        { id: 10, projectId: 1, name: 'Granskningsdatum · Review date', kind: 'DATE', options: [], version: 0 },
+        { id: 11, projectId: 1, name: 'Stage', kind: 'SELECT', options: ['Ready', 'Waiting'], version: 0 },
+        { id: 12, projectId: 1, name: 'Reviewer', kind: 'USER', options: [], version: 0 },
+      ];
     } else if (pathname.endsWith('/members')) {
       body = [{ id: 1, email: user.email, role: 'Owner' }, { id: 2, email: 'sara@example.com', role: 'Member' }];
     } else if (pathname.endsWith('/roadmap')) body = {

@@ -15,12 +15,17 @@ let forms = 0;
 async function layout(page: Page) {
   const geometry = await page.evaluate(() => ({
     width: innerWidth, scroll: document.documentElement.scrollWidth,
-    clipped: [...document.querySelectorAll('.guidance p,.guidance dd,.form-guide > p')]
+    overflowingFields: [...document.querySelectorAll('.custom-field-input input,.custom-field-input select,.custom-field-input textarea')]
+      .filter(el => el.getClientRects().length && getComputedStyle(el).opacity !== '0')
+      .map(el => el.getBoundingClientRect())
+      .filter(rect => rect.left < -1 || rect.right > innerWidth + 1).length,
+    clipped: [...document.querySelectorAll('.guidance p,.guidance dd,.form-guide > p,.custom-field-input > span:first-child')]
       .filter(el => el.getClientRects().length && el.scrollWidth > el.clientWidth + 1)
       .map(el => el.textContent),
   }));
   assert.ok(geometry.scroll <= geometry.width, JSON.stringify(geometry));
   assert.deepEqual(geometry.clipped, []);
+  assert.equal(geometry.overflowingFields, 0, "Custom field controls must fit the viewport");
   layouts++;
 }
 try {
@@ -33,12 +38,17 @@ try {
     await page.locator('.page h1').waitFor();
     async function nav(index: number) {
       await page.setViewportSize({ width: 1440, height: 900 });
+      if (index === 14) {
+        await page.goto(new URL('/fields', base).href);
+        await page.locator('.page h1').waitFor();
+        return;
+      }
       await page.locator('.header-navigation nav a').nth(index).click();
       // Views are lazy route chunks: wait until the new route has committed.
       await page.waitForFunction(i => document.querySelectorAll('.header-navigation nav a')[i]?.getAttribute('aria-current') === 'page', index);
       await page.locator('.page h1').waitFor();
     }
-    for (let index = 0; index < 14; index++) {
+    for (let index = 0; index < 15; index++) {
       await nav(index);
       const guide = page.locator('.page-guide');
       assert.equal(await guide.count(), 1);
@@ -68,6 +78,8 @@ try {
       [4, /Lägg till beroende|Add dependency/, 'dependency'],
       [4, /Uppskatta en uppgift|Estimate a task/, 'estimate'],
       [5, /Ny uppgift|New task/, 'task'],
+      [5, /^Anpassade fält$|^Custom fields$/, 'customFieldValues'],
+      [14, /Nytt anpassat fält|New custom field/, 'customFieldDefinition'],
       [7, /Ange WIP-gränser|Set WIP limits/, 'wipLimits'],
       [12, /Ny anteckning|New note/, 'retro'],
     ] as const) {
@@ -78,6 +90,7 @@ try {
       const dialog = page.getByRole('dialog');
       await dialog.waitFor();
       const guide = dialog.locator('.form-guide');
+      await guide.waitFor();
       assert.equal(await guide.count(), 1);
       const values = () => dialog.locator('input,textarea,select').evaluateAll(elements => elements.map(el => (el as HTMLInputElement).value));
       const before = await values();
@@ -134,7 +147,7 @@ try {
   }
   assert.deepEqual(errors, []);
   fs.writeFileSync(`${out}results.json`, JSON.stringify({ layouts, forms, errors, api: 'fixtures only' }, null, 2));
-  console.log(`PASS: guidance on all 14 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
+  console.log(`PASS: guidance on all 15 pages, ${forms} empty forms, ${layouts} expanded-help layouts, SV/EN and both themes; keyboard, unchanged drafts, empty values and screenshots verified. API fixtures only.`);
 } finally {
   await browser.close();
 }

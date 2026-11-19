@@ -43,6 +43,7 @@ import { useSession } from './SessionGate';
 export const workspaceViews: readonly WorkspaceView[] = [
   'overview',
   'projects',
+  'fields',
   'backlog',
   'sprints',
   'roadmap',
@@ -263,17 +264,19 @@ function WorkspaceShell() {
   };
   const nav = (mobile = false) => (
     <nav aria-label={t(mobile ? 'mobileNavigation' : 'mainNavigation')}>
-      {workspaceViews.map((key) => (
-        <NavLink
-          key={key}
-          to={`/${key}`}
-          className={({ isActive }) => (isActive ? 'active' : '')}
-          onClick={() => setMenuOpen(false)}
-        >
-          <InterfaceIcon name={key} />
-          <span>{t(key)}</span>
-        </NavLink>
-      ))}
+      {workspaceViews
+        .filter((key) => key !== 'fields')
+        .map((key) => (
+          <NavLink
+            key={key}
+            to={`/${key}`}
+            className={({ isActive }) => (isActive ? 'active' : '')}
+            onClick={() => setMenuOpen(false)}
+          >
+            <InterfaceIcon name={key} />
+            <span>{t(key)}</span>
+          </NavLink>
+        ))}
     </nav>
   );
   return (
@@ -313,6 +316,7 @@ function WorkspaceShell() {
               </select>
             </label>
             <CommandCenter
+              projectId={context.activeProjectId}
               canCreateTask={canCreateTask}
               onNavigate={navigateSearch}
               onNewTask={context.requestTask}

@@ -2,6 +2,8 @@ package com.sprintflowinsight.reporting;
 
 import com.sprintflowinsight.workspace.activity.ActivityEvent;
 import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.customfield.CustomFieldService;
+import com.sprintflowinsight.workspace.customfield.CustomFieldViews;
 import com.sprintflowinsight.workspace.project.Project;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.project.ProjectRepository;
@@ -31,6 +33,7 @@ public class MetricsExportService {
   private final TaskRepository tasks;
   private final ProjectAccessService access;
   private final PdfReportWriter pdfWriter;
+  private final CustomFieldService customFields;
 
   public MetricsExportService(
       ProjectRepository projects,
@@ -38,7 +41,9 @@ public class MetricsExportService {
       ActivityService activity,
       TaskRepository tasks,
       ProjectAccessService access,
-      PdfReportWriter pdfWriter) {
+      PdfReportWriter pdfWriter,
+      CustomFieldService customFields) {
+    this.customFields = customFields;
     this.pdfWriter = pdfWriter;
     this.projects = projects;
     this.metrics = metrics;
@@ -64,10 +69,7 @@ public class MetricsExportService {
   }
 
   public ResponseEntity<?> updateActivity(
-      Long projectId,
-      Long activityId,
-      ActivityUpdateRequest request,
-      HttpSession session) {
+      Long projectId, Long activityId, ActivityUpdateRequest request, HttpSession session) {
     access.adminOrOwner(projectId, session);
     return ResponseEntity.ok(activity.updateSummary(projectId, activityId, request.summary()));
   }
@@ -78,6 +80,9 @@ public class MetricsExportService {
     return ResponseEntity.noContent().build();
   }
 
+  @org.springframework.transaction.annotation.Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
   public void exportCsv(
       Long projectId,
       Long sprintId,
@@ -87,11 +92,16 @@ public class MetricsExportService {
       throws IOException {
     access.read(projectId, session);
     Project project = projects.findById(projectId).orElseThrow();
+    var selected =
+        scopedTasks(projectId, sprintId, filters, session).stream()
+            .sorted(java.util.Comparator.comparing(Task::getId))
+            .toList();
+    var definitions = customFields.definitions(projectId, session);
     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     response.setContentType("text/csv; charset=UTF-8");
     response.setHeader(
         "Content-Disposition", "attachment; filename=sprintflow-" + projectId + ".csv");
-    StringBuilder csv =
+    StringBuilder header =
         new StringBuilder("Project,")
             .append(q(project.getName()))
             .append('\n')
@@ -104,24 +114,46 @@ public class MetricsExportService {
             .append("Filters,")
             .append(q(filters.description()))
             .append('\n')
-            .append("\nTitle,Status,Sprint,Points,Due date,Blocked\n");
-    for (Task task : scopedTasks(projectId, sprintId, filters)) {
-      csv.append(q(task.getTitle()))
-          .append(',')
-          .append(q(task.getStatus()))
-          .append(',')
-          .append(task.getSprintId() == null ? "" : task.getSprintId())
-          .append(',')
-          .append(task.getStoryPoints())
-          .append(',')
-          .append(task.getDueAt() == null ? "" : EXPORT_TIME.format(task.getDueAt()))
-          .append(',')
-          .append(task.isBlocked())
-          .append('\n');
+            .append("\nTitle,Status,Sprint,Points,Due date,Blocked");
+    definitions.forEach(field -> header.append(',').append(q("Custom: " + field.name())));
+    header.append('\n');
+    var writer = response.getWriter();
+    try (var rows =
+        definitions.isEmpty()
+            ? java.util.stream.Stream.<CustomFieldViews.TaskValueRow>empty()
+            : customFields.streamForExport(projectId, session)) {
+      var iterator = rows.iterator();
+      var next = iterator.hasNext() ? iterator.next() : null;
+      writer.write(header.toString());
+      for (Task task : selected) {
+        java.util.Map<Long, String> cells = new java.util.HashMap<>();
+        while (next != null && next.taskId() <= task.getId()) {
+          if (next.taskId().equals(task.getId()))
+            cells.put(next.value().fieldId(), next.value().displayValue());
+          next = iterator.hasNext() ? iterator.next() : null;
+        }
+        StringBuilder line = new StringBuilder();
+        line.append(q(task.getTitle()))
+            .append(',')
+            .append(q(task.getStatus()))
+            .append(',')
+            .append(task.getSprintId() == null ? "" : task.getSprintId())
+            .append(',')
+            .append(task.getStoryPoints())
+            .append(',')
+            .append(task.getDueAt() == null ? "" : EXPORT_TIME.format(task.getDueAt()))
+            .append(',')
+            .append(task.isBlocked());
+        definitions.forEach(
+            field -> line.append(',').append(q(cells.getOrDefault(field.id(), ""))));
+        writer.write(line.append('\n').toString());
+      }
     }
-    response.getWriter().write(csv.toString());
   }
 
+  @org.springframework.transaction.annotation.Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
   public void exportPdf(
       Long projectId,
       Long sprintId,
@@ -131,7 +163,7 @@ public class MetricsExportService {
       throws IOException {
     access.read(projectId, session);
     Project project = projects.findById(projectId).orElseThrow();
-    List<Task> selectedTasks = scopedTasks(projectId, sprintId, filters);
+    List<Task> selectedTasks = scopedTasks(projectId, sprintId, filters, session);
 
     long completed = selectedTasks.stream().filter(task -> "Done".equals(task.getStatus())).count();
     long completedPoints =
@@ -183,9 +215,19 @@ public class MetricsExportService {
   }
 
   private List<Task> scopedTasks(
-      Long projectId, Long sprintId, com.sprintflowinsight.reporting.TaskExportFilter filters) {
+      Long projectId,
+      Long sprintId,
+      com.sprintflowinsight.reporting.TaskExportFilter filters,
+      HttpSession session) {
     Instant now = Instant.now();
+    var condition = filters.customCondition();
+    java.util.Set<Long> matching =
+        condition == null
+            ? null
+            : new java.util.HashSet<>(
+                customFields.matching(projectId, condition, session).taskIds());
     return tasks.findByProjectId(projectId).stream()
+        .filter(task -> matching == null || matching.contains(task.getId()))
         .filter(task -> sprintId == null || sprintId.equals(task.getSprintId()))
         .filter(task -> filters.matches(task, now))
         .toList();

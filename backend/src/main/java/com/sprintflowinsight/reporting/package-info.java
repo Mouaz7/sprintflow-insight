@@ -9,6 +9,7 @@
       "workspace :: sprint",
       "workspace :: story",
       "workspace :: roadmap",
+      "workspace :: customfields",
       "workspace :: activity",
       "workspace :: events",
       "forecast"

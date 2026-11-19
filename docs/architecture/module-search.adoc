@@ -16,4 +16,5 @@ _Repositories_
 * `c.s.s.SearchRepository`
 |Bean references
 |* `c.s.w.project.ProjectAccessService` (in Workspace)
+* `c.s.w.customfield.CustomFieldService` (in Workspace)
 |===

@@ -5,6 +5,7 @@
 |Spring components
 |_Controllers_
 
+* `c.s.w.customfield.CustomFieldController`
 * `c.s.w.project.ProjectController`
 * `c.s.w.project.ProjectTemplateController`
 * `c.s.w.roadmap.EpicController`
@@ -18,6 +19,7 @@ _Services_
 * `c.s.w.NotificationRequests`
 * `c.s.w.WorkspaceEmailListener`
 * `c.s.w.activity.ActivityService`
+* `c.s.w.customfield.CustomFieldService`
 * `c.s.w.project.ProjectAccessService`
 * `c.s.w.project.ProjectDeletionService`
 * `c.s.w.project.ProjectFactory`

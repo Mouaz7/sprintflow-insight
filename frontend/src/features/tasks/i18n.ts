@@ -7,6 +7,10 @@ export const tasksText = defineLexicon({
     title: 'Tasks',
     description: 'From the next step to delivered work.',
     newTask: 'New task',
+    customFields: 'Custom fields',
+    fieldValuesSaved: 'Custom field values saved.',
+    fieldsLoadFailed: 'Could not load custom fields.',
+    fieldsRetry: 'Retry fields',
     editTask: 'Edit task',
     taskSaved: ({ title }: { title: string }) =>
       `Task “${title}” saved. Showing all tasks.`,
@@ -117,6 +121,10 @@ export const tasksText = defineLexicon({
     title: 'Uppgifter',
     description: 'Från nästa steg till levererat arbete.',
     newTask: 'Ny uppgift',
+    customFields: 'Anpassade fält',
+    fieldValuesSaved: 'Anpassade fältvärden sparade.',
+    fieldsLoadFailed: 'Kunde inte läsa anpassade fält.',
+    fieldsRetry: 'Försök läsa fälten igen',
     editTask: 'Redigera uppgift',
     taskSaved: ({ title }) =>
       `Uppgiften ”${title}” har sparats. Alla uppgifter visas.`,
