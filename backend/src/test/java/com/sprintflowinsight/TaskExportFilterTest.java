@@ -39,4 +39,25 @@ class TaskExportFilterTest {
             new TaskExportFilter(null, null, null, "overdue", null, null, null).matches(task, now))
         .isFalse();
   }
+
+  @Test
+  void carriesTypedConditionsAlongsideOrdinaryBoardFilters() {
+    var filter =
+        new TaskExportFilter(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            7L,
+            com.sprintflowinsight.workspace.customfield.FieldOperator.GREATER_THAN,
+            "9007199254740993.1");
+    assertThat(filter.customCondition().fieldId()).isEqualTo(7);
+    assertThat(filter.customCondition().value()).isEqualTo("9007199254740993.1");
+    assertThat(filter.description()).contains("7", "GREATER_THAN", "9007199254740993.1");
+    assertThat(new TaskExportFilter(null, null, null, null, null, null, null).customCondition())
+        .isNull();
+  }
 }

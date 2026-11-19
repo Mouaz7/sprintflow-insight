@@ -35,6 +35,7 @@ _Others_
 * `c.s.w.task.TaskStatusHistoryRepository` (in Workspace)
 * `c.s.w.story.UserStoryRepository` (in Workspace)
 * `c.s.w.roadmap.EpicService` (in Workspace)
+* `c.s.w.customfield.CustomFieldService` (in Workspace)
 |Aggregate roots
 |* `c.s.r.SharedReport`
 |Events listened to

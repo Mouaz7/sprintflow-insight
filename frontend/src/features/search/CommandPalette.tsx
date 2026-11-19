@@ -1,5 +1,10 @@
+import { CustomFieldFilter } from '../../shared/ui/custom-fields/CustomFieldFilter';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { Language, WorkspaceView } from '../../api/contracts';
+import type {
+  CustomFieldCondition,
+  Language,
+  WorkspaceView,
+} from '../../api/contracts';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { useModalFocus } from '../../shared/ui/ui';
 import {
@@ -34,6 +39,7 @@ type Option =
   | { kind: 'more'; id: string };
 
 type Props = {
+  projectId?: number | undefined;
   canCreateTask: boolean;
   language: Language;
   t: SearchText;
@@ -77,6 +83,7 @@ function Highlighted({ segments }: { segments: SearchSegment[] }) {
  * option is announced through aria-activedescendant.
  */
 export function CommandPalette({
+  projectId,
   canCreateTask,
   language,
   t,
@@ -93,7 +100,8 @@ export function CommandPalette({
   const [active, setActive] = useState(0);
   const [keyError, setKeyError] = useState('');
   useModalFocus(onClose, ref);
-  const search = useWorkspaceSearch(text);
+  const [condition, setCondition] = useState<CustomFieldCondition | null>(null);
+  const search = useWorkspaceSearch(text, projectId, condition);
 
   const commands: Command[] = [
     ...GO_TO.map((item) => ({
@@ -174,7 +182,7 @@ export function CommandPalette({
       const key = taskKeyOf(text);
       // A task key jumps straight to the task, also before results arrive.
       // Once hits are shown, the exact match is the first (active) option.
-      if (key && !search.items.length) void jumpToKey(key);
+      if (key && !condition && !search.items.length) void jumpToKey(key);
       else if (activeOption) choose(activeOption);
     }
   }
@@ -231,6 +239,17 @@ export function CommandPalette({
           }}
           onKeyDown={keydown}
         />
+        {projectId && (
+          <CustomFieldFilter
+            projectId={projectId}
+            value={condition}
+            onChange={(value) => {
+              setCondition(value);
+              setActive(0);
+              setKeyError('');
+            }}
+          />
+        )}
         <p className="command-status" role="status">
           {keyError || status}
         </p>

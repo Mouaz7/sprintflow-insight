@@ -1,7 +1,18 @@
+import { lazy, Suspense } from 'react';
+import { localizeMessage } from '../../shared/i18n/messages';
+const CustomFieldFilter = lazy(() =>
+  import('../../shared/ui/custom-fields/CustomFieldFilter').then((m) => ({
+    default: m.CustomFieldFilter,
+  })),
+);
 import { SavedFilters } from './SavedFilters';
 import type { UseTaskBoardState } from './useTaskBoard';
 export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
   const {
+    customCondition,
+    setCustomCondition,
+    customMatches,
+    language,
     projectId,
     userEmail,
     query,
@@ -27,6 +38,8 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
     exportQuery,
   } = controller;
   if (projectId === undefined) return null;
+  const exportsUnavailable =
+    !!customCondition && (customMatches.isPending || customMatches.isError);
   return (
     <>
       <SavedFilters
@@ -40,8 +53,10 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
           due: dueFilter,
           blocked: blockedOnly,
           label: labelFilter,
+          custom: customCondition,
         }}
         onApply={(value) => {
+          setCustomCondition(value.custom ?? null);
           setQuery(value.query);
           setStatusFilter(value.status);
           setSprintFilter(value.sprint);
@@ -130,16 +145,48 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
           {t('blocked')}
         </label>
       </div>
+      <Suspense fallback={<p role="status">{t('loadingTasks')}</p>}>
+        <CustomFieldFilter
+          projectId={projectId}
+          value={customCondition}
+          onChange={setCustomCondition}
+        />
+      </Suspense>
+      {customCondition && customMatches.isFetching && (
+        <p role="status">{t('loadingTasks')}</p>
+      )}
+      {customCondition && customMatches.isError && (
+        <p role="alert">
+          {localizeMessage(customMatches.error.message, language)}{' '}
+          <button
+            onClick={() => {
+              void customMatches.refetch();
+            }}
+          >
+            {t('fieldsRetry')}
+          </button>
+        </p>
+      )}
       <div className="export-actions">
         <a
           className="secondary-action"
           href={`/api/projects/${projectId}/export.csv${exportQuery}`}
+          aria-disabled={exportsUnavailable || undefined}
+          tabIndex={exportsUnavailable ? -1 : undefined}
+          onClick={(event) => {
+            if (exportsUnavailable) event.preventDefault();
+          }}
         >
           {t('exportCsv')}
         </a>
         <a
           className="secondary-action"
           href={`/api/projects/${projectId}/export.pdf${exportQuery}`}
+          aria-disabled={exportsUnavailable || undefined}
+          tabIndex={exportsUnavailable ? -1 : undefined}
+          onClick={(event) => {
+            if (exportsUnavailable) event.preventDefault();
+          }}
         >
           {t('exportPdf')}
         </a>

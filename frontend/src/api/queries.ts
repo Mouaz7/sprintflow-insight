@@ -54,6 +54,11 @@ export const queryKeys = {
   flow: (id: number) => ['project', id, 'flow'] as const,
   forecast: (id: number) => ['project', id, 'forecast'] as const,
   epics: (id: number) => ['project', id, 'epics'] as const,
+  customFields: (id: number) => ['project', id, 'custom-fields'] as const,
+  customMatches: (id: number) =>
+    ['project', id, 'custom-field-matches'] as const,
+  taskCustomFields: (projectId: number, taskId: number) =>
+    ['project', projectId, 'task-custom-fields', taskId] as const,
 };
 
 /** The signed-in user, or `null` when the server reports no session. */

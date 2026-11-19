@@ -17,6 +17,11 @@ const ProjectsView = lazy(() =>
     default: m.ProjectsView,
   })),
 );
+const CustomFieldsView = lazy(() =>
+  import('../features/custom-fields/CustomFieldsView').then((m) => ({
+    default: m.CustomFieldsView,
+  })),
+);
 const TrashView = lazy(() =>
   import('../features/projects/TrashView').then((m) => ({
     default: m.TrashView,
@@ -125,6 +130,11 @@ function ProjectsRoute() {
   );
 }
 
+function CustomFieldsRoute() {
+  const { activeProject } = useWorkspace();
+  return <CustomFieldsView project={activeProject} />;
+}
+
 function TasksRoute() {
   const location = useLocation();
   const taskKey = new URLSearchParams(location.search).get('task') ?? '';
@@ -215,6 +225,7 @@ function ProfileRoute() {
 const routes: Record<WorkspaceView, ReactNode> = {
   overview: <OverviewRoute />,
   projects: <ProjectsRoute />,
+  fields: <CustomFieldsRoute />,
   backlog: <InsightRoute view="backlog" />,
   sprints: <InsightRoute view="sprints" />,
   roadmap: <RoadmapRoute />,
