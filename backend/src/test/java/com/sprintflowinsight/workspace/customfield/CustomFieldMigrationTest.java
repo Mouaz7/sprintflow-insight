@@ -31,6 +31,8 @@ class CustomFieldMigrationTest {
               + " task_status_history(task_id,project_id,status,changed_at,actor_email,story_points)"
               + " values (11,1,'To Do','2026-01-01T00:00:00Z','one@example.com',3)");
       assertThat(db.migrateTo("22").migrationsExecuted).isEqualTo(1);
+      // Validate the completed upgrade as later features add migrations after V22.
+      db.migrateTo(null);
       db.flyway().validate();
       try (var rows =
           sql.executeQuery("select version,custom_fields_revision from task where id=11")) {
