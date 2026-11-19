@@ -86,6 +86,57 @@ const points: Field = [
   ],
 ];
 const formGuides = {
+  customFieldDefinition: {
+    intro: [
+      'Lägg till extra information som projektets uppgifter behöver.',
+      'Add the extra information this project needs on its tasks.',
+    ],
+    fields: [
+      [
+        ['Namn och typ', 'Name and type'],
+        [
+          'Välj ett tydligt namn och text, tal, datum, val eller projektmedlem. Typen kan inte ändras efter att fältet sparats.',
+          'Choose a clear name and text, number, date, select or project member. The type cannot change after a field is saved.',
+        ],
+      ],
+      [
+        ['Val', 'Options'],
+        [
+          'Ange ett unikt val per rad. Ett val som används av en uppgift kan inte tas bort. Exempel: Redo, Pågår, Väntar.',
+          'Enter one unique option per line. An option used by a task cannot be removed. Examples: Ready, In progress, Waiting.',
+        ],
+      ],
+      [
+        ['Behörighet och borttagning', 'Permissions and deletion'],
+        [
+          'Ägare och administratörer hanterar fälten. Att ta bort ett fält tar även bort dess sparade värden.',
+          'Owners and administrators manage fields. Deleting a field also deletes its saved values.',
+        ],
+      ],
+    ],
+  },
+  customFieldValues: {
+    intro: [
+      'Ange extra information för den sparade uppgiften.',
+      'Fill in extra information for the saved task.',
+    ],
+    fields: [
+      [
+        ['Värden', 'Values'],
+        [
+          'Tomt betyder inte angivet. Välj befintliga val och nuvarande projektmedlemmar. Tal behåller sin exakta decimalprecision.',
+          'Blank means not set. Choose existing options and current project members. Numbers retain exact decimal precision.',
+        ],
+      ],
+      [
+        ['Spara och samtidiga ändringar', 'Saving and concurrent changes'],
+        [
+          'Alla fält sparas tillsammans. Om uppgiften ändrats sedan du öppnade den behålls utkastet; läs in värdena igen för att granska ändringarna.',
+          'All fields save together. If the task changed since you opened it, the draft is kept; reload values to review the changes.',
+        ],
+      ],
+    ],
+  },
   forecast: {
     intro: [
       'Utforska möjliga leveranser utan att ändra sparat arbete.',
@@ -478,6 +529,10 @@ const pageGuides = {
   poker: [
     'Välj en berättelse och en kortlek. Varje deltagare röstar dolt. Spelledaren, ägaren eller en administratör avslöjar rösterna, startar en ny runda vid oenighet och sparar överenskomna poäng på berättelsen. Läsbehörighet ger möjlighet att följa sessionen.',
     'Choose a story and a deck. Participants vote privately. The facilitator, owner or admin reveals the votes, starts another round after disagreement and saves the agreed story points. Viewers can watch the session.',
+  ],
+  fields: [
+    'Ägare och administratörer kan lägga till upp till 20 extra fält för projektet. Ange värden via uppgiftens anpassade fält och använd dem i tavlans filter, sökningen och CSV-exporten. Projektets medlemmar kan läsa fälten; arkiverade projekt är skrivskyddade.',
+    'Owners and administrators can add up to 20 extra fields to a project. Fill values through a task’s custom fields, then use them in board filters, search and CSV export. Project members can read fields; archived projects are read-only.',
   ],
   forecast: [
     'Jämför 50, 85 och 95 procent av simulerade utfall för leveransdatum och mängder. Historiska veckor eller sprintar dras 10 000 gånger. Litet underlag, förändrad kapacitet och arbete som inte delats upp kan göra prognosen missvisande; läs varningarna.',

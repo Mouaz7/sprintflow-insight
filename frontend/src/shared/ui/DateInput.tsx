@@ -17,6 +17,7 @@ export function DateInput({
   max = MAX_DATE,
   onBlur,
   ariaLabel,
+  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -25,6 +26,7 @@ export function DateInput({
   max?: string;
   onBlur?: () => void;
   ariaLabel?: string;
+  disabled?: boolean;
 }) {
   const picker = useRef<HTMLInputElement>(null);
   const text = useRef<HTMLInputElement>(null);
@@ -37,6 +39,7 @@ export function DateInput({
     <span className="date-input-control">
       <input
         ref={text}
+        disabled={disabled}
         type="text"
         aria-label={ariaLabel}
         inputMode="numeric"
@@ -53,6 +56,7 @@ export function DateInput({
       />
       <input
         ref={picker}
+        disabled={disabled}
         className="date-input-source"
         type="date"
         tabIndex={-1}
@@ -72,6 +76,7 @@ export function DateInput({
       />
       <button
         type="button"
+        disabled={disabled}
         className="date-input-picker"
         aria-label={t('chooseDate')}
         onClick={() => {

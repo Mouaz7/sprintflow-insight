@@ -192,3 +192,15 @@ Tidposter och kapacitet sparas på servern och uppdateras mellan deltagarnas web
 Sprintvalet styr burndown och sprintmål. Kumulativt flöde och WIP visar projektets senaste 30 dagar, prognosen använder historisk genomströmning för projektets oavslutade arbete och **Mina öppna uppgifter** visar högst 20 av dina tilldelade oavslutade uppgifter. Diagrammens datatabeller visar samma värden utan grafik. Saknad historik visas uttryckligen; prognoser är simulerade utfall och ska läsas tillsammans med varningarna i den detaljerade prognosvyn.
 
 Layouten delas aldrig med andra konton. Ändringar i två fönster skyddas med versionskontroll: vid konflikt finns utkastet kvar; stäng och öppna redigeraren igen för att läsa den senaste layouten. Arkiverade projekt går att läsa men layouten kan inte ändras där. Återställ projektet innan du anpassar vyn.
+
+## B16 — project custom fields
+
+Open **Tasks → Custom fields** (`/fields`). Owners and administrators can create up to 20 fields per active project: Text, Number, Date, Select or Project member. Names are unique ignoring case. Types stay fixed after saving. Select fields allow up to 30 unique options; an option used by a live or recycled task cannot be removed. Deleting a field asks for confirmation and removes its saved values.
+
+A saved task's **Custom fields** action opens its values. Owner/Admin/Member can change them; Viewer and archived-project readers can inspect them. Empty values clear fields. Numbers preserve up to 18 whole digits and 6 decimal places, including values beyond JavaScript's integer precision. Dates use ISO years 0001–9999. Member choices refer to current project membership: removing a member clears their custom user assignments; rejoining does not restore those assignments.
+
+The board and search palette offer a project field, a type-supported operator and, when needed, a value. Search still needs text or a task key and field-filtered search returns tasks from the active project. Text comparisons distinguish case; Contains treats `%` and `_` literally. Unset values match only **Is not set**, including when using **Does not equal**. Filter operands have a 200-character limit. Saved board filters include the custom condition. CSV/PDF links keep the same condition. CSV adds `Custom: <name>` columns, preserves exact numbers and uses current member labels with spreadsheet-formula escaping.
+
+Values share the task revision with ordinary task editing. A simultaneous change returns a conflict, keeps the draft, and offers an explicit reload with a discard confirmation. Opening another project starts a separate editor. Field definitions have independent revisions. Recycled tasks keep values for restoration; permanent removal deletes them. Metadata changes invalidate project queries through existing realtime events without creating status-history transitions or including field contents in activity summaries.
+
+B16 exposes the typed `FieldCondition` contract and pure matcher for B15 automation conditions. Configuring and executing automation rules belongs to B15.

@@ -50,3 +50,9 @@ B3 uses the V17 epic/story relation, task_dependency and task_estimate foundatio
 B5 adds V21: `history_project_time_idx` on `task_status_history(project_id,changed_at)`; `project_wip_limit(project_id,status,wip_limit)` and `project_wip_settings(project_id,version)`. Both new tables cascade on project deletion. The settings revision survives clearing limits and is checked using If-Match under the project row lock. Existing workflow history is not rewritten.
 
 B18 (V25) adds `dashboard_layout`: an ordered JSONB array of up to six unique typed widgets and their wide-card flags, one row per `(project_id, user_id)`, with an optimistic version. The project/account foreign keys cascade on deletion; preferences are private and are never addressed by another user id in the API. Reading defaults inserts no row. See [ADR 0025](adr/0025-personal-project-dashboards.md).
+
+## V22 — typed custom fields
+
+`custom_field` belongs to a project and stores `name`, immutable `kind`, bounded JSONB `options` and an optimistic `version`. A unique `(project_id, lower(name))` index prevents duplicate names. `task_custom_value` has `(task_id, field_id)` identity and one typed value column: text, numeric(24,6), date or project membership id. Checks enforce exactly one column compatible with the saved kind, finite decimals and calendar dates in years 0001–9999. Composite foreign keys enforce matching task/definition/member projects. Membership and hard deletion cascade; soft deletion preserves values. Scope, number/date range and membership indexes support filtering and cleanup.
+
+`task.custom_fields_revision` is an internal scalar used to increment the existing task version on a changed value snapshot. No custom-value collection is added to core task list queries. Task revision/value reads use a repeatable-read snapshot. CSV streams value rows ordered by task/field using a fetch size of 200 in the same repeatable-read transaction as definitions and tasks.

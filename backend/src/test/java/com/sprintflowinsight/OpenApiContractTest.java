@@ -124,6 +124,57 @@ class OpenApiContractTest {
                         .toList());
           });
 
+      // B16: records and typed conditions stay aligned with the public REST contract.
+      assertThat(paths)
+          .containsKeys(
+              "/api/projects/{projectId}/custom-fields",
+              "/api/projects/{projectId}/custom-fields/{fieldId}",
+              "/api/projects/{projectId}/custom-fields/matches",
+              "/api/tasks/{taskId}/custom-fields");
+      Map<String, Class<? extends Record>> customRecords =
+          Map.of(
+              "CustomFieldDefinitionRequest",
+                  com.sprintflowinsight.workspace.customfield.FieldDefinitionRequest.class,
+              "CustomFieldValuesRequest",
+                  com.sprintflowinsight.workspace.customfield.FieldValuesRequest.class,
+              "CustomFieldValueEntry",
+                  com.sprintflowinsight.workspace.customfield.FieldValuesRequest.Entry.class,
+              "CustomFieldDefinition",
+                  com.sprintflowinsight.workspace.customfield.CustomFieldViews.Definition.class,
+              "CustomFieldValue",
+                  com.sprintflowinsight.workspace.customfield.CustomFieldViews.Value.class,
+              "TaskCustomFields",
+                  com.sprintflowinsight.workspace.customfield.CustomFieldViews.TaskValues.class,
+              "CustomFieldMatches",
+                  com.sprintflowinsight.workspace.customfield.CustomFieldViews.Matches.class);
+      customRecords.forEach(
+          (name, type) ->
+              assertThat(
+                      ((Map<String, Object>)
+                              ((Map<String, Object>) schemas.get(name)).get("properties"))
+                          .keySet())
+                  .as(name)
+                  .containsExactlyInAnyOrderElementsOf(
+                      java.util.Arrays.stream(type.getRecordComponents())
+                          .map(java.lang.reflect.RecordComponent::getName)
+                          .toList()));
+      assertThat(
+              (java.util.List<String>)
+                  ((Map<String, Object>) schemas.get("CustomFieldKind")).get("enum"))
+          .containsExactlyElementsOf(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.workspace.customfield.FieldKind.values())
+                  .map(Enum::name)
+                  .toList());
+      assertThat(
+              (java.util.List<String>)
+                  ((Map<String, Object>) schemas.get("CustomFieldOperator")).get("enum"))
+          .containsExactlyElementsOf(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.workspace.customfield.FieldOperator.values())
+                  .map(Enum::name)
+                  .toList());
+
       // B0: task identifiers and project keys are part of the response contract.
       assertThat(paths).containsKey("/api/tasks/by-key/{key}");
       Map<String, Object> byKey =

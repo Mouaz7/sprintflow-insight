@@ -60,6 +60,15 @@ public class Task {
       access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
   private Integer estimateMinutes;
 
+  /** Makes custom-value changes participate in this task's optimistic revision. */
+  @jakarta.persistence.Column(nullable = false)
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  private long customFieldsRevision;
+
+  public void touchCustomFields() {
+    customFieldsRevision++;
+  }
+
   /** Per-project sequence number, allocated once at creation; the {@code 123} in SF-123. */
   @jakarta.persistence.Column(nullable = false, updatable = false)
   @com.fasterxml.jackson.annotation.JsonProperty(

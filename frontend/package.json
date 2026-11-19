@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "305 kB",
+      "limit": "325 kB",
       "gzip": true
     },
     {
@@ -125,6 +125,18 @@
       "name": "Flow analysis route chunk (gzip)",
       "path": "dist/assets/FlowView-*.js",
       "limit": "20 kB",
+      "gzip": true
+    },
+    {
+      "name": "Custom field definitions route (gzip)",
+      "path": "dist/assets/CustomFieldsView-*.js",
+      "limit": "10 kB",
+      "gzip": true
+    },
+    {
+      "name": "Task custom field editor (gzip)",
+      "path": "dist/assets/TaskCustomFields-*.js",
+      "limit": "10 kB",
       "gzip": true
     },
     {
