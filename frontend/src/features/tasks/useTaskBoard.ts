@@ -1,7 +1,11 @@
-import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import type { Task } from '../../api/contracts';
+import {
+  appendCustomCondition,
+  customMatchesQuery,
+} from '../../api/customFields';
+import type { Task, CustomFieldCondition } from '../../api/contracts';
 import {
   afterProjectWrite,
   dependenciesQuery,
@@ -161,6 +165,14 @@ export function useTaskBoard({
   const [dueFilter, setDueFilter] = useState('');
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [labelFilter, setLabelFilter] = useState('');
+  const [customCondition, setCustomCondition] =
+    useState<CustomFieldCondition | null>(null);
+  const customMatches = useQuery(
+    customMatchesQuery(projectId ?? 0, customCondition),
+  );
+  const matchedIds = new Set(
+    customMatches.isError ? [] : (customMatches.data?.taskIds ?? []),
+  );
   const [draggedTaskId, setDraggedTaskId] = useState<number>();
   // Undefined shows the load error, if any; actions set or clear their own.
   const [actionMessage, setMessage] = useState<string>();
@@ -354,6 +366,7 @@ export function useTaskBoard({
   };
   const filtered = tasks.filter(
     (task) =>
+      (!customCondition || matchedIds.has(task.id)) &&
       (!statusFilter || task.status === statusFilter) &&
       (!sprintFilter ||
         (sprintFilter === 'unassigned'
@@ -391,6 +404,7 @@ export function useTaskBoard({
     if (value) exportParams.set(key, value);
   if (sprintFilter === 'unassigned') exportParams.set('sprint', 'backlog');
   else if (sprintFilter) exportParams.set('sprintId', sprintFilter);
+  appendCustomCondition(exportParams, customCondition);
   const exportQuery = exportParams.size ? `?${exportParams}` : '';
 
   return {
@@ -482,6 +496,9 @@ export function useTaskBoard({
     filtered,
     exportParams,
     exportQuery,
+    customCondition,
+    setCustomCondition,
+    customMatches,
   };
 }
 export type UseTaskBoardState = ReturnType<typeof useTaskBoard>;

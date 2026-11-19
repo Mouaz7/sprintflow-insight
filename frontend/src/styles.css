@@ -8,6 +8,8 @@
 @import './features/insights/overview.css' layer(design);
 @import './features/projects/projects.css' layer(design);
 @import './shared/ui/editor.css' layer(design);
+@import './shared/ui/custom-fields/custom-fields.css' layer(design);
+@import './features/custom-fields/custom-fields.css' layer(design);
 @import './features/planning/planning.css' layer(design);
 @import './features/tasks/tasks.css' layer(design);
 @import './features/insights/metrics.css' layer(design);

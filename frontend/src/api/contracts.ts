@@ -48,6 +48,7 @@ export type Language = 'EN' | 'SV';
 export type WorkspaceView =
   | 'overview'
   | 'projects'
+  | 'fields'
   | 'backlog'
   | 'sprints'
   | 'roadmap'
@@ -112,6 +113,41 @@ export type ProjectMember = {
   id: number;
   email: string;
   role: 'Owner' | 'Admin' | 'Member' | 'Viewer';
+};
+
+export type CustomFieldKind = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'USER';
+export type CustomFieldOperator =
+  | 'EQUALS'
+  | 'NOT_EQUALS'
+  | 'CONTAINS'
+  | 'LESS_THAN'
+  | 'AT_MOST'
+  | 'GREATER_THAN'
+  | 'AT_LEAST'
+  | 'IS_SET'
+  | 'IS_NOT_SET';
+export type CustomFieldDefinition = {
+  id: number;
+  projectId: number;
+  name: string;
+  kind: CustomFieldKind;
+  options: string[];
+  version: number;
+};
+export type CustomFieldValue = {
+  fieldId: number;
+  value: string;
+  displayValue: string;
+};
+export type TaskCustomFields = {
+  taskId: number;
+  version: number;
+  values: CustomFieldValue[];
+};
+export type CustomFieldCondition = {
+  fieldId: number;
+  operator: CustomFieldOperator;
+  value?: string;
 };
 export type Story = {
   epicId?: number | null;

@@ -1,4 +1,6 @@
 import { api } from '../../api/client';
+import type { CustomFieldCondition } from '../../api/contracts';
+import { appendCustomCondition } from '../../api/customFields';
 
 export type SearchType =
   'epic' | 'task' | 'story' | 'sprint' | 'comment' | 'project';
@@ -34,9 +36,18 @@ export function taskKeyOf(query: string): string | undefined {
 
 export function searchWorkspace(
   query: string,
-  options: { cursor?: string | undefined; signal?: AbortSignal } = {},
+  options: {
+    cursor?: string | undefined;
+    signal?: AbortSignal;
+    projectId?: number | undefined;
+    condition?: CustomFieldCondition | null;
+  } = {},
 ): Promise<SearchPage> {
   const params = new URLSearchParams({ q: query, limit: '20' });
+  if (options.condition && options.projectId) {
+    params.set('projectId', String(options.projectId));
+    appendCustomCondition(params, options.condition);
+  }
   if (options.cursor) params.set('cursor', options.cursor);
   return api<SearchPage>(
     `/search?${params}`,
