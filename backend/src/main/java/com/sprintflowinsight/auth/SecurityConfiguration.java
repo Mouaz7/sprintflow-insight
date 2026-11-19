@@ -150,6 +150,7 @@ public class SecurityConfiguration {
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/auth/login",
+                        "/api/digest/unsubscribe",
                         "/api/auth/register",
                         "/api/auth/google",
                         "/api/auth/password/reset/request",

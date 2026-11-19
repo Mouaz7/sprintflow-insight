@@ -150,6 +150,12 @@
       "path": "dist/assets/DashboardView-*.js",
       "limit": "15 kB",
       "gzip": true
+    },
+    {
+      "name": "Email opt-out route chunk (gzip)",
+      "path": "dist/assets/UnsubscribeView-*.js",
+      "limit": "3 kB",
+      "gzip": true
     }
   ]
 }

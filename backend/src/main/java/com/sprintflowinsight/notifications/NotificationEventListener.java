@@ -53,6 +53,17 @@ public class NotificationEventListener {
   }
 
   @ApplicationModuleListener
+  public void mentioned(MentionAdded event) {
+    for (Long recipient : event.mentionedUserIds())
+      notifications.notifyMention(
+          event.projectId(),
+          recipient,
+          event.actorUserId(),
+          "Mentioned you in a comment on “" + event.title() + "”.",
+          event.eventId());
+  }
+
+  @ApplicationModuleListener
   public void requested(NotificationRequested event) {
     if (event.projectOwner())
       notifications.notifyProjectOwner(

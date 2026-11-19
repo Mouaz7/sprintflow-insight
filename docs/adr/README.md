@@ -25,3 +25,4 @@ Each record states a decision, the context that forced it, and its consequences.
 | [0020](0020-flow-history-wip-and-statistical-review.md) | Flow history, advisory WIP and statistical review | Accepted |
 | [0021](0021-joint-bootstrap-delivery-forecasts.md) | Joint bootstrap delivery forecasts | Accepted |
 | [0025](0025-personal-project-dashboards.md) | Personal project dashboards and optimistic private layouts | Accepted |
+| [0026](0026-mentions-and-email-summaries.md) | Verified mentions, opt-in summaries and authenticated opt-out | Accepted |

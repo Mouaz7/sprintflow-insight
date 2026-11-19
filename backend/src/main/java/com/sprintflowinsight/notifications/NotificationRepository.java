@@ -4,6 +4,21 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+  @org.springframework.data.jpa.repository.Query(
+      """
+      select n from Notification n where lower(n.recipientEmail)=lower(:email)
+        and n.isRead=false and n.createdAt>:since and n.createdAt<=:until
+        and exists (select p.id from Project p where p.id=n.projectId and p.trashedAt is null
+          and exists (select m.id from ProjectMember m where m.projectId=p.id and m.userId=:userId))
+      order by n.createdAt desc,n.id desc
+      """)
+  List<Notification> digestFor(
+      @org.springframework.data.repository.query.Param("userId") Long userId,
+      @org.springframework.data.repository.query.Param("email") String email,
+      @org.springframework.data.repository.query.Param("since") java.time.Instant since,
+      @org.springframework.data.repository.query.Param("until") java.time.Instant until,
+      org.springframework.data.domain.Pageable page);
+
   boolean existsBySourceEventIdAndRecipientEmail(
       java.util.UUID sourceEventId, String recipientEmail);
 

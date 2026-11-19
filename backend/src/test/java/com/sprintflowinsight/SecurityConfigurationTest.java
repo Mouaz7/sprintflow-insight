@@ -93,6 +93,7 @@ class SecurityConfigurationTest {
             "/poker?session=1",
             "/time?sprint=1",
             "/dashboard",
+            "/email-preferences?token=preview",
             "/roadmap?epic=1",
             "/report/private-share-token",
             "/reset-password?token=private-reset")) {

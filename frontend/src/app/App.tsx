@@ -16,6 +16,11 @@ import { SessionGate } from './SessionGate';
 import { WorkspaceLayout } from './Workspace';
 import { workspaceRoutes } from './WorkspaceRoutes';
 
+const UnsubscribeView = lazy(() =>
+  import('../features/profile/UnsubscribeView').then((m) => ({
+    default: m.UnsubscribeView,
+  })),
+);
 const PublicReportView = lazy(() =>
   import('../features/insights/SharedReports').then((module) => ({
     default: module.PublicReportView,
@@ -42,6 +47,14 @@ function AppRoutes() {
   if (legacy) return <Navigate to={legacy} replace />;
   return (
     <Routes>
+      <Route
+        path="/email-preferences"
+        element={
+          <Suspense fallback={<RouteLoading />}>
+            <UnsubscribeView />
+          </Suspense>
+        }
+      />
       <Route path="/report/:token" element={<PublicReportRoute />} />
       <Route element={<SessionGate />}>
         {/* The gate renders the password form for this path. */}
