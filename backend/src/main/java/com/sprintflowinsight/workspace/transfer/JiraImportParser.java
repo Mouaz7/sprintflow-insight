@@ -1,6 +1,7 @@
 package com.sprintflowinsight.workspace.transfer;
 
 import com.sprintflowinsight.common.error.ApiException;
+import java.time.Instant;
 import java.util.*;
 import tools.jackson.core.StreamReadConstraints;
 import tools.jackson.core.json.JsonFactory;
@@ -55,17 +56,10 @@ public final class JiraImportParser {
         var f = issue.path("fields");
         row.put("fields.description", description(f.path("description"), 0));
         row.put("fields.labels", f.path("labels").isArray() ? joinLabels(f.path("labels")) : "");
-        if (!row.containsKey("startedAt"))
-          for (var h : issue.path("changelog").path("histories"))
-            for (var item : h.path("items")) {
-              if ("status".equals(item.path("field").asString(""))
-                  && "In Progress".equalsIgnoreCase(item.path("toString").asString(""))) {
-                String at = h.path("created").asString("");
-                if (!at.isBlank()
-                    && (row.get("startedAt") == null || at.compareTo(row.get("startedAt")) < 0))
-                  row.put("startedAt", at);
-              }
-            }
+        if (!row.containsKey("startedAt")) {
+          String startedAt = firstStart(issue.path("changelog").path("histories"));
+          if (startedAt != null) row.put("startedAt", startedAt);
+        }
         if (row.size() > 256)
           throw ApiException.badRequest("A Jira issue has too many scalar fields.");
         var email = f.path("assignee").path("emailAddress");
@@ -78,6 +72,24 @@ public final class JiraImportParser {
     } catch (tools.jackson.core.JacksonException malformed) {
       throw ApiException.badRequest("Invalid or excessively nested Jira JSON.");
     }
+  }
+
+  private static String firstStart(JsonNode histories) {
+    Instant first = null;
+    for (var entry : histories) {
+      for (var item : entry.path("items")) {
+        if (!"status".equals(item.path("field").asString(""))
+            || !"In Progress".equalsIgnoreCase(item.path("toString").asString(""))) continue;
+        String at = entry.path("created").asString("").strip();
+        if (at.isEmpty()) continue;
+        Instant instant = ImportMapper.date(at, "Started date", new ArrayList<>());
+        // Keep an invalid timestamp for row-level validation instead of silently changing history.
+        if (instant == null) return at;
+        if (first == null || instant.isBefore(first)) first = instant;
+        break;
+      }
+    }
+    return first == null ? null : first.toString();
   }
 
   private static void flatten(JsonNode n, String path, Map<String, String> row, int depth) {

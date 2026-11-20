@@ -51,4 +51,17 @@ class ImportParserTest {
         .containsEntry("fields.description", "Plain text\n");
     assertThat(t.columns()).doesNotContain("fields.reporter.name", "fields.assignee.name");
   }
+
+  @Test
+  void jiraChoosesTheEarliestStartAcrossTimeZones() {
+    var table =
+        JiraImportParser.parse(
+            """
+[{"key":"DEMO-1","fields":{"summary":"Task"},"changelog":{"histories":[
+  {"created":"2026-03-02T10:00:00.000+0000","items":[{"field":"status","toString":"In Progress"}]},
+  {"created":"2026-03-02T11:00:00.000+0200","items":[{"field":"status","toString":"In Progress"}]}
+]}}]
+""");
+    assertThat(table.rows().getFirst()).containsEntry("startedAt", "2026-03-02T09:00:00Z");
+  }
 }
