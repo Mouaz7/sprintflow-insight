@@ -175,6 +175,49 @@ class OpenApiContractTest {
                   .map(Enum::name)
                   .toList());
 
+      assertThat(paths.keySet())
+          .containsAll(
+              java.util.List.of(
+                  "/api/projects/{projectId}/imports/preview",
+                  "/api/projects/{projectId}/imports",
+                  "/api/projects/{projectId}/audit",
+                  "/api/account/export"));
+      Map<String, Class<? extends Record>> transferRecords =
+          Map.of(
+              "ImportRequest",
+              com.sprintflowinsight.workspace.transfer.ImportRequest.class,
+              "ImportPreview",
+              com.sprintflowinsight.workspace.transfer.ImportViews.Preview.class,
+              "ImportRow",
+              com.sprintflowinsight.workspace.transfer.ImportViews.Row.class,
+              "ImportResult",
+              com.sprintflowinsight.workspace.transfer.ImportViews.Result.class,
+              "ImportBatch",
+              com.sprintflowinsight.workspace.transfer.ImportViews.Batch.class,
+              "AuditEntry",
+              com.sprintflowinsight.common.audit.AuditService.Entry.class,
+              "AuditPage",
+              com.sprintflowinsight.common.audit.AuditService.Page.class);
+      transferRecords.forEach(
+          (name, type) ->
+              assertThat(
+                      ((Map<String, Object>)
+                              ((Map<String, Object>) schemas.get(name)).get("properties"))
+                          .keySet())
+                  .as(name)
+                  .containsExactlyInAnyOrderElementsOf(
+                      java.util.Arrays.stream(type.getRecordComponents())
+                          .map(java.lang.reflect.RecordComponent::getName)
+                          .toList()));
+      assertThat(
+              (java.util.List<String>)
+                  ((Map<String, Object>) schemas.get("ImportFormat")).get("enum"))
+          .containsExactlyElementsOf(
+              java.util.Arrays.stream(
+                      com.sprintflowinsight.workspace.transfer.ImportFormat.values())
+                  .map(Enum::name)
+                  .toList());
+
       // B0: task identifiers and project keys are part of the response contract.
       assertThat(paths).containsKey("/api/tasks/by-key/{key}");
       Map<String, Object> byKey =

@@ -7,6 +7,7 @@ import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { translator } from '../../shared/i18n/lexicon';
 import { Notice } from '../../shared/ui/ui';
 import { profileText } from './i18n';
+import { AccountExport } from './AccountExport';
 import { DigestSettings } from './DigestSettings';
 import { integrationsQuery } from './queries';
 export function PreferencesPanel({
@@ -132,6 +133,7 @@ export function PreferencesPanel({
         </button>
       </form>
       <DigestSettings />
+      <AccountExport />
       <section className="profile-card">
         <h2>{t('accountServices')}</h2>
         <p>

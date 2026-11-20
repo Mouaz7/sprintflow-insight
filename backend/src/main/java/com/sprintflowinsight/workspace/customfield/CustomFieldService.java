@@ -35,6 +35,7 @@ public class CustomFieldService {
   private final ProjectMemberRepository members;
   private final ActivityService activity;
   private final EntityManager em;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
 
   public CustomFieldService(
       CustomFieldRepository fields,
@@ -44,7 +45,9 @@ public class CustomFieldService {
       TaskRepository tasks,
       ProjectMemberRepository members,
       ActivityService activity,
-      EntityManager em) {
+      EntityManager em,
+      com.sprintflowinsight.common.audit.AuditService audit) {
+    this.audit = audit;
     this.fields = fields;
     this.values = values;
     this.access = access;
@@ -259,5 +262,14 @@ public class CustomFieldService {
   private void record(
       Long projectId, String type, String summary, HttpSession session, String entity, Long id) {
     activity.record(projectId, type, summary, access.email(session), entity, id, Instant.now());
+    if (type.startsWith("CUSTOM_FIELD_")) {
+      var caller =
+          access.require(
+              projectId,
+              session,
+              com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+      audit.record(
+          projectId, caller.userId(), caller.role().label(), type, "custom_field", id, Map.of());
+    }
   }
 }

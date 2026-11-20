@@ -22,6 +22,7 @@ public class ProjectDeletionService {
       org.slf4j.LoggerFactory.getLogger(ProjectDeletionService.class);
   private final org.springframework.context.ApplicationEventPublisher events;
   private final ProjectAccessService access;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
   private final ProjectRepository projects;
   private final ProjectMemberRepository members;
   private final UserStoryRepository stories;
@@ -47,7 +48,9 @@ public class ProjectDeletionService {
       TaskStatusHistoryRepository history,
       ActivityEventRepository activities,
       RetrospectiveRepository retrospectives,
-      com.sprintflowinsight.workspace.attachment.FileDeletionService deletions) {
+      com.sprintflowinsight.workspace.attachment.FileDeletionService deletions,
+      com.sprintflowinsight.common.audit.AuditService audit) {
+    this.audit = audit;
     this.events = events;
     this.retrospectives = retrospectives;
     this.deletions = deletions;
@@ -67,13 +70,21 @@ public class ProjectDeletionService {
   @Transactional
   public void delete(Long projectId, HttpSession session) {
     if (!projects
-        .findById(projectId)
+        .lockById(projectId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."))
         .getOwnerEmail()
         .equalsIgnoreCase(access.email(session))) {
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN, "Only the project owner can delete this project.");
     }
+    audit.record(
+        projectId,
+        access.userId(session),
+        "Owner",
+        "PROJECT_PURGED",
+        "project",
+        projectId,
+        java.util.Map.of());
     var storageKeys =
         attachments.findByProjectId(projectId).stream()
             .map(TaskAttachment::getStorageKey)

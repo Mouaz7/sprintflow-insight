@@ -118,6 +118,7 @@
         <!-- CP-SAT solver with bundled native libraries (linux/macOS/Windows x86-64 and aarch64). -->
         <dependency><groupId>com.google.ortools</groupId><artifactId>ortools-java</artifactId><version>${ortools.version}</version></dependency>
         <!-- Property-based tests for algorithms and parsers. -->
+        <dependency><groupId>com.code-intelligence</groupId><artifactId>jazzer-junit</artifactId><version>0.30.0</version><scope>test</scope></dependency>
         <dependency><groupId>net.jqwik</groupId><artifactId>jqwik</artifactId><version>${jqwik.version}</version><scope>test</scope></dependency>
     </dependencies>
 

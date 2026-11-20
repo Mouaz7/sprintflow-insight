@@ -1,0 +1,97 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, writeFile, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { convert, projectIssue } from "./apache-subset.ts";
+const issue = (i: number) => ({
+  key: `SPARK-${i}`,
+  fields: {
+    project: { key: "SPARK" },
+    summary: `Task ${i}`,
+    description: "Example",
+    status: { name: "Resolved" },
+    created: "2020-01-01T00:00:00.000+0000",
+    resolutiondate: "2020-01-03T00:00:00.000+0000",
+    assignee: { name: "PRIVATE_IDENTITY" },
+    reporter: "PRIVATE_IDENTITY",
+    comment: { comments: [{ body: "PRIVATE_COMMENT" }] },
+    customfield_123: "CUSTOM_PRIVATE",
+  },
+  changelog: {
+    histories: [
+      {
+        author: "PRIVATE_IDENTITY",
+        created: "2020-01-02T00:00:00.000+0000",
+        items: [{ field: "status", toString: "In Progress" }],
+      },
+    ],
+  },
+});
+test("converts bounded per-project batches with provenance and no identity objects", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "apache-subset-"));
+  try {
+    const input = join(dir, "mongo.jsonl"),
+      output = join(dir, "subset");
+    await writeFile(
+      input,
+      Array.from({ length: 201 }, (_, i) => JSON.stringify(issue(i))).join(
+        "\n",
+      ),
+    );
+    const result = await convert({
+      input,
+      output,
+      projects: ["SPARK"],
+      limit: 201,
+    });
+    assert.equal(result.issueCount, 201);
+    assert.deepEqual(
+      result.files.map((f) => f.rows),
+      [200, 1],
+    );
+    assert.equal(result.doi, "10.5281/zenodo.15719919");
+    const first = await readFile(join(output, result.files[0].name), "utf8");
+    assert.doesNotMatch(
+      first,
+      /PRIVATE_IDENTITY|PRIVATE_COMMENT|CUSTOM_PRIVATE/,
+    );
+    assert.match(first, /In Progress/);
+    assert.equal(result.sourceSha256.length, 64);
+    await assert.rejects(
+      convert({ input, output, projects: ["SPARK"], limit: 201 }),
+      /EEXIST/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+test("rejects oversize lines and limits before writing output", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "apache-subset-"));
+  try {
+    const input = join(dir, "mongo.jsonl"),
+      output = join(dir, "subset");
+    await writeFile(
+      input,
+      JSON.stringify(issue(1)) + "\n" + JSON.stringify(issue(2)),
+    );
+    await assert.rejects(
+      convert({ input, output, projects: ["SPARK"], limit: 1 }),
+      /limit exceeded/,
+    );
+    assert.deepEqual(await readdir(dir), ["mongo.jsonl"]);
+    await assert.rejects(
+      convert({
+        input,
+        output,
+        projects: ["SPARK"],
+        limit: 20,
+        maxInputBytes: 20,
+      }),
+      /byte limit/,
+    );
+    assert.equal(projectIssue(issue(1)).key, "SPARK-1");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

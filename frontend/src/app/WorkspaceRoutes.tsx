@@ -7,6 +7,9 @@ import { RouteLoading } from '../shared/ui/RouteLoading';
 import { useWorkspace } from './Workspace';
 
 // Each view is its own chunk, loaded when its route is first visited.
+const DataView = lazy(() =>
+  import('../features/data/DataView').then((m) => ({ default: m.DataView })),
+);
 const OverviewView = lazy(() =>
   import('../features/insights/OverviewView').then((m) => ({
     default: m.OverviewView,
@@ -112,6 +115,10 @@ function OverviewRoute() {
   );
 }
 
+function DataRoute() {
+  const { activeProject } = useWorkspace();
+  return <DataView project={activeProject} />;
+}
 function RoadmapRoute() {
   const { activeProject } = useWorkspace();
   return <RoadmapView project={activeProject} />;
@@ -251,6 +258,7 @@ const routes: Record<WorkspaceView, ReactNode> = {
   overview: <OverviewRoute />,
   projects: <ProjectsRoute />,
   fields: <CustomFieldsRoute />,
+  data: <DataRoute />,
   backlog: <InsightRoute view="backlog" />,
   sprints: <InsightRoute view="sprints" />,
   roadmap: <RoadmapRoute />,
