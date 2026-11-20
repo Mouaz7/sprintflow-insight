@@ -1,141 +1,146 @@
 {
-  "generatedAt": "2026-11-20T06:05:58.280Z",
-  "sourceCommit": "65742cb1cdec2640f3035bd6bd4afd52efa1ef3c",
+  "generatedAt": "2026-11-20T21:33:04.341Z",
+  "sourceCommit": "e1349b2e84af79b6c64c8cdca56bc38bde86852a",
   "images": [
     {
       "file": "sign-in.webp",
-      "bytes": 35178,
-      "sha256": "6e2d7f88640b1a3bc477614aef95623d5e71a0c0b6c9167bf568755e954b793e"
+      "bytes": 35376,
+      "sha256": "b1e9a0867f39b2064f9c263d853c349157294915b8e996e1d9ba38fe9892160c"
     },
     {
       "file": "shared-report.webp",
-      "bytes": 27556,
-      "sha256": "2e49f6083530a2dd7270b0bf22f4769cf91a8372b348d8b9708ac323fd88d769"
+      "bytes": 27300,
+      "sha256": "a2fc6d4f5747a7af5d0863798f276dadd83e96c28659a384b8f451467a5b8c84"
     },
     {
       "file": "overview.webp",
-      "bytes": 53194,
-      "sha256": "62f4731b7c0a1ee33fbe8a348c050a2c3c22e3d0422f3579e19fffc99226071f"
+      "bytes": 53184,
+      "sha256": "b44978b3ebc0227d2da4a84e8aaff9c5f51ae7f903c185715757ad3e6d0d87f7"
     },
     {
       "file": "projects.webp",
-      "bytes": 50428,
-      "sha256": "d7c85aec83ca0e98a49196c5ee52c8a1fabbbe1e40e832fc10b128c2152e10e8"
+      "bytes": 50864,
+      "sha256": "f9671fcdd3398f244a3333001edc79e1d11d1119fab968bbb0d5cbba51945b9d"
     },
     {
       "file": "board.webp",
-      "bytes": 63894,
-      "sha256": "005f2ce6d856b5423f9e39b2c560d33bdce03aea90879bd07757510dd53022a6"
+      "bytes": 63996,
+      "sha256": "dd90c890b5cba81402a67a223a555955d5209a9072fa5205fa3b18dbb7a2352d"
     },
     {
       "file": "backlog.webp",
-      "bytes": 44368,
-      "sha256": "059c05c9943b23917565386ba88337f5b2f95e962098c3406b275f9f9b32e226"
+      "bytes": 44920,
+      "sha256": "3e4db299bfecaa4e686394475822ba05ab091e955652383400c75ebfb042d170"
     },
     {
       "file": "sprints.webp",
-      "bytes": 41010,
-      "sha256": "00e6094f2954bd7f0cc2972f412a2200118d5cd0d4136cd5c1a3f2d73a964ca9"
+      "bytes": 41288,
+      "sha256": "f3ab84aa35f20f31f7d1c1e5ab3274435b10091806586d221b9f7ed1a1cc4784"
     },
     {
       "file": "roadmap.webp",
-      "bytes": 45828,
-      "sha256": "b708d1789309259b9f255aa2d5c3f6b1beb321779942511a64108092af39e997"
+      "bytes": 45518,
+      "sha256": "40ad9bb99c867582969bf0e1c64b3102a2da9010c321f7ecf5645503d20d3dc4"
     },
     {
       "file": "metrics.webp",
-      "bytes": 54900,
-      "sha256": "3267a4b8c2f66325f4cb2d36e3aa64b801a80c4e5e64338cf2ac1707869dfa51"
+      "bytes": 52544,
+      "sha256": "d84ba5fce274a114ff1c8debc35ae4f743ab882cddfe9a547d37d75364aaa9b7"
     },
     {
       "file": "flow.webp",
-      "bytes": 59598,
-      "sha256": "af186cb4001f30b696955fd5285c5866ece915b5a99841355382fb1ee35d0c8b"
+      "bytes": 60318,
+      "sha256": "e62209002031ae822a339ae2afcde3c7375c6ce01307f8d95be72b176fd4be06"
     },
     {
       "file": "forecast.webp",
-      "bytes": 69240,
-      "sha256": "c7b702175a01ec5700b5885ea2f603b94d0248be0131ea4e4428482a2addd592"
+      "bytes": 57626,
+      "sha256": "2d68952b01057561651b2402e9194e88abd4e5aa7b6518c9b794572c8a906471"
     },
     {
       "file": "dashboard.webp",
-      "bytes": 37228,
-      "sha256": "9d26377812b3b7e36e5fcd951766e94e70e20fdbc09b2252aa8b5a18cdb06ccd"
+      "bytes": 35906,
+      "sha256": "f1aa5b64f2f4ee3cc37c98474319ffe87320170f88a9e22e368a68354bd70dbf"
     },
     {
       "file": "poker.webp",
-      "bytes": 48268,
-      "sha256": "3e902b79d987d665be2168dc03496b30311c6c75e7dd85024b0302dcf1444798"
+      "bytes": 48454,
+      "sha256": "74dc083d0a38a06226a23d8fac723fca9e4494b4175a167d88a37f8fbfd67870"
     },
     {
       "file": "time.webp",
-      "bytes": 51786,
-      "sha256": "d1e701b554b08b6e494dd04a6684b7c40b841e8d4893e86b2138b80994058117"
+      "bytes": 51734,
+      "sha256": "134ceb56d8b28ce5d171145a6756d2ed6020f73171cead23a2284790becc6cc5"
     },
     {
       "file": "custom-fields.webp",
       "bytes": 38156,
-      "sha256": "b3491367e14f5287e5231da5ca4fe35dbab4a59ffea9fad99227f39c0472fd81"
+      "sha256": "6fa85ade8c0be2a5c1f891f5e1ee0be5f4ce2900faca8d305c99a21156ef0732"
+    },
+    {
+      "file": "import-audit.webp",
+      "bytes": 51408,
+      "sha256": "9882594fabd72b422061c0cf3cc01f892965f472abfaf46b732420723c2e8b76"
     },
     {
       "file": "calendar.webp",
-      "bytes": 43974,
-      "sha256": "049c7e8705a1d50b29ba8555e9de30308002821385eb0d438946f662b595e0f0"
+      "bytes": 43490,
+      "sha256": "64b1657773639f11e72041727e4451992bb20b3c53234ba757b21dcb0280f38e"
     },
     {
       "file": "retrospective.webp",
-      "bytes": 47940,
-      "sha256": "8b1372de2065feaf5b698ebf8de2526dc3f394a8bbb0a1a2ba3456618eba7a24"
+      "bytes": 47964,
+      "sha256": "6b6f5e8922805f54c605c61f66f4055de7a1808733a2833711c7ce3a68582297"
     },
     {
       "file": "activity.webp",
-      "bytes": 44194,
-      "sha256": "13cd0e9da87f91100fc755403111286e71abc922657bf6ddf567c481545bf810"
+      "bytes": 44028,
+      "sha256": "fa9e8588238990f18bd9c13909498c12234cf9a42350f0a0d44591da5e614099"
     },
     {
       "file": "trash.webp",
-      "bytes": 35154,
-      "sha256": "ec209490ad1d693cbe7c53cfea7bc41a4ed4583c14ed54661fab74c7ffa836f0"
+      "bytes": 34960,
+      "sha256": "7e41e1da5b02105047e5871c604e1ffda8e69187ace4c11e658b9a5ae51abe13"
     },
     {
       "file": "profile.webp",
-      "bytes": 39742,
-      "sha256": "b8311b351b5892373452f58a94663de4110f45bf731b47973c79399fc0e33f8a"
+      "bytes": 39796,
+      "sha256": "72418c5ed0a4ab85dedcd380e31f7793a35f6bb682639e8ad4c99fa63abb4c81"
     },
     {
       "file": "email-preferences.webp",
-      "bytes": 38128,
-      "sha256": "d13d0e8b2d35175827b7959df6bfd2249c881ed64d8313e3c83a8e9fb7bfce95"
+      "bytes": 38180,
+      "sha256": "70c7fc8d99dbd30d1773f017e7a48fb8cf160ceabfa84232edbe24e9e717bba8"
     },
     {
       "file": "task-comments.webp",
-      "bytes": 75076,
-      "sha256": "3a22ce3f5225db46cf2ceaabb4eae469ad9f495f1718318f29eef029d2293492"
+      "bytes": 77408,
+      "sha256": "530afad8056d1a1ade9def4c8eac7b2a3d0cfc4d412a6b6a0c446d190dc05d40"
     },
     {
       "file": "search-palette.webp",
-      "bytes": 51486,
-      "sha256": "80fd1f4642f50e34d39dd163c374c960fa357596eb118d4a21b2a170533321e7"
+      "bytes": 50282,
+      "sha256": "c5e8766898953808cbd2258bd9dbdd666537fd49151b04ac0720c6cd2387aa83"
     },
     {
       "file": "board-dark.webp",
-      "bytes": 61498,
-      "sha256": "3d96c1f5538a5d9213ed85fec6ae7d7db5e37cf72515998929721ff5337ae886"
+      "bytes": 63356,
+      "sha256": "a1c358bfa56e626767a3a16941965dac32f4f7e7f6468b4d73a6612e87a7f37a"
     },
     {
       "file": "metrics-dark.webp",
-      "bytes": 53546,
-      "sha256": "1935db3003f6f492fdb2e4531855f38ba0d8ffde00b7befa8a3e47b1c70e70f7"
+      "bytes": 51820,
+      "sha256": "c54a7bb7f6e347f33a764ad4ad215ccb1cf7fa1e245ec1b951d40f428feb83f2"
     },
     {
       "file": "mobile-overview.webp",
-      "bytes": 20126,
-      "sha256": "dae95817215811569f050cf4b04429c1a3975e64a56b458b8e7bf3e6e2b02587"
+      "bytes": 20028,
+      "sha256": "5607cce6a10561176cc6c2b91482ee579690454f5dd89779fd878d5a4e9d95a7"
     },
     {
       "file": "mobile-board.webp",
-      "bytes": 19988,
-      "sha256": "96f652fb5d310880efc851069f31fd79fc6857df687887f82c4b7822997f69f4"
+      "bytes": 20038,
+      "sha256": "20b0e3c8feb6ce3fd03a96cee18aa33d49e1a120decb3f72f096770ba4ee039c"
     }
   ]
 }
