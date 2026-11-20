@@ -177,6 +177,7 @@ final class ImportMapper {
         title,
         description,
         status,
+        rawStatus,
         points,
         assignee.isBlank() ? null : assignee,
         labels,

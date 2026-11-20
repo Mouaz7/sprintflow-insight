@@ -3,13 +3,17 @@ import { execFileSync } from 'node:child_process';
 import { expect, test } from '../support/fixtures.ts';
 import { expectAccessible } from '../support/a11y.ts';
 
+test.use({ actionTimeout: 10_000 });
+
 test('previews, maps and atomically imports CSV, reads audit and downloads a private account archive', async ({
   page,
   api,
+  account,
 }) => {
   const project = await api.json<{ id: number }>('/projects', 'POST', {
     name: 'Import verification',
     key: 'IM',
+    description: account.email,
   });
   await page.goto('/data');
   await expect(
@@ -87,8 +91,13 @@ test('previews, maps and atomically imports CSV, reads audit and downloads a pri
 test('maps a Jira historical milestone import on a Swedish dark mobile screen', async ({
   page,
   api,
+  account,
 }) => {
-  await api.json('/projects', 'POST', { name: 'Historisk import', key: 'HI' });
+  await api.json('/projects', 'POST', {
+    name: 'Historisk import',
+    key: 'HI',
+    description: account.email,
+  });
   await page.setViewportSize({ width: 360, height: 800 });
   await page.addInitScript(() => {
     localStorage.setItem('sprintflow-language', 'SV');

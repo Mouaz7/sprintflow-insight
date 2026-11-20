@@ -91,15 +91,6 @@ public class ImportService {
                     new TreeMap<>(request.statuses()),
                     request.truncateText(),
                     request.preserveHistory())));
-    String fingerprint =
-        sha(
-            json.writeValueAsString(
-                List.of(
-                    requestHash,
-                    definitions,
-                    projectMembers.stream()
-                        .map(m -> List.of(m.getId(), m.getUserId(), m.getEmail(), m.getRole()))
-                        .toList())));
     var rows = new ArrayList<ImportViews.Row>();
     var seen = new HashSet<String>();
     Instant now = Instant.now();
@@ -128,6 +119,16 @@ public class ImportService {
                             + " source_key in (:keys)",
                         Map.of("p", projectId, "f", request.format().name(), "keys", keys),
                         String.class));
+    String fingerprint =
+        sha(
+            json.writeValueAsString(
+                List.of(
+                    requestHash,
+                    definitions,
+                    new TreeSet<>(existing),
+                    projectMembers.stream()
+                        .map(m -> List.of(m.getId(), m.getUserId(), m.getEmail(), m.getRole()))
+                        .toList())));
     rows.replaceAll(
         r -> copy(r, r.errors(), r.sourceKey() != null && existing.contains(r.sourceKey())));
     int create = (int) rows.stream().filter(r -> !r.duplicate()).count();
@@ -172,7 +173,8 @@ public class ImportService {
             preview.fingerprint().getBytes(StandardCharsets.US_ASCII),
             request.expectedFingerprint().getBytes(StandardCharsets.US_ASCII)))
       throw ApiException.conflict(
-          "Preview this file again after changing its mapping, members or custom fields.");
+          "Preview this file again. Its mapping, project members, custom fields or existing source"
+              + " keys have changed.");
     if (!preview.canCommit())
       throw ApiException.badRequest(
           "Correct every preview error before importing. Nothing was saved.");
@@ -340,6 +342,7 @@ public class ImportService {
         r.title(),
         r.description(),
         r.status(),
+        r.sourceStatus(),
         r.storyPoints(),
         r.assigneeEmail(),
         r.labels(),

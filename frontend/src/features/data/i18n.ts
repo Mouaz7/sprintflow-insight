@@ -6,6 +6,7 @@ export const dataText = defineLexicon({
     description:
       'Preview a CSV or Jira JSON file, map fields and import tasks into the selected project.',
     choose: 'Choose a project to get started.',
+    importHeading: 'Import file',
     file: 'Source file',
     format: 'File format',
     limits:
@@ -66,6 +67,7 @@ export const dataText = defineLexicon({
     description:
       'Förhandsgranska en CSV- eller Jira JSON-fil, koppla fält och importera uppgifter till valt projekt.',
     choose: 'Välj ett projekt för att börja.',
+    importHeading: 'Importfil',
     file: 'Källfil',
     format: 'Filformat',
     limits:

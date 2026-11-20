@@ -188,12 +188,12 @@ function ProjectData({ project }: { project: Project }) {
       ]),
     );
   const statusValues = [
-    ...new Set(preview?.value.rows.map((row) => row.status) ?? []),
-  ].filter((value) => value && !states.includes(value));
+    ...new Set(preview?.value.rows.map((row) => row.sourceStatus) ?? []),
+  ].filter((value) => value.length > 0);
   return (
     <>
       <section className="profile-card">
-        <h2>{t('file')}</h2>
+        <h2>{t('importHeading')}</h2>
         <p>{t('limits')}</p>
         {!canWrite && <p>{t('readonly')}</p>}
         <fieldset disabled={busy || !canWrite}>
@@ -284,6 +284,7 @@ function ProjectData({ project }: { project: Project }) {
                   <label key={value}>
                     {value}
                     <select
+                      aria-label={value}
                       value={draft.statuses[value] ?? ''}
                       onChange={(e) => {
                         const statuses = Object.fromEntries(

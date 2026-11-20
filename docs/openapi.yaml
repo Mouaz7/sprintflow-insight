@@ -2253,7 +2253,7 @@ paths:
         '429': { $ref: '#/components/responses/Error' }
     post:
       summary: Commit the reviewed import atomically
-      description: Requires the preview fingerprint and current write access under the project lock. Same canonical request replays its receipt; existing external source keys are skipped without updating tasks. A stale mapping, schema or membership fingerprint returns 409. Any invalid row aborts the whole batch.
+      description: Requires the preview fingerprint and current write access under the project lock. Same canonical request replays its receipt; existing external source keys are skipped without updating tasks. A changed mapping, schema, membership or duplicate set returns 409. Any invalid row aborts the whole batch.
       requestBody:
         required: true
         content:
@@ -4618,6 +4618,7 @@ components:
         title: { type: string }
         description: { type: string }
         status: { type: string }
+        sourceStatus: { type: string }
         storyPoints: { type: integer }
         assigneeEmail: { type: string, nullable: true }
         labels: { type: array, items: { type: string } }

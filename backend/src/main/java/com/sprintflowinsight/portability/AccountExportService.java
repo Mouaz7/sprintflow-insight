@@ -25,7 +25,7 @@ public class AccountExportService {
   private static final String VISIBLE =
       " in (select m.project_id from project_member m join projects p on p.id=m.project_id where"
           + " m.user_id=? and p.trashed_at is null)";
-  private final java.util.concurrent.Semaphore exporting=new java.util.concurrent.Semaphore(2);
+  private final java.util.concurrent.Semaphore exporting = new java.util.concurrent.Semaphore(2);
   private final SessionUser sessionUser;
   private final JdbcTemplate jdbc;
   private final ObjectMapper json;
@@ -54,7 +54,9 @@ public class AccountExportService {
     // Keep the exporting identity alive until this snapshot and its audit record commit.
     if (jdbc.queryForList("select id from users where id=? for key share", Long.class, id)
         .isEmpty()) throw ApiException.notFound("Account not found.");
-    if(!exporting.tryAcquire())throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,"Account exports are busy. Try again shortly.");
+    if (!exporting.tryAcquire())
+      throw new ResponseStatusException(
+          HttpStatus.TOO_MANY_REQUESTS, "Account exports are busy. Try again shortly.");
     try (var archive = new Archive(maxBytes)) {
       archive.rows(
           "account.json",
@@ -316,7 +318,9 @@ public class AccountExportService {
     } catch (UncheckedIOException | IOException failure) {
       throw new ResponseStatusException(
           HttpStatus.INTERNAL_SERVER_ERROR, "Could not create the account archive.");
-    }finally{exporting.release();}
+    } finally {
+      exporting.release();
+    }
   }
 
   private final class Archive implements AutoCloseable {

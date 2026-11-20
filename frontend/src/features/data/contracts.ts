@@ -12,6 +12,7 @@ export type ImportRow = {
   title: string;
   description: string;
   status: string;
+  sourceStatus: string;
   sourceKey: string | null;
   storyPoints: number;
   assigneeEmail: string | null;

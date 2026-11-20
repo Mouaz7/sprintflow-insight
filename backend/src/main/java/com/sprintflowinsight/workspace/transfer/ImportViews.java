@@ -11,6 +11,7 @@ public final class ImportViews {
       String title,
       String description,
       String status,
+      String sourceStatus,
       int storyPoints,
       String assigneeEmail,
       List<String> labels,

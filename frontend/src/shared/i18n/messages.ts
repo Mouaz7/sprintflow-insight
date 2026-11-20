@@ -66,7 +66,7 @@ const swedish: Record<string, string> = {
     'Historiken bevarar tidpunkter för skapad, påbörjad och slutförd, inte varje ursprunglig statusändring i Jira.',
   'A source key occurs more than once in this file.':
     'En källnyckel förekommer flera gånger i filen.',
-  'Preview this file again after changing its mapping, members or custom fields.':
+  'Preview this file again. Its mapping, project members, custom fields or existing source keys have changed.':
     'Förhandsgranska filen igen när fältkoppling, medlemmar eller anpassade fält har ändrats.',
   'Correct every preview error before importing. Nothing was saved.':
     'Rätta alla fel i förhandsgranskningen innan import. Inget sparades.',

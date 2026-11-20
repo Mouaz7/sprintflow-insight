@@ -193,7 +193,6 @@ class ImportIntegrationTest extends ApiIntegrationTest {
                 Integer.class,
                 p.getId()))
         .isEqualTo(3);
-    req.put("content", req.get("content") + "\nNew,To Do,OLD-2,2020-01-01T00:00:00Z,,,,");
     req.put("preserveHistory", false);
     // Use a new valid file with an existing external key, rather than silently updating it.
     req.put(
@@ -202,6 +201,15 @@ class ImportIntegrationTest extends ApiIntegrationTest {
             + "Changed title,Done,OLD-1,2020-01-01T00:00:00Z,,2020-01-03T00:00:00Z,1");
     preview = json.readTree(postPreview(p, owner, req));
     assertThat(preview.path("skipCount").asInt()).isEqualTo(1);
+    req.put("expectedFingerprint", preview.path("fingerprint").asString());
+    jdbc.update("delete from import_source where project_id=? and source_key='OLD-1'", p.getId());
+    mvc.perform(
+            post("/api/projects/" + p.getId() + "/imports")
+                .with(as(owner))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(req)))
+        .andExpect(status().isConflict());
   }
 
   @Test

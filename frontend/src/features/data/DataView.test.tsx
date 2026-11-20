@@ -19,6 +19,7 @@ const preview = {
       title: 'Imported task',
       description: '',
       status: 'To Do',
+      sourceStatus: 'To Do',
       sourceKey: 'DEMO-1',
       storyPoints: 0,
       assigneeEmail: null,
