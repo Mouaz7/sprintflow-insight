@@ -50,6 +50,23 @@ export function activitySummary(
   const { summary, eventType } = activity;
   if (language !== 'SV' || !eventType) return summary;
 
+  const timeMessages: Record<string, readonly [string, string]> = {
+    TIME_CHANGED: [
+      'Updated project time log.',
+      'Uppdaterade projektets tidlogg.',
+    ],
+    TIME_ESTIMATE_CHANGED: [
+      'Updated task time estimate.',
+      'Uppdaterade uppgiftens tidsuppskattning.',
+    ],
+    CAPACITY_CHANGED: [
+      'Updated sprint capacity.',
+      'Uppdaterade sprintkapaciteten.',
+    ],
+  };
+  const timeMessage = timeMessages[eventType];
+  if (timeMessage && summary === timeMessage[0]) return timeMessage[1];
+
   if (eventType === 'STORY_ESTIMATED') {
     const estimate =
       /^Estimated story “([\s\S]+)” at (1|2|3|5|8) points in planning poker \(was (\d+)\)\.$/.exec(

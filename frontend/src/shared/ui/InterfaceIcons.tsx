@@ -11,6 +11,7 @@ type IconName =
   | 'flow'
   | 'forecast'
   | 'poker'
+  | 'time'
   | 'updates'
   | 'profile'
   | 'sun'
@@ -20,6 +21,12 @@ type IconName =
   | 'trash';
 
 const paths: Record<IconName, ReactNode> = {
+  time: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6v6l4 2" />
+    </>
+  ),
   poker: (
     <>
       <rect x="3" y="5" width="11" height="15" rx="2" />

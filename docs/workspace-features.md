@@ -173,6 +173,18 @@ Efter avslöjandet visas kortfördelning, lägsta/högsta kort, lägre median, e
 
 Sessionslänkar använder `/poker?session=<id>`; deltagarna väljer samma projekt innan de öppnar länken. Realtidsmeddelanden innehåller bara ändringsmetadata; API:t avgör vad varje läsare får se. Aktiv session uppdateras även var femte sekund som reserv när realtid saknas. Varje kommando anger rundan för att fördröjda anrop inte ska påverka en senare runda. Avbrytande raderar den aktuella rundans ännu dolda röster. Högst 100 öppna sessioner per projekt, en per berättelse och 50 rundor per session tillåts. Listan visar högst 20 nyligen ändrade avslutade sessioner. Se [ADR 0023](adr/0023-planning-poker.md).
 
+## Tidrapportering och kapacitet (B4)
+
+Öppna **Tid och kapacitet** (`/time`) i ett valt projekt. **Logga tid** registrerar 1–1440 minuter på en uppgift och arbetsdag, med en valfri anteckning. Starta i stället en **timer** för att mäta pågående arbete. Varje konto har högst en timer i alla projekt. När den stoppas avrundas tiden uppåt till hela minuter, minst en minut och högst 24 timmar. Pågående minuter ingår först när timern stoppas. Om du förlorat skrivrätten till en gammal timers projekt tar en ny timer bort den gamla utan att logga minuterna.
+
+Du kan rätta eller radera dina egna poster. Ägare och administratörer kan även hantera andras poster. Läsbehörighet och arkiverade projekt ger läsåtkomst. Efter en versionskonflikt finns utkastet kvar; stäng och öppna redigeraren igen för att granska den senaste versionen.
+
+Rapporten **Uppskattat mot faktiskt** låter dig ange tidsuppskattningar per uppgift och exportera CSV. En tom uppskattning betyder att uppgiften inte uppskattats; noll är ett uttryckligt nollvärde. Avvikelsen jämför bara uppskattade uppgifter, samtidigt som alla loggade minuter visas separat. Uppgifter i papperskorgen och pågående timers räknas inte. Urvalet följer uppgiftens nuvarande projekt och sprint, så flytt och papperskorg kan ändra rapporten bakåt i tiden. Tidsuppskattningen är separat från story points och PERT-uppskattningar i arbetsdagar.
+
+Välj en sprint för **Sprintkapacitet**. Ange arbetsminuter per dag, tillgänglighet i procent, valfria poäng för en hel sprint och frånvarodatum. Kapaciteten räknar vardagar från måndag till fredag, inklusive sprintens start och slut. Dubbletter, helger och datum utanför sprinten räknas inte som extra frånvaro. Ange röda dagar manuellt. Klara uppgifter ingår fortfarande i sprintens planerade arbete. Varningar visar överbokning, saknad kapacitet, uppskattningar som saknas och otilldelat arbete. Medlemmar ändrar sin egen kapacitet; ägare och administratörer kan ändra teamets.
+
+Tidposter och kapacitet sparas på servern och uppdateras mellan deltagarnas webbläsare. Radering av ett konto anonymiserar färdigloggade timmar; de finns kvar i projektets totalsummor. Se [ADR 0024](adr/0024-time-tracking-and-capacity.md).
+
 ## B16 — project custom fields
 
 Open **Tasks → Custom fields** (`/fields`). Owners and administrators can create up to 20 fields per active project: Text, Number, Date, Select or Project member. Names are unique ignoring case. Types stay fixed after saving. Select fields allow up to 30 unique options; an option used by a live or recycled task cannot be removed. Deleting a field asks for confirmation and removes its saved values.

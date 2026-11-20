@@ -1,0 +1,121 @@
+.time-page,
+.time-panel {
+  display: grid;
+  gap: 20px;
+}
+.time-panel {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  align-content: start;
+  overflow-wrap: anywhere;
+}
+.time-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+.time-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+.time-actions label {
+  max-width: 100%;
+}
+.time-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.time-stats dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.time-stats dd {
+  margin: 6px 0 0;
+  font-size: 23px;
+  font-weight: 700;
+}
+.time-entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.time-entry-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.time-entry-list li > div {
+  min-width: 0;
+}
+.time-entry-list p {
+  margin-top: 6px;
+}
+.time-table-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+.time-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+  min-width: 600px;
+}
+.time-table-scroll th,
+.time-table-scroll td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.time-table-scroll th {
+  text-align: start;
+}
+.time-table-scroll th:first-child {
+  min-width: 180px;
+  max-width: 360px;
+}
+.time-table-scroll caption {
+  text-align: start;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.time-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+.time-members article {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.time-members .time-overbooked {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+.time-warnings {
+  margin: 0;
+  padding-inline-start: 20px;
+  color: var(--danger-text);
+}
+.time-warnings li + li {
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .time-panel {
+    padding: 16px;
+  }
+}
