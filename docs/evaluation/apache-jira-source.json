@@ -1,0 +1,29 @@
+{
+  "source": "https://issues.apache.org/jira/rest/api/2/search",
+  "capturedAt": "2026-11-20T21:46:57.425Z",
+  "startInclusiveUtc": "2022-01-03",
+  "endExclusiveUtc": "2022-07-04",
+  "projects": [
+    {
+      "project": "HADOOP",
+      "jql": "project = \"HADOOP\" AND statusCategory = Done AND resolutiondate >= \"2022-01-03\" AND resolutiondate < \"2022-07-04\" ORDER BY resolutiondate ASC, key ASC",
+      "matchedIssues": 183,
+      "outsideUtcWindow": 0,
+      "sourceSha256": "1722675522c95f966a52bbfdb09c8a27faaf45c875c466f7d17e4bf2f1211e77"
+    },
+    {
+      "project": "HBASE",
+      "jql": "project = \"HBASE\" AND statusCategory = Done AND resolutiondate >= \"2022-01-03\" AND resolutiondate < \"2022-07-04\" ORDER BY resolutiondate ASC, key ASC",
+      "matchedIssues": 1979,
+      "outsideUtcWindow": 0,
+      "sourceSha256": "81c87bc8ba72baec72fdd81b9ab3f170a3e49491005993bf2f92b15d4dccaa60"
+    },
+    {
+      "project": "KAFKA",
+      "jql": "project = \"KAFKA\" AND statusCategory = Done AND resolutiondate >= \"2022-01-03\" AND resolutiondate < \"2022-07-04\" ORDER BY resolutiondate ASC, key ASC",
+      "matchedIssues": 299,
+      "outsideUtcWindow": 0,
+      "sourceSha256": "2f735d2e329361eee346111a76da46e6e2104a5cb8c9f0203318003b0ef3664f"
+    }
+  ]
+}

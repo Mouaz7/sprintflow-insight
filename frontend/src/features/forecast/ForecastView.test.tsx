@@ -7,6 +7,7 @@ import { mockApi } from '../../test/api';
 import { renderWithProviders } from '../../test/render';
 import { expectNoSeriousA11yViolations } from '../../test/axe';
 import { ForecastView } from './ForecastView';
+import type { CalibrationReport } from './calibration';
 
 const report: ForecastReport = {
   basis: 'THROUGHPUT',
@@ -64,6 +65,7 @@ function mount(
   data: ForecastReport = report,
   language: 'EN' | 'SV' = 'EN',
   path = '/forecast',
+  calibration?: CalibrationReport,
 ) {
   const reads: string[] = [];
   mockApi((url, request) => {
@@ -71,6 +73,7 @@ function mount(
     reads.push(url);
     if (url.endsWith('/epics'))
       return [{ id: 2, title: 'Customer release', version: 0 }];
+    if (url.includes('/forecast/backtest')) return calibration;
     if (url.includes('/forecast')) return data;
     throw new Error(`Unexpected request ${url}`);
   });
@@ -251,4 +254,65 @@ it('shows a correctable input error while keeping query controls available', asy
   expect(
     screen.getByRole('spinbutton', { name: 'Remaining work (optional)' }),
   ).toBeEnabled();
+});
+
+it('compares models on request and explains the selected model with prediction intervals', async () => {
+  const calibration: CalibrationReport = {
+    basis: 'THROUGHPUT',
+    unit: 'ITEMS',
+    periodDays: 7,
+    availablePeriods: 18,
+    requiredPeriods: 15,
+    trainingPeriods: 8,
+    horizonPeriods: 2,
+    seed: '20261120',
+    status: 'SELECTED',
+    selectedModel: 'gamma-poisson',
+    prediction: {
+      median: 10,
+      intervals: [
+        { confidence: 0.5, lower: 8, upper: 12 },
+        { confidence: 0.85, lower: 6, upper: 14 },
+      ],
+    },
+    candidates: [
+      {
+        model: 'gamma-poisson',
+        origins: 9,
+        meanCrps: 1.2,
+        medianAbsoluteError: 2,
+        coverage: { '0.5': 0.5, '0.85': 0.8, '0.95': 0.95 },
+        pitHistogram: Array.from({ length: 10 }, () => 0.1),
+      },
+      {
+        model: 'ewma-poisson',
+        origins: 9,
+        meanCrps: 1.3,
+        medianAbsoluteError: 2,
+        coverage: { '0.5': 0.5, '0.85': 0.8, '0.95': 0.95 },
+        pitHistogram: Array.from({ length: 10 }, () => 0.1),
+      },
+    ],
+  };
+  const { reads, container } = mount(report, 'SV', '/forecast', calibration);
+  const disclosure = await screen.findByText('Modelljämförelse', {
+    selector: 'summary',
+  });
+  expect(reads.some((path) => path.includes('/backtest'))).toBe(false);
+  await userEvent.click(disclosure);
+  expect(
+    await screen.findByRole('heading', {
+      name: 'Vald modell · Bayesiansk Gamma–Poisson',
+    }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('table', {
+      name: /Resultat från historiska testperioder/,
+    }),
+  ).toHaveTextContent('Exponentiellt viktad Poisson');
+  expect(
+    screen.getByRole('heading', { name: 'Prognos för nästa 2 perioder' }),
+  ).toBeVisible();
+  expect(reads).toContain('/api/projects/1/forecast/backtest?basis=THROUGHPUT');
+  await expectNoSeriousA11yViolations(container);
 });

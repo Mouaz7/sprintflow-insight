@@ -3,6 +3,7 @@ package com.sprintflowinsight.reporting;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.forecast.ForecastAnswers;
+import com.sprintflowinsight.forecast.ThroughputHistory;
 import com.sprintflowinsight.reporting.ForecastResponse.TargetSource;
 import com.sprintflowinsight.reporting.ForecastResponse.WorkScope;
 import com.sprintflowinsight.reporting.ThroughputDerivation.Derived;
@@ -56,6 +57,18 @@ public class ForecastService {
             }
           });
 
+  private record BacktestKey(ForecastBasis basis, ThroughputHistory history) {}
+
+  private final Map<BacktestKey, ForecastBacktestResponse> backtests =
+      Collections.synchronizedMap(
+          new LinkedHashMap<>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(
+                Map.Entry<BacktestKey, ForecastBacktestResponse> eldest) {
+              return size() > CACHE_SIZE;
+            }
+          });
+
   @Autowired
   public ForecastService(
       ProjectAccessService access,
@@ -95,6 +108,25 @@ public class ForecastService {
     return response;
   }
 
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  public ForecastBacktestResponse backtest(
+      Long projectId, ForecastBasis basis, HttpSession session) {
+    access.read(projectId, session);
+    Instant now = clock.instant();
+    var events = statusEvents(projectId, now);
+    List<Task> live =
+        basis == ForecastBasis.THROUGHPUT ? tasks.findByProjectId(projectId) : List.of();
+    List<Sprint> projectSprints =
+        basis == ForecastBasis.VELOCITY ? sprints.findByProjectId(projectId) : List.of();
+    var snapshot = derived(basis, now, live, events, projectSprints).history();
+    var key = new BacktestKey(basis, snapshot);
+    var cached = backtests.get(key);
+    if (cached != null) return cached;
+    var calculated = ForecastBacktestCalculator.calculate(basis, snapshot);
+    backtests.put(key, calculated);
+    return calculated;
+  }
+
   private ForecastCalculator.Inputs inputs(
       Long projectId, ForecastRequest request, HttpSession session) {
     Instant now = clock.instant();
@@ -111,39 +143,9 @@ public class ForecastService {
               .title();
     }
     List<Task> live = tasks.findByProjectId(projectId);
-    Set<Long> liveIds = live.stream().map(Task::getId).collect(Collectors.toSet());
-    List<StatusEvent> events =
-        history.findByProjectIdOrderByChangedAtAscIdAsc(projectId).stream()
-            .filter(
-                row ->
-                    row.getTaskId() != null
-                        && row.getChangedAt() != null
-                        && row.getStatus() != null)
-            .filter(row -> !row.getChangedAt().isAfter(now))
-            .map(ForecastService::event)
-            .toList();
+    List<StatusEvent> events = statusEvents(projectId, now);
     List<Sprint> projectSprints = sprints.findByProjectId(projectId);
-    Derived derived =
-        switch (basis) {
-          case THROUGHPUT -> {
-            Set<Long> done =
-                live.stream()
-                    .filter(task -> ThroughputDerivation.DONE.equals(task.getStatus()))
-                    .map(Task::getId)
-                    .collect(Collectors.toSet());
-            Instant observed =
-                events.stream()
-                    .filter(row -> liveIds.contains(row.taskId()))
-                    .map(StatusEvent::changedAt)
-                    .min(Comparator.naturalOrder())
-                    .orElse(null);
-            yield ThroughputDerivation.weekly(
-                ThroughputDerivation.completions(done, events), today, observed);
-          }
-          case VELOCITY ->
-              ThroughputDerivation.velocity(
-                  projectSprints.stream().map(ForecastService::sprint).toList(), events, now);
-        };
+    Derived derived = derived(basis, now, live, events, projectSprints);
     List<UserStory> scopeStories =
         stories.findByProjectId(projectId).stream()
             .filter(story -> request.epicId() == null || request.epicId().equals(story.getEpicId()))
@@ -176,6 +178,42 @@ public class ForecastService {
         target(
             request, today, basis, open, projectSprints, remaining, derived.history().periodDays());
     return new ForecastCalculator.Inputs(basis, derived, today, remaining, target, scope);
+  }
+
+  private List<StatusEvent> statusEvents(Long projectId, Instant now) {
+    return history.findByProjectIdOrderByChangedAtAscIdAsc(projectId).stream()
+        .filter(
+            row -> row.getTaskId() != null && row.getChangedAt() != null && row.getStatus() != null)
+        .filter(row -> !row.getChangedAt().isAfter(now))
+        .map(ForecastService::event)
+        .toList();
+  }
+
+  private static Derived derived(
+      ForecastBasis basis,
+      Instant now,
+      List<Task> live,
+      List<StatusEvent> events,
+      List<Sprint> projectSprints) {
+    if (basis == ForecastBasis.VELOCITY)
+      return ThroughputDerivation.velocity(
+          projectSprints.stream().map(ForecastService::sprint).toList(), events, now);
+    Set<Long> liveIds = live.stream().map(Task::getId).collect(Collectors.toSet());
+    Set<Long> done =
+        live.stream()
+            .filter(task -> ThroughputDerivation.DONE.equals(task.getStatus()))
+            .map(Task::getId)
+            .collect(Collectors.toSet());
+    Instant observed =
+        events.stream()
+            .filter(row -> liveIds.contains(row.taskId()))
+            .map(StatusEvent::changedAt)
+            .min(Comparator.naturalOrder())
+            .orElse(null);
+    return ThroughputDerivation.weekly(
+        ThroughputDerivation.completions(done, events),
+        LocalDate.ofInstant(now, ZoneOffset.UTC),
+        observed);
   }
 
   private static void validateTarget(ForecastRequest request, LocalDate today) {

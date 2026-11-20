@@ -36,7 +36,7 @@ The six-period minimum warning is guidance, not validation. Period independence,
 
 ## Probabilistic forecasts and backtesting (C2)
 
-The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput history into a **predictive distribution** of the number of items completed in the next *t* periods. Planning answers are derived from it. The algorithms are pure Java; the REST endpoints and the UI come in a later C2 step. ADR 0010 explains the model choice.
+The `forecast` module (`com.sprintflowinsight.forecast`) turns a throughput history into a **predictive distribution** of the number of items completed in the next *t* periods. Planning answers are derived from it. The algorithms are pure Java. The project forecast page exposes their comparison and the selected model’s prediction for the evaluated horizon. [ADR 0028](adr/0028-project-forecast-calibration.md) describes the wiring.
 
 ### Input
 
@@ -56,7 +56,7 @@ All three implement `ForecastModel.forecast(history, t)` and return a `DiscreteD
    It is computed exactly, not sampled. The pmf starts at the mode, uses the ratio P(*k*+1)/P(*k*) = (*k* + *r*)/(*k* + 1)·(1 − *p*) in both directions, and is normalised. Tails are truncated once a term falls below 10⁻¹⁷ of the modal probability, so the lost mass is about 10⁻¹⁵. Starting at the mode keeps every term ≤ 1, so there is no underflow even for means in the thousands. The default prior is α₀ = β₀ = 0.5: a mean of one item per period, weighted as half an observed period. Both are configurable.
 3. **Exponentially weighted Poisson** (`ewma-poisson`). The rate is the weighted mean λ̂ = Σ *w*ᵢ*x*ᵢ / Σ *w*ᵢ with *w*ᵢ = *d*^(*n*−1−*i*) and *d* = 0.5^(1/*h*). The default half-life is *h* = 4 periods. The forecast is Poisson(λ̂·*t*), computed exactly the same way. It reacts quickly to level shifts, but it treats λ̂ as known, so its intervals are too narrow when data are scarce or over-dispersed.
 
-The C2 reference bootstrap uses binomial thinning for fractional periods; the B6 web API above uses uniform accrual along shared paths. C2 wiring must evaluate and reconcile this difference before exposing model selection.
+The C2 comparison and its selected model’s prediction use two whole periods. The B6 deadline planner uses uniform accrual along joint paths and can answer questions at fractional horizons. The C2 scores assess only the two-period model forecasts.
 
 ### Derived answers (`ForecastAnswers`, C2 core)
 
@@ -74,6 +74,12 @@ The C2 reference bootstrap uses binomial thinning for fractional periods; the B6
 - **MAE**: the mean absolute error of the forecast median.
 
 **Selection.** The candidate with the lowest mean CRPS wins, and ties keep the earlier candidate (Gamma-Poisson, EWMA, bootstrap). CRPS is a proper score, so it rewards calibration and sharpness together. Coverage, PIT and MAE are kept in every report to explain the choice. **Minimum-data rule:** selection requires at least 6 origins, that is *m* + *h* + 5 = 15 periods with the defaults. Below that, the result is `InsufficientHistory(available, required)`, and callers should show no model choice (or fall back to the Gamma-Poisson model, which degrades gracefully to its prior).
+
+### Project model selection and evidence
+
+Open **Model comparison** on the forecast page. Each project and history basis uses the lowest mean CRPS to select a model at the two-period horizon. At least 15 complete periods and one positive count are required. The prediction shows the total median and central 50%, 85% and 95% intervals from the selected model. The table reports observed coverage, CRPS and MAE for all candidates. The PIT figure shows whether outcomes are concentrated in particular parts of the selected predictive distribution.
+
+The [Apache Jira evaluation](evaluation/apache-jira-backtest.md) uses a fixed seed and a committed aggregate of weekly resolution counts. HADOOP, HBASE and KAFKA select different models. Interpret the HBASE coverage alongside the bulk closures and the small number of overlapping origins.
 
 ### Limitations
 

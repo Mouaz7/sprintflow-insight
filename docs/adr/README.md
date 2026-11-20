@@ -30,3 +30,4 @@ Each record states a decision, the context that forced it, and its consequences.
 
 | [0022](0022-typed-project-custom-fields.md) | Typed project custom fields | Accepted |
 - [0027 – Imports, account portability and retained administrative audit](0027-imports-account-export-and-audit.md)
+- [0028 – Project forecast calibration](0028-project-forecast-calibration.md)
