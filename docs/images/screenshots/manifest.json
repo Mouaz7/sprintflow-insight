@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-20T05:09:43.497Z",
-  "sourceCommit": "4035649934ab07fba50bec64e965b1d739b9d33a",
+  "generatedAt": "2026-11-20T06:05:58.280Z",
+  "sourceCommit": "65742cb1cdec2640f3035bd6bd4afd52efa1ef3c",
   "images": [
     {
       "file": "sign-in.webp",
@@ -9,8 +9,8 @@
     },
     {
       "file": "shared-report.webp",
-      "bytes": 27566,
-      "sha256": "862e4808432d77a116c49945faf399667745ecde0870be6b135d78a5328e59aa"
+      "bytes": 27556,
+      "sha256": "2e49f6083530a2dd7270b0bf22f4769cf91a8372b348d8b9708ac323fd88d769"
     },
     {
       "file": "overview.webp",
@@ -49,8 +49,8 @@
     },
     {
       "file": "flow.webp",
-      "bytes": 59612,
-      "sha256": "11d780c5820a4112c3c55abcc5c76fe1a8b46a926cec16308c2b335b78be008a"
+      "bytes": 59598,
+      "sha256": "af186cb4001f30b696955fd5285c5866ece915b5a99841355382fb1ee35d0c8b"
     },
     {
       "file": "forecast.webp",
@@ -74,8 +74,8 @@
     },
     {
       "file": "custom-fields.webp",
-      "bytes": 38158,
-      "sha256": "12fcd75031ef3a8557b67bc84ea57a6148ed06905676424259cd93cbf32bfdc8"
+      "bytes": 38156,
+      "sha256": "b3491367e14f5287e5231da5ca4fe35dbab4a59ffea9fad99227f39c0472fd81"
     },
     {
       "file": "calendar.webp",
@@ -84,13 +84,13 @@
     },
     {
       "file": "retrospective.webp",
-      "bytes": 47946,
-      "sha256": "1107a3c974e6a2bf0dc8b1cab35d23fbe47e2c46ad72c53b059cec5d31529591"
+      "bytes": 47940,
+      "sha256": "8b1372de2065feaf5b698ebf8de2526dc3f394a8bbb0a1a2ba3456618eba7a24"
     },
     {
       "file": "activity.webp",
-      "bytes": 44230,
-      "sha256": "b8496a4003c60048d5d04703d33b62bce865f289edb8029b367bb9a41be933fd"
+      "bytes": 44194,
+      "sha256": "13cd0e9da87f91100fc755403111286e71abc922657bf6ddf567c481545bf810"
     },
     {
       "file": "trash.webp",
@@ -109,13 +109,13 @@
     },
     {
       "file": "task-comments.webp",
-      "bytes": 75416,
-      "sha256": "311ebe6fe949272241d396da7e64ee13cc053afb931bde4155d30ca8624ed76e"
+      "bytes": 75076,
+      "sha256": "3a22ce3f5225db46cf2ceaabb4eae469ad9f495f1718318f29eef029d2293492"
     },
     {
       "file": "search-palette.webp",
-      "bytes": 51084,
-      "sha256": "a58d251ff421ae2f4467fd4bb57af1095ea36bdd925e97e8d2fec6b1e8effc18"
+      "bytes": 51486,
+      "sha256": "80fd1f4642f50e34d39dd163c374c960fa357596eb118d4a21b2a170533321e7"
     },
     {
       "file": "board-dark.webp",

@@ -20,7 +20,7 @@
 //   SCREENSHOT_DB_NAME               database inside that container, default sprintflow
 //   PLAYWRIGHT_EXECUTABLE_PATH       optional existing Chromium
 import { execFileSync } from "node:child_process";
-import { mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -700,7 +700,7 @@ async function toWebp(encoder: Page, png: Buffer): Promise<Buffer> {
   return Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
 }
 
-const written: string[] = [];
+const written: { file: string; bytes: number; sha256: string }[] = [];
 let encoder: Page;
 
 async function capture(page: Page, name: string): Promise<void> {
@@ -708,15 +708,19 @@ async function capture(page: Page, name: string): Promise<void> {
   await page.waitForLoadState("networkidle", { timeout: 15_000 });
   await page.waitForTimeout(150);
   const file = join(outDir, `${name}.webp`);
-  writeFileSync(
-    file,
-    await toWebp(
-      encoder,
-      await page.screenshot({ animations: "disabled", caret: "hide" }),
-    ),
+  const bytes = await toWebp(
+    encoder,
+    await page.screenshot({ animations: "disabled", caret: "hide" }),
   );
-  written.push(file);
-  console.log(`  ${name}.webp  ${(statSync(file).size / 1024).toFixed(0)} kB`);
+  // Record metadata from the exact buffer we write. Do not stat and then reopen a path
+  // that another process could replace between the two filesystem operations.
+  writeFileSync(file, bytes);
+  written.push({
+    file: `${name}.webp`,
+    bytes: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  });
+  console.log(`  ${name}.webp  ${(bytes.length / 1024).toFixed(0)} kB`);
 }
 
 async function newPage(
@@ -866,7 +870,7 @@ async function main(): Promise<void> {
   } finally {
     await browser.close();
   }
-  const total = written.reduce((sum, file) => sum + statSync(file).size, 0);
+  const total = written.reduce((sum, entry) => sum + entry.bytes, 0);
   writeFileSync(
     join(outDir, "manifest.json"),
     JSON.stringify(
@@ -876,11 +880,7 @@ async function main(): Promise<void> {
           cwd: root,
           encoding: "utf8",
         }).trim(),
-        images: written.map((file) => ({
-          file: file.slice(outDir.length + 1),
-          bytes: statSync(file).size,
-          sha256: createHash("sha256").update(readFileSync(file)).digest("hex"),
-        })),
+        images: written,
       },
       null,
       2,
