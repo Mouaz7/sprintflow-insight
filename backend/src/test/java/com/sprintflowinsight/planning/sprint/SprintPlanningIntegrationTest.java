@@ -72,7 +72,8 @@ class SprintPlanningIntegrationTest extends ApiIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.plan.objective").value(7))
         .andExpect(jsonPath("$.plan.selectedStoryIds", contains("" + prerequisite, "" + value)))
-        .andExpect(jsonPath("$.plan.relativeGap").value(0.0));
+        .andExpect(jsonPath("$.plan.relativeGap").value(0.0))
+        .andExpect(jsonPath("$.plan.wallTime").isString());
 
     var whatIf =
         Map.of(
@@ -173,6 +174,10 @@ class SprintPlanningIntegrationTest extends ApiIntegrationTest {
     long foreignSprint = sprint(project(user(), null));
     mvc.perform(get(path + "/options").param("sprintId", "" + foreignSprint).with(as(owner)))
         .andExpect(status().isNotFound());
+    jdbc.update("update sprint set status='Cancelled' where id=?", sprint);
+    mvc.perform(get(path + "/options").param("sprintId", "" + sprint).with(as(owner)))
+        .andExpect(status().isConflict());
+    jdbc.update("update sprint set status='Planned' where id=?", sprint);
     jdbc.update("update projects set archived_at=now() where id=?", p.getId());
     mvc.perform(
             post(path + "/optimize")

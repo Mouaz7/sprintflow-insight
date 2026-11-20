@@ -344,7 +344,8 @@ export function SprintManager({
                   </span>
                 </div>
                 <div className="card-actions">
-                  {sprint.status !== 'Completed' && (
+                  {(sprint.status === 'Planned' ||
+                    sprint.status === 'Active') && (
                     <button type="button" onClick={() => setPlanning(sprint)}>
                       {t('suggestSprint')}
                     </button>

@@ -6,8 +6,7 @@ import { defineLexicon, translator } from './lexicon';
 const swedish: Record<string, string> = {
   'Existing sprint commitments exceed the scenario capacity.':
     'Befintliga sprintåtaganden överstiger scenariots kapacitet.',
-  'Choose a sprint that has not been completed.':
-    'Välj en sprint som ännu inte är slutförd.',
+  'Choose a planned or active sprint.': 'Välj en planerad eller aktiv sprint.',
   'Estimate all unfinished sprint commitments before proposing more work.':
     'Uppskatta alla oavslutade sprintåtaganden innan du föreslår mer arbete.',
   'Supply each story lock once and choose one direction.':

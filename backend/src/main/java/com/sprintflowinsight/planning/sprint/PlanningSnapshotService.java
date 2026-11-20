@@ -57,8 +57,8 @@ class PlanningSnapshotService {
             projectId,
             sprintId);
     if (status.isEmpty()) throw ApiException.notFound("Sprint not found in this project.");
-    if ("Completed".equals(status.getFirst()))
-      throw ApiException.conflict("Choose a sprint that has not been completed.");
+    if (!Set.of("Planned", "Active").contains(status.getFirst()))
+      throw ApiException.conflict("Choose a planned or active sprint.");
 
     var backlog =
         jdbc.query(

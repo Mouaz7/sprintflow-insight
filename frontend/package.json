@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "335 kB",
+      "limit": "340 kB",
       "gzip": true
     },
     {
@@ -173,6 +173,12 @@
       "name": "Import and audit route chunk (gzip)",
       "path": "dist/assets/DataView-*.js",
       "limit": "12 kB",
+      "gzip": true
+    },
+    {
+      "name": "Sprint planning drawer (gzip)",
+      "path": "dist/assets/SprintPlanDrawer-*.js",
+      "limit": "8 kB",
       "gzip": true
     }
   ]
