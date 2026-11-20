@@ -34,6 +34,7 @@ public class MetricsExportService {
   private final ProjectAccessService access;
   private final PdfReportWriter pdfWriter;
   private final CustomFieldService customFields;
+  private final com.sprintflowinsight.workspace.project.ProjectAdministrativeAccess admin;
 
   public MetricsExportService(
       ProjectRepository projects,
@@ -42,7 +43,9 @@ public class MetricsExportService {
       TaskRepository tasks,
       ProjectAccessService access,
       PdfReportWriter pdfWriter,
-      CustomFieldService customFields) {
+      CustomFieldService customFields,
+      com.sprintflowinsight.workspace.project.ProjectAdministrativeAccess admin) {
+    this.admin = admin;
     this.customFields = customFields;
     this.pdfWriter = pdfWriter;
     this.projects = projects;
@@ -62,20 +65,32 @@ public class MetricsExportService {
     return ResponseEntity.ok(activity.forProject(projectId));
   }
 
+  @org.springframework.transaction.annotation.Transactional
   public ResponseEntity<?> clearActivity(Long projectId, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    var caller =
+        admin.lock(
+            projectId, session, com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+    admin.record(caller, "ACTIVITY_CLEARED", "activity", projectId, java.util.Map.of());
     activity.clearProject(projectId);
     return ResponseEntity.noContent().build();
   }
 
+  @org.springframework.transaction.annotation.Transactional
   public ResponseEntity<?> updateActivity(
       Long projectId, Long activityId, ActivityUpdateRequest request, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    var caller =
+        admin.lock(
+            projectId, session, com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+    admin.record(caller, "ACTIVITY_UPDATED", "activity", activityId, java.util.Map.of());
     return ResponseEntity.ok(activity.updateSummary(projectId, activityId, request.summary()));
   }
 
+  @org.springframework.transaction.annotation.Transactional
   public ResponseEntity<?> deleteActivity(Long projectId, Long activityId, HttpSession session) {
-    access.adminOrOwner(projectId, session);
+    var caller =
+        admin.lock(
+            projectId, session, com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+    admin.record(caller, "ACTIVITY_DELETED", "activity", activityId, java.util.Map.of());
     activity.deleteEvent(projectId, activityId);
     return ResponseEntity.noContent().build();
   }

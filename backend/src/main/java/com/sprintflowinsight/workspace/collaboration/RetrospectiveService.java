@@ -8,14 +8,23 @@ import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+@org.springframework.transaction.annotation.Transactional
 @org.springframework.stereotype.Service
 public class RetrospectiveService {
   private final RetrospectiveRepository entries;
   private final SprintRepository sprints;
   private final ProjectAccessService access;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
+  private final com.sprintflowinsight.workspace.project.ProjectMutationService mutations;
 
   public RetrospectiveService(
-      RetrospectiveRepository entries, SprintRepository sprints, ProjectAccessService access) {
+      RetrospectiveRepository entries,
+      SprintRepository sprints,
+      ProjectAccessService access,
+      com.sprintflowinsight.common.audit.AuditService audit,
+      com.sprintflowinsight.workspace.project.ProjectMutationService mutations) {
+    this.audit = audit;
+    this.mutations = mutations;
     this.entries = entries;
     this.sprints = sprints;
     this.access = access;
@@ -53,14 +62,20 @@ public class RetrospectiveService {
     validateCategory(request.category());
     entry.setCategory(request.category());
     entry.setMessage(request.message().trim());
+    moderated(entry, "RETROSPECTIVE_MODERATED", session);
     return entries.save(entry);
   }
 
   public void delete(Long projectId, Long id, HttpSession session) {
-    entries.delete(editable(projectId, id, session));
+    var entry = editable(projectId, id, session);
+    moderated(entry, "RETROSPECTIVE_REMOVED", session);
+    entries.delete(entry);
   }
 
   private RetrospectiveEntry editable(Long projectId, Long id, HttpSession session) {
+    access.write(projectId, session);
+    mutations.lock(projectId);
+    access.forget(projectId);
     access.write(projectId, session);
     var entry =
         entries
@@ -74,6 +89,24 @@ public class RetrospectiveService {
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN, "You can only edit your own retrospective entries.");
     return entry;
+  }
+
+  private void moderated(RetrospectiveEntry entry, String action, HttpSession session) {
+    if (!entry.getAuthorEmail().equalsIgnoreCase(access.email(session))) {
+      var caller =
+          access.require(
+              entry.getProjectId(),
+              session,
+              com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+      audit.record(
+          entry.getProjectId(),
+          caller.userId(),
+          caller.role().label(),
+          action,
+          "retrospective",
+          entry.getId(),
+          Map.of());
+    }
   }
 
   private void sprint(Long projectId, Long sprintId) {

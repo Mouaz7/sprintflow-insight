@@ -1,6 +1,5 @@
 package com.sprintflowinsight.auth.filter;
 
-import tools.jackson.databind.ObjectMapper;
 import com.sprintflowinsight.auth.SecurityConfiguration;
 import com.sprintflowinsight.auth.UserIdentity;
 import com.sprintflowinsight.common.error.ErrorCode;
@@ -23,6 +22,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Applies {@link RateLimitPolicy} to API requests and answers excess with an RFC 9457 problem,
@@ -102,6 +102,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     RateLimitPolicy credential = CREDENTIAL_ENDPOINTS.get(path);
     if (credential != null) return Optional.of(credential);
     if (path.startsWith("/api/auth/logout")) return Optional.empty();
+    if (path.equals("/api/account/export")) return Optional.of(RateLimitPolicy.EXPORT);
     if (path.endsWith("/attachments/upload")) return Optional.of(RateLimitPolicy.UPLOAD);
     return Optional.of(RateLimitPolicy.WRITE);
   }

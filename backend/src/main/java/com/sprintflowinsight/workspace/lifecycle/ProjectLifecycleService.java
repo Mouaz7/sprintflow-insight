@@ -23,6 +23,7 @@ public class ProjectLifecycleService {
   private final SprintRepository sprints;
   private final UserStoryRepository stories;
   private final LifecycleService lifecycle;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
 
   public ProjectLifecycleService(
       ProjectRepository projects,
@@ -30,7 +31,9 @@ public class ProjectLifecycleService {
       TaskRepository tasks,
       SprintRepository sprints,
       UserStoryRepository stories,
-      LifecycleService lifecycle) {
+      LifecycleService lifecycle,
+      com.sprintflowinsight.common.audit.AuditService audit) {
+    this.audit = audit;
     this.projects = projects;
     this.access = access;
     this.tasks = tasks;
@@ -43,7 +46,17 @@ public class ProjectLifecycleService {
   public Project archive(Long id, ArchiveRequest body, HttpSession session) {
     access.require(id, session, AccessContext.Need.MANAGE_ARCHIVED);
     Project project = projects.lockById(id).orElseThrow(this::missing);
+    access.forget(id);
+    var caller = access.require(id, session, AccessContext.Need.MANAGE_ARCHIVED);
     project.setArchivedAt(body.archived() ? Instant.now() : null);
+    audit.record(
+        id,
+        caller.userId(),
+        caller.role().label(),
+        body.archived() ? "PROJECT_ARCHIVED" : "PROJECT_UNARCHIVED",
+        "project",
+        id,
+        Map.of());
     return projects.save(project);
   }
 
@@ -118,6 +131,14 @@ public class ProjectLifecycleService {
       VersionPrecondition.require(ifMatch, project.getVersion());
       project.setTrashedAt(restore ? null : Instant.now());
       projects.save(project);
+      audit.record(
+          id,
+          access.userId(session),
+          "Owner",
+          restore ? "PROJECT_RESTORED" : "PROJECT_TRASHED",
+          "project",
+          id,
+          Map.of());
       return;
     }
     VersionPrecondition.require(ifMatch, lifecycle.version(kind, id, session));

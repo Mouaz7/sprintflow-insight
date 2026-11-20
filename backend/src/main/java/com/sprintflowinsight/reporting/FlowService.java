@@ -49,6 +49,7 @@ public class FlowService {
   private final ProjectMutationService mutations;
   private final ProjectWipSettingsRepository settings;
   private final ActivityService activity;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
 
   @Autowired
   public FlowService(
@@ -58,8 +59,9 @@ public class FlowService {
       ProjectWipLimitRepository limits,
       ProjectMutationService mutations,
       ProjectWipSettingsRepository settings,
-      ActivityService activity) {
-    this(access, tasks, history, limits, mutations, settings, activity, Clock.systemUTC());
+      ActivityService activity,
+      com.sprintflowinsight.common.audit.AuditService audit) {
+    this(access, tasks, history, limits, mutations, settings, activity, audit, Clock.systemUTC());
   }
 
   FlowService(
@@ -70,6 +72,7 @@ public class FlowService {
       ProjectMutationService mutations,
       ProjectWipSettingsRepository settings,
       ActivityService activity,
+      com.sprintflowinsight.common.audit.AuditService audit,
       Clock clock) {
     this.access = access;
     this.tasks = tasks;
@@ -79,6 +82,7 @@ public class FlowService {
     this.mutations = mutations;
     this.settings = settings;
     this.activity = activity;
+    this.audit = audit;
   }
 
   @Transactional(readOnly = true)
@@ -128,6 +132,8 @@ public class FlowService {
       Long projectId, WipLimitsRequest request, String ifMatch, HttpSession session) {
     access.require(projectId, session, Need.MANAGE);
     mutations.lock(projectId);
+    access.forget(projectId);
+    var caller = access.require(projectId, session, Need.MANAGE);
     long version = revision(projectId);
     VersionPrecondition.require(ifMatch, version);
     Set<String> seen = new HashSet<>();
@@ -145,6 +151,14 @@ public class FlowService {
     settings.saveAndFlush(new ProjectWipSettings(projectId, version + 1));
     activity.record(
         projectId, "WIP_LIMITS_UPDATED", "Updated the board's WIP limits.", access.email(session));
+    audit.record(
+        projectId,
+        caller.userId(),
+        caller.role().label(),
+        "WIP_LIMITS_UPDATED",
+        "project",
+        projectId,
+        Map.of("columns", saved.size()));
     return new WipSettingsResponse(version + 1, limitResponses(saved));
   }
 

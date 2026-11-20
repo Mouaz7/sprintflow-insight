@@ -39,3 +39,8 @@ Thumbs.db
 
 # Storybook build; component baseline PNGs are tracked
 /frontend/storybook-static/
+
+# Jazzer exploration corpus (regression seeds live under test resources)
+/backend/.cifuzz-corpus/
+/backend/.jazzer*/
+/backend/crash-*

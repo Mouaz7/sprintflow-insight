@@ -111,3 +111,36 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   return payload as T;
 }
+
+/** Binary responses share the authenticated, CSRF-protected request boundary. */
+export async function apiBlob(path: string, init: RequestInit): Promise<Blob> {
+  const headers = new Headers(init.headers);
+  const token = await csrfToken();
+  headers.set(token.headerName, token.token);
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, {
+      ...init,
+      headers,
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+  } catch (cause) {
+    requestFailed(cause);
+  }
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => ({}));
+    const problem =
+      payload !== null && typeof payload === 'object' && !Array.isArray(payload)
+        ? (payload as Record<string, unknown>)
+        : {};
+    throw new ApiError(
+      typeof problem.detail === 'string'
+        ? problem.detail
+        : fallbackErrorMessage(response.status),
+      response.status,
+      problem,
+    );
+  }
+  return response.blob();
+}

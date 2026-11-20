@@ -518,6 +518,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  data: [
+    'Välj en fil med högst 200 uppgifter. Granska fältkoppling, statusar och varningar innan importen. Kontoexport finns under profilinställningar. Ägare och administratörer kan läsa granskningsloggen.',
+    'Choose a file with up to 200 tasks. Review field mapping, states and warnings before importing. Account export is in profile preferences. Owners and admins can read the audit log.',
+  ],
   dashboard: [
     'Välj widgets och ordna dem med knapparna i Anpassa dashboard. Layouten sparas bara för dig och det valda projektet. Sprintvalet styr burndown och sprintmål; övriga widgets visar projektet. Diagrammens datatabeller ger samma information utan grafik.',
     'Choose widgets and reorder them with the controls in Customize dashboard. The layout is saved only for you and this project. Sprint selection affects burndown and sprint goal; other widgets cover the project. Chart data tables offer the same information without graphics.',

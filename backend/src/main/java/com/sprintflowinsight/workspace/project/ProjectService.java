@@ -19,6 +19,7 @@ public class ProjectService {
   private final ActivityService activity;
   private final com.sprintflowinsight.workspace.task.TaskRepository tasks;
   private final ProjectFactory factory;
+  private final ProjectAdministrativeAccess admin;
 
   public ProjectService(
       ProjectRepository projects,
@@ -28,7 +29,9 @@ public class ProjectService {
       ProjectDeletionService deletion,
       ActivityService activity,
       com.sprintflowinsight.workspace.task.TaskRepository tasks,
-      ProjectFactory factory) {
+      ProjectFactory factory,
+      ProjectAdministrativeAccess admin) {
+    this.admin = admin;
     this.factory = factory;
     this.projects = projects;
     this.members = members;
@@ -62,7 +65,7 @@ public class ProjectService {
   @Transactional
   public ResponseEntity<?> updateProject(
       Long id, ProjectRequest details, String ifMatch, HttpSession session) {
-    access.require(id, session, AccessContext.Need.MANAGE);
+    AccessContext caller = admin.lock(id, session, AccessContext.Need.MANAGE);
     if (projects.findByName(details.trimmedName()).filter(p -> !p.getId().equals(id)).isPresent())
       return ApiExceptionHandler.error(
           org.springframework.http.HttpStatus.CONFLICT, "A project with this name already exists.");
@@ -76,6 +79,7 @@ public class ProjectService {
               p.setName(details.trimmedName());
               p.setDescription(details.description());
               Project saved = projects.save(p);
+              admin.record(caller, "PROJECT_UPDATED", "project", id, Map.of());
               activity.record(
                   id,
                   "PROJECT_UPDATED",
@@ -102,7 +106,7 @@ public class ProjectService {
 
   @Transactional
   public ResponseEntity<?> addMember(Long id, MemberRequest request, HttpSession session) {
-    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
+    AccessContext caller = admin.lock(id, session, AccessContext.Need.MANAGE);
     String email = request.email().trim().toLowerCase();
     var account = users.findByEmail(email);
     if (account.isEmpty())
@@ -130,6 +134,7 @@ public class ProjectService {
     member.setEmail(email);
     member.setRole(request.role());
     ProjectMember saved = members.save(member);
+    admin.record(caller, "MEMBER_UPDATED", "member", saved.getId(), Map.of("role", request.role()));
     activity.record(
         id, "MEMBER_UPDATED", "Updated project role for " + email + ".", access.email(session));
     return ResponseEntity.ok(saved);
@@ -137,7 +142,7 @@ public class ProjectService {
 
   @Transactional
   public ResponseEntity<?> removeMember(Long id, String email, HttpSession session) {
-    AccessContext caller = access.require(id, session, AccessContext.Need.MANAGE);
+    AccessContext caller = admin.lock(id, session, AccessContext.Need.MANAGE);
     Project p = projects.lockById(id).orElseThrow();
     if (p.getOwnerEmail().equalsIgnoreCase(email))
       return ApiExceptionHandler.error(
@@ -151,6 +156,7 @@ public class ProjectService {
     requireMayManage(caller, existing.get().getRole(), email);
     tasks.unassignInProject(id, existing.get().getEmail());
     members.delete(existing.get());
+    admin.record(caller, "MEMBER_REMOVED", "member", existing.get().getId(), Map.of());
     activity.record(
         id, "MEMBER_REMOVED", "Removed project member " + email + ".", access.email(session));
     return ResponseEntity.noContent().build();
@@ -159,7 +165,7 @@ public class ProjectService {
   @Transactional
   public ResponseEntity<?> transferOwnership(
       Long id, OwnershipRequest request, HttpSession session) {
-    access.owner(id, session);
+    AccessContext caller = admin.lock(id, session, AccessContext.Need.OWNER);
     String nextOwner = request.email().trim().toLowerCase();
     var nextAccount = users.findByEmail(nextOwner);
     if (nextAccount.isEmpty())
@@ -186,6 +192,12 @@ public class ProjectService {
     members.save(target);
     project.setOwnerEmail(nextOwner);
     Project saved = projects.save(project);
+    admin.record(
+        caller,
+        "OWNERSHIP_TRANSFERRED",
+        "project",
+        id,
+        Map.of("newOwnerId", nextAccount.get().getId()));
     activity.record(
         id,
         "OWNERSHIP_TRANSFERRED",

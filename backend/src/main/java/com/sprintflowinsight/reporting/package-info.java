@@ -3,6 +3,7 @@
       "auth",
       "common",
       "common :: errors",
+      "common :: audit",
       "flow",
       "workspace :: project",
       "workspace :: task",

@@ -361,3 +361,15 @@ The selected ports must be free. Set `BASE_URL` to the disposable app's URL; its
 Review the images at desktop (1440×900) and mobile (390×844), check text/labels and ensure only demo identities appear. Copy the regenerated directory into the working branch if capturing in the temporary worktree. Update it after major UI phases, including router/search/realtime changes and newly added pages; keep the README links and manifest together. Keep actual UI screenshots separate from fixture-based layout checks.
 
 After copying the output, stop only this disposable stack with `docker compose -p sprintflow-screenshots down -v` from its worktree, then remove the worktree with `git worktree remove /tmp/sprintflow-screenshots`. The `-v` here deliberately deletes only the demonstration stack's database; it is not a normal stop command for your application.
+
+## B19 import, export and audit
+
+`ImportIntegrationTest`, `AdminAuditIntegrationTest` and `AccountExportIntegrationTest` use real PostgreSQL for dry-run/no-write behavior, atomic commit/replay, typed decimals, access/archive/CSRF, independent audit retention and secret-free scoped JSON ZIPs. `ImportParserTest` covers RFC4180, ADF, strict Jira documents and bounds. `ImportParserFuzzTest` replays checked-in seeds normally; run actual 30-second coverage-guided exploration with Java 25:
+
+```sh
+cd backend
+JAZZER_FUZZ=1 ./mvnw -Dtest='ImportParserFuzzTest#csv' -Djazzer.instrumentation_includes='com.sprintflowinsight.workspace.transfer.**' test
+JAZZER_FUZZ=1 ./mvnw -Dtest='ImportParserFuzzTest#jira' -Djazzer.instrumentation_includes='com.sprintflowinsight.workspace.transfer.**' test
+```
+
+Review any finding, fix the cause and retain its input under `ImportParserFuzzTestInputs`; do not commit `.cifuzz-corpus`. `node --test scripts/data/apache-subset.test.ts` checks source projection, split batches, provenance, hard limits and no overwrite. These fixtures are synthetic, not redistributed dataset samples. Frontend MSW tests cover preview invalidation/retry and protected binary download. `frontend/e2e/tests/import-export.e2e.ts` exercises actual CSV/status mapping, atomic persistence, audit reads, ZIP contents, historical Jira dates, axe and Swedish dark mobile rendering against the packaged app/PostgreSQL.

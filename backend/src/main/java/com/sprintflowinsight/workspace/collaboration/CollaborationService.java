@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 @org.springframework.stereotype.Service
 public class CollaborationService {
   private final MentionService mentions;
+  private final com.sprintflowinsight.common.audit.AuditService audit;
   private final com.sprintflowinsight.workspace.project.ProjectMutationService mutations;
   private final TaskService tasks;
   private final TaskCommentRepository comments;
@@ -30,7 +31,9 @@ public class CollaborationService {
       org.springframework.context.ApplicationEventPublisher events,
       ActivityService activity,
       ProjectAccessService access,
-      com.sprintflowinsight.workspace.NotificationRequests notifications) {
+      com.sprintflowinsight.workspace.NotificationRequests notifications,
+      com.sprintflowinsight.common.audit.AuditService audit) {
+    this.audit = audit;
     this.notifications = notifications;
     this.mentions = mentions;
     this.mutations = mutations;
@@ -53,6 +56,8 @@ public class CollaborationService {
     if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
+    access.forget(task.getProjectId());
+    access.write(task.getProjectId(), session);
     String actor = access.email(session);
     TaskComment comment = new TaskComment();
     comment.setTaskId(taskId);
@@ -103,6 +108,21 @@ public class CollaborationService {
   }
 
   private void changed(TaskComment comment, String type, HttpSession session) {
+    if (!comment.getAuthorEmail().equalsIgnoreCase(access.email(session))) {
+      var caller =
+          access.require(
+              comment.getProjectId(),
+              session,
+              com.sprintflowinsight.workspace.project.AccessContext.Need.MANAGE);
+      audit.record(
+          comment.getProjectId(),
+          caller.userId(),
+          caller.role().label(),
+          type.equals("CommentUpdated") ? "COMMENT_MODERATED" : "COMMENT_REMOVED",
+          "comment",
+          comment.getId(),
+          java.util.Map.of());
+    }
     events.publishEvent(
         new com.sprintflowinsight.workspace.events.WorkspaceChanged(
             java.util.UUID.randomUUID(),
@@ -124,6 +144,8 @@ public class CollaborationService {
                         org.springframework.http.HttpStatus.NOT_FOUND));
     access.write(task.getProjectId(), session);
     mutations.lock(task.getProjectId());
+    access.forget(task.getProjectId());
+    access.write(task.getProjectId(), session);
     TaskComment comment =
         comments
             .findById(id)

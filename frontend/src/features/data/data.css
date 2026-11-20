@@ -1,0 +1,38 @@
+.data-page {
+  display: grid;
+  gap: 1.5rem;
+}
+.data-page fieldset {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.data-mapping {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin-block: 1rem;
+}
+.data-scroll {
+  overflow-x: auto;
+  max-height: 32rem;
+  margin-block: 1rem;
+}
+.data-page table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+.data-page th,
+.data-page td {
+  padding: 0.7rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.data-page td small {
+  display: block;
+}
+.data-page input[type='file'] {
+  max-width: 100%;
+}

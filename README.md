@@ -32,6 +32,7 @@ These screenshots come from the packaged application and PostgreSQL using fictio
 | Forecasts | [Delivery probabilities and assumptions](docs/images/screenshots/forecast.webp) |
 | Metrics | [Sprint progress](docs/images/screenshots/metrics.webp), [dark mode](docs/images/screenshots/metrics-dark.webp) |
 | Calendar and retrospective | [Calendar](docs/images/screenshots/calendar.webp), [team retrospective](docs/images/screenshots/retrospective.webp) |
+| Import and audit | [CSV/Jira import and audit](docs/images/screenshots/import-audit.webp) |
 | Activity and profile | [Activity](docs/images/screenshots/activity.webp), [profile](docs/images/screenshots/profile.webp), [email preferences](docs/images/screenshots/email-preferences.webp) |
 | Shared report and account | [Public report snapshot](docs/images/screenshots/shared-report.webp), [sign-in](docs/images/screenshots/sign-in.webp) |
 | Mobile | [Overview](docs/images/screenshots/mobile-overview.webp), [board](docs/images/screenshots/mobile-board.webp) |
@@ -46,6 +47,7 @@ The generator also captures Projects and Trash. All images and their SHA-256 has
 | --- | --- |
 | Project workspace | Scrum/Kanban templates, Owner/Admin/Member/Viewer access, membership, archives and recoverable trash |
 | Planning | Ordered backlog, sprint goals/history, epics, roadmap dependencies, PERT estimates and planning poker with private votes |
+| Data portability | CSV/Jira mapping and dry-run, [Apache research subset converter](docs/import-export.md), account JSON ZIP and retained admin audit |
 | Task delivery | Board, labels, checklists, attachments, saved filters, typed custom fields and filtered CSV/PDF exports |
 | Collaboration | Live updates and presence, comments, @mentions, in-app notifications and optional daily/weekly email summaries |
 | Time | Manual entries, one running timer per account, estimates versus actuals, sprint availability and capacity warnings |
@@ -168,7 +170,7 @@ npx playwright install chromium
 E2E_BASE_URL=http://127.0.0.1:8081 npm test
 ```
 
-The real-database suite covers account, role, planning, collaboration, custom-field, analytics, time, dashboard and email-preference flows; axe rejects serious/critical accessibility findings. Fixture-based [responsive, guidance and Trusted Types checks](docs/testing.md) provide additional UI evidence. The screenshot generator is documented [here](docs/testing.md#readme-screenshots-d1).
+The real-database suite covers account, role, planning, collaboration, custom-field, analytics, time, dashboard, import/export and email-preference flows; axe rejects serious/critical accessibility findings. Fixture-based [responsive, guidance and Trusted Types checks](docs/testing.md) provide additional UI evidence. The screenshot generator is documented [here](docs/testing.md#readme-screenshots-d1).
 
 GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup/restart checks, secret/dependency scans, PIT, Playwright/axe, Storybook, Trivy, ZAP, k6 and Lighthouse. CodeQL and Scorecard have separate workflows. Actions and base images are pinned. On `main`, a passing pipeline publishes the tested image to `ghcr.io/mouaz7/sprintflow-insight` with cosign signing, SLSA provenance and an SBOM attestation. See [supply chain](docs/security/supply-chain.md).
 

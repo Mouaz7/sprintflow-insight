@@ -805,6 +805,7 @@ async function main(): Promise<void> {
       [`poker?session=${data.pokerId}`, "poker"],
       [`time?sprint=${data.sprintId}`, "time"],
       ["fields", "custom-fields"],
+      ["data", "import-audit"],
       ["calendar", "calendar"],
       ["retrospective", "retrospective"],
       ["updates", "activity"],

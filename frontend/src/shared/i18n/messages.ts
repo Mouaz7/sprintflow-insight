@@ -4,6 +4,86 @@ import { defineLexicon, translator } from './lexicon';
 // Keep the original message in state and translate when rendering, so switching
 // language also updates an error that is already visible. Never translate user data.
 const swedish: Record<string, string> = {
+  'Account exports are busy. Try again shortly.':
+    'Kontoexporterna är upptagna. Försök igen om en stund.',
+  'Use a CSV file of at most 1 MB.': 'Använd en CSV-fil på högst 1 MB.',
+  'CSV cannot contain null characters.': 'CSV får inte innehålla nulltecken.',
+  'A quote must start a CSV field; escape quotes by doubling them.':
+    'Citattecken måste inleda ett CSV-fält. Skriv dubbla citattecken för att infoga ett citattecken.',
+  'Unexpected text after a closing CSV quote.':
+    'Oväntad text efter ett avslutande citattecken.',
+  'A CSV cell can have at most 8192 characters.':
+    'En CSV-cell får innehålla högst 8192 tecken.',
+  'A CSV quote was not closed.': 'Ett citattecken i CSV-filen avslutades inte.',
+  'CSV needs a header and at least one data row.':
+    'CSV behöver en rubrikrad och minst en datarad.',
+  'CSV headers must be non-empty, unique and at most 160 characters.':
+    'CSV-rubriker måste vara ifyllda, unika och högst 160 tecken.',
+  'Each CSV record must have the same number of fields as its header.':
+    'Varje CSV-rad måste ha lika många fält som rubrikraden.',
+  'CSV needs at least one data row.': 'CSV behöver minst en datarad.',
+  'At most 64 CSV columns are supported.': 'Högst 64 CSV-kolumner stöds.',
+  'Import at most 200 tasks per batch.':
+    'Importera högst 200 uppgifter per omgång.',
+  'Use a Jira JSON file of at most 1 MB.':
+    'Använd en Jira JSON-fil på högst 1 MB.',
+  'Invalid or excessively nested Jira JSON.':
+    'Jira JSON-filen är ogiltig eller har för många nästlade nivåer.',
+  'A Jira issue has too many scalar fields.':
+    'Ett Jira-ärende har för många enkla fält.',
+  'Provide a Jira issues array of 1–200 objects with fields.':
+    'Ange en Jira-lista med 1–200 ärendeobjekt med fält.',
+  'Map only task fields or custom fields from this project.':
+    'Koppla endast uppgiftsfält eller anpassade fält i projektet.',
+  'A mapped source column is missing from the file.':
+    'En kopplad källkolumn saknas i filen.',
+  'Map each workflow state to To Do, In Progress, Review or Done.':
+    'Koppla varje status till To Do, In Progress, Review eller Done.',
+  'Map a non-empty title.': 'Koppla en titel som inte är tom.',
+  'Map the workflow state to an application state.':
+    'Koppla arbetsflödets status till en status i appen.',
+  'Story points must be an integer from 0 to 1000.':
+    'Berättelsepoäng måste vara ett heltal mellan 0 och 1000.',
+  'Assignee must be a current project member.':
+    'Ansvarig måste vara en nuvarande projektmedlem.',
+  'Use at most 12 labels of 1–32 characters, separated by semicolons.':
+    'Använd högst 12 etiketter med 1–32 tecken, separerade med semikolon.',
+  'Source keys can have at most 128 characters.':
+    'Källnycklar får innehålla högst 128 tecken.',
+  'Map the Jira key so existing issues can be skipped safely.':
+    'Koppla Jira-nyckeln så att befintliga ärenden kan hoppas över säkert.',
+  'Preserving history requires a created date.':
+    'Historik kräver ett datum för skapande.',
+  'A historical To Do task must leave its started date empty.':
+    'En historisk uppgift med status To Do måste sakna startdatum.',
+  'A historical active task needs a started date.':
+    'En historisk pågående uppgift behöver ett startdatum.',
+  'Historical dates must be ordered and cannot be in the future.':
+    'Historiska datum måste vara i ordning och får inte ligga i framtiden.',
+  'A historical Done task needs a completed date; other states must leave it empty.':
+    'En historisk färdig uppgift behöver ett slutdatum. Andra statusar måste sakna slutdatum.',
+  'History preserves created/started/completed milestones, not every original Jira transition.':
+    'Historiken bevarar tidpunkter för skapad, påbörjad och slutförd, inte varje ursprunglig statusändring i Jira.',
+  'A source key occurs more than once in this file.':
+    'En källnyckel förekommer flera gånger i filen.',
+  'Preview this file again after changing its mapping, members or custom fields.':
+    'Förhandsgranska filen igen när fältkoppling, medlemmar eller anpassade fält har ändrats.',
+  'Correct every preview error before importing. Nothing was saved.':
+    'Rätta alla fel i förhandsgranskningen innan import. Inget sparades.',
+  'A mapped task is invalid. Nothing was saved.':
+    'En kopplad uppgift är ogiltig. Inget sparades.',
+  'A task association changed. Preview the file again.':
+    'En koppling för uppgiften har ändrats. Förhandsgranska filen igen.',
+  'An attachment has an invalid storage reference. Contact the operator.':
+    'En bilaga har en ogiltig lagringsreferens. Kontakta driftansvarig.',
+  'An attachment is unavailable. Retry the complete export after it is restored.':
+    'En bilaga är inte tillgänglig. Försök med hela exporten igen när bilagan har återställts.',
+  'Account export exceeds the configured archive limit. An operator can raise it for an assisted complete export.':
+    'Kontoexporten överskrider arkivgränsen. Driftansvarig kan höja gränsen för en assisterad fullständig export.',
+  'A data section exceeds 100000 rows. Request an assisted complete export.':
+    'En datasektion överskrider 100000 rader. Begär en assisterad fullständig export.',
+  'Could not create the account archive.': 'Kontoarkivet kunde inte skapas.',
+
   'Use a field name of 1–80 characters.': 'Ange ett fältnamn med 1–80 tecken.',
   'Choose a field type.': 'Välj en fälttyp.',
   'Use at most 30 options of 1–80 characters each.':
@@ -291,6 +371,14 @@ export function localizeMessage(message: string, language: Language): string {
     )
   )
     return 'Informationen har ändrats av någon annan. Uppdatera sidan och försök igen.';
+  const importText = message.match(
+    /^(Title|Description) (contains null characters\.|exceeds 255 characters; shorten it or explicitly allow truncation\.|was explicitly shortened to 255 characters; original text remains in import provenance\.)$/,
+  );
+  if (importText) {
+    const field = importText[1] === 'Title' ? 'Titeln' : 'Beskrivningen';
+    return `${field} ${(importText[2] ?? '').startsWith('contains') ? 'innehåller nulltecken.' : (importText[2] ?? '').startsWith('exceeds') ? 'överstiger 255 tecken. Korta den eller tillåt uttryckligen förkortning.' : 'kortades uttryckligen till 255 tecken. Originaltexten finns kvar i importhistoriken.'}`;
+  }
+
   const blocked = message.match(/^(\d+) blocked task\(s\) need attention\.$/);
   if (blocked) return `${blocked[1]} blockerade uppgifter behöver åtgärdas.`;
   const assignment = message.match(/^You were assigned task “(.+)”\.$/);

@@ -214,3 +214,7 @@ The board and search palette offer a project field, a type-supported operator an
 Values share the task revision with ordinary task editing. A simultaneous change returns a conflict, keeps the draft, and offers an explicit reload with a discard confirmation. Opening another project starts a separate editor. Field definitions have independent revisions. Recycled tasks keep values for restoration; permanent removal deletes them. Metadata changes invalidate project queries through existing realtime events without creating status-history transitions or including field contents in activity summaries.
 
 B16 exposes the typed `FieldCondition` contract and pure matcher for B15 automation conditions. Configuring and executing automation rules belongs to B15.
+
+## Import, kontoexport och granskningslogg (B19)
+
+**Import och granskning** låter projektmedlemmar förhandsgranska CSV/Jira JSON, koppla fält och statusar och bekräfta en atomär import av högst 200 uppgifter. Befintliga källnycklar hoppas över. Ägare/administratörer kan bevara sammanfattade historiska tidpunkter och läsa den separata, skrivskyddade granskningsloggen med 90 dagars retention. Kontoarkivet hämtas via **Profil → Inställningar → Exportera ditt konto**. [Format, begränsningar och Apache-datasetprocedur](import-export.md).

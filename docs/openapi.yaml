@@ -2208,6 +2208,109 @@ paths:
         '204': { description: Email summaries stopped; no account details returned }
         '400': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/imports/preview:
+    parameters:
+    - { in: path, name: projectId, required: true, schema: { type: integer, format: int64 } }
+    post:
+      summary: Preview a bounded CSV or Jira JSON import
+      description: Read-only snapshot. Owner, Admin or Member in an active project. Historical milestone preservation requires Owner or Admin. At most 200 tasks and one million input characters. No writes or notifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImportRequest' }
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportPreview' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/imports:
+    parameters:
+    - { in: path, name: projectId, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: Read recent project import receipts
+      description: All current project roles, including archived reads. At most 50 receipts.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ImportBatch' } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Commit the reviewed import atomically
+      description: Requires the preview fingerprint and current write access under the project lock. Same canonical request replays its receipt; existing external source keys are skipped without updating tasks. A stale mapping, schema or membership fingerprint returns 409. Any invalid row aborts the whole batch.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImportRequest' }
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportResult' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/audit:
+    parameters:
+    - { in: path, name: projectId, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: Read retained administrative audit metadata
+      description: Owner or Admin, including archived projects. Keyset pagination newest first. No write endpoint; 90-day retention. Deleted projects are not readable.
+      parameters:
+      - { in: query, name: before, schema: { type: integer, format: int64, minimum: 1 } }
+      - { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditPage' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/account/export:
+    post:
+      summary: Export the authenticated account as JSON ZIP
+      description: Session account only, CSRF required. No-store archive includes explicitly projected profile, preferences, attributed contributions, currently readable project data and stored attachments. No credentials or other participants hidden votes. Default 64 MiB uncompressed and 100000 rows per section; exceeds limits with 413 and no partial response. Two requests per account per minute. Export scope and legacy authorship limitations are in manifest.json.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     sessionCookie:
@@ -4494,3 +4597,81 @@ components:
       properties:
         message: { type: string, minLength: 1, maxLength: 1000, description: Nonblank comment with optional project-member handles }
         version: { type: integer, format: int64, nullable: true }
+    ImportFormat:
+      type: string
+      enum: [CSV, JIRA_JSON]
+    ImportRequest:
+      type: object
+      required: [format, content, mapping, statuses]
+      properties:
+        format: { $ref: '#/components/schemas/ImportFormat' }
+        content: { type: string, minLength: 1, maxLength: 1000000 }
+        mapping: { type: object, maxProperties: 32, additionalProperties: { type: string, maxLength: 160 }, description: Task targets or custom colon field id mapped to source column names; empty means automatic mapping. }
+        statuses: { type: object, maxProperties: 40, additionalProperties: { type: string, enum: ['To Do', 'In Progress', Review, Done] } }
+        truncateText: { type: boolean, default: false }
+        preserveHistory: { type: boolean, default: false }
+        expectedFingerprint: { type: string, nullable: true, pattern: '^[a-f0-9]{64}$' }
+    ImportRow:
+      type: object
+      properties:
+        rowNumber: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        storyPoints: { type: integer }
+        assigneeEmail: { type: string, nullable: true }
+        labels: { type: array, items: { type: string } }
+        dueAt: { type: string, format: date-time, nullable: true }
+        sourceKey: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        startedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        customValues: { type: object, additionalProperties: { type: string } }
+        errors: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        duplicate: { type: boolean }
+    ImportPreview:
+      type: object
+      properties:
+        format: { $ref: '#/components/schemas/ImportFormat' }
+        columns: { type: array, items: { type: string } }
+        mapping: { type: object, additionalProperties: { type: string } }
+        rows: { type: array, items: { $ref: '#/components/schemas/ImportRow' } }
+        fingerprint: { type: string }
+        createCount: { type: integer }
+        skipCount: { type: integer }
+        canCommit: { type: boolean }
+        previousBatchId: { type: string, format: uuid, nullable: true }
+    ImportResult:
+      type: object
+      properties:
+        batchId: { type: string, format: uuid }
+        createdCount: { type: integer }
+        skippedCount: { type: integer }
+        taskIds: { type: array, items: { type: integer, format: int64 } }
+        replayed: { type: boolean }
+    ImportBatch:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        format: { type: string }
+        createdCount: { type: integer }
+        skippedCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        projectId: { type: integer, format: int64, nullable: true }
+        actorUserId: { type: integer, format: int64 }
+        actorRole: { type: string, enum: [Owner, Admin, Member, Account] }
+        action: { type: string }
+        targetType: { type: string }
+        targetId: { type: string, nullable: true }
+        details: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+    AuditPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+        nextBefore: { type: integer, format: int64, nullable: true }

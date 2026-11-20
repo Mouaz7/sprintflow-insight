@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && node --test data/apache-subset.test.ts",
     "repository": "node verification/repository-check.ts",
     "smoke": "node verification/container-smoke.ts",
     "responsive": "node verification/responsive.ts",
