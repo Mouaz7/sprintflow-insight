@@ -1,218 +1,190 @@
 # SprintFlow Insight
 
-![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) [![Quality](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Mouaz7/sprintflow-insight/badge)](https://scorecard.dev/viewer/?uri=github.com/Mouaz7/sprintflow-insight)
+[![Quality](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml) ![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React and TypeScript](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1)
 
-SprintFlow helps teams turn a shared backlog into visible delivery: agree on priorities, plan a sprint, collaborate on tasks, and review progress against the sprint goal. Completed sprint history remains meaningful after tasks move into later sprints.
+Plan a sprint, collaborate on a shared board and review what the team delivered. SprintFlow combines a prioritized backlog with live task updates, planning poker, time tracking and delivery analytics. The interface supports English and Swedish, light and dark themes, keyboard navigation and mobile screens.
 
-[Swedish start guide](docs/getting-started.sv.md) · [Feature guide](docs/workspace-features.md) · [API reference](docs/openapi.yaml)
+[Start in Swedish](docs/getting-started.sv.md) · [Feature guide](docs/workspace-features.md) · [API contract](docs/openapi.yaml) · [Roadmap](https://github.com/Mouaz7/sprintflow-insight/issues/38)
 
-## Preview
+## See the app
 
-| Light mode | Dark mode |
+These screenshots come from the packaged application and PostgreSQL using fictional demo accounts. [Regenerate them](docs/testing.md#readme-screenshots-d1) after a major interface change.
+
+| Project overview | Live task board |
 | --- | --- |
-| ![Workspace in light mode](docs/design/preview/overview-light.png) | ![Workspace in dark mode](docs/design/preview/overview-dark.png) |
-| ![Sign in](docs/design/preview/auth-login-light.png) | ![Sign in, dark mode](docs/design/preview/auth-login-dark.png) |
+| ![Project overview with sprint goal and delivery progress](docs/images/screenshots/overview.webp) | ![Task board with work in four columns](docs/images/screenshots/board.webp) |
+| ![Task board in dark mode](docs/images/screenshots/board-dark.webp) | ![Command palette with matching tasks and comments](docs/images/screenshots/search-palette.webp) |
 
-## Features
+<details>
+<summary>Planning, collaboration, analytics and mobile screenshots</summary>
 
-- Projects, membership, Scrum/Kanban templates, archives, and a recoverable trash view.
-- Prioritized stories, sprint planning, task boards, labels, checklists, comments, and attachments.
-- Notifications, calendar, saved filters, onboarding, and sprint retrospectives.
-- Burndown, delivery risk, completed sprint history, and shareable progress reports.
-- Editable activity timeline, profile and security settings, English/Swedish, and light/dark themes.
-- Contextual examples and expandable explanations on all eleven workspace pages, in English and Swedish. Examples guide entry without becoming saved values.
-- Email/password accounts, optional Google sign-in, and optional password recovery through Gmail SMTP.
-
-See [workspace features](docs/workspace-features.md) and [metric definitions](docs/metrics-definition.md) for behavior and limitations.
-
-## Technology
-
-| Layer | Implementation |
+| View | Screenshot |
 | --- | --- |
-| Frontend | React, TypeScript, Vite; Node 24 builds the static application |
-| Backend | Java 25, Spring Boot, REST |
-| Authentication | Spring Security, BCrypt password hashing, server-managed sessions and CSRF protection |
-| Database | PostgreSQL 16 with Flyway migrations |
-| Local deployment | Docker multi-stage build and Docker Compose |
-| Checks | Frontend tests, Maven tests/package checks, container checks in GitHub Actions |
+| Backlog | [Prioritized stories](docs/images/screenshots/backlog.webp) |
+| Sprints | [Sprint planning and history](docs/images/screenshots/sprints.webp) |
+| Roadmap | [Epics and planned dates](docs/images/screenshots/roadmap.webp) |
+| Planning poker | [Revealed votes and disagreement](docs/images/screenshots/poker.webp) |
+| Time and capacity | [Logged time and estimates](docs/images/screenshots/time.webp) |
+| Custom fields | [Typed project fields](docs/images/screenshots/custom-fields.webp) |
+| Comments | [Live discussion and an @mention](docs/images/screenshots/task-comments.webp) |
+| Dashboard | [Personal project widgets](docs/images/screenshots/dashboard.webp) |
+| Flow | [Cumulative flow, WIP and cycle times](docs/images/screenshots/flow.webp) |
+| Forecasts | [Delivery probabilities and assumptions](docs/images/screenshots/forecast.webp) |
+| Metrics | [Sprint progress](docs/images/screenshots/metrics.webp), [dark mode](docs/images/screenshots/metrics-dark.webp) |
+| Calendar and retrospective | [Calendar](docs/images/screenshots/calendar.webp), [team retrospective](docs/images/screenshots/retrospective.webp) |
+| Activity and profile | [Activity](docs/images/screenshots/activity.webp), [profile](docs/images/screenshots/profile.webp), [email preferences](docs/images/screenshots/email-preferences.webp) |
+| Shared report and account | [Public report snapshot](docs/images/screenshots/shared-report.webp), [sign-in](docs/images/screenshots/sign-in.webp) |
+| Mobile | [Overview](docs/images/screenshots/mobile-overview.webp), [board](docs/images/screenshots/mobile-board.webp) |
 
-Spring Boot serves the frontend and API from one address. Docker is a deployment tool; GitHub's language chart measures source files and does not list every tool used.
+The generator also captures Projects and Trash. All images and their SHA-256 hashes are listed in [the capture manifest](docs/images/screenshots/manifest.json).
 
-## Quick start — Windows
+</details>
 
-Install Git and Docker Desktop with Linux containers. This repository is private: sign in to GitHub with an account that has repository access when cloning. Then open PowerShell:
+## What works
 
-```powershell
-git clone https://github.com/Mouaz7/sprintflow-insight.git
-cd sprintflow-insight
-.\start.cmd
+| Area | Behavior |
+| --- | --- |
+| Project workspace | Scrum/Kanban templates, Owner/Admin/Member/Viewer access, membership, archives and recoverable trash |
+| Planning | Ordered backlog, sprint goals/history, epics, roadmap dependencies, PERT estimates and planning poker with private votes |
+| Task delivery | Board, labels, checklists, attachments, saved filters, typed custom fields and filtered CSV/PDF exports |
+| Collaboration | Live updates and presence, comments, @mentions, in-app notifications and optional daily/weekly email summaries |
+| Time | Manual entries, one running timer per account, estimates versus actuals, sprint availability and capacity warnings |
+| Insights | Burndown, cumulative flow, cycle-time/WIP views, bootstrap delivery forecasts, personal dashboards and shared report snapshots |
+| Navigation | Reloadable routes, project-scoped search and command palette, keyboard shortcuts and EN/SV help |
+| Accounts | Email/password, optional Google sign-in, optional password recovery, profile and notification preferences |
+
+Forecasts depend on the recorded history and assumptions; warnings and accessible data tables accompany the charts. See [metric definitions](docs/metrics-definition.md). Email summaries start **Off**, require SMTP for delivery and have a confirmation page for unsubscribing.
+
+## Architecture
+
+```text
+Browser → React / TypeScript / Vite
+                    ↓ same-origin REST + WebSocket
+          Java 25 / Spring Boot / Spring Modulith
+                    ↓
+          PostgreSQL 16 + Flyway migrations
+          Local attachment files
 ```
 
-Open **http://localhost:8081** when the script reports readiness. The first build downloads images and dependencies and can take several minutes. Later builds reuse cached layers. Java and Node are not required on your computer for this mode.
+Spring Boot serves the built frontend and API from one address. Feature folders and lazy routes organize the frontend; backend modules use durable domain events for notifications and realtime invalidations. PostgreSQL stores sessions and application data. [Architecture](docs/architecture.md), [module diagrams](docs/architecture/all-docs.adoc) and [ADRs](docs/adr/README.md) describe the boundaries and decisions.
 
-The script creates a private `.env` with a random database password on first run. Keep it: changing this password does not change an existing PostgreSQL user's password. Existing `.env` settings are preserved.
+## Run with Docker
 
-## Quick start — WSL/Linux/macOS
+Install Git and Docker with the Compose plugin. On Windows/macOS, start Docker Desktop with Linux containers.
 
 ```sh
 git clone https://github.com/Mouaz7/sprintflow-insight.git
 cd sprintflow-insight
-bash start.sh
+bash start.sh                          # Linux / macOS / WSL
 ```
 
-Install Docker Desktop on macOS/Windows, or Docker Engine with the Compose plugin on Linux. The script creates `.env` with a random database password and prepares the upload directory automatically. On macOS it starts Docker Desktop; on Linux it starts the Docker service when run as root. In WSL, it uses the Windows launcher when Docker is unavailable, provided Windows interop is enabled. The first build requires internet access and may take several minutes. Open http://localhost:8081 when startup completes.
+On Windows, use PowerShell and run `.\start.cmd` instead. Open **http://localhost:8081** after startup reports readiness. Java and Node are only needed for native development; Docker builds them inside the image. The first build needs internet access for dependencies.
 
-## First account
+The launchers prepare a private `.env`, generating the database password and encryption key once. Keep this file with your backups: replacing its password does not change an existing database user's password, and losing its encryption key makes encrypted values unreadable.
 
-Choose **Create account** on the sign-in page. Register your own email/password, then create a project or choose a template. There is no default administrator password. Google/Gmail configuration is optional: ordinary registration and sign-in work with those values empty.
+Choose **Create account**, register an email/password and create a project or start from a template. There is no default administrator account. Google and SMTP settings can stay empty.
 
-## Working in a project
+## Native development
 
-Select a project in the header or the current-project control to view its backlog,
-board, calendar and metrics. New story, sprint and task forms also have a project
-selector: it determines where the new item is saved, while preserving draft text
-and clearing relationships from the previous project. Changing the displayed
-project never moves saved work between projects.
-
-A task linked to a story inherits that story's sprint, including an unplanned
-product backlog. Move the story to move all its linked tasks together. Standalone
-tasks can choose a sprint independently. In Backlog, choose **Manual order** and use the
-up/down buttons to save your own order; the sprint filter shows a sprint backlog or
-unplanned stories. On Tasks, **Export filtered tasks** downloads CSV/PDF using the
-current board filters and records those filters in the file.
-
-See the [feature guide](docs/workspace-features.md) for every workspace feature
-and the [metric definitions](docs/metrics-definition.md) for how delivery data is calculated.
-
-## Configuration
-
-All private settings belong in local `.env`, which is excluded from Git and Docker's build context. Every start script creates it from `.env.example` on first run through one shared bootstrap (`scripts/env-bootstrap.sh`, `scripts/env-bootstrap.ps1`): it generates a random database password and the encryption key (once; it is never replaced), sets `SPRINTFLOW_COOKIE_SECURE=false` for local HTTP and validates the ports. Run `scripts/env-bootstrap.sh` on its own to prepare `.env` without starting anything.
-
-| Variable | Purpose |
-| --- | --- |
-| `SPRINTFLOW_DB_PASSWORD` | Local PostgreSQL password; required |
-| `SPRINTFLOW_ENCRYPTION_KEY` | AES-256-GCM key (Base64 of 32 random bytes) for secrets at rest; required, generated by the start scripts. Back it up with `.env` |
-| `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` | Additional readable keys, comma separated, only while rotating keys. With several instances, rotation takes two deploys: first add the new key here everywhere, then make it the current key ([ADR 0015](docs/adr/0015-encryption-and-key-rotation.md)) |
-| `SPRINTFLOW_DB_URL`, `SPRINTFLOW_DB_USER` | Native database connection; Compose uses its internal PostgreSQL service |
-| `SPRINTFLOW_PUBLIC_URL` | Browser address used in reset links; default `http://localhost:8081` |
-| `SPRINTFLOW_COOKIE_SECURE` | `true` by default; the local start scripts write `false` for http://localhost |
-| `SPRINTFLOW_GOOGLE_CLIENT_ID` | Optional OAuth Web client ID ending in `.apps.googleusercontent.com` |
-| `SPRINTFLOW_SMTP_USERNAME`, `SPRINTFLOW_SMTP_PASSWORD` | Optional Gmail sender address and 16-character app password |
-| `SPRINTFLOW_SMTP_HOST`, `SPRINTFLOW_SMTP_PORT` | SMTP server, default `smtp.gmail.com:587` with STARTTLS |
-| `SPRINTFLOW_CONTAINER_UID`, `SPRINTFLOW_CONTAINER_GID` | Linux upload directory ownership; default `1000:1000` |
-| `SPRINTFLOW_DB_POOL_SIZE` | Database connection pool size, default `10`; keep it well above the four concurrent event listeners |
-| `SPRINTFLOW_EVENTS_MAX_RETRY_AGE` | How long failed event deliveries are retried before they are logged and dropped, default `PT24H` |
-| `SPRINTFLOW_APP_PORT`, `SPRINTFLOW_DB_PORT` | Optional localhost host ports, default `8081` and `5432`. Native mode serves Spring Boot on `SPRINTFLOW_APP_PORT` too. Update `SPRINTFLOW_PUBLIC_URL` when changing the app port |
-
-Run `.\configure-account-services.ps1` to enter Gmail credentials without showing the password. For Google sign-in, authorize `http://localhost:8081` as a JavaScript origin and add your account as a test user while the Google app is in testing. This integration verifies Google ID tokens on the server and does not require storing a client secret. See [account services](docs/account-services.md).
-
-## Stop, restart, and data
-
-```powershell
-docker compose stop                    # Stop; keep data
-docker compose up -d --wait             # Start existing containers
-.\start.cmd                            # Rebuild and start changed code
-docker compose logs --tail 100 app      # Inspect startup errors
-docker compose down                    # Remove containers; keep database volume
-```
-
-Database data lives in **`sprintflow-insight_sprintflow-postgres`**. Attachments live in **`backend/data`**, mounted into the app container. Both survive container replacement. Back up both before destructive maintenance. **Do not use `docker compose down -v` to stop the app:** it deletes database volumes.
-
-After changing `.env`, run `.\start.cmd` to recreate the app with the new settings. A health response at `/actuator/health` reports readiness without configuration details. Both published ports bind only to this computer's localhost.
-
-## Troubleshooting
-
-| Problem | Action |
-| --- | --- |
-| Docker unavailable | Start Docker Desktop and select Linux containers |
-| First build appears slow | Watch the download/build output; the initial dependency download takes time |
-| Port already occupied | Stop the application using that port, or configure an alternative host port |
-| Database authentication fails | Restore the original `.env` password; an existing volume keeps its original database credentials |
-| Upload fails on Linux | Match container UID/GID to directory ownership and confirm `backend/data` is writable |
-| Google button unavailable | Configure a valid Web client ID and the exact browser origin |
-| Reset mail unavailable | Configure SMTP username/app password; inspect Profile account-service status |
-| Old interface appears | Rebuild using `.\start.cmd`, then refresh the browser |
-
-Do not paste `.env`, OAuth downloads, or app passwords into issues or logs.
-
-## Development
-
-Install **Node 24** and a **Java 25 JDK**. On Windows:
+Use a **Java 25 JDK**, **Node 24** and Docker for PostgreSQL. On Windows:
 
 ```powershell
 .\start.cmd -Native
 ```
 
-This builds the frontend, starts only the database container, imports `.env`, and runs Spring Boot on Windows. It stops this project's Docker app before starting native mode. Switching back to Docker stops only a verified native SprintFlow instance from this workspace. Keep the native terminal open; Ctrl+C stops the native app. Existing WSL PostgreSQL remains a fallback when Docker is unavailable.
+The launcher builds the frontend, imports `.env`, starts the database and runs Spring Boot. On Linux/macOS the equivalent manual sequence is:
 
-For frontend hot reload, run `npm ci` then `npm run dev` inside `frontend` while the backend is running. The Vite proxy forwards API requests to the backend. See [frontend guide](frontend/README.md) and [backend guide](backend/README.md).
+```sh
+bash scripts/env-bootstrap.sh
+docker compose up -d --wait postgres
+set -a
+. ./.env
+set +a
+npm ci --prefix frontend
+npm run build --prefix frontend
+cd backend
+./mvnw spring-boot:run
+```
 
-## Tests
+These manual commands use the default database/app ports from `.env.example`. If you change host ports, also set `SPRINTFLOW_DB_URL`, `SPRINTFLOW_PUBLIC_URL` and `PORT` for the native process. Maven alone does not read `.env`.
 
-```powershell
+For frontend hot reload, keep the backend running, then run `npm run dev --prefix frontend`. Vite serves port 5173 and proxies API/WebSocket traffic to localhost:8081. See the [frontend guide](frontend/README.md) and [backend guide](backend/README.md).
+
+## Configuration and data
+
+Private settings belong in `.env`, which Git and Docker's build context exclude. Use [.env.example](.env.example) as the complete public template.
+
+| Setting | Purpose |
+| --- | --- |
+| `SPRINTFLOW_DB_PASSWORD` | Required database password; generated by the launchers |
+| `SPRINTFLOW_ENCRYPTION_KEY` | Required Base64 key of 32 random bytes; generated once |
+| `SPRINTFLOW_ENCRYPTION_PREVIOUS_KEYS` | Readable retired keys during [two-stage key rotation](docs/adr/0015-encryption-and-key-rotation.md) |
+| `SPRINTFLOW_DB_URL`, `SPRINTFLOW_DB_USER` | Native database connection; Compose uses its internal service |
+| `SPRINTFLOW_APP_PORT`, `SPRINTFLOW_DB_PORT` | Local published ports, default 8081 and 5432 |
+| `SPRINTFLOW_PUBLIC_URL` | Browser address for reset and email links; update when changing the app URL |
+| `SPRINTFLOW_COOKIE_SECURE` | Secure cookies by default; launchers set false for local HTTP |
+| `SPRINTFLOW_GOOGLE_CLIENT_ID` | Optional Google OAuth Web client ID; no client secret is stored |
+| `SPRINTFLOW_SMTP_HOST`, `SPRINTFLOW_SMTP_PORT` | SMTP server, default Gmail port 587 with required STARTTLS |
+| `SPRINTFLOW_SMTP_USERNAME`, `SPRINTFLOW_SMTP_PASSWORD` | Optional sender and app password for recovery and email summaries |
+| `SPRINTFLOW_CONTAINER_UID`, `SPRINTFLOW_CONTAINER_GID` | Upload directory ownership, default 1000:1000 |
+
+See [account services](docs/account-services.md) for Gmail/Google setup, `.\configure-account-services.ps1` for private Windows entry, and the [schema](docs/data-schema.md) for persisted data. Compose binds both published ports to localhost. Production HTTPS must use secure cookies and the correct public URL.
+
+```sh
+docker compose stop                   # Stop; keep data
+docker compose up -d --wait            # Start existing containers
+bash start.sh                         # Rebuild changed code
+docker compose logs --tail 100 app     # Diagnose startup
+docker compose down                   # Remove containers; keep the volume
+```
+
+The database uses the `sprintflow-insight_sprintflow-postgres` volume; uploads use `backend/data`. Back up both plus the encryption keys. `docker compose down -v` deletes database volumes and is not a normal stop command. Existing releases using the old Java V8 migration need the documented [one-time Flyway upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md).
+
+If startup fails, check Docker availability, free ports and the original `.env` database password. Upload errors on Linux usually need matching directory ownership. [Health](http://localhost:8081/actuator/health) reports readiness without exposing configuration.
+
+## Tests and quality gates
+
+Build the frontend before Maven so the server package includes the UI:
+
+```sh
 npm ci --prefix frontend
 npm run check --prefix frontend
 cd backend
-.\mvnw.cmd clean verify
+./mvnw clean verify
 cd ..
-docker compose build app
+npm ci --prefix scripts
+npm run check --prefix scripts
+npm run repository --prefix scripts
 ```
 
-`npm run check` runs frontend lint, formatting and type checks, tests, the production build and bundle size limits. TypeScript checks in both frontend and tooling reject unused local declarations and parameters. Maven verifies backend tests and packages the frontend already built in `frontend/dist`. With Java 25 and Docker running, Testcontainers creates isolated PostgreSQL 16 databases automatically; no external test database or credentials are needed. Normal verification includes jqwik properties, Toxiproxy fault tests and JaCoCo coverage checks. See the [testing guide](docs/testing.md) for PIT mutation testing, reports and thresholds. Existing databases need the one-time [V8 upgrade procedure](docs/adr/0005-postgresql-tests-and-sql-migrations.md) before this release starts.
+With Java 25 and Docker running, Testcontainers creates disposable PostgreSQL databases. Tests do not use `.env` or a developer database. Verification includes endpoint/role contracts, jqwik properties, Toxiproxy faults and JaCoCo coverage floors. Use `mvnw.cmd` on Windows. [Testing](docs/testing.md) documents the coverage and bounded PIT mutation gates and reports.
 
-End-to-end tests run Playwright with axe-core against a running app and database (for example after `./start.sh`):
+Run browser tests against a disposable running app/database:
 
 ```sh
 npm ci --prefix frontend/e2e
-npx --prefix frontend/e2e playwright install chromium
-E2E_BASE_URL=http://127.0.0.1:8081 npm run e2e --prefix frontend
+cd frontend/e2e
+npx playwright install chromium
+E2E_BASE_URL=http://127.0.0.1:8081 npm test
 ```
 
-They cover sign-in, project, sprint, story and task flows, the role matrix, and CSP/Trusted Types. Serious or critical accessibility findings fail them. See [end-to-end tests](docs/testing.md#end-to-end-tests-a8).
+The real-database suite covers account, role, planning, collaboration, custom-field, analytics, time, dashboard and email-preference flows; axe rejects serious/critical accessibility findings. Fixture-based [responsive, guidance and Trusted Types checks](docs/testing.md) provide additional UI evidence. The screenshot generator is documented [here](docs/testing.md#readme-screenshots-d1).
 
-All verification scripts are TypeScript and run directly with Node 24. Install tooling with `npm ci --prefix scripts`, then use:
+GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup/restart checks, secret/dependency scans, PIT, Playwright/axe, Storybook, Trivy, ZAP, k6 and Lighthouse. CodeQL and Scorecard have separate workflows. Actions and base images are pinned. On `main`, a passing pipeline publishes the tested image to `ghcr.io/mouaz7/sprintflow-insight` with cosign signing, SLSA provenance and an SBOM attestation. See [supply chain](docs/security/supply-chain.md).
 
-```sh
-npm run check --prefix scripts
-npm run repository --prefix scripts
-npm run sbom --prefix scripts           # CycloneDX SBOM of the shipped frontend
-# Layout-only checks use simulated API responses (until visual regression in A7):
-npm run responsive --prefix scripts
-npm run guidance --prefix scripts
-npm run trusted-types --prefix scripts  # sign-in with Google Identity Services under the CSP
-```
+## Status and documentation
 
-Browser checks use Playwright Chromium (`npx playwright install chromium` in `scripts/`) or an installed browser selected with `PLAYWRIGHT_EXECUTABLE_PATH`. `SPRINTFLOW_QA_URL` selects the app URL. Python is not required.
+[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Organizations/teams, TOTP, automation rules, GitHub integration and public API/webhooks remain separate roadmap work; their presence in an issue or prototype does not mean they are available in the app.
 
-## CI
+| Document | Contents |
+| --- | --- |
+| [Getting started in Swedish](docs/getting-started.sv.md) | Local startup and first use |
+| [Workspace guide](docs/workspace-features.md) | Features, permissions and conflict behavior |
+| [Architecture](docs/architecture.md) / [ADRs](docs/adr/README.md) | Modules and design decisions |
+| [Schema](docs/data-schema.md) / [OpenAPI](docs/openapi.yaml) | Data and HTTP contracts |
+| [Metric definitions](docs/metrics-definition.md) | Calculations, assumptions and limits |
+| [Testing](docs/testing.md) | Commands, reports, browser checks and screenshots |
+| [Security review](docs/security-review.md) / [ASVS](docs/security/asvs.md) | Security boundaries and verification |
+| [Definition of Done](docs/definition-of-done.md) | Completion criteria |
 
-GitHub Actions checks pull requests and `main`. The required jobs are `quality` (repository rules, frontend checks, the single Maven `verify`, SBOMs), `docker` (cached image build, container smoke test and restart), `security` (gitleaks, osv-scanner) and `mutation` (PIT). The image built by `docker` is then tested end-to-end with Playwright and axe, scanned with Trivy and an OWASP ZAP baseline, load-checked with a k6 smoke test and measured against Lighthouse budgets. CodeQL and OpenSSF Scorecard run as separate workflows, and Dependabot proposes weekly updates. Every action is pinned to a commit SHA, and base images are pinned by digest.
-
-On `main`, the tested image is published to `ghcr.io/mouaz7/sprintflow-insight`, signed with cosign (keyless) and given SLSA build provenance and an SBOM attestation. See the [testing guide](docs/testing.md#ci-pipeline-a8), [supply chain](docs/security/supply-chain.md) and [ADR 0014](docs/adr/0014-ci-supply-chain.md).
-
-## Project structure
-
-```text
-.github/workflows/       CI, CodeQL and Scorecard
-.github/dependabot.yml   Dependency updates
-backend/                 Spring Boot API, security, services, Flyway, tests
-frontend/                React/TypeScript application and tests
-frontend/e2e/            Playwright end-to-end tests, axe and Lighthouse CI
-docs/                    Architecture, API, schema and user guides
-scripts/                 Account configuration and native startup helpers
-scripts/verification/    Container, layout and repository verification
-scripts/env-bootstrap.*  Shared .env bootstrap for the start scripts
-Dockerfile               Frontend/backend build and non-root Java runtime (digest-pinned, no curl)
-compose.yaml             App + PostgreSQL, health checks, persistent storage
-start.cmd / start.ps1    Windows entry points
-start.sh                 Linux/macOS entry point
-.env.example             Public configuration template (no credentials)
-```
-
-Further reading: [architecture](docs/architecture.md), [schema](docs/data-schema.md), [definition of done](docs/definition-of-done.md).
-
-## Security hardening
-
-Task lists require `projectId` and retain their array response. Task, story, sprint and project
-edits require `If-Match: "VERSION"`; missing versions return 428 and stale versions 412.
-Task/story/sprint deletion moves work to the recycle bin; only the project owner may purge it.
+Source: `backend/` (API/modules/migrations), `frontend/` (app), `frontend/e2e/` (browser tests), `scripts/verification/` (tooling), `.github/workflows/` (CI), and `docs/` (guides and evidence).

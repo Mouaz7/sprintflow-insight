@@ -27,7 +27,7 @@ no real account or project data is modified. Install a compatible Chromium with
 
 `SPRINTFLOW_QA_URL` selects the app URL (default `http://127.0.0.1:8081`).
 `PLAYWRIGHT_EXECUTABLE_PATH` optionally selects an existing Chromium executable.
-The check covers all 11 workspace views, both languages/themes, empty/populated workspaces,
+The check covers the workspace views, both languages/themes, empty/populated workspaces,
 320–2560 px, breakpoint edges, landscape, an emulated 200% desktop zoom viewport,
 touch targets, menus, keyboard focus, panels, notifications and login.
 Screenshots and JSON results are written to `artifacts/responsive/`.
@@ -55,7 +55,7 @@ The HTML report is written to `e2e/playwright-report/`. See
 
 ### Examples and guidance
 
-All eleven workspace pages include keyboard-operable help. Creation/editing forms
+Workspace pages include keyboard-operable help. Creation/editing forms
 show contextual examples in empty fields and expandable explanations in Swedish
 and English. Examples are placeholders, never prefilled or saved data.
 
@@ -64,3 +64,7 @@ to check expanded help at mobile, tablet, desktop and landscape sizes, keyboard
 operation, unchanged drafts and empty input values. Screenshots and results are
 written to `artifacts/guidance/`. The save-visibility check above separately verifies
 real writes with a disposable account.
+
+### Documentation screenshots
+
+The README images are captured from the packaged application and real PostgreSQL using fictional demo data. See [the regeneration procedure](../docs/testing.md#readme-screenshots-d1). Keep this separate from layout-fixture evidence.

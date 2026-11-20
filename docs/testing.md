@@ -328,3 +328,36 @@ Frontend MSW tests cover keyboard mention insertion, cursor/draft preservation, 
 Frontend MSW tests exercise definition creation, immutable types, stale drafts, exact decimal strings, scoped field search, board filters and matching exports. `frontend/e2e/tests/custom-fields.e2e.ts` runs the actual definition/value/filter/search/CSV/conflict flow against the packaged server and PostgreSQL, including axe, Swedish dark mobile rendering and direct-route reload. The guidance and responsive probes include `/fields` and the two new drawer forms.
 
 A field filter with an incomplete operand or a failed match request never falls back to unfiltered or cached matches; exports stay disabled until the condition succeeds or is cleared. The MSW board test and the real browser flow both cover deletion of an already selected field and recovery via **Clear field filter**. The additional exploratory browser probe also verifies 80-character names and 2,000-character text on mobile, recycle-bin option protection and value restoration.
+
+
+## README screenshots (D1)
+
+`npm run screenshots --prefix scripts` seeds the real API, signs into the packaged app with fictional `example.com` accounts and captures the workspace pages, a public report, comments/@mentions, search, dark mode and mobile navigation. It fails if a required capture or API request fails. It does not mock API responses. WebP encoding uses Chromium's canvas; no image library is added. The output is `docs/images/screenshots/`, including a manifest with source commit, capture time, byte sizes and SHA-256 hashes.
+
+Use a fresh, disposable app/database. The three demo addresses and project key are fixed; a second seed on the same database intentionally fails rather than reusing someone's account. The data remains after capturing. A separate worktree also isolates uploads and configuration from your development workspace. From the repository root, with Docker and Node 24 installed:
+
+```sh
+git worktree add --detach /tmp/sprintflow-screenshots HEAD
+cd /tmp/sprintflow-screenshots
+bash scripts/env-bootstrap.sh
+SPRINTFLOW_APP_PORT=18086 SPRINTFLOW_DB_PORT=55442 \
+  SPRINTFLOW_PUBLIC_URL=http://localhost:18086 \
+  docker compose -p sprintflow-screenshots up -d --build --wait
+npm ci --prefix scripts
+cd scripts
+npx playwright install chromium
+cd ..
+BASE_URL=http://localhost:18086 \
+  SCREENSHOT_DB_CONTAINER=sprintflow-screenshots-postgres-1 \
+  npm run screenshots --prefix scripts
+npm run check --prefix scripts
+npm run repository --prefix scripts
+```
+
+The selected ports must be free. Set `BASE_URL` to the disposable app's URL; its default is `http://127.0.0.1:8081`. `SCREENSHOT_DIR` changes the output directory, and `SCREENSHOT_QUALITY` accepts 0–1 (default 0.82). `PLAYWRIGHT_EXECUTABLE_PATH` can select an existing Chromium. SMTP and Google credentials remain blank in this generated demo configuration, so no real mail is sent.
+
+`SCREENSHOT_DB_CONTAINER` is optional. When set, the script uses `docker exec ... psql` to spread only the freshly seeded project's status history over prior weeks before creating the report snapshot. A database transaction checks the demo owner and project key first. The container must contain the same database used by the app, with database/user `sprintflow`; `SCREENSHOT_DB_NAME` overrides the database name. Omit the container option for API-only capture: metrics then honestly reflect the newly created history and may show insufficient-data warnings. Backdating is solely a documentation fixture, never an application API.
+
+Review the images at desktop (1440×900) and mobile (390×844), check text/labels and ensure only demo identities appear. Copy the regenerated directory into the working branch if capturing in the temporary worktree. Update it after major UI phases, including router/search/realtime changes and newly added pages; keep the README links and manifest together. Keep actual UI screenshots separate from fixture-based layout checks.
+
+After copying the output, stop only this disposable stack with `docker compose -p sprintflow-screenshots down -v` from its worktree, then remove the worktree with `git worktree remove /tmp/sprintflow-screenshots`. The `-v` here deliberately deletes only the demonstration stack's database; it is not a normal stop command for your application.
