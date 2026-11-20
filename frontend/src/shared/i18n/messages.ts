@@ -295,6 +295,8 @@ export function localizeMessage(message: string, language: Language): string {
   if (blocked) return `${blocked[1]} blockerade uppgifter behöver åtgärdas.`;
   const assignment = message.match(/^You were assigned task “(.+)”\.$/);
   if (assignment) return `Du har tilldelats uppgiften “${assignment[1]}”.`;
+  const mention = message.match(/^Mentioned you in a comment on “(.+)”\.$/);
+  if (mention) return `Du nämndes i en kommentar på “${mention[1]}”.`;
   const comment = message.match(/^New comment on “(.+)”\.$/);
   if (comment) return `Ny kommentar på “${comment[1]}”.`;
   const reminder = message.match(

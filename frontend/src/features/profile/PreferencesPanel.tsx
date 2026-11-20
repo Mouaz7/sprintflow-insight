@@ -7,6 +7,7 @@ import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { translator } from '../../shared/i18n/lexicon';
 import { Notice } from '../../shared/ui/ui';
 import { profileText } from './i18n';
+import { DigestSettings } from './DigestSettings';
 import { integrationsQuery } from './queries';
 export function PreferencesPanel({
   onAppearance,
@@ -130,6 +131,7 @@ export function PreferencesPanel({
           {t('replayIntroduction')}
         </button>
       </form>
+      <DigestSettings />
       <section className="profile-card">
         <h2>{t('accountServices')}</h2>
         <p>

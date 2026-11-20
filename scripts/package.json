@@ -9,7 +9,8 @@
     "responsive": "node verification/responsive.ts",
     "guidance": "node verification/guidance.ts",
     "trusted-types": "node verification/trusted-types.ts",
-    "sbom": "cyclonedx-npm --omit dev --package-lock-only --output-reproducible --output-format JSON --output-file ../artifacts/sbom/frontend.cdx.json ../frontend/package.json"
+    "sbom": "cyclonedx-npm --omit dev --package-lock-only --output-reproducible --output-format JSON --output-file ../artifacts/sbom/frontend.cdx.json ../frontend/package.json",
+    "screenshots": "node verification/screenshots.ts"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "7.0.1",

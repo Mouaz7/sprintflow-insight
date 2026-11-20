@@ -193,6 +193,16 @@ Sprintvalet styr burndown och sprintmål. Kumulativt flöde och WIP visar projek
 
 Layouten delas aldrig med andra konton. Ändringar i två fönster skyddas med versionskontroll: vid konflikt finns utkastet kvar; stäng och öppna redigeraren igen för att läsa den senaste layouten. Arkiverade projekt går att läsa men layouten kan inte ändras där. Återställ projektet innan du anpassar vyn.
 
+## Omnämnanden och e-postsammanfattningar (B8)
+
+I en kommentar kan du skriva `@namn` eller välja ett förslag för att infoga en hel adress, exempelvis `@anna@example.com`. Kortnamnet är e-postadressens del före `@` och måste vara entydigt i projektet. Pil ned öppnar förslagen, piltangenterna flyttar mellan dem och Enter väljer. Bara projektmedlemmar kan aviseras; tvetydiga namn, utomstående, vanliga e-postadresser utan omnämnandemarkör och text i slutna bakåtcitat ger inga omnämnanden. Högst 20 olika namn behandlas per kommentar. Du aviseras inte om dina egna omnämnanden.
+
+En nyskriven eller redigerad kommentar aviserar nytillagda mottagare. Att behålla samma omnämnande vid en redigering skickar ingen ny omnämnandeavisering. Aviseringen kommer via den befintliga notisklockan och liveuppdateringen, även till medlemmar med läsbehörighet. Kommentarer kan fortfarande bara skrivas i aktiva projekt av användare med skrivrätt.
+
+Under **Profil → Inställningar → E-postsammanfattningar** väljer du Av, Dagligen eller Veckovis och en IANA-tidszon, till exempel `Europe/Stockholm`. Dagliga sammanfattningar planeras klockan 08.00 och veckovisa på måndagar klockan 08.00 i den valda tidszonen. Inställningen är avstängd från början. Den sparas även utan SMTP, men inga mejl skickas innan e-post är konfigurerad. Avstängda aviseringar pausar även sammanfattningarna. Ett fel eller en versionskonflikt lämnar utkastet kvar; läs uttryckligen in sparade inställningar efter en konflikt.
+
+Sammanfattningen innehåller högst 50 olästa uppdateringar som du fortfarande har åtkomst till. Länken i mejlet öppnar en bekräftelsesida där sammanfattningar kan stoppas utan inloggning; att bara öppna länken ändrar inget. Länken gäller i 90 dagar och kan inte stänga av en senare återaktivering. Aviseringarna i appen ändras inte av avregistreringen. Läs mer om leverans- och låssemantik i [ADR 0026](adr/0026-mentions-and-email-summaries.md).
+
 ## B16 — project custom fields
 
 Open **Tasks → Custom fields** (`/fields`). Owners and administrators can create up to 20 fields per active project: Text, Number, Date, Select or Project member. Names are unique ignoring case. Types stay fixed after saving. Select fields allow up to 30 unique options; an option used by a live or recycled task cannot be removed. Deleting a field asks for confirmation and removes its saved values.

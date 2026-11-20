@@ -611,7 +611,13 @@ paths:
       parameters: [{ $ref: '#/components/parameters/taskId' }]
       responses: { '200': { description: Comments } }
     post:
-      summary: Add a task comment and notify the owner
+      summary: Add a task comment with member mentions
+      description: Up to 20 distinct @name or @full@email handles resolve only to current project members. Ambiguous short names, outsiders and closed backtick code spans do not notify. Self mentions are stored but do not notify the actor. Only newly added mention recipients are notified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommentRequest' }
       parameters: [{ $ref: '#/components/parameters/taskId' }]
       responses: { '200': { description: Created comment } }
   /api/notifications:
@@ -859,7 +865,12 @@ paths:
       - { $ref: '#/components/parameters/id' }
     put:
       summary: Edit an own comment or moderate one as an owner/admin
-      description: Body contains message (1–1000 characters) and optional version for conflict detection.
+      description: Body contains message (1–1000 characters) and optional version for conflict detection. Mention notifications go only to newly added project members; keeping an existing mention does not notify again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommentRequest' }
       responses: { '200': { description: Saved comment }, '403': { $ref: '#/components/responses/Error' }, '409': { $ref: '#/components/responses/Error' } }
     delete:
       summary: Delete an own comment or moderate one as an owner/admin
@@ -2151,6 +2162,52 @@ paths:
         '409': { $ref: '#/components/responses/Error' }
         '412': { $ref: '#/components/responses/Error' }
         '428': { $ref: '#/components/responses/Error' }
+  /api/auth/digest:
+    get:
+      summary: Read your email summary preference
+      description: Authenticated account only. Defaults to OFF/UTC with revision zero without inserting a row. mailConfigured indicates configured credentials, not a tested SMTP connection.
+      responses:
+        '200':
+          description: Personal preference and next due instant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DigestPreference' }
+        '401': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Save your email summary preference
+      description: OFF, DAILY at 08:00 or WEEKLY on Monday at 08:00 in the chosen IANA zone. Requires the revision read by the caller, including zero for the default. No other account id is accepted. Without SMTP the preference is saved but no mail is sent. In-app notification opt-out also pauses summaries.
+      parameters:
+      - $ref: '#/components/parameters/ifMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DigestPreferenceRequest' }
+      responses:
+        '200':
+          description: Saved preference with revision starting at one
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DigestPreference' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
+  /api/digest/unsubscribe:
+    post:
+      summary: Confirm email-summary opt-out with an authenticated link token
+      security: []
+      description: No sign-in is needed, but standard CSRF protection still applies. GET navigation to /email-preferences only renders a confirmation page; it never changes settings. Tokens are opaque, authenticated, expire after 90 days and stop working after re-enabling a subscription. Repeated valid opt-out is idempotent. In-app notifications are unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DigestUnsubscribeRequest' }
+      responses:
+        '204': { description: Email summaries stopped; no account details returned }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     sessionCookie:
@@ -4408,3 +4465,32 @@ components:
           type: array
           maxItems: 6
           items: { $ref: '#/components/schemas/DashboardWidget' }
+
+    DigestPreferenceRequest:
+      type: object
+      required: [frequency, timeZone]
+      properties:
+        frequency: { type: string, enum: ['OFF', DAILY, WEEKLY] }
+        timeZone: { type: string, minLength: 1, maxLength: 64, example: Europe/Stockholm }
+    DigestPreference:
+      type: object
+      required: [frequency, timeZone, nextDueAt, lastSentAt, version, mailConfigured]
+      properties:
+        frequency: { type: string, enum: ['OFF', DAILY, WEEKLY] }
+        timeZone: { type: string }
+        nextDueAt: { type: string, format: date-time, nullable: true }
+        lastSentAt: { type: string, format: date-time, nullable: true }
+        version: { type: integer, format: int64, minimum: 0 }
+        mailConfigured: { type: boolean }
+    DigestUnsubscribeRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 2048 }
+
+    CommentRequest:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 1000, description: Nonblank comment with optional project-member handles }
+        version: { type: integer, format: int64, nullable: true }

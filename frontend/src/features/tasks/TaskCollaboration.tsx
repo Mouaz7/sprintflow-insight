@@ -6,6 +6,7 @@ import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { tasksText } from './i18n';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
+import { MentionInput } from './MentionInput';
 import { commentsQuery } from './queries';
 
 export function TaskMetadata({
@@ -353,19 +354,14 @@ export function TaskDiscussion({
       {!readOnly && (
         <form className="editor-form" onSubmit={submit}>
           <FormGuide topic="comment" />
-          <label>
-            {editing ? t('editComment') : t('newComment')}
-            <textarea
-              aria-label={editing ? t('editComment') : t('newComment')}
-              required
-              maxLength={1000}
-              rows={4}
-              placeholder={fieldExample('comment')}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              disabled={busy}
-            />
-          </label>
+          <MentionInput
+            projectId={task.projectId}
+            label={editing ? t('editComment') : t('newComment')}
+            value={message}
+            onChange={setMessage}
+            disabled={busy}
+            placeholder={fieldExample('comment')}
+          />
           <div className="editor-footer">
             <button
               className="primary-action"

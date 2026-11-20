@@ -94,6 +94,19 @@ public class NotificationService {
             });
   }
 
+  /** Mention delivery is idempotent by event, without suppressing a separate comment. */
+  public void notifyMention(
+      Long projectId, Long recipientId, Long actorId, String message, java.util.UUID source) {
+    if (recipientId.equals(actorId)) return;
+    boolean visible =
+        projects
+            .findAccessRow(projectId, recipientId)
+            .map(row -> row.trashedAt() == null && row.memberRole() != null)
+            .orElse(false);
+    if (!visible) return;
+    users.findById(recipientId).ifPresent(user -> deliver(projectId, user, message, source));
+  }
+
   private void deliver(
       Long projectId, User recipient, String message, java.util.UUID sourceEventId) {
     String email = normalize(recipient.getEmail());

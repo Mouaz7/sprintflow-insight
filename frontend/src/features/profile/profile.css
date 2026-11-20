@@ -244,3 +244,22 @@
   font-size: var(--text-body);
   line-height: 1.8;
 }
+
+.digest-settings fieldset {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.unsubscribe-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--canvas);
+  color: var(--text);
+}
+.unsubscribe-page > section {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 20px;
+}

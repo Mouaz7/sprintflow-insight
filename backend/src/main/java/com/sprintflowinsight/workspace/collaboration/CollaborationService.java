@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 @org.springframework.transaction.annotation.Transactional
 @org.springframework.stereotype.Service
 public class CollaborationService {
+  private final MentionService mentions;
+  private final com.sprintflowinsight.workspace.project.ProjectMutationService mutations;
   private final TaskService tasks;
   private final TaskCommentRepository comments;
   private final org.springframework.context.ApplicationEventPublisher events;
@@ -22,12 +24,16 @@ public class CollaborationService {
 
   public CollaborationService(
       TaskService tasks,
+      MentionService mentions,
+      com.sprintflowinsight.workspace.project.ProjectMutationService mutations,
       TaskCommentRepository comments,
       org.springframework.context.ApplicationEventPublisher events,
       ActivityService activity,
       ProjectAccessService access,
       com.sprintflowinsight.workspace.NotificationRequests notifications) {
     this.notifications = notifications;
+    this.mentions = mentions;
+    this.mutations = mutations;
     this.tasks = tasks;
     this.comments = comments;
     this.events = events;
@@ -46,6 +52,7 @@ public class CollaborationService {
     Task task = tasks.gettaskById(taskId).orElse(null);
     if (task == null) throw ApiException.notFound("Task not found.");
     access.write(task.getProjectId(), session);
+    mutations.lock(task.getProjectId());
     String actor = access.email(session);
     TaskComment comment = new TaskComment();
     comment.setTaskId(taskId);
@@ -53,7 +60,8 @@ public class CollaborationService {
     comment.setAuthorEmail(actor.trim().toLowerCase());
     comment.setMessage(request.message().trim());
     comment.setCreatedAt(Instant.now());
-    TaskComment saved = comments.save(comment);
+    TaskComment saved = comments.saveAndFlush(comment);
+    mentions.commentSaved(saved, task.getTitle(), access.userId(session));
     activity.record(
         task.getProjectId(),
         "COMMENT_ADDED",
@@ -81,6 +89,8 @@ public class CollaborationService {
           "This item was changed by someone else. Refresh and try again.");
     comment.setMessage(request.message().trim());
     TaskComment saved = comments.saveAndFlush(comment);
+    mentions.commentSaved(
+        saved, tasks.gettaskById(taskId).orElseThrow().getTitle(), access.userId(session));
     changed(saved, "CommentUpdated", session);
     return saved;
   }
@@ -113,6 +123,7 @@ public class CollaborationService {
                     new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND));
     access.write(task.getProjectId(), session);
+    mutations.lock(task.getProjectId());
     TaskComment comment =
         comments
             .findById(id)

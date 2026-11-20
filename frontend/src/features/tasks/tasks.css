@@ -210,3 +210,22 @@
   color: var(--danger-text);
   background: var(--danger-soft);
 }
+
+.mention-input {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.mention-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+.mention-suggestions {
+  display: grid;
+  gap: 8px;
+}
+.mention-suggestions button {
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
