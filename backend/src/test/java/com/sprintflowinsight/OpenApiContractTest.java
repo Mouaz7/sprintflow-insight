@@ -218,6 +218,25 @@ class OpenApiContractTest {
                   .map(Enum::name)
                   .toList());
 
+      assertThat(paths).containsKey("/api/projects/{projectId}/forecast/backtest");
+      Map<String, Class<? extends Record>> forecastRecords =
+          Map.of(
+              "ForecastBacktestResponse",
+              com.sprintflowinsight.reporting.ForecastBacktestResponse.class,
+              "ForecastBacktestCandidate",
+              com.sprintflowinsight.forecast.BacktestReport.class);
+      forecastRecords.forEach(
+          (name, type) ->
+              assertThat(
+                      ((Map<String, Object>)
+                              ((Map<String, Object>) schemas.get(name)).get("properties"))
+                          .keySet())
+                  .as(name)
+                  .containsExactlyInAnyOrderElementsOf(
+                      java.util.Arrays.stream(type.getRecordComponents())
+                          .map(java.lang.reflect.RecordComponent::getName)
+                          .toList()));
+
       // B0: task identifiers and project keys are part of the response contract.
       assertThat(paths).containsKey("/api/tasks/by-key/{key}");
       Map<String, Object> byKey =

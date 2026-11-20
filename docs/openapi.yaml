@@ -1431,6 +1431,28 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/forecast/backtest:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Compare forecasting models on the selected project's history
+      description: Project members may read archived projects. The lowest rolling-origin mean CRPS
+        selects a model for the prediction over the next two complete periods. At least 15 complete
+        periods and one positive period are required.
+      parameters:
+      - in: query
+        name: basis
+        schema: { type: string, enum: [THROUGHPUT, VELOCITY], default: THROUGHPUT }
+      responses:
+        '200':
+          description: Calibration scores and the selected model's prediction, or insufficient history
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ForecastBacktestResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/poker-sessions:
     parameters:
     - &pokerPath001
@@ -3314,6 +3336,54 @@ components:
         quantities are largest counts reached in at least the stated share of paths. Missing/censored completions
         remain in the denominator. No backtesting/model selection is performed here. Six periods is guidance,
         not a validated baseline.
+    ForecastBacktestResponse:
+      type: object
+      required: [basis, unit, periodDays, availablePeriods, requiredPeriods, trainingPeriods, horizonPeriods, seed, status, candidates]
+      properties:
+        basis: { type: string, enum: [THROUGHPUT, VELOCITY] }
+        unit: { type: string, enum: [ITEMS, STORY_POINTS] }
+        periodDays: { type: integer, minimum: 1 }
+        availablePeriods: { type: integer, minimum: 0 }
+        requiredPeriods: { type: integer, minimum: 1 }
+        trainingPeriods: { type: integer, minimum: 1 }
+        horizonPeriods: { type: integer, minimum: 1 }
+        seed: { type: string, pattern: '^[0-9]+$' }
+        status: { type: string, enum: [SELECTED, INSUFFICIENT_HISTORY, NO_COMPLETIONS] }
+        selectedModel: { type: string, enum: [gamma-poisson, ewma-poisson, bootstrap-monte-carlo], nullable: true }
+        prediction:
+          type: object
+          nullable: true
+          required: [median, intervals]
+          properties:
+            median: { type: integer, minimum: 0 }
+            intervals:
+              type: array
+              items:
+                type: object
+                required: [confidence, lower, upper]
+                properties:
+                  confidence: { type: number, enum: [0.5, 0.85, 0.95] }
+                  lower: { type: integer, minimum: 0 }
+                  upper: { type: integer, minimum: 0 }
+        candidates:
+          type: array
+          items: { $ref: '#/components/schemas/ForecastBacktestCandidate' }
+    ForecastBacktestCandidate:
+      type: object
+      required: [model, origins, meanCrps, coverage, pitHistogram, medianAbsoluteError]
+      properties:
+        model: { type: string, enum: [gamma-poisson, ewma-poisson, bootstrap-monte-carlo] }
+        origins: { type: integer, minimum: 6 }
+        meanCrps: { type: number, minimum: 0 }
+        coverage:
+          type: object
+          additionalProperties: { type: number, minimum: 0, maximum: 1 }
+        pitHistogram:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items: { type: number, minimum: 0, maximum: 1 }
+        medianAbsoluteError: { type: number, minimum: 0 }
     ForecastHistoryPeriod:
       type: object
       required:

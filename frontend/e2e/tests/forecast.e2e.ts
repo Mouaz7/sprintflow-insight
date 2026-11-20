@@ -337,3 +337,66 @@ test('lets a viewer explore forecasts and reads archived work without writing re
     await context.close();
   }
 });
+
+test('selects a model and explains its forecast from imported task history', async ({
+  page,
+  api,
+  account,
+}) => {
+  const project = await api.json<{ id: number }>('/projects', 'POST', {
+    name: 'Calibrated forecast',
+    description: account.email,
+    key: 'CF',
+  });
+  const week = 7 * 86_400_000;
+  const currentMonday = new Date();
+  currentMonday.setUTCHours(0, 0, 0, 0);
+  currentMonday.setUTCDate(
+    currentMonday.getUTCDate() - ((currentMonday.getUTCDay() + 6) % 7),
+  );
+  const rows = ['title,status,sourceKey,createdAt,completedAt'];
+  for (let offset = 18; offset >= 1; offset--) {
+    const created = currentMonday.getTime() - offset * week + 86_400_000;
+    for (let index = 0; index <= offset % 3; index++) {
+      const key = `OBS-${offset}-${index}`;
+      rows.push(
+        `Completed ${key},Done,${key},${new Date(created).toISOString()},${new Date(created + 86_400_000).toISOString()}`,
+      );
+    }
+  }
+  const body = {
+    format: 'CSV',
+    content: rows.join('\n'),
+    mapping: {},
+    statuses: {},
+    truncateText: false,
+    preserveHistory: true,
+  };
+  const imports = `/projects/${project.id}/imports`;
+  const preview = await api.json<{ fingerprint: string; canCommit: boolean }>(
+    `${imports}/preview`,
+    'POST',
+    body,
+  );
+  expect(preview.canCommit).toBe(true);
+  await api.json(imports, 'POST', {
+    ...body,
+    expectedFingerprint: preview.fingerprint,
+  });
+
+  await page.goto('/forecast');
+  const section = page.locator('details.forecast-calibration');
+  await section.getByText('Model comparison', { exact: true }).press('Enter');
+  await expect(
+    section.getByRole('heading', { name: /Selected model/ }),
+  ).toBeVisible();
+  await expect(
+    section
+      .getByRole('table', { name: /Rolling-origin scores/ })
+      .getByRole('row'),
+  ).toHaveCount(4);
+  await expect(
+    section.getByRole('heading', { name: 'Forecast for the next 2 periods' }),
+  ).toBeVisible();
+  await expectAccessible(page, 'forecast-calibration');
+});

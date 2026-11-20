@@ -10,6 +10,7 @@ import { PageHeader } from '../../shared/ui/ui';
 import { DateInput } from '../../shared/ui/DateInput';
 import { FormGuide } from '../../shared/ui/Guidance';
 import { ForecastResults } from './ForecastResults';
+import { ForecastCalibration } from './ForecastCalibration';
 import { forecastQuery } from './queries';
 import { forecastText } from './i18n';
 
@@ -191,7 +192,10 @@ function ProjectForecast({
       ) : query.isPending || epics.isPending ? (
         <Skeleton label={t('loading')} />
       ) : (
-        <ForecastResults data={query.data} />
+        <>
+          <ForecastCalibration projectId={projectId} basis={query.data.basis} />
+          <ForecastResults data={query.data} />
+        </>
       )}
     </>
   );

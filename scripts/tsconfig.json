@@ -13,5 +13,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["verification/**/*.ts", "data/**/*.ts", "performance/flow-fixture.ts"]
+  "include": ["verification/**/*.ts", "data/**/*.ts", "evaluation/**/*.ts", "performance/flow-fixture.ts"]
 }

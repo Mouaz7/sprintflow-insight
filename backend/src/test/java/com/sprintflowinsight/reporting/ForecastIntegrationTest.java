@@ -332,6 +332,59 @@ class ForecastIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.scope.openStoryPoints").value(10500));
   }
 
+  @Test
+  void backtestingUsesCurrentProjectHistoryAndRequiresMembership() throws Exception {
+    User owner = user();
+    Project own = project(owner, null);
+    User admin = user(), member = user(), viewer = user(), outsider = user();
+    member(own, admin, "Admin");
+    member(own, member, "Member");
+    member(own, viewer, "Viewer");
+    String path = "/api/projects/" + own.getId() + "/forecast/backtest";
+    mvc.perform(get(path).with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("INSUFFICIENT_HISTORY"))
+        .andExpect(jsonPath("$.requiredPeriods").value(15));
+    completeWeeks(own, 18);
+    var report =
+        mvc.perform(get(path).with(as(owner)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SELECTED"))
+            .andExpect(jsonPath("$.availablePeriods").value(18))
+            .andExpect(jsonPath("$.candidates", hasSize(3)))
+            .andExpect(jsonPath("$.candidates[0].origins").value(9))
+            .andExpect(jsonPath("$.candidates[0].pitHistogram", hasSize(10)))
+            .andExpect(jsonPath("$.prediction.intervals", hasSize(3)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    for (User reader : new User[] {admin, member, viewer}) {
+      assertThat(
+              mvc.perform(get(path).with(as(reader)))
+                  .andExpect(status().isOk())
+                  .andReturn()
+                  .getResponse()
+                  .getContentAsString())
+          .isEqualTo(report);
+    }
+    mvc.perform(get(path)).andExpect(status().isUnauthorized());
+    mvc.perform(get(path).with(as(outsider))).andExpect(status().isForbidden());
+    mvc.perform(get(path).param("basis", "OTHER").with(as(owner)))
+        .andExpect(status().isBadRequest());
+    mvc.perform(get(path).param("basis", "VELOCITY").with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.unit").value("STORY_POINTS"))
+        .andExpect(jsonPath("$.status").value("INSUFFICIENT_HISTORY"));
+
+    jdbc.update("update projects set archived_at=now() where id=?", own.getId());
+    mvc.perform(get(path).with(as(viewer)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("SELECTED"));
+    jdbc.update("update projects set trashed_at=now() where id=?", own.getId());
+    mvc.perform(get(path).with(as(owner))).andExpect(status().isNotFound());
+  }
+
   private MockHttpServletRequestBuilder forecast(Project project) {
     return get("/api/projects/" + project.getId() + "/forecast");
   }

@@ -104,3 +104,30 @@
     flex: 1 1 100%;
   }
 }
+
+.forecast-calibration > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.calibration-results {
+  display: grid;
+  gap: 1rem;
+  margin-block-start: 1rem;
+}
+
+.calibration-table {
+  overflow-x: auto;
+}
+
+.calibration-table table {
+  width: 100%;
+  text-align: start;
+}
+
+.calibration-table th,
+.calibration-table td {
+  padding: 0.5rem;
+  text-align: start;
+  border-bottom: 1px solid var(--line);
+}
