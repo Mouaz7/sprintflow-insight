@@ -55,11 +55,21 @@ class RealtimeWebSocketIntegrationTest extends HttpFlowTest {
 
   @AfterEach
   void disconnect() {
-    opened.forEach(
-        session -> {
-          if (session.isConnected()) session.disconnect();
-        });
-    client.stop();
+    try {
+      for (var session : opened) {
+        if (!session.isConnected()) continue;
+        try {
+          session.disconnect();
+        } catch (org.springframework.messaging.MessageDeliveryException closed) {
+          // A denied frame closes the transport between isConnected() and DISCONNECT.
+          if (!(closed.getCause() instanceof IllegalStateException cause)
+              || cause.getMessage() == null
+              || !cause.getMessage().contains("WebSocket session has been closed")) throw closed;
+        }
+      }
+    } finally {
+      client.stop();
+    }
   }
 
   private static WebSocketStompClient client() {
