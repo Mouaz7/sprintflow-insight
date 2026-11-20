@@ -98,16 +98,16 @@ Kortkommandona gäller inte när du skriver i ett fält eller när en annan dial
 
 `GET /api/search?q=…` är API:t bakom paletten. Valfria parametrar är `projectId`, `types` (till exempel `task,comment`), `limit` (högst 50) och `cursor` för nästa sida. Sökningen bygger på PostgreSQL:s fulltextsökning och `pg_trgm`. Migreringen V16 installerar `pg_trgm`, vilket kräver att databasanvändaren äger databasen, som i `compose.yaml`. Se [ADR 0016](adr/0016-postgresql-full-text-search.md).
 
-## Optimerad sprintplanering (C1, under arbete)
+## Optimerad sprintplanering (C1)
 
-"Föreslå sprint" ska välja de stories som ger mest affärsvärde inom teamets kapacitet. Funktionens kärna finns nu i backend. API och knapp i sprintplaneringen kommer i ett senare steg.
+**Föreslå sprint** på en planerad eller aktiv sprint jämför vilka berättelser som kan läggas till från backloggen. Välj poäng eller hela timmar, ändra kapacitet i scenariot och lås berättelser in eller ut. Referensen är sprintens inställda kapacitet efter att pågående åtaganden räknats av. Förslaget sparar inga ändringar i projektet.
 
-- **Villkor:** förslaget håller sig inom den totala kapaciteten och, om den anges, inom varje medlems kapacitet. En story väljs bara om alla dess föregångare redan är klara eller också väljs. Du kan låsa in en story (den måste med, tillsammans med dess föregångare) eller låsa ut den (den och allt som beror på den stannar utanför).
-- **Svar:** förslaget anger det totala värdet och om det är bevisat optimalt. Om tidsgränsen på 2 sekunder nås visas i stället en övre gräns och ett optimalitetsgap.
+- **Villkor:** förslaget håller sig inom den totala kapaciteten och inom varje medlems kapacitet för arbete som redan har en ansvarig. Oallokerat arbete ingår i teamets kapacitet. En story väljs bara om alla dess föregångare redan är klara eller också väljs. Du kan låsa in en story (den måste med, tillsammans med dess föregångare) eller låsa ut den (den och allt som beror på den stannar utanför).
+- **Svar:** förslaget anger det totala värdet och om det är bevisat optimalt. Om tidsgränsen på 2 sekunder nås visas bästa hittade förslag, en övre gräns och gap när sådana finns. Annars visas det giriga reservförslaget.
 - **Förklaring:** du ser hur mycket av varje kapacitet som används och vilka kapaciteter som begränsar förslaget. För varje story utanför sprinten visas varför: utlåst, saknat beroende, inte plats, lägre värde per poäng än det som valdes, eller inget tillfört värde.
 - **Omöjliga lås:** om låsen inte går att uppfylla, till exempel en inlåst story som beror på en utlåst story eller inlåsta stories som tillsammans överskrider kapaciteten, föreslås ingen sprint. I stället visas vilka lås som krockar.
 
-Metoden, baslinjerna (girig och dynamisk programmering) och begränsningarna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md).
+Metoden och baslinjerna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md). [ADR 0029](adr/0029-sprint-planning-scenarios.md) beskriver hur sprintdata blir ett scenario. [Benchmarkresultat](evaluation/sprint-plan-solvers.md) går att återskapa med fast seed.
 
 ## Adresser per vy (A6)
 
