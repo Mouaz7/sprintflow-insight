@@ -53,6 +53,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'forecast',
   'poker',
   'time',
+  'dashboard',
   'updates',
   'profile',
   'calendar',
@@ -227,7 +228,8 @@ function WorkspaceShell() {
       (view === 'tasks' ||
         view === 'forecast' ||
         view === 'poker' ||
-        view === 'time') &&
+        view === 'time' ||
+        view === 'dashboard') &&
       location.search
     )
       void navigate(`/${view}`, { replace: true });

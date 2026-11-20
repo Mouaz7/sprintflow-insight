@@ -518,6 +518,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  dashboard: [
+    'Välj widgets och ordna dem med knapparna i Anpassa dashboard. Layouten sparas bara för dig och det valda projektet. Sprintvalet styr burndown och sprintmål; övriga widgets visar projektet. Diagrammens datatabeller ger samma information utan grafik.',
+    'Choose widgets and reorder them with the controls in Customize dashboard. The layout is saved only for you and this project. Sprint selection affects burndown and sprint goal; other widgets cover the project. Chart data tables offer the same information without graphics.',
+  ],
   time: [
     'Logga minuter manuellt eller starta en timer på en uppgift. Jämför uppskattat mot faktiskt och exportera rapporten. Välj en sprint för att ange tillgänglighet och frånvaro och se var planerat arbete överskrider kapaciteten. Vardagar räknas; helgdagar behöver anges som frånvaro.',
     'Log minutes manually or start a task timer. Compare estimates with actual time and export the report. Choose a sprint to enter availability and absence and see where committed work exceeds capacity. Weekdays count; enter public holidays as days off.',

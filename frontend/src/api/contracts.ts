@@ -57,6 +57,7 @@ export type WorkspaceView =
   | 'flow'
   | 'poker'
   | 'time'
+  | 'dashboard'
   | 'forecast'
   | 'updates'
   | 'profile'
