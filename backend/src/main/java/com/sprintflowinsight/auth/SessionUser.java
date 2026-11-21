@@ -41,6 +41,13 @@ public class SessionUser {
     return email;
   }
 
+  public boolean mfaVerified() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication != null
+        && authentication.getPrincipal() instanceof UserIdentity user
+        && user.mfaVerified();
+  }
+
   public Long id(HttpSession session) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null

@@ -36,6 +36,18 @@ public class User {
 
   private String recoveryCodeHash;
 
+  @Transient private boolean mfaEnrollmentRequired;
+
+  @com.fasterxml.jackson.annotation.JsonInclude(
+      com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT)
+  public boolean isMfaEnrollmentRequired() {
+    return mfaEnrollmentRequired;
+  }
+
+  void setMfaEnrollmentRequired(boolean required) {
+    this.mfaEnrollmentRequired = required;
+  }
+
   public Long getId() {
     return id;
   }

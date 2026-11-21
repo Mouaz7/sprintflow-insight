@@ -15,19 +15,19 @@ public class GoogleLoginService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final GoogleTokenVerifier googleTokens;
-  private final SessionAuthenticationService authenticationSessions;
+  private final MfaSignIn signIn;
   private final String googleClientId;
 
   public GoogleLoginService(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
       GoogleTokenVerifier googleTokens,
-      SessionAuthenticationService authenticationSessions,
+      MfaSignIn signIn,
       @Value("${app.google.client-id:}") String googleClientId) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.googleTokens = googleTokens;
-    this.authenticationSessions = authenticationSessions;
+    this.signIn = signIn;
     this.googleClientId = googleClientId;
   }
 
@@ -66,8 +66,7 @@ public class GoogleLoginService {
                     created.setAvatarImage(payload.picture());
                     return userRepository.save(created);
                   });
-      authenticationSessions.signIn(user.getEmail(), servletRequest, servletResponse);
-      return ResponseEntity.ok(user);
+      return signIn.afterPrimary(user, servletRequest, servletResponse);
     }
   }
 

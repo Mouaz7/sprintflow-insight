@@ -251,6 +251,20 @@ const swedish: Record<string, string> = {
     'Ändra texten i samredigeringen.',
   'This change conflicts with newer information. Refresh the page and try again.':
     'Informationen har ändrats. Uppdatera sidan och försök igen.',
+  'The two-factor code or sign-in challenge is invalid.':
+    'Tvåfaktorskoden eller inloggningsförsöket är ogiltigt.',
+  'The two-factor code is invalid or has already been used.':
+    'Tvåfaktorskoden är ogiltig eller har redan använts.',
+  'Too many two-factor attempts. Wait before trying again.':
+    'För många försök. Vänta innan du försöker igen.',
+  'Start a new two-factor setup first.':
+    'Starta en ny inställning av tvåfaktorsautentisering.',
+  'An organization requires two-factor authentication for this account.':
+    'En organisation kräver tvåfaktorsautentisering för kontot.',
+  'Enable two-factor authentication for your account first.':
+    'Aktivera först tvåfaktorsautentisering för ditt konto.',
+  'Set up two-factor authentication to open your workspace.':
+    'Ställ in tvåfaktorsautentisering för att öppna arbetsytan.',
   'Too many requests. Wait a moment, then try again.':
     'För många försök. Vänta en stund och försök igen.',
   'SprintFlow couldn’t complete that request right now. Please try again in a moment.':

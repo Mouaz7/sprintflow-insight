@@ -25,6 +25,7 @@
     "@fontsource-variable/manrope": "5.3.0",
     "@tanstack/react-query": "5.107.1",
     "@tanstack/react-virtual": "3.14.26",
+    "qrcode-generator": "2.0.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "7.18.5",
@@ -95,7 +96,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "396 kB",
+      "limit": "407 kB",
       "gzip": true
     },
     {
@@ -186,6 +187,12 @@
       "name": "Task duplicate suggestions (gzip)",
       "path": "dist/assets/TaskDuplicateSuggestions-*.js",
       "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Two-factor settings and QR encoder (gzip)",
+      "path": "dist/assets/TwoFactorSettings-*.js",
+      "limit": "11 kB",
       "gzip": true
     },
     {

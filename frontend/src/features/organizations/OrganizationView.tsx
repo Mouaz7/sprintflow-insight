@@ -5,6 +5,7 @@ import type { Project } from '../../api/contracts';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { Drawer, Notice, PageHeader } from '../../shared/ui/ui';
 import { organizationsText } from './i18n';
+import { OrganizationSecurity } from './OrganizationSecurity';
 import { Invitations, Members, Teams } from './People';
 import { Projects, Templates } from './Projects';
 import {
@@ -23,6 +24,7 @@ const tabs = [
   'teams',
   'templates',
   'invitations',
+  'security',
 ] as const;
 
 export default function OrganizationView({
@@ -105,7 +107,10 @@ export default function OrganizationView({
             aria-label={t('organizationNavigation')}
           >
             {tabs
-              .filter((item) => manage || item !== 'invitations')
+              .filter(
+                (item) =>
+                  manage || (item !== 'invitations' && item !== 'security'),
+              )
               .map((item) => (
                 <Link
                   key={item}
@@ -136,6 +141,9 @@ export default function OrganizationView({
               organization={current}
               onProjectsChanged={onProjectsChanged}
             />
+          )}
+          {activeTab === 'security' && manage && (
+            <OrganizationSecurity key={current.slug} organization={current} />
           )}
           {activeTab === 'invitations' && manage && (
             <Invitations key={current.slug} organization={current} />

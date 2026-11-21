@@ -16,6 +16,10 @@ export const organizationsText = defineLexicon({
     teams: 'Teams',
     templates: 'Templates',
     invitations: 'Invitations',
+    security: 'Security',
+    requireTwoFactor: 'Require two-factor authentication',
+    twoFactorPolicyDescription:
+      'Members need two-factor authentication before accessing the workspace.',
     teamMembers: 'Team members',
     organizationNavigation: 'Organization navigation',
     projectName: 'Project name',
@@ -83,6 +87,10 @@ export const organizationsText = defineLexicon({
     teams: 'Team',
     templates: 'Mallar',
     invitations: 'Inbjudningar',
+    security: 'Säkerhet',
+    requireTwoFactor: 'Kräv tvåfaktorsautentisering',
+    twoFactorPolicyDescription:
+      'Medlemmar behöver tvåfaktorsautentisering för att öppna arbetsytan.',
     teamMembers: 'Teammedlemmar',
     organizationNavigation: 'Organisationsnavigering',
     projectName: 'Projektnamn',

@@ -424,7 +424,14 @@ function WorkspaceShell() {
         >
           <main className="workspace-content" id="workspace-page" tabIndex={-1}>
             <Notice error={preferenceError} />
+            {session.user.mfaEnrollmentRequired && (
+              <section className="onboarding-banner">
+                <p>{t('mfaRequired')}</p>
+                <Link to="/profile">{t('setUpMfa')}</Link>
+              </section>
+            )}
             {guideAvailable &&
+              !session.user.mfaEnrollmentRequired &&
               view === 'overview' &&
               session.projects.length === 0 && (
                 <section className="onboarding-banner">

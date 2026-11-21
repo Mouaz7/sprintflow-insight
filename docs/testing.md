@@ -379,3 +379,9 @@ Review any finding, fix the cause and retain its input under `ImportParserFuzzTe
 `OrganizationMigrationTest` upgrades a schema seeded on V31 and checks both the migrated and newly created personal organizations. `OrganizationHttpIntegrationTest` checks each role, invitations, templates, ownership transfer and SQL row security. The RLS case deliberately queries without a tenant predicate. PostgreSQL returns zero rows before scope binding, returns the selected organization's rows after binding, and rejects an insert into another tenant with SQLSTATE `42501`.
 
 Run the browser flow with `npm --prefix frontend/e2e test -- tests/organizations.e2e.ts` against the application. It uses separate owner and invitee sessions and runs axe on the project and team views.
+
+## Two-factor authentication
+
+`TotpCodesTest` checks RFC 6238 Appendix B, the adjacent-step tolerance and replay rejection. `MfaHttpIntegrationTest` checks password-only sessions, encrypted setup, recovery code use, account and challenge rate limits, organization roles and the setup path for affected members. The Playwright flow generates its authenticator code independently from the displayed setup key, verifies the locally rendered QR element, and runs axe before and after first-factor sign-in.
+
+Run `npm --prefix frontend/e2e test -- tests/two-factor.e2e.ts` against the application to repeat the browser verification.

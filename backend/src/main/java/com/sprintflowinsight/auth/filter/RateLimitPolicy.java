@@ -13,6 +13,7 @@ import java.time.Duration;
 public enum RateLimitPolicy {
   LOGIN(Scope.CLIENT_ADDRESS, intervally(30)),
   GOOGLE_LOGIN(Scope.CLIENT_ADDRESS, intervally(30)),
+  MFA_VERIFY(Scope.CLIENT_ADDRESS, intervally(20)),
   REGISTER(Scope.CLIENT_ADDRESS, intervally(20)),
   RESET_REQUEST(Scope.CLIENT_ADDRESS, intervally(10)),
   RESET_RECOVERY(Scope.CLIENT_ADDRESS, intervally(10)),

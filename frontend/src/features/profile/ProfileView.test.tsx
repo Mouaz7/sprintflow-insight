@@ -4,7 +4,7 @@ import { api } from '../../api/client';
 import { renderWithProviders } from '../../test/render';
 import { ProfileView } from './ProfileView';
 
-vi.mock('../../api/client', () => ({ api: vi.fn() }));
+vi.mock('../../api/client', () => ({ api: vi.fn(), clearCsrfToken: vi.fn() }));
 
 const user = {
   id: 1,
@@ -101,7 +101,10 @@ describe('Profile settings', () => {
     expect(within(passwordCard).getByRole('alert')).toHaveTextContent(
       'Your new passwords do not match.',
     );
-    expect(api).not.toHaveBeenCalled();
+    expect(api).not.toHaveBeenCalledWith(
+      '/auth/password/change',
+      expect.anything(),
+    );
     expect(
       within(
         document.querySelector('.profile-details-card') as HTMLElement,
@@ -111,9 +114,11 @@ describe('Profile settings', () => {
     fireEvent.change(screen.getByLabelText('Confirm new password'), {
       target: { value: 'new-password-123' },
     });
-    vi.mocked(api).mockRejectedValueOnce(
-      new Error('Current password is incorrect.'),
-    );
+    vi.mocked(api).mockImplementation(async (path) => {
+      if (path === '/auth/password/change')
+        throw new Error('Current password is incorrect.');
+      return {};
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
     expect(await within(passwordCard).findByRole('alert')).toHaveTextContent(
       'Current password is incorrect.',
@@ -126,7 +131,7 @@ describe('Profile settings', () => {
     fireEvent.change(screen.getByLabelText('Current password'), {
       target: { value: 'correct-password' },
     });
-    vi.mocked(api).mockResolvedValueOnce({});
+    vi.mocked(api).mockResolvedValue({});
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
     expect(await within(passwordCard).findByRole('status')).toHaveTextContent(
       'Password changed.',
@@ -185,9 +190,13 @@ describe('Profile settings', () => {
 
   it('shows ownership errors inside the expanded account removal section', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    vi.mocked(api).mockRejectedValueOnce(
-      new Error('Transfer owned projects before deleting your account.'),
-    );
+    vi.mocked(api).mockImplementation(async (path) => {
+      if (path === '/auth/account')
+        throw new Error(
+          'Transfer owned projects before deleting your account.',
+        );
+      return {};
+    });
     renderWithProviders(<ProfileView {...props} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Security' }));
     expect(

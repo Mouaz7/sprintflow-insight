@@ -1,5 +1,6 @@
 package com.sprintflowinsight.realtime;
 
+import com.sprintflowinsight.auth.MfaService;
 import com.sprintflowinsight.auth.UserIdentity;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.crdt.CrdtService;
@@ -34,23 +35,33 @@ public class RealtimeSecurityConfiguration {
   AuthorizationManager<Message<?>> messageAuthorizationManager(
       MessageMatcherDelegatingAuthorizationManager.Builder messages,
       ProjectAccessService access,
-      CrdtService collaboration) {
+      CrdtService collaboration,
+      MfaService mfa) {
     return messages
         .nullDestMatcher()
         .authenticated()
         .simpSubscribeDestMatchers(ProjectTopics.EVENTS, ProjectTopics.PRESENCE)
-        .access(projectReader(access))
+        .access(requireMfa(projectReader(access), mfa))
         .simpSubscribeDestMatchers(ProjectTopics.CRDT_UPDATES, ProjectTopics.CRDT_AWARENESS)
-        .access(collaborationReader(access))
+        .access(requireMfa(collaborationReader(access), mfa))
         .simpSubscribeDestMatchers("/**")
         .denyAll()
         .simpDestMatchers(ProjectTopics.OPEN_TASK)
-        .access(projectReader(access))
+        .access(requireMfa(projectReader(access), mfa))
         .simpDestMatchers(ProjectTopics.CRDT_SEND, ProjectTopics.CRDT_CARET)
-        .access(collaborationWriter(collaboration))
+        .access(requireMfa(collaborationWriter(collaboration), mfa))
         .anyMessage()
         .denyAll()
         .build();
+  }
+
+  private static AuthorizationManager<MessageAuthorizationContext<?>> requireMfa(
+      AuthorizationManager<MessageAuthorizationContext<?>> next, MfaService mfa) {
+    return (authentication, context) -> {
+      if (!(authentication.get().getPrincipal() instanceof UserIdentity user)
+          || !mfa.workspaceAllowed(user)) return new AuthorizationDecision(false);
+      return next.authorize(authentication, context);
+    };
   }
 
   private static AuthorizationManager<MessageAuthorizationContext<?>> collaborationReader(

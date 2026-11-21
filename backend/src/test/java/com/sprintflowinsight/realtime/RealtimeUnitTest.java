@@ -35,6 +35,7 @@ class RealtimeUnitTest {
             mock(org.springframework.session.SessionRepository.class),
             access,
             mock(com.sprintflowinsight.auth.UserRepository.class),
+            mock(com.sprintflowinsight.auth.MfaService.class),
             broker,
             Duration.ofSeconds(90),
             tasks);
