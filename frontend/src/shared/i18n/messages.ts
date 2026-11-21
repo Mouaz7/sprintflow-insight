@@ -4,6 +4,22 @@ import { defineLexicon, translator } from './lexicon';
 // Keep the original message in state and translate when rendering, so switching
 // language also updates an error that is already visible. Never translate user data.
 const swedish: Record<string, string> = {
+  'Existing sprint commitments exceed the scenario capacity.':
+    'Befintliga sprintåtaganden överstiger scenariots kapacitet.',
+  'Choose a planned or active sprint.': 'Välj en planerad eller aktiv sprint.',
+  'Estimate all unfinished sprint commitments before proposing more work.':
+    'Uppskatta alla oavslutade sprintåtaganden innan du föreslår mer arbete.',
+  'Supply each story lock once and choose one direction.':
+    'Ange varje lås en gång och välj bara en riktning.',
+  'Locks must refer to selectable backlog stories in this project.':
+    'Lås kan endast avse valbara berättelser i projektets backlogg.',
+  'Capacity can only be adjusted for current working members.':
+    'Kapaciteten kan bara ändras för nuvarande arbetande projektmedlemmar.',
+  'Story dependencies contain a cycle':
+    'Beroendena mellan berättelser bildar en cykel.',
+  'Sprint planning is busy. Try again shortly.':
+    'Sprintplaneringen är upptagen. Försök igen om en stund.',
+
   'Account exports are busy. Try again shortly.':
     'Kontoexporterna är upptagna. Försök igen om en stund.',
   'Use a CSV file of at most 1 MB.': 'Använd en CSV-fil på högst 1 MB.',

@@ -1,6 +1,4 @@
-/**
- * Sprint planning support (C1). The {@code optimizer} package is a pure domain service without
- * persistence or web dependencies; adapters that read backlogs will depend on other modules later.
- */
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
+/** Sprint-plan proposals use the pure CP-SAT optimizer and a scoped workspace snapshot. */
+@org.springframework.modulith.ApplicationModule(
+    allowedDependencies = {"common :: errors", "workspace :: project", "workspace :: time"})
 package com.sprintflowinsight.planning;

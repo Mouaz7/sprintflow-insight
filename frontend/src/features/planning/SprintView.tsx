@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, lazy, Suspense, useState } from 'react';
 import { api } from '../../api/client';
 import type { Sprint } from '../../api/contracts';
 import { localizeMessage } from '../../shared/i18n/messages';
@@ -17,6 +17,12 @@ import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Drawer, useConfirm } from '../../shared/ui/ui';
 import { planningText, sprintStatusKey } from './i18n';
 
+const SprintPlanDrawer = lazy(() =>
+  import('./SprintPlanDrawer').then(({ SprintPlanDrawer }) => ({
+    default: SprintPlanDrawer,
+  })),
+);
+
 export function SprintManager({
   projectId,
   items,
@@ -33,6 +39,7 @@ export function SprintManager({
   const [panelOpen, setPanelOpen] = useState(false);
   const draft = useDraftProject(projectId, language);
   const [editing, setEditing] = useState<Sprint>();
+  const [planning, setPlanning] = useState<Sprint>();
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
   const [status, setStatus] = useState('Planned');
@@ -337,6 +344,12 @@ export function SprintManager({
                   </span>
                 </div>
                 <div className="card-actions">
+                  {(sprint.status === 'Planned' ||
+                    sprint.status === 'Active') && (
+                    <button type="button" onClick={() => setPlanning(sprint)}>
+                      {t('suggestSprint')}
+                    </button>
+                  )}
                   <button type="button" onClick={() => begin(sprint)}>
                     {t('edit')}
                   </button>
@@ -354,6 +367,16 @@ export function SprintManager({
           <div className="empty-state">{t('noSprints')}</div>
         )}
       </div>
+      {planning && (
+        <Suspense fallback={<p role="status">{t('loadingSprintPlan')}</p>}>
+          <SprintPlanDrawer
+            key={`${projectId}:${planning.id}`}
+            projectId={projectId}
+            sprint={planning}
+            onClose={() => setPlanning(undefined)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

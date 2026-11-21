@@ -1,0 +1,31 @@
+.sprint-plan,
+.sprint-plan form,
+.sprint-plan fieldset,
+.sprint-plan-result,
+.sprint-plan-story {
+  display: grid;
+  gap: var(--space-grid);
+  min-width: 0;
+}
+.sprint-plan fieldset {
+  margin: 0;
+  padding: var(--space-grid);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+.sprint-plan-story {
+  border-block-end: 1px solid var(--line);
+  padding-block: var(--space-grid);
+}
+.sprint-plan dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-grid);
+}
+.sprint-plan dd {
+  margin: 0;
+  font-weight: 700;
+}
+.sprint-plan label {
+  overflow-wrap: anywhere;
+}
