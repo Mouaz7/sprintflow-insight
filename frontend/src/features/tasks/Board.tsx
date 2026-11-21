@@ -1,9 +1,31 @@
-import { Fragment } from 'react';
+import { Fragment, lazy, Suspense, useState } from 'react';
 import type { Task } from '../../api/contracts';
+import { useT } from '../../shared/i18n/LanguageProvider';
 import { VirtualList, VIRTUALIZE_AFTER } from '../../shared/ui/VirtualList';
 import { TaskAttachments } from './TaskAttachments';
 import { TaskMetadata } from './TaskCollaboration';
+import { tasksText } from './i18n';
 import type { UseTaskBoardState } from './useTaskBoard';
+
+const TaskGithubLinks = lazy(() => import('./TaskGithubLinks'));
+
+function GithubLinksPanel({ task }: { task: Task }) {
+  const t = useT(tasksText);
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      className="task-attachments"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>{t('githubLinks')}</summary>
+      {open && (
+        <Suspense>
+          <TaskGithubLinks projectId={task.projectId} taskId={task.id} />
+        </Suspense>
+      )}
+    </details>
+  );
+}
 export function Board({
   controller,
   onCustomFields,
@@ -158,6 +180,7 @@ export function Board({
         {t('comments')}
       </button>
       <TaskAttachments taskId={task.id} />
+      <GithubLinksPanel task={task} />
     </article>
   );
   return (

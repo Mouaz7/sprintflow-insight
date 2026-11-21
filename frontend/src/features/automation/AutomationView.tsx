@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import type { Project } from '../../api/contracts';
@@ -9,10 +9,13 @@ import { EmptyState, ErrorState, Skeleton } from '../../shared/ui/States';
 import { Notice, useConfirm } from '../../shared/ui/ui';
 import { automationText } from './i18n';
 import {
+  githubDeliveriesQuery,
   githubQuery,
   rulesQuery,
   runsQuery,
   type IssuedGithub,
+  type GithubDelivery,
+  type GithubRules,
   type Rule,
   useAutomationActions,
 } from './queries';
@@ -218,12 +221,24 @@ function GithubPanel({
   const { language } = useLanguage();
   const confirm = useConfirm();
   const settings = useQuery(githubQuery(project.id));
+  const [expanded, setExpanded] = useState(false);
+  const deliveries = useQuery({
+    ...githubDeliveriesQuery(project.id),
+    enabled: expanded,
+  });
   const [repository, setRepository] = useState<string>();
   const [issued, setIssued] = useState<IssuedGithub>();
-  const current = issued?.settings ?? settings.data;
-  const error = actions.github.error ?? actions.disconnect.error;
+  const [draftRules, setDraftRules] = useState<GithubRules>();
+  const current = settings.data ?? issued?.settings;
+  const error =
+    actions.github.error ??
+    actions.disconnect.error ??
+    actions.githubRules.error;
   return (
-    <details className="flow-panel chart-table">
+    <details
+      className="flow-panel chart-table"
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
+    >
       <summary>{t('github')}</summary>
       {settings.isPending && <Skeleton />}
       {settings.isError && (
@@ -239,7 +254,7 @@ function GithubPanel({
             {t('url')}{' '}
             <input
               readOnly
-              value={`${window.location.origin}/api/automation/github/${current.endpointId}`}
+              value={`${window.location.origin}/api/automation/github/${issued?.settings.endpointId ?? current.endpointId}`}
             />
           </label>
           <p>{t('hookHelp')}</p>
@@ -311,6 +326,7 @@ function GithubPanel({
                       onSuccess: () => {
                         setIssued(undefined);
                         setRepository(undefined);
+                        setDraftRules(undefined);
                         actions.github.reset();
                       },
                     });
@@ -322,6 +338,109 @@ function GithubPanel({
           </div>
         </form>
       )}
+      {current && (
+        <form
+          className="editor-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (draftRules)
+              actions.githubRules.mutate(draftRules, {
+                onSuccess: () => setDraftRules(undefined),
+              });
+          }}
+        >
+          <fieldset
+            disabled={
+              !!project.archivedAt ||
+              actions.githubRules.isPending ||
+              actions.disconnect.isPending
+            }
+          >
+            <legend>{t('githubStatusRules')}</legend>
+            <label>
+              <input
+                type="checkbox"
+                checked={
+                  draftRules?.reviewOnOpen ?? current.reviewOnOpen ?? false
+                }
+                onChange={(event) =>
+                  setDraftRules({
+                    doneOnMerge: draftRules?.doneOnMerge ?? current.doneOnMerge,
+                    reviewOnOpen: event.target.checked,
+                  })
+                }
+              />{' '}
+              {t('reviewOnOpen')}
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={
+                  draftRules?.doneOnMerge ?? current.doneOnMerge ?? false
+                }
+                onChange={(event) =>
+                  setDraftRules({
+                    reviewOnOpen:
+                      draftRules?.reviewOnOpen ?? current.reviewOnOpen,
+                    doneOnMerge: event.target.checked,
+                  })
+                }
+              />{' '}
+              {t('doneOnMerge')}
+            </label>
+            <button type="submit" disabled={!draftRules}>
+              {t('saveGithubStatusRules')}
+            </button>
+          </fieldset>
+        </form>
+      )}
+      {expanded && <GithubDeliveryHistory deliveries={deliveries} />}
     </details>
+  );
+}
+
+function GithubDeliveryHistory({
+  deliveries,
+}: {
+  deliveries: UseQueryResult<GithubDelivery[]>;
+}) {
+  const t = useT(automationText);
+  const { format } = useLanguage();
+  if (deliveries.isPending) return <Skeleton />;
+  if (deliveries.isError)
+    return (
+      <ErrorState
+        detail={t('loadFailed')}
+        onRetry={() => void deliveries.refetch()}
+      />
+    );
+  return (
+    <section aria-label={t('githubDeliveries')}>
+      <h3>{t('githubDeliveries')}</h3>
+      {deliveries.data?.length ? (
+        <ul>
+          {deliveries.data.map((entry) => (
+            <li key={entry.id}>
+              <strong>{entry.repository}</strong> ·{' '}
+              {t(entry.event === 'push' ? 'githubPush' : 'githubPullRequest')}
+              {entry.action && (
+                <> · {t('githubAction', { action: entry.action })}</>
+              )}
+              {' · '}
+              {t('githubDeliveryCounts', {
+                linked: entry.linkedTasks,
+                moved: entry.movedTasks,
+              })}
+              {' · '}
+              <time dateTime={entry.receivedAt}>
+                {format.dateTime(entry.receivedAt)}
+              </time>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>{t('noGithubDeliveries')}</p>
+      )}
+    </section>
   );
 }

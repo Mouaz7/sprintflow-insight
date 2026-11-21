@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -53,11 +54,32 @@ class GithubAutomationController {
     github.disconnect(projectId, session);
   }
 
+  @PutMapping(SETTINGS + "/rules")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  void rules(
+      @PathVariable long projectId,
+      @Valid @RequestBody GithubAutomation.Rules rules,
+      HttpSession session) {
+    github.updateRules(projectId, rules, session);
+  }
+
+  @GetMapping(SETTINGS + "/deliveries")
+  List<GithubAutomation.DeliveryLog> history(@PathVariable long projectId, HttpSession session) {
+    return github.history(projectId, session);
+  }
+
+  @GetMapping("/api/projects/{projectId}/github/tasks/{taskId}/links")
+  List<GithubAutomation.TaskLink> links(
+      @PathVariable long projectId, @PathVariable long taskId, HttpSession session) {
+    return github.taskLinks(projectId, taskId, session);
+  }
+
   @PostMapping(path = "/api/automation/github/{endpointId}", consumes = "application/json")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   void receive(
       @PathVariable UUID endpointId,
       @RequestHeader("X-GitHub-Event") String event,
+      @RequestHeader(value = "X-GitHub-Delivery", required = false) String delivery,
       @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
       HttpServletRequest request)
       throws IOException {
@@ -66,6 +88,6 @@ class GithubAutomationController {
       throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE);
     byte[] body = request.getInputStream().readNBytes(limit + 1);
     if (body.length > limit) throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE);
-    github.receive(endpointId, event, signature, body);
+    github.receive(endpointId, event, delivery, signature, body);
   }
 }
