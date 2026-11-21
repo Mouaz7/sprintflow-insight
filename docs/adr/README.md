@@ -34,3 +34,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0029 – Sprint-planning scenarios](0029-sprint-planning-scenarios.md)
 - [0030 – Nightly project task risk](0030-nightly-project-task-risk.md)
 - [0031 – Task duplicate suggestions and flow control signals](0031-duplicate-and-flow-signals.md)
+- [0032 – Project automation and bounded rule execution](0032-automation-rules.md)

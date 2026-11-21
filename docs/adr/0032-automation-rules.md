@@ -1,0 +1,15 @@
+# ADR 0032: Project automation and bounded rule execution
+
+Status: Accepted.
+
+Owners and admins configure project-owned rules using the visual builder or rule text. Archived projects expose the configuration and recent run log for reading. Mutations take the existing project lock, repeat authorization and require `If-Match` for replacement and deletion. V30 stores the original DSL, trigger key, enabled state, version and outcomes. The latest 100 outcomes are visible in settings. Deleting a rule retains outcomes under its saved name until the project is purged.
+
+The parser accepts a `when` line, up to five `if` lines and one `then` line, with a 4,096-character source limit. Conditions are combined with AND. Status and labels use current task state. Custom-field conditions reuse B16's typed operators, project checks and missing-value behavior. Assignment validates current project membership. Moves honor required checklist steps. Comments use the clearly identified automation actor. Notifications use the existing owner delivery and preference checks.
+
+Task moves are consumed through the transactional Modulith event registry. A move triggered by a rule carries the IDs of its ancestors. A rule can run once in a chain, which stops after three successful rule steps. `automation_run` enforces one result per event, task and rule. The action and the result commit together. Transient failures leave the publication retryable. A ShedLock-protected job checks every 15 minutes for past due dates. Its stable event key includes the latest due date, and the worker rechecks that due date and task status before executing.
+
+Each project can configure an inbound GitHub endpoint and one repository. The setup generates a high-entropy secret and stores it in the existing encrypted-column rotation system. The HTTPS endpoint only accepts JSON up to 1 MiB. It verifies HMAC-SHA-256 over the raw request body before parsing. Only a merged `pull_request` `closed` event for the configured repository can act. Task keys in the title and source branch must belong to the configured project. The signed pull request ID supplies replay protection, including repeated deliveries. [GitHub webhook signature validation](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries) and [pull request event fields](https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request).
+
+Unit tests cover the DSL, and a Jazzer harness uses source-level bounds and seed rules. PostgreSQL integration tests cover project roles, revision conflicts, chained moves, task conditions and signed webhook delivery. The browser test creates a visual rule, moves a task and reads the outcome after it commits.
+
+The automation page loads only when opened. Its 8.08 kB gzip chunk has a 10 kB budget. The combined route assets measured 351.85 kB within the new 354 kB aggregate budget. The 125 kB entry budget remains in effect.

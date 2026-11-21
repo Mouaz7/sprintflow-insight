@@ -44,6 +44,7 @@ export const workspaceViews: readonly WorkspaceView[] = [
   'overview',
   'projects',
   'fields',
+  'automation',
   'data',
   'backlog',
   'sprints',
@@ -272,7 +273,7 @@ function WorkspaceShell() {
   const nav = (mobile = false) => (
     <nav aria-label={t(mobile ? 'mobileNavigation' : 'mainNavigation')}>
       {workspaceViews
-        .filter((key) => key !== 'fields')
+        .filter((key) => key !== 'fields' && key !== 'automation')
         .map((key) => (
           <NavLink
             key={key}

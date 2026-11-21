@@ -3,6 +3,7 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const projectsText = defineLexicon({
   EN: {
+    automation: 'Automation rules',
     confirmMoveToTrash: ({ name }: { name: string }) =>
       `Move project “${name}” to the recycle bin? All its contents are retained and can be restored.`,
     directory: 'PROJECT DIRECTORY',
@@ -84,6 +85,7 @@ export const projectsText = defineLexicon({
       `2–10 letters that start every task ID, for example ${key}-1. Leave empty to use the suggestion.`,
   },
   SV: {
+    automation: 'Automationsregler',
     confirmMoveToTrash: ({ name }) =>
       `Flytta projektet “${name}” till papperskorgen? Allt innehåll följer med och kan återställas.`,
     directory: 'PROJEKTREGISTER',

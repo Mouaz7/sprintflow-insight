@@ -1,0 +1,3 @@
+when overdue
+if label "critical"
+then notify "A critical task is overdue."

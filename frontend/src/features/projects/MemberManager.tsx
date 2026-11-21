@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormEvent, useState } from 'react';
+import { Link } from 'react-router';
 import { api } from '../../api/client';
 import type { Project, ProjectMember } from '../../api/contracts';
 import { membersQuery, queryKeys } from '../../api/queries';
@@ -115,6 +116,9 @@ export function MemberManager({
         <p className="kicker">{t('access')}</p>
         <h2>{t('members', { name: project.name })}</h2>
         <p>{t('membersHelp')}</p>
+        <Link to="/automation" className="secondary-action">
+          {t('automation')}
+        </Link>
       </div>
       <FormGuide topic="member" />
       <form onSubmit={invite}>

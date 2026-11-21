@@ -9,8 +9,10 @@ import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.transaction.annotation.Transactional
+@Transactional
 @org.springframework.stereotype.Service
 public class CollaborationService {
   private final MentionService mentions;
@@ -58,15 +60,26 @@ public class CollaborationService {
     mutations.lock(task.getProjectId());
     access.forget(task.getProjectId());
     access.write(task.getProjectId(), session);
-    String actor = access.email(session);
+    return ResponseEntity.ok(
+        saveComment(task, request.message(), access.email(session), access.userId(session)));
+  }
+
+  /** Internal automation callers hold the project lock and have verified the task's scope. */
+  @Transactional(propagation = Propagation.MANDATORY)
+  public TaskComment addAutomationComment(Task task, String message) {
+    return saveComment(task, message, "automation@sprintflow.invalid", null);
+  }
+
+  private TaskComment saveComment(Task task, String message, String actor, Long actorId) {
+    Long taskId = task.getId();
     TaskComment comment = new TaskComment();
     comment.setTaskId(taskId);
     comment.setProjectId(task.getProjectId());
     comment.setAuthorEmail(actor.trim().toLowerCase());
-    comment.setMessage(request.message().trim());
+    comment.setMessage(message.trim());
     comment.setCreatedAt(Instant.now());
     TaskComment saved = comments.saveAndFlush(comment);
-    mentions.commentSaved(saved, task.getTitle(), access.userId(session));
+    if (actorId != null) mentions.commentSaved(saved, task.getTitle(), actorId);
     activity.record(
         task.getProjectId(),
         "COMMENT_ADDED",
@@ -76,13 +89,13 @@ public class CollaborationService {
         new com.sprintflowinsight.workspace.events.CommentAdded(
             java.util.UUID.randomUUID(),
             task.getProjectId(),
-            notifications.userId(actor),
+            actorId,
             Instant.now(),
             taskId,
             saved.getId(),
             task.getTitle(),
             notifications.userId(task.getAssigneeEmail())));
-    return ResponseEntity.ok(saved);
+    return saved;
   }
 
   public TaskComment editComment(

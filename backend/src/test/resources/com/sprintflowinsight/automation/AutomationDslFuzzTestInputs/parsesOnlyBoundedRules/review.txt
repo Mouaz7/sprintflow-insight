@@ -1,0 +1,3 @@
+when task-moved from "In Progress" to "Review"
+if field 42 greater-than "3"
+then comment "Ready for review."

@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "345 kB",
+      "limit": "354 kB",
       "gzip": true
     },
     {
@@ -191,6 +191,12 @@
       "name": "Flow signals panel (gzip)",
       "path": "dist/assets/FlowSignalsPanel-*.js",
       "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "Automation route (gzip)",
+      "path": "dist/assets/AutomationView-*.js",
+      "limit": "10 kB",
       "gzip": true
     }
   ]

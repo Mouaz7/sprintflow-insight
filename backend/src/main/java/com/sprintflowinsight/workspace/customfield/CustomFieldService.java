@@ -198,6 +198,12 @@ public class CustomFieldService {
   public PreparedFieldFilter prepare(
       Long projectId, FieldCondition condition, HttpSession session) {
     access.read(projectId, session);
+    return prepareForProject(projectId, condition);
+  }
+
+  /** Rule callers have already authorized the project and hold its mutation lock. */
+  @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+  public PreparedFieldFilter prepareForProject(Long projectId, FieldCondition condition) {
     if (condition == null || condition.fieldId() == null)
       throw ApiException.badRequest("Choose a custom field for this condition.");
     var field = field(projectId, condition.fieldId());
@@ -208,6 +214,11 @@ public class CustomFieldService {
       throw ApiException.badRequest("Choose a current member of this project.");
     return new PreparedFieldFilter(
         projectId, field.id(), field.kind(), condition.operator(), expected);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+  public boolean matchesProjectTask(Long projectId, Long taskId, FieldCondition condition) {
+    return values.matchesTask(projectId, taskId, prepareForProject(projectId, condition));
   }
 
   @Transactional(readOnly = true)
