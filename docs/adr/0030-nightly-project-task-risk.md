@@ -1,0 +1,11 @@
+# ADR 0030: Nightly task-risk training per project
+
+Status: Accepted. Extends [ADR 0012](0012-late-task-risk-model.md).
+
+The Tasks view shows risk for unfinished tasks in an active sprint with a current end date. The endpoint checks current project access before reading features or model parameters. Predicting is read-only. The frontend opens a task's probability and the largest signed contributions on demand. A project starts with the Beta(1, 3) cold-start prior and moves to project-specific training when the rarest outcome has at least 80 examples.
+
+The scheduler runs at 02:40 UTC under the existing database-backed ShedLock, processing projects in small pages and using one transaction per project. Its first observation per task and sprint is immutable. Features are captured while the task is open. The cutoff for an observed outcome is the earlier of the actual completion timestamp and the UTC midnight after the sprint's planned last day. The most recent status at the cutoff is the label. Later status moves cannot change a resolved observation. Cancelled and trashed sprints and trashed tasks are excluded from training. Project and task foreign keys remove associated snapshots on permanent deletion.
+
+The most recent 5,000 labelled examples per project fit the model or calibrate the heuristic. Model parameters and the count of training examples are stored per project. Existing projects acquire observations prospectively, with an estimated probability available immediately. V28 keeps aggregate block and reassignment counters. It seeds blocked tasks with one block. Identity, timestamps of assignments and comment contents are absent from the training data. Assignee changes count a transition between unassigned and assigned as well as between two distinct assignees.
+
+WIP is measured inside the active sprint. The longest unfinished dependency chain considers live tasks throughout the project. Column spans use the project's historical status transitions, ignoring repeats from estimate or sprint edits. The 180-day reference stays neutral when a column has no completed spans. Remaining calendar days use UTC, matching the nightly task. See [metric definitions](../metrics-definition.md#late-task-risk-c3).

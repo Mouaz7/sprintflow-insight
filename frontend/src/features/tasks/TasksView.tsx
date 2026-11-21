@@ -19,6 +19,7 @@ const TaskCustomFieldsDrawer = lazy(() =>
     default: m.TaskCustomFieldsDrawer,
   })),
 );
+const TaskRiskDrawer = lazy(() => import('./TaskRiskDrawer'));
 export function TasksView(props: TasksViewProps) {
   const controller = useTaskBoard(props);
   const {
@@ -48,6 +49,7 @@ export function TasksView(props: TasksViewProps) {
   });
   const client = useQueryClient();
   const [customTask, setCustomTask] = useState<Task>();
+  const [riskTask, setRiskTask] = useState<Task>();
   const [fieldsSaved, setFieldsSaved] = useState(false);
   useTaskPresence(
     projectId,
@@ -130,6 +132,7 @@ export function TasksView(props: TasksViewProps) {
           {loading && <p role="status">{t('loadingTasks')}</p>}
           <Board
             controller={controller}
+            onRisk={setRiskTask}
             onCustomFields={
               customFields.data?.length
                 ? (task) => {
@@ -139,6 +142,24 @@ export function TasksView(props: TasksViewProps) {
                 : undefined
             }
           />
+          {riskTask && riskTask.projectId === projectId && (
+            <Suspense
+              fallback={
+                <Drawer
+                  title={t('lateRisk')}
+                  onClose={() => setRiskTask(undefined)}
+                >
+                  <p role="status">{t('loadingTasks')}</p>
+                </Drawer>
+              }
+            >
+              <TaskRiskDrawer
+                task={riskTask}
+                language={language}
+                onClose={() => setRiskTask(undefined)}
+              />
+            </Suspense>
+          )}
           {customTask && customTask.projectId === projectId && (
             <Suspense
               fallback={

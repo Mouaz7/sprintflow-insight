@@ -7,9 +7,11 @@ import type { UseTaskBoardState } from './useTaskBoard';
 export function Board({
   controller,
   onCustomFields,
+  onRisk,
 }: {
   controller: UseTaskBoardState;
   onCustomFields?: ((task: Task) => void) | undefined;
+  onRisk?: (task: Task) => void;
 }) {
   const {
     columns,
@@ -28,7 +30,13 @@ export function Board({
     toggleBlocked,
     deleteTask,
     setDiscussion,
+    sprints,
   } = controller;
+  const today = new Date().toISOString().slice(0, 10);
+  const activeSprint = sprints.find(
+    (sprint) =>
+      sprint.status === 'Active' && sprint.endDate && sprint.endDate >= today,
+  );
   const columnTasks = (column: Task['status']) =>
     filtered.filter((task) => task.status === column);
   const renderWip = (column: Task['status']) => {
@@ -89,6 +97,14 @@ export function Board({
         </select>
       </label>
       <div className="card-actions">
+        {onRisk &&
+          activeSprint &&
+          task.sprintId === activeSprint.id &&
+          task.status !== 'Done' && (
+            <button type="button" onClick={() => onRisk(task)}>
+              {t('lateRisk')}
+            </button>
+          )}
         {onCustomFields && (
           <button type="button" onClick={() => onCustomFields(task)}>
             {t('customFields')}

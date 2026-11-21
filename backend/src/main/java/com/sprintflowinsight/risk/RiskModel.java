@@ -11,7 +11,9 @@ import java.util.Objects;
  * explanations are produced the same way.
  */
 public final class RiskModel {
-  /** Probabilities are clamped to {@code [EPSILON, 1 - EPSILON]}, so they stay strictly in (0, 1). */
+  /**
+   * Probabilities are clamped to {@code [EPSILON, 1 - EPSILON]}, so they stay strictly in (0, 1).
+   */
   public static final double EPSILON = 1e-9;
 
   /** Number of reasons in a prediction's explanation. */
@@ -40,13 +42,20 @@ public final class RiskModel {
     this.weights = weights.clone();
   }
 
+  /** Rebuild a previously fitted model from its stored parameters. */
+  public static RiskModel restore(
+      Source source, double intercept, double[] means, double[] scales, double[] weights) {
+    return new RiskModel(source, Standardizer.of(means, scales), intercept, weights);
+  }
+
   public RiskPrediction predict(RiskFeatures features) {
     double[] contributions = contributions(features);
     double logOdds = intercept;
     for (double c : contributions) {
       logOdds += c;
     }
-    return new RiskPrediction(clamp(LogisticRegression.sigmoid(logOdds)), source, top(contributions));
+    return new RiskPrediction(
+        clamp(LogisticRegression.sigmoid(logOdds)), source, top(contributions));
   }
 
   public double probability(RiskFeatures features) {
