@@ -15,7 +15,10 @@
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "7.0.1",
     "@types/node": "24",
+    "@types/ws": "8.18.2",
     "playwright": "1.55.1",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "ws": "8.23.0",
+    "yjs": "13.6.33"
   }
 }

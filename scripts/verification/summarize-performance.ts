@@ -22,11 +22,11 @@ function percentile(p: number) {
 const result = {
   label,
   protocol: {
-    k6: '2.3.0', virtual_users: 5, measured_duration_seconds: 20, warmup_iterations: 10,
+    k6: process.env.K6_BUILD_LABEL ?? '2.3.0', virtual_users: 5, measured_duration_seconds: 20, warmup_iterations: 10,
     reads_per_iteration: 3, think_time_seconds: 0.1,
     dataset: 'one Scrum project, one sprint, one story, 23 tasks',
-    jvm_flags: '-Xms256m -Xmx512m -XX:ActiveProcessorCount=2',
-    postgres: '16.10-alpine, Docker cpus=2,memory=512m',
+    jvm_flags: process.env.K6_JVM_FLAGS ?? '-Xms256m -Xmx512m -XX:ActiveProcessorCount=2',
+    postgres: process.env.K6_DATABASE_LABEL ?? '16.10-alpine, Docker cpus=2,memory=512m',
     endpoints: ['GET /api/projects', 'GET /api/tasks?projectId=<fixture>', 'GET /api/projects/<fixture>/metrics'],
   },
   metrics: {

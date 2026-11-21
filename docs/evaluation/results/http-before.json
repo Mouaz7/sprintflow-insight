@@ -1,0 +1,32 @@
+{
+  "label": "before",
+  "protocol": {
+    "k6": "k6 v2.4.0 (commit/dd9395906d, go1.26.11, linux/amd64)",
+    "virtual_users": 5,
+    "measured_duration_seconds": 20,
+    "warmup_iterations": 10,
+    "reads_per_iteration": 3,
+    "think_time_seconds": 0.1,
+    "dataset": "one Scrum project, one sprint, one story, 23 tasks",
+    "jvm_flags": "-Xms256m -Xmx512m -XX:ActiveProcessorCount=2",
+    "postgres": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "endpoints": [
+      "GET /api/projects",
+      "GET /api/tasks?projectId=<fixture>",
+      "GET /api/projects/<fixture>/metrics"
+    ]
+  },
+  "metrics": {
+    "requests": 2295,
+    "requests_per_second": 114.75,
+    "failed_requests": 0,
+    "mean_ms": 9.869019972113305,
+    "median_ms": 8.512257,
+    "p90_ms": 15.0035318,
+    "p95_ms": 18.0760379,
+    "max_ms": 30.285786
+  },
+  "first_measured_request": "2026-11-22T00:44:59.868422792+01:00",
+  "last_measured_request": "2026-11-22T00:45:22.181359056+01:00",
+  "limits": "Single local run; host load and caches are not controlled. Upgrade acceptance evidence, not a causal scalability claim."
+}

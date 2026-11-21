@@ -1,0 +1,85 @@
+{
+  "replicas": 1,
+  "results": [
+    {
+      "clients": 10,
+      "repeats": 3,
+      "projectEvents": {
+        "delivered": 30,
+        "medianMs": 29.78,
+        "p95Ms": 34.7,
+        "maxMs": 34.72
+      },
+      "collaboration": {
+        "delivered": 30,
+        "medianMs": 11.04,
+        "p95Ms": 11.67,
+        "maxMs": 11.7
+      }
+    },
+    {
+      "clients": 50,
+      "repeats": 3,
+      "projectEvents": {
+        "delivered": 150,
+        "medianMs": 34.38,
+        "p95Ms": 39.3,
+        "maxMs": 39.64
+      },
+      "collaboration": {
+        "delivered": 150,
+        "medianMs": 15.66,
+        "p95Ms": 19.37,
+        "maxMs": 19.5
+      }
+    },
+    {
+      "clients": 100,
+      "repeats": 3,
+      "projectEvents": {
+        "delivered": 300,
+        "medianMs": 38.23,
+        "p95Ms": 52.14,
+        "maxMs": 53.75
+      },
+      "collaboration": {
+        "delivered": 300,
+        "medianMs": 18.85,
+        "p95Ms": 24.51,
+        "maxMs": 25.8
+      }
+    },
+    {
+      "clients": 250,
+      "repeats": 3,
+      "projectEvents": {
+        "delivered": 750,
+        "medianMs": 53.47,
+        "p95Ms": 68.99,
+        "maxMs": 70.81
+      },
+      "collaboration": {
+        "delivered": 750,
+        "medianMs": 28,
+        "p95Ms": 44.1,
+        "maxMs": 48.4
+      }
+    },
+    {
+      "clients": 500,
+      "repeats": 3,
+      "projectEvents": {
+        "delivered": 1500,
+        "medianMs": 66.78,
+        "p95Ms": 96.97,
+        "maxMs": 105.05
+      },
+      "collaboration": {
+        "delivered": 1500,
+        "medianMs": 50.41,
+        "p95Ms": 90.36,
+        "maxMs": 102.83
+      }
+    }
+  ]
+}
