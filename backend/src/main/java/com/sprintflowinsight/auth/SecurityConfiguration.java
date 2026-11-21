@@ -93,7 +93,14 @@ public class SecurityConfiguration {
       throws Exception {
     http.securityContext(
             context -> context.securityContextRepository(contexts).requireExplicitSave(true))
-        .csrf(config -> config.csrfTokenRepository(csrf))
+        .csrf(
+            config ->
+                config
+                    .csrfTokenRepository(csrf)
+                    .ignoringRequestMatchers(
+                        org.springframework.security.web.servlet.util.matcher
+                            .PathPatternRequestMatcher.withDefaults()
+                            .matcher(HttpMethod.POST, "/api/automation/github/{endpointId}")))
         .headers(
             headers ->
                 headers
@@ -149,6 +156,7 @@ public class SecurityConfiguration {
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.POST,
+                        "/api/automation/github/{endpointId}",
                         "/api/auth/login",
                         "/api/digest/unsubscribe",
                         "/api/auth/register",

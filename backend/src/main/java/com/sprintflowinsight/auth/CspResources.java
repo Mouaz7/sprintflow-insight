@@ -19,6 +19,7 @@ public class CspResources implements WebMvcConfigurer {
           "/overview",
           "/projects",
           "/fields",
+          "/automation",
           "/data",
           "/backlog",
           "/sprints",

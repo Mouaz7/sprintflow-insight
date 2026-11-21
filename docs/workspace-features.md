@@ -121,6 +121,23 @@ När du skriver titeln på en ny uppgift kan **Möjliga dubbletter** visa upp ti
 
 Under **Flödesanalys** öppnar du **Signaler för inflöde och genomströmning**. Tabellen visar sju hela UTC-dagar och de kontrollgränser som räknats från de föregående 28. Projektägaren får en notis när gårdagens värde passerar en gräns och signalen är ny. Notiser följer kontots inställningar. [Metod och datakrav](adr/0031-duplicate-and-flow-signals.md).
 
+## Automationsregler (B15)
+
+Välj projekt under **Projekt** och öppna **Automationsregler** i projektets medlemsinställningar. Ägare och administratörer kan skapa, redigera, aktivera och ta bort regler. Välj en utlösare, ett valfritt villkor och en åtgärd i regelbyggaren. Arkiverade projekt har läsbar regel- och körhistorik.
+
+En regel kan reagera på att en uppgift byter kolumn, att en pull request mergas eller att en uppgift blir förfallen. Åtgärden kan tilldela en projektmedlem, lägga till en etikett, flytta uppgiften, kommentera eller notifiera ägaren. **Körlogg** visar utförda, överhoppade och misslyckade regler. En kedja får köra högst tre regler och använder aldrig samma regel två gånger.
+
+**Regeltext** visar DSL-versionen. Du kan ange upp till fem villkor. Alla villkor behöver vara uppfyllda. Använd fält-ID:t för ett anpassat fält. Textvärden sätts inom citattecken.
+
+```text
+when task-moved to "Review"
+if label "customer"
+if field 42 greater-than "3"
+then comment "Ready for review."
+```
+
+`when overdue` kontrolleras kvartvis. `when pull-request-merged` använder projektets GitHub-webhook. Skapa en webhook för ditt `owner/repository` och kopiera adress och engångshemlighet till GitHubs webhookinställningar. Välj JSON och händelsen Pull requests. Skriv en uppgiftsnyckel, exempelvis `SF-123`, i PR-titeln eller grennamnet. [Webhooks i GitHub](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks) och [ADR 0032](adr/0032-automation-rules.md).
+
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).

@@ -1,0 +1,26 @@
+.automation-page > .primary-action {
+  margin-bottom: var(--space-section);
+}
+.automation-rules,
+.automation-page .editor-form {
+  display: grid;
+  gap: 12px;
+}
+.automation-rule {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.automation-rule > div {
+  min-width: 0;
+}
+.automation-rule pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-block: 8px 0;
+}
+.automation-page details > label {
+  display: grid;
+  gap: 6px;
+}

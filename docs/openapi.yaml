@@ -2437,6 +2437,142 @@ paths:
         '404': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/rules:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: List automation rules for an owner or administrator
+      responses:
+        '200':
+          description: Up to 50 project rules, including disabled rules
+          content:
+            application/json:
+              schema: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/AutomationRule' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Create a rule in an active project
+      requestBody: { $ref: '#/components/requestBodies/AutomationRuleDraft' }
+      responses:
+        '201': { $ref: '#/components/responses/AutomationRuleSaved' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/rules/{ruleId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - { name: ruleId, in: path, required: true, schema: { type: integer, format: int64 } }
+    - $ref: '#/components/parameters/ifMatch'
+    put:
+      summary: Replace a rule at the named revision
+      requestBody: { $ref: '#/components/requestBodies/AutomationRuleDraft' }
+      responses:
+        '200': { $ref: '#/components/responses/AutomationRuleSaved' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Remove a rule while preserving its run log
+      responses:
+        '204': { description: Rule deleted }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/runs:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read the most recent 100 rule outcomes as an owner or administrator
+      responses:
+        '200':
+          description: Automation run log, newest first
+          content:
+            application/json:
+              schema: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/AutomationRun' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/github:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read GitHub webhook settings without the secret
+      responses:
+        '200':
+          description: GitHub webhook metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutomationGithubSettings' }
+        '204': { description: No webhook configured }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Create or rotate the project's inbound GitHub webhook
+      description: Replaces the existing endpoint and secret. The new secret is returned once with Cache-Control no-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [repository]
+              properties:
+                repository: { type: string, maxLength: 180, example: example-owner/example-repo }
+      responses:
+        '200':
+          description: New webhook settings and one-time secret
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [settings, secret]
+                properties:
+                  settings: { $ref: '#/components/schemas/AutomationGithubSettings' }
+                  secret: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Disconnect GitHub automation and invalidate its endpoint
+      responses:
+        '204': { description: Disconnected }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/automation/github/{endpointId}:
+    post:
+      summary: Accept a signed GitHub pull request event
+      description: Authenticates the raw JSON body by HMAC-SHA-256. Valid events act only on the configured repository and referenced task keys.
+      security: []
+      parameters:
+      - { name: endpointId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: X-GitHub-Event, in: header, required: true, schema: { type: string } }
+      - { name: X-Hub-Signature-256, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        description: Original GitHub JSON body up to 1 MiB.
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '204': { description: Delivery accepted or irrelevant to this trigger }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     sessionCookie:
@@ -2503,7 +2639,24 @@ components:
       name: taskId
       required: true
       schema: { type: integer, format: int64 }
+  requestBodies:
+    AutomationRuleDraft:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, source, enabled]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 80 }
+              source: { type: string, minLength: 1, maxLength: 4096 }
+              enabled: { type: boolean }
   responses:
+    AutomationRuleSaved:
+      description: The saved rule and its current revision
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/AutomationRule' }
     RateLimited:
       description: >-
         Rate limit reached. Credential endpoints are limited per client address (fixed refill);
@@ -2532,6 +2685,40 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    AutomationRule:
+      type: object
+      required: [id, name, source, trigger, enabled, version, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, maxLength: 80 }
+        source: { type: string, maxLength: 4096 }
+        trigger: { $ref: '#/components/schemas/AutomationTrigger' }
+        enabled: { type: boolean }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    AutomationTrigger:
+      type: string
+      enum: [TASK_MOVED, PULL_REQUEST_MERGED, OVERDUE]
+    AutomationRun:
+      type: object
+      required: [id, ruleId, ruleName, taskId, taskKey, trigger, outcome, detail, executedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        ruleId: { type: integer, format: int64 }
+        ruleName: { type: string }
+        taskId: { type: integer, format: int64 }
+        taskKey: { type: string, nullable: true }
+        trigger: { $ref: '#/components/schemas/AutomationTrigger' }
+        outcome: { type: string, enum: [APPLIED, SKIPPED, FAILED] }
+        detail: { type: string }
+        executedAt: { type: string, format: date-time }
+    AutomationGithubSettings:
+      type: object
+      required: [endpointId, repository, createdAt]
+      properties:
+        endpointId: { type: string, format: uuid }
+        repository: { type: string }
+        createdAt: { type: string, format: date-time }
     TimeEntry:
       type: object
       required:

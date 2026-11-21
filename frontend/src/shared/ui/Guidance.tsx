@@ -518,6 +518,10 @@ export function FormGuide({ topic }: { topic: keyof typeof formGuides }) {
 }
 
 const pageGuides = {
+  automation: [
+    'Välj en utlösare, eventuella villkor och en åtgärd. Körloggen visar utförda, överhoppade och misslyckade regler.',
+    'Choose a trigger, optional conditions and an action. The run log shows applied, skipped and failed rules.',
+  ],
   data: [
     'Välj en fil med högst 200 uppgifter. Granska fältkoppling, statusar och varningar innan importen. Kontoexport finns under profilinställningar. Ägare och administratörer kan läsa granskningsloggen.',
     'Choose a file with up to 200 tasks. Review field mapping, states and warnings before importing. Account export is in profile preferences. Owners and admins can read the audit log.',

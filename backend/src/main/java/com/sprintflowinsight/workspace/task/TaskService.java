@@ -102,6 +102,11 @@ public class TaskService {
 
   @Transactional
   public Task updateTask(Task task, Task changes, String actorEmail) {
+    return updateTask(task, changes, actorEmail, List.of());
+  }
+
+  @Transactional
+  public Task updateTask(Task task, Task changes, String actorEmail, List<Long> automationTrail) {
     mutations.lock(task.getProjectId());
     Instant now = Instant.now();
     boolean previousBlocked = task.isBlocked();
@@ -157,7 +162,8 @@ public class TaskService {
               saved.getTitle(),
               previousStatus,
               saved.getStatus(),
-              saved.getVersion()));
+              saved.getVersion(),
+              automationTrail));
     else updated(saved, actorId, now);
     if (historyChanged) recordHistory(saved, saved.getStatus(), now, actorEmail);
     if (!Objects.equals(previousAssignee, saved.getAssigneeEmail()))

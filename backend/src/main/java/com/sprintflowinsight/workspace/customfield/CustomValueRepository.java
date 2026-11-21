@@ -92,6 +92,19 @@ class CustomValueRepository {
     return rows.stream().map(value -> ((Number) value).longValue()).toList();
   }
 
+  boolean matchesTask(Long projectId, Long taskId, PreparedFieldFilter filter) {
+    var query =
+        em.createNativeQuery(
+            "select exists(select 1 from task where task.project_id=:projectId and task.id=:taskId"
+                + " and task.trashed_at is null and "
+                + filter.taskPredicate()
+                + ")");
+    query.setParameter("projectId", projectId);
+    query.setParameter("taskId", taskId);
+    filter.bind(query);
+    return Boolean.TRUE.equals(query.getSingleResult());
+  }
+
   void insert(Long projectId, Long taskId, Long fieldId, FieldKind kind, FieldValue value) {
     em.createNativeQuery(
             """

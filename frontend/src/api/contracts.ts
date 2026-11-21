@@ -49,6 +49,7 @@ export type WorkspaceView =
   | 'overview'
   | 'projects'
   | 'fields'
+  | 'automation'
   | 'data'
   | 'backlog'
   | 'sprints'
