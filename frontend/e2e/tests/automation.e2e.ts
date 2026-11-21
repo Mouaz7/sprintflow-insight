@@ -1,6 +1,8 @@
 import { expect, test } from '../support/fixtures.ts';
 import { expectAccessible } from '../support/a11y.ts';
 
+test.use({ actionTimeout: 10_000 });
+
 test('builds a move rule and reads the applied action in the run log', async ({
   api,
   page,
@@ -22,7 +24,9 @@ test('builds a move rule and reads the applied action in the run log', async ({
   await page.getByRole('button', { name: 'New rule' }).click();
   const editor = page.getByRole('dialog', { name: 'New rule' });
   await editor.getByLabel('Rule name').fill('Mark review work');
-  await editor.getByLabel('To column', { exact: true }).selectOption('Review');
+  await editor
+    .getByRole('combobox', { name: 'To column', exact: true })
+    .selectOption('Review');
   await editor.getByLabel('Action value').fill('ready-for-review');
   await expectAccessible(page, 'automation-rule-editor');
   await editor.getByRole('button', { name: 'Save rule' }).click();

@@ -77,7 +77,12 @@ class GithubAutomation {
 
   record Settings(UUID endpointId, String repository, Instant createdAt) {}
 
-  record Issued(Settings settings, String secret) {}
+  record Issued(Settings settings, String secret) {
+    @Override
+    public String toString() {
+      return "Issued[settings=" + settings + ", secret=redacted]";
+    }
+  }
 
   record Link(
       long projectId,
