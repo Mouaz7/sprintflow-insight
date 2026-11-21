@@ -51,7 +51,15 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
       java.time.Instant trashedAt,
       String memberRole) {}
 
-  Optional<Project> findByName(String name);
+  boolean existsByOrganizationIdAndName(Long organizationId, String name);
+
+  @org.springframework.data.jpa.repository.Query(
+      """
+      select p from Project p where p.organizationId=:organizationId and p.trashedAt is null
+      and exists (select m.id from ProjectMember m where m.projectId=p.id and m.userId=:userId)
+      order by p.id
+      """)
+  List<Project> findVisibleInOrganization(long organizationId, long userId);
 
   Optional<Project> findByProjectKey(String key);
 

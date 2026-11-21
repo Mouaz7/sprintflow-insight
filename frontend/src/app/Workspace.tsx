@@ -285,6 +285,16 @@ function WorkspaceShell() {
             <span>{t(key)}</span>
           </NavLink>
         ))}
+      <NavLink
+        to="/organizations"
+        className={({ isActive }) =>
+          isActive || location.pathname.startsWith('/o/') ? 'active' : ''
+        }
+        onClick={() => setMenuOpen(false)}
+      >
+        <InterfaceIcon name="projects" />
+        <span>{t('organizations')}</span>
+      </NavLink>
     </nav>
   );
   return (
@@ -409,7 +419,7 @@ function WorkspaceShell() {
       <DraftProjectsContext value={draftProjects}>
         <EditorProjectContext
           value={
-            view && projectFreeViews.includes(view) ? undefined : activeProject
+            !view || projectFreeViews.includes(view) ? undefined : activeProject
           }
         >
           <main className="workspace-content" id="workspace-page" tabIndex={-1}>

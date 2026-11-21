@@ -66,14 +66,16 @@ public class ProjectService {
   public ResponseEntity<?> updateProject(
       Long id, ProjectRequest details, String ifMatch, HttpSession session) {
     AccessContext caller = admin.lock(id, session, AccessContext.Need.MANAGE);
-    if (projects.findByName(details.trimmedName()).filter(p -> !p.getId().equals(id)).isPresent())
-      return ApiExceptionHandler.error(
-          org.springframework.http.HttpStatus.CONFLICT, "A project with this name already exists.");
     return projects
         .findById(id)
         .map(
             p -> {
               com.sprintflowinsight.VersionPrecondition.require(ifMatch, p.getVersion());
+              if (!p.getName().equals(details.trimmedName())
+                  && projects.existsByOrganizationIdAndName(
+                      p.getOrganizationId(), details.trimmedName()))
+                throw ApiException.conflict(
+                    "A project with this name already exists in this organization.");
               String key = details.normalizedKey();
               if (key != null && !key.equals(p.getKey())) p.setKey(factory.requireFreeKey(key));
               p.setName(details.trimmedName());

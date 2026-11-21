@@ -130,6 +130,366 @@ paths:
       responses:
         '200': { description: Account deleted }
         '409': { $ref: '#/components/responses/Error' }
+  /api/organizations:
+    get:
+      summary: List organizations for the signed-in account
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Organization' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Create an organization with a unique URL slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Organization' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/projects:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: List projects visible to the account in this organization
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Project' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Create a project in this organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/members:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: List organization members and roles
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrganizationMember' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/members/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    put:
+      summary: Change an organization member role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationRoleRequest' }
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Remove an organization member and their team assignments
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/ownership:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    put:
+      summary: Transfer ownership of a shared organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationOwnership' }
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/teams:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: List teams in the organization
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrganizationTeam' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationNameRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrganizationTeam' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/teams/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    put:
+      summary: Rename a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationNameRequest' }
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Delete a team and its assignments
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/teams/{id}/members:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    get:
+      summary: List team members
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrganizationMember' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/teams/{id}/members/{userId}:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+      - { $ref: '#/components/parameters/organizationUserId' }
+    put:
+      summary: Add an organization member to a team
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      summary: Remove a member from a team
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/invites:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: List active invitations for an owner or admin
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrganizationInvitation' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Issue a single-use email-bound invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationInviteRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IssuedOrganizationInvitation' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/invites/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    delete:
+      summary: Revoke an invitation
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/invites/accept:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    post:
+      summary: Join the organization using an invitation for the current account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcceptOrganizationInvitation' }
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/templates:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: List organization project templates
+      responses:
+        '200':
+          description: Current organization data
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OrganizationTemplate' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Save a reusable project starter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationTemplateRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrganizationTemplate' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/templates/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    delete:
+      summary: Delete an organization template
+      responses:
+        '204':
+          description: Updated
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/templates/{id}/projects:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+      - { $ref: '#/components/parameters/id' }
+    post:
+      summary: Create a project from an organization template
+      parameters:
+        - in: query
+          name: language
+          schema: { type: string, enum: [EN, SV], default: EN }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRequest' }
+      responses:
+        '201':
+          description: Organization data created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
   /api/projects:
     get:
       summary: List projects accessible to the signed-in user
@@ -2661,6 +3021,16 @@ components:
       in: cookie
       name: SPRINTFLOW_SESSION
   parameters:
+    organizationSlug:
+      in: path
+      name: slug
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$' }
+    organizationUserId:
+      in: path
+      name: userId
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     sharedTextTarget:
       in: path
       name: target
@@ -2771,6 +3141,91 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    Organization:
+      type: object
+      required: [id, slug, name, role, personal]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [Owner, Admin, Member, Viewer] }
+        personal: { type: boolean }
+    OrganizationRequest:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string, pattern: '^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$' }
+        name: { type: string, maxLength: 120 }
+    OrganizationMember:
+      type: object
+      required: [userId, email, name, role]
+      properties:
+        userId: { type: integer, format: int64 }
+        email: { type: string, format: email }
+        name: { type: string, nullable: true }
+        role: { type: string, enum: [Owner, Admin, Member, Viewer] }
+    OrganizationRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role: { type: string, enum: [Admin, Member, Viewer] }
+    OrganizationOwnership:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: integer, format: int64, minimum: 1 }
+    OrganizationNameRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 120 }
+    OrganizationTeam:
+      type: object
+      required: [id, name, memberCount]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        memberCount: { type: integer, minimum: 0 }
+    OrganizationInviteRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 255 }
+        role: { type: string, enum: [Admin, Member, Viewer] }
+    OrganizationInvitation:
+      type: object
+      required: [id, email, role, expiresAt]
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string, format: email }
+        role: { type: string, enum: [Admin, Member, Viewer] }
+        expiresAt: { type: string, format: date-time }
+    IssuedOrganizationInvitation:
+      type: object
+      required: [invitation, token]
+      properties:
+        invitation: { $ref: '#/components/schemas/OrganizationInvitation' }
+        token: { type: string, description: Single-use invitation secret returned once. }
+    AcceptOrganizationInvitation:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+    OrganizationTemplateRequest:
+      type: object
+      required: [name, kind]
+      properties:
+        name: { type: string, maxLength: 120 }
+        kind: { type: string, enum: [Blank, Scrum, Kanban] }
+        description: { type: string, maxLength: 255 }
+    OrganizationTemplate:
+      type: object
+      required: [id, name, kind, description]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        kind: { type: string, enum: [Blank, Scrum, Kanban] }
+        description: { type: string, nullable: true }
     AutomationRule:
       type: object
       required: [id, name, source, trigger, enabled, version, updatedAt]
@@ -4874,6 +5329,7 @@ components:
       type: object
       required: [id, name, key, ownerEmail, version]
       properties:
+        organizationId: { type: integer, format: int64 }
         id: { type: integer, format: int64 }
         name: { type: string }
         description: { type: string, nullable: true }

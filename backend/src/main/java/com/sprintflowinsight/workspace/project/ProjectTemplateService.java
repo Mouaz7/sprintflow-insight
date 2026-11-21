@@ -49,14 +49,17 @@ public class ProjectTemplateService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a valid project template.");
     String email = access.email(session);
     return factory.inTransactionRetryingDerivedKey(
-        request.normalizedKey(), () -> createOnce(request, email));
+        request.normalizedKey(), () -> createInOrganization(request, email, null));
   }
 
-  private Project createOnce(TemplateRequest request, String email) {
+  @org.springframework.transaction.annotation.Transactional(
+      propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+  public Project createInOrganization(TemplateRequest request, String email, Long organizationId) {
     boolean sv = "SV".equals(request.language());
     String name = request.name().trim();
     Project project =
-        factory.create(
+        factory.createInOrganization(
+            organizationId,
             name,
             request.description(),
             email,

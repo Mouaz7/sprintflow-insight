@@ -95,7 +95,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "385 kB",
+      "limit": "396 kB",
       "gzip": true
     },
     {
@@ -186,6 +186,12 @@
       "name": "Task duplicate suggestions (gzip)",
       "path": "dist/assets/TaskDuplicateSuggestions-*.js",
       "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Organizations route (gzip)",
+      "path": "dist/assets/OrganizationView-*.js",
+      "limit": "12 kB",
       "gzip": true
     },
     {

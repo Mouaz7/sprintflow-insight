@@ -14,7 +14,7 @@ import { ThemeProvider } from '../shared/theme/ThemeProvider';
 import { RouteLoading } from '../shared/ui/RouteLoading';
 import { SessionGate } from './SessionGate';
 import { WorkspaceLayout } from './Workspace';
-import { workspaceRoutes } from './WorkspaceRoutes';
+import { organizationRoutes, workspaceRoutes } from './WorkspaceRoutes';
 
 const UnsubscribeView = lazy(() =>
   import('../features/profile/UnsubscribeView').then((m) => ({
@@ -69,6 +69,7 @@ function AppRoutes() {
 export const workspaceTree = (
   <Route element={<WorkspaceLayout />}>
     {workspaceRoutes}
+    {organizationRoutes}
     <Route path="*" element={<Navigate to="/overview" replace />} />
   </Route>
 );

@@ -247,3 +247,13 @@ B16 exposes the typed `FieldCondition` contract and pure matcher for B15 automat
 ## Import, kontoexport och granskningslogg (B19)
 
 **Import och granskning** låter projektmedlemmar förhandsgranska CSV/Jira JSON, koppla fält och statusar och bekräfta en atomär import av högst 200 uppgifter. Befintliga källnycklar hoppas över. Ägare/administratörer kan bevara sammanfattade historiska tidpunkter och läsa den separata, skrivskyddade granskningsloggen med 90 dagars retention. Kontoarkivet hämtas via **Profil → Inställningar → Exportera ditt konto**. [Format, begränsningar och Apache-datasetprocedur](import-export.md).
+
+## Organizations and teams
+
+Open **Organizations** and choose a personal or shared organization. Its projects, members, teams and templates are linked under `/o/{slug}`. The project list shows projects you can access. Select **Open task board** to continue working in that project.
+
+Owners and admins can create teams, add existing organization members, save project starters and issue invitation links. The owner manages admins and can transfer a shared organization to a member or admin. A member can create organization projects and use saved starters. A viewer can read the directory, teams and their accessible projects.
+
+In **Invitations**, enter the recipient's email and role, then copy the link. The recipient signs in with that email and chooses **Accept invitation**. Links expire after seven days and can be revoked. An organization membership grants access to its directory and teams. Manage individual project roles in the project's own settings.
+
+See [organization isolation](adr/0034-organization-scope.md) and [the REST contract](openapi.yaml).

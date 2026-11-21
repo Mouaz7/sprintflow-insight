@@ -7,6 +7,10 @@ import { RouteLoading } from '../shared/ui/RouteLoading';
 import { useWorkspace } from './Workspace';
 
 // Each view is its own chunk, loaded when its route is first visited.
+const OrganizationView = lazy(
+  () => import('../features/organizations/OrganizationView'),
+);
+
 const DataView = lazy(() =>
   import('../features/data/DataView').then((m) => ({ default: m.DataView })),
 );
@@ -288,3 +292,37 @@ const routes: Record<WorkspaceView, ReactNode> = {
 export const workspaceRoutes = Object.entries(routes).map(([path, element]) => (
   <Route key={path} path={path} element={<Page>{element}</Page>} />
 ));
+
+function OrganizationRoute() {
+  const { refreshProjects, setActiveProjectId, selectView } = useWorkspace();
+  return (
+    <OrganizationView
+      onProjectsChanged={refreshProjects}
+      onOpenProject={(id) => {
+        setActiveProjectId(id);
+        selectView('tasks');
+      }}
+    />
+  );
+}
+
+export const organizationRoutes = [
+  <Route
+    key="organizations"
+    path="organizations"
+    element={
+      <Page>
+        <OrganizationRoute />
+      </Page>
+    }
+  />,
+  <Route
+    key="organization"
+    path="o/:org/:section?"
+    element={
+      <Page>
+        <OrganizationRoute />
+      </Page>
+    }
+  />,
+];

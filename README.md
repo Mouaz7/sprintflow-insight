@@ -176,7 +176,7 @@ GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup
 
 ## Status and documentation
 
-[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Open roadmap items include organizations and teams, TOTP, the broader GitHub integration and the public API and webhooks.
+[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Open roadmap items include TOTP, the broader GitHub integration and the public API and webhooks.
 
 | Document | Contents |
 | --- | --- |

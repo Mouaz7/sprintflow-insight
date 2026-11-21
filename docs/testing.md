@@ -373,3 +373,9 @@ JAZZER_FUZZ=1 ./mvnw -Dtest='ImportParserFuzzTest#jira' -Djazzer.instrumentation
 ```
 
 Review any finding, fix the cause and retain its input under `ImportParserFuzzTestInputs`; do not commit `.cifuzz-corpus`. `node --test scripts/data/apache-subset.test.ts` checks source projection, split batches, provenance, hard limits and no overwrite. These fixtures are synthetic, not redistributed dataset samples. Frontend MSW tests cover preview invalidation/retry and protected binary download. `frontend/e2e/tests/import-export.e2e.ts` exercises actual CSV/status mapping, atomic persistence, audit reads, ZIP contents, historical Jira dates, axe and Swedish dark mobile rendering against the packaged app/PostgreSQL.
+
+## Organization boundaries
+
+`OrganizationMigrationTest` upgrades a schema seeded on V31 and checks both the migrated and newly created personal organizations. `OrganizationHttpIntegrationTest` checks each role, invitations, templates, ownership transfer and SQL row security. The RLS case deliberately queries without a tenant predicate. PostgreSQL returns zero rows before scope binding, returns the selected organization's rows after binding, and rejects an insert into another tenant with SQLSTATE `42501`.
+
+Run the browser flow with `npm --prefix frontend/e2e test -- tests/organizations.e2e.ts` against the application. It uses separate owner and invitee sessions and runs axe on the project and team views.
