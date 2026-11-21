@@ -35,6 +35,9 @@ final class RabbitTopicMapping implements ExecutorChannelInterceptor {
   private static Message<?> withDestination(Message<?> message, String destination) {
     var headers = StompHeaderAccessor.wrap(message);
     headers.setDestination(destination);
+    // Application publications originate as SIMP MESSAGE headers. The relay assumes a STOMP
+    // accessor supplied by an interceptor already has its wire command.
+    if (headers.getCommand() == null) headers.updateStompCommandAsClientMessage();
     headers.setLeaveMutable(true);
     return MessageBuilder.createMessage(message.getPayload(), headers.getMessageHeaders());
   }

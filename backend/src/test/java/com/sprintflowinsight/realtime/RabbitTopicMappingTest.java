@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompBrokerRelayMessageHandler;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -43,6 +45,16 @@ class RabbitTopicMappingTest {
       assertThat(mapping.beforeHandle(original, channel, relay)).isSameAs(original);
       assertThat(mapping.fromBroker(original)).isSameAs(original);
     }
+  }
+
+  @Test
+  void addsTheSendCommandToApplicationPublications() {
+    var headers = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+    headers.setDestination(ProjectTopics.events(42));
+    var original = MessageBuilder.createMessage(new byte[0], headers.getMessageHeaders());
+    var translated = StompHeaderAccessor.wrap(mapping.beforeHandle(original, channel, relay));
+    assertThat(translated.getCommand()).isEqualTo(StompCommand.SEND);
+    assertThat(translated.getDestination()).isEqualTo("/topic/projects.42");
   }
 
   private static Message<byte[]> message(StompCommand command, String destination) {

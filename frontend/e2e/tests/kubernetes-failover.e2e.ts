@@ -75,8 +75,8 @@ test('replays every task event after the ingress WebSocket pod is removed', asyn
   const wireMessages: string[] = [];
   page.on('websocket', (socket) => {
     socket.on('framereceived', ({ payload }) => {
-      if (typeof payload === 'string' && payload.startsWith('MESSAGE'))
-        wireMessages.push(payload);
+      const frame = payload.toString().trimStart();
+      if (frame.startsWith('MESSAGE')) wireMessages.push(frame);
     });
   });
   cdp.on(
