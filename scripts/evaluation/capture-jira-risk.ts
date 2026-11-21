@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const source = "https://issues.apache.org/jira/rest/api/2/search";
 const jql =
-  "project in (DATALAB,SDAP,HDDS) AND Sprint is not EMPTY AND " +
+  "project in (DATALAB,SDAP,HDDS,MESOS,OFBIZ) AND Sprint is not EMPTY AND " +
   "created >= 2019-01-01 AND created < 2025-01-01 ORDER BY created ASC, key ASC";
 const sprintField = "customfield_12310921";
 const pointsField = "customfield_12310293";
@@ -105,7 +105,7 @@ async function capture() {
     const result = JSON.parse(Buffer.concat(chunks).toString("utf8")) as Page;
     if (startAt === 0) counts.matchedIssues = result.total;
     if (
-      result.total > 2_500 ||
+      result.total > 5_000 ||
       result.total !== counts.matchedIssues ||
       result.startAt !== startAt ||
       !result.issues.length
