@@ -19,6 +19,8 @@
 
     <properties>
         <java.version>25</java.version>
+        <!-- Patched OpenTelemetry BOM for CVE-2026-118259. -->
+        <opentelemetry.version>1.67.0</opentelemetry.version>
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <jqwik.version>1.10.2</jqwik.version>
         <coverage.minimum.lines>0.90</coverage.minimum.lines>
