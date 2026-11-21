@@ -52,9 +52,9 @@ export default function TaskRiskDrawer({
       api<Risk>(`/projects/${task.projectId}/task-risk`, { signal }),
     staleTime: 0,
   });
-  const prediction = risk.data?.tasks.find(
-    (entry) => entry.taskId === task.id,
-  )?.prediction;
+  const prediction = risk.isSuccess
+    ? risk.data.tasks.find((entry) => entry.taskId === task.id)?.prediction
+    : undefined;
 
   return (
     <Drawer

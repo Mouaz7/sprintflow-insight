@@ -1,0 +1,12 @@
+{
+  "source": "https://issues.apache.org/jira/rest/api/2/search",
+  "jql": "project in (DATALAB,SDAP,HDDS,MESOS,OFBIZ) AND Sprint is not EMPTY AND created >= 2019-01-01 AND created < 2025-01-01 ORDER BY created ASC, key ASC",
+  "capturedAt": "2026-11-21T07:52:36.877Z",
+  "matchedIssues": 2553,
+  "incompleteHistories": 0,
+  "incompleteComments": 0,
+  "withoutClosedSprint": 311,
+  "eligibleIssues": 2242,
+  "distinctTaskObservations": 1137,
+  "sha256": "1a0e2a33e5bcfebc45c5a9964d11945fa35b9dd76620ff5b805d2b0e7138913e"
+}

@@ -17,7 +17,7 @@ test('explains the late risk for unfinished work in the active sprint', async ({
     status: 'Active',
     totalStoryPoints: 0,
     startDate: isoDate(-2),
-    endDate: isoDate(5),
+    endDate: isoDate(2),
   });
   const task = (title: string, status: string, sprintId?: number) =>
     api.json('/tasks', 'POST', {
@@ -35,10 +35,18 @@ test('explains the late risk for unfinished work in the active sprint', async ({
   const action = page.getByRole('button', { name: 'Sprint risk', exact: true });
   await expect(action).toHaveCount(1);
   await action.click();
-  const risk = page.getByRole('dialog', { name: 'Sprint risk · Open sprint task' });
-  await expect(risk.getByText('Estimate for a project with limited history.')).toBeVisible();
-  await expect(risk.getByText(/chance the task is unfinished at sprint end/)).toBeVisible();
-  await expect(risk.getByRole('heading', { name: 'Largest influences' })).toBeVisible();
+  const risk = page.getByRole('dialog', {
+    name: 'Sprint risk · Open sprint task',
+  });
+  await expect(
+    risk.getByText('Estimate for a project with limited history.'),
+  ).toBeVisible();
+  await expect(
+    risk.getByText(/chance the task is unfinished at sprint end/),
+  ).toBeVisible();
+  await expect(
+    risk.getByRole('heading', { name: 'Largest influences' }),
+  ).toBeVisible();
   await expect(risk.getByRole('listitem')).toHaveCount(3);
   await expectAccessible(page, 'task-risk');
 });

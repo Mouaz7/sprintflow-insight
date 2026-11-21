@@ -25,7 +25,6 @@ public class RiskTrainingJob {
   @SchedulerLock(name = "late-task-risk-training", lockAtMostFor = "PT2H")
   public void run() {
     LockAssert.assertLocked();
-    Instant now = Instant.now();
     long afterId = 0;
     while (true) {
       var projects =
@@ -42,7 +41,7 @@ order by p.id limit 100
       if (projects.isEmpty()) return;
       for (long project : projects) {
         try {
-          service.train(project, now);
+          service.train(project, Instant.now());
         } catch (RuntimeException error) {
           LOG.warn("Nightly risk training failed for project {}", project, error);
         }

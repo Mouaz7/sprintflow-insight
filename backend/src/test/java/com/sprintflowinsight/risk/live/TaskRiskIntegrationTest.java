@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprintflowinsight.risk.RiskFeatures;
+import com.sprintflowinsight.risk.RiskModel;
 import com.sprintflowinsight.support.ApiIntegrationTest;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -21,6 +23,41 @@ class TaskRiskIntegrationTest extends ApiIntegrationTest {
   @Autowired TaskRiskService service;
   @Autowired RiskFeatureReader reader;
   @Autowired RiskHistory history;
+
+  @Test
+  void reloadsAFittedModelWhenThereAreEnoughResolvedObservations() {
+    long project = project(user(), null).getId();
+    Instant observedAt = Instant.now().minus(20, ChronoUnit.DAYS);
+    Instant endedAt = observedAt.plus(5, ChronoUnit.DAYS);
+    long sprint = sprint(project, endedAt);
+    jdbc.update(
+        "update sprint set status='Completed',completed_at=? where id=?",
+        Timestamp.from(endedAt),
+        sprint);
+    jdbc.update(
+        """
+with tasks as (
+  insert into task(project_id,sprint_id,title,status,is_blocked,number,story_points,version)
+  select ?,?,'Training fixture','To Do',false,n,case when n<=80 then 1 else 8 end,0
+  from generate_series(1,160) n returning id,project_id,sprint_id,story_points
+)
+insert into task_risk_observation(project_id,sprint_id,task_id,observed_at,features,resolved_at,late)
+select project_id,sprint_id,id,?,array[1,0,0,0,story_points,0,3,4]::double precision[],?,story_points=8
+from tasks
+""",
+        project,
+        sprint,
+        Timestamp.from(observedAt),
+        Timestamp.from(endedAt));
+
+    service.train(project, endedAt.plus(1, ChronoUnit.DAYS));
+    var model = history.model(project).orElseThrow();
+    assertThat(model.exampleCount()).isEqualTo(160);
+    assertThat(model.model().source()).isEqualTo(RiskModel.Source.TRAINED);
+    var low = new RiskFeatures(1, 0, 0, 0, 1, 0, 3, 4);
+    var high = new RiskFeatures(1, 0, 0, 0, 8, 0, 3, 4);
+    assertThat(model.model().probability(high)).isGreaterThan(model.model().probability(low));
+  }
 
   @Test
   void observesOnceAndLabelsTheStatusAtSprintEndBeforePersistingTheCalibratedModel()
