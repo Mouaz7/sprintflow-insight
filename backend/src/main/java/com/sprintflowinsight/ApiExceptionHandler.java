@@ -1,5 +1,6 @@
 package com.sprintflowinsight;
 
+import com.sprintflowinsight.common.LogRedaction;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.common.error.Problems;
@@ -117,7 +118,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   })
   public ResponseEntity<ProblemDetail> handleDatabaseUnavailable(
       Exception exception, WebRequest request) {
-    LOG.warn("Database unavailable on {}: {}", path(request), exception.getClass().getSimpleName());
+    LOG.warn(
+        "Database unavailable on {}: {}",
+        LogRedaction.path(path(request)),
+        exception.getClass().getSimpleName());
     ResponseEntity<ProblemDetail> response =
         respond(
             ErrorCode.SERVICE_UNAVAILABLE,
@@ -138,7 +142,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(org.springframework.dao.ConcurrencyFailureException.class)
   public ResponseEntity<ProblemDetail> handleConcurrencyConflict(
       Exception exception, WebRequest request) {
-    LOG.info("Concurrency conflict on {}: {}", path(request), exception.getClass().getSimpleName());
+    LOG.info(
+        "Concurrency conflict on {}: {}",
+        LogRedaction.path(path(request)),
+        exception.getClass().getSimpleName());
     return respond(
         ErrorCode.CONFLICT,
         com.sprintflowinsight.common.error.DatabaseFailures.CONFLICT_DETAIL,
@@ -203,7 +210,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return handleConstraintViolation(violation, request);
     }
     String errorId = UUID.randomUUID().toString();
-    LOG.error("Unhandled error {} on {}", errorId, path(request), exception);
+    StackTraceElement[] stack = exception.getStackTrace();
+    LOG.atError()
+        .addKeyValue("errorId", errorId)
+        .addKeyValue("path", LogRedaction.path(path(request)))
+        .addKeyValue("exceptionType", exception.getClass().getName())
+        .addKeyValue("frame", stack.length == 0 ? "" : stack[0].toString())
+        .log("Unhandled error {}", errorId);
     ProblemDetail problem =
         Problems.of(
             ErrorCode.INTERNAL_ERROR,

@@ -156,6 +156,10 @@ Använd `Authorization: Bearer <token>` för `/api/v1`. `PROJECT_READ` ger läsn
 
 Projektägare och administratörer kan skapa en koppling under **Automationsregler → Utgående webhooks**. Ange en publik HTTPS-adress, välj uppgiftshändelser och kopiera signeringshemligheten till mottagaren. **Leveranshistorik** visar status, antal försök, senaste HTTP-resultat och tid för nästa försök. En arkiverad arbetsyta visar historiken. När en webhook tas bort försvinner även dess väntande leveranser och historik. [Signering och leveransregler](adr/0038-public-api-and-outbound-webhooks.md).
 
+## Observerbarhet (B12)
+
+Driftprofilen för Compose innehåller Prometheus, Tempo och en färdig Grafana-dashboard. Följ antal anrop, felandel, p95 och felbudget. Vid ett oväntat fel kan du söka på `errorId` i serverloggen och använda `traceId` för att öppna spårningen i Tempo. [Starta driftprofilen](adr/0039-observability-and-slos.md).
+
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).

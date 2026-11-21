@@ -1,5 +1,6 @@
 package com.sprintflowinsight.realtime;
 
+import com.sprintflowinsight.common.BusinessMetrics;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -15,10 +16,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class RealtimePublisher {
   private final RealtimeEventLog log;
   private final SimpMessageSendingOperations broker;
+  private final BusinessMetrics metrics;
 
-  public RealtimePublisher(RealtimeEventLog log, SimpMessageSendingOperations broker) {
+  public RealtimePublisher(
+      RealtimeEventLog log, SimpMessageSendingOperations broker, BusinessMetrics metrics) {
     this.log = log;
     this.broker = broker;
+    this.metrics = metrics;
   }
 
   /** Must run inside a transaction; see {@link RealtimeEventLog#append}. */
@@ -38,6 +42,7 @@ public class RealtimePublisher {
                       @Override
                       public void afterCommit() {
                         broker.convertAndSend(ProjectTopics.events(projectId), message);
+                        metrics.realtimePublished();
                       }
                     }));
   }

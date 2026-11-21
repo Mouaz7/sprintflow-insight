@@ -190,7 +190,8 @@ class RealtimeUnitTest {
   @Test
   void publishingWithoutAProjectOrSourceIdDoesNothing() {
     RealtimeEventLog log = mock(RealtimeEventLog.class);
-    var publisher = new RealtimePublisher(log, null);
+    var publisher =
+        new RealtimePublisher(log, null, mock(com.sprintflowinsight.common.BusinessMetrics.class));
     publisher.publish(null, 1L, "TaskMoved", 1L, 1L, java.time.Instant.now());
     publisher.publish(
         java.util.UUID.randomUUID(), null, "TaskMoved", 1L, 1L, java.time.Instant.now());

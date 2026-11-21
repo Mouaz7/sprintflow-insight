@@ -1,5 +1,6 @@
 package com.sprintflowinsight.workspace.task;
 
+import com.sprintflowinsight.common.BusinessMetrics;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.workspace.NotificationRequests;
 import com.sprintflowinsight.workspace.activity.ActivityService;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TaskService {
+  private final BusinessMetrics metrics;
   private final org.springframework.context.ApplicationEventPublisher events;
   private final NotificationRequests notifications;
   private final ProjectMutationService mutations;
@@ -45,8 +47,10 @@ public class TaskService {
       NotificationRequests notifications,
       ProjectMutationService mutations,
       FileDeletionService deletions,
-      TaskNumberAllocator numbers) {
+      TaskNumberAllocator numbers,
+      BusinessMetrics metrics) {
     this.numbers = numbers;
+    this.metrics = metrics;
     this.events = events;
     this.notifications = notifications;
     this.mutations = mutations;
@@ -78,6 +82,7 @@ public class TaskService {
     task.setNumber(number.number());
     task.setProjectKey(number.projectKey());
     Task saved = taskRepository.save(task);
+    metrics.taskCreated();
     recordHistory(saved, saved.getStatus(), now, actorEmail);
     events.publishEvent(
         new TaskCreated(

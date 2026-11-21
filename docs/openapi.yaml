@@ -6248,6 +6248,7 @@ components:
           description: The same scoped cycle as human task keys, suitable for plain-text feedback.
           items: { type: string }
         errorId: { type: string, description: Present for INTERNAL_ERROR; quote it when reporting a problem. }
+        traceId: { type: string, pattern: '^[0-9a-f]{32}$', description: W3C request trace ID when available. }
     Registration:
       type: object
       required: [email, password, displayName]

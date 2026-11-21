@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: SprintFlow
+    folder: SprintFlow
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /etc/grafana/dashboards
