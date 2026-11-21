@@ -225,7 +225,7 @@ if (!directory || !database)
   throw new Error(
     "Set C4_EVALUATION_PG_URL and run capture-jira-duplicates.ts OUTPUT_DIRECTORY.",
   );
-const cohorts = [];
+const cohorts: ReturnType<typeof pairs>["cohort"][] = [];
 const observations: Score[] = [];
 for (const project of projects) {
   const { hits, cohort } = pairs(project, await issues(project));
