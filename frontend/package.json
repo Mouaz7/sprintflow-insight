@@ -63,7 +63,7 @@
     "typescript": "5.7.2",
     "typescript-eslint": "8.72.2",
     "vite": "8.3.4",
-    "vitest": "4.1.12",
+    "vitest": "5.1.0",
     "@messageformat/core": "3.4.1"
   },
   "overrides": {
