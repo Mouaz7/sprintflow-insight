@@ -94,7 +94,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "340 kB",
+      "limit": "345 kB",
       "gzip": true
     },
     {
@@ -179,6 +179,18 @@
       "name": "Sprint planning drawer (gzip)",
       "path": "dist/assets/SprintPlanDrawer-*.js",
       "limit": "8 kB",
+      "gzip": true
+    },
+    {
+      "name": "Task duplicate suggestions (gzip)",
+      "path": "dist/assets/TaskDuplicateSuggestions-*.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Flow signals panel (gzip)",
+      "path": "dist/assets/FlowSignalsPanel-*.js",
+      "limit": "3 kB",
       "gzip": true
     }
   ]

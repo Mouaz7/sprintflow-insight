@@ -3,6 +3,7 @@ import { defineLexicon, type Translate } from '../../shared/i18n/lexicon';
 export const flowText = defineLexicon({
   EN: {
     title: 'Flow analysis',
+    flowSignals: 'Inflow and throughput signals',
     eyebrow: 'UNDERSTAND THE WORK',
     description:
       'See where work gathers, how long delivery takes and which tasks need attention.',
@@ -124,6 +125,7 @@ export const flowText = defineLexicon({
   },
   SV: {
     title: 'Flödesanalys',
+    flowSignals: 'Signaler för inflöde och genomströmning',
     eyebrow: 'FÖRSTÅ ARBETET',
     description:
       'Se var arbetet samlas, hur lång tid leveransen tar och vilka uppgifter som behöver uppmärksamhet.',

@@ -89,6 +89,12 @@ The [Apache Jira evaluation](evaluation/apache-jira-backtest.md) uses a fixed se
 - Velocity in story points is not a count of independent events. The Poisson models only approximate it, so prefer item throughput when both are available.
 - The forecast covers future throughput, not scope. The *N* items remaining are taken as given.
 
+## Daily flow signals (C4)
+
+Inflow is the number of live tasks created per complete UTC day. Throughput counts transitions into Done in those same days, with at most one completion per task per day. Consecutive Done snapshots from later metadata edits are skipped. Current project visibility determines which task history contributes. Tasks whose historical dates were preserved during import contribute at those preserved dates.
+
+For both series use the 28 complete days before the seven monitored days. Let μ and s² be their sample mean and variance. Start the statistic at z₀ = μ with variance v₀ = 0. For each monitored count xₜ, update zₜ = 0.25 × xₜ + 0.75 × zₜ₋₁ and vₜ = 0.25² × max(s², μ, 0.25) + 0.75² × vₜ₋₁. The limits are max(0, μ − 3√vₜ) and μ + 3√vₜ. A strict crossing signals an unusual run given the baseline. Weekends, calendar changes, volume shifts and imports can change the signal. [Method, operational behavior and evaluation](adr/0031-duplicate-and-flow-signals.md).
+
 ## Late-task risk (C3)
 
 The risk model estimates the probability that an unfinished task in the active sprint will be **unfinished at sprint end**. The pure Java model lives in the `risk` module. PostgreSQL supplies project-scoped features and stores the nightly model. The Tasks view shows the probability, the model source and up to three explanations. See [ADR 0012](adr/0012-late-task-risk-model.md) and [ADR 0030](adr/0030-nightly-project-task-risk.md).

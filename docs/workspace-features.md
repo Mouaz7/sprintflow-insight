@@ -115,6 +115,12 @@ Metoden och baslinjerna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisatio
 
 En nattlig körning observerar aktuellt arbete och tränar en separat modell per projekt. Bedömningen gäller uppgiften och dess arbetsflöde. Modellen använder exempelvis blockeringar, beroenden och tid i kolumnen. Den använder inga personidentiteter. [ADR 0030](adr/0030-nightly-project-task-risk.md) beskriver när historiken blir träningsunderlag.
 
+## Dubblettförslag och flödessignaler (C4)
+
+När du skriver titeln på en ny uppgift kan **Möjliga dubbletter** visa upp till fem liknande uppgifter från det valda projektet. Du kan fortsätta skapa uppgiften. Förslagen jämför titlar och kan missa dubbletter som beskrivs med andra ord.
+
+Under **Flödesanalys** öppnar du **Signaler för inflöde och genomströmning**. Tabellen visar sju hela UTC-dagar och de kontrollgränser som räknats från de föregående 28. Projektägaren får en notis när gårdagens värde passerar en gräns och signalen är ny. Notiser följer kontots inställningar. [Metod och datakrav](adr/0031-duplicate-and-flow-signals.md).
+
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import type { FlowReport, Project } from '../../api/contracts';
@@ -10,6 +10,8 @@ import { FlowCharts } from './FlowCharts';
 import { LimitEditor } from './LimitEditor';
 import { flowQuery } from './queries';
 import { columnName, flowText } from './i18n';
+
+const FlowSignalsPanel = lazy(() => import('./FlowSignalsPanel'));
 
 export function FlowView({ project }: { project: Project | undefined }) {
   const t = useT(flowText);
@@ -38,6 +40,7 @@ function ProjectFlow({ project }: { project: Project }) {
   const query = useQuery(flowQuery(project.id, days));
   const role = useQuery(roleQuery(project.id));
   const [editing, setEditing] = useState(false);
+  const [showSignals, setShowSignals] = useState(false);
   const canManage =
     !project.archivedAt && ['Owner', 'Admin'].includes(role.data?.role ?? '');
   return (
@@ -73,6 +76,17 @@ function ProjectFlow({ project }: { project: Project }) {
       {editing && (
         <LimitEditor projectId={project.id} onClose={() => setEditing(false)} />
       )}
+      <details
+        className="flow-panel chart-table"
+        onToggle={(event) => setShowSignals(event.currentTarget.open)}
+      >
+        <summary>{t('flowSignals')}</summary>
+        {showSignals && (
+          <Suspense fallback={<Skeleton label={t('loading')} />}>
+            <FlowSignalsPanel projectId={project.id} />
+          </Suspense>
+        )}
+      </details>
       {query.isError || role.isError ? (
         <ErrorState
           detail={t('failed')}

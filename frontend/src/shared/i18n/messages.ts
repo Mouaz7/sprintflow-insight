@@ -4,6 +4,14 @@ import { defineLexicon, translator } from './lexicon';
 // Keep the original message in state and translate when rendering, so switching
 // language also updates an error that is already visible. Never translate user data.
 const swedish: Record<string, string> = {
+  'Task inflow is above its flow control limit.':
+    'Uppgiftsinflödet ligger över sin kontrollgräns.',
+  'Task inflow is below its flow control limit.':
+    'Uppgiftsinflödet ligger under sin kontrollgräns.',
+  'Task throughput is above its flow control limit.':
+    'Genomströmningen av uppgifter ligger över sin kontrollgräns.',
+  'Task throughput is below its flow control limit.':
+    'Genomströmningen av uppgifter ligger under sin kontrollgräns.',
   'Existing sprint commitments exceed the scenario capacity.':
     'Befintliga sprintåtaganden överstiger scenariots kapacitet.',
   'Choose a planned or active sprint.': 'Välj en planerad eller aktiv sprint.',
