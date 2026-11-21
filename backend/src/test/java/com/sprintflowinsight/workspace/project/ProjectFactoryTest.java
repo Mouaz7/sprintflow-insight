@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.sprintflowinsight.auth.User;
 import com.sprintflowinsight.auth.UserRepository;
 import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.organization.OrgAccessService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,8 @@ class ProjectFactoryTest {
           mock(ProjectMemberRepository.class),
           mock(ActivityService.class),
           users(),
-          transactionManager);
+          transactionManager,
+          mock(OrgAccessService.class));
 
   /** Keys committed by other creators; the database rejects inserts of these. */
   private final Set<String> committed = new java.util.HashSet<>();
@@ -51,9 +53,7 @@ class ProjectFactoryTest {
   @BeforeEach
   void database() {
     when(transactionManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
-    when(projects.findByName(any())).thenReturn(Optional.empty());
-    when(projects.findKeysStartingWith(any()))
-        .thenAnswer(call -> committed.stream().toList());
+    when(projects.findKeysStartingWith(any())).thenAnswer(call -> committed.stream().toList());
     when(projects.save(any(Project.class)))
         .thenAnswer(
             call -> {

@@ -19,8 +19,11 @@ public class Project {
   private Long id;
 
   @NotBlank(message = "Project name is required.")
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false)
   private String name;
+
+  @Column(updatable = false)
+  private Long organizationId;
 
   private String description;
 
@@ -53,6 +56,14 @@ public class Project {
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  public Long getOrganizationId() {
+    return organizationId;
+  }
+
+  void setOrganizationId(Long organizationId) {
+    this.organizationId = organizationId;
   }
 
   public String getName() {

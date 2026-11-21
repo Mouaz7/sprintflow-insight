@@ -4,6 +4,7 @@ import com.sprintflowinsight.auth.UserRepository;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.common.error.ErrorCode;
 import com.sprintflowinsight.workspace.activity.ActivityService;
+import com.sprintflowinsight.workspace.organization.OrgAccessService;
 import java.util.Locale;
 import java.util.function.Supplier;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class ProjectFactory {
   public static final String KEY_IN_USE = "This project key is already in use.";
+
   /** Attempts for a creation whose derived key a concurrent creator keeps taking first. */
   static final int DERIVED_KEY_ATTEMPTS = 3;
 
@@ -28,18 +30,21 @@ public class ProjectFactory {
   private final ActivityService activity;
   private final UserRepository users;
   private final TransactionTemplate transactions;
+  private final OrgAccessService organizations;
 
   public ProjectFactory(
       ProjectRepository projects,
       ProjectMemberRepository members,
       ActivityService activity,
       UserRepository users,
-      PlatformTransactionManager transactionManager) {
+      PlatformTransactionManager transactionManager,
+      OrgAccessService organizations) {
     this.projects = projects;
     this.members = members;
     this.activity = activity;
     this.users = users;
     this.transactions = new TransactionTemplate(transactionManager);
+    this.organizations = organizations;
   }
 
   /**
@@ -84,17 +89,31 @@ public class ProjectFactory {
   @Transactional(propagation = Propagation.MANDATORY)
   public Project create(
       String name, String description, String ownerEmail, String key, String activitySummary) {
-    String trimmed = name.trim();
-    if (projects.findByName(trimmed).isPresent())
-      throw new ApiException(ErrorCode.CONFLICT, "A project with this name already exists.");
-    String projectKey = key == null ? freeKey(trimmed) : requireFreeKey(key);
+    return createInOrganization(null, name, description, ownerEmail, key, activitySummary);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public Project createInOrganization(
+      Long organizationId,
+      String name,
+      String description,
+      String ownerEmail,
+      String key,
+      String activitySummary) {
     Long ownerId =
         users
             .findByEmail(ownerEmail)
             .orElseThrow(
                 () -> new ApiException(ErrorCode.UNAUTHENTICATED, "Sign in again to continue."))
             .getId();
-    Project project = projects.save(new Project(trimmed, description, ownerEmail, projectKey));
+    long scope = organizationId == null ? organizations.personal(ownerId) : organizationId;
+    String trimmed = name.trim();
+    if (projects.existsByOrganizationIdAndName(scope, trimmed))
+      throw ApiException.conflict("A project with this name already exists in this organization.");
+    String projectKey = key == null ? freeKey(trimmed) : requireFreeKey(key);
+    Project project = new Project(trimmed, description, ownerEmail, projectKey);
+    project.setOrganizationId(scope);
+    project = projects.save(project);
     ProjectMember owner = new ProjectMember();
     owner.setProjectId(project.getId());
     owner.setUserId(ownerId);
@@ -112,8 +131,7 @@ public class ProjectFactory {
   /** Validates a client-chosen key; the unique constraint still decides concurrent races. */
   String requireFreeKey(String key) {
     if (!ProjectKeys.isValid(key)) throw ApiException.badRequest(ProjectRequest.KEY_MESSAGE);
-    if (projects.existsByProjectKey(key))
-      throw ApiException.conflict(KEY_IN_USE);
+    if (projects.existsByProjectKey(key)) throw ApiException.conflict(KEY_IN_USE);
     return key;
   }
 

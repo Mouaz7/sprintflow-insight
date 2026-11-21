@@ -1,0 +1,32 @@
+.organization-picker {
+  max-width: 28rem;
+}
+
+.organization-tabs,
+.organization-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.organization-tabs a {
+  padding: 0.45rem 0.65rem;
+}
+
+.organization-tabs .active {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.organization-list {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.organization-list li {
+  justify-content: space-between;
+}

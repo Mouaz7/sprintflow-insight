@@ -18,6 +18,9 @@ public class CspResources implements WebMvcConfigurer {
       List.of(
           "/overview",
           "/projects",
+          "/organizations",
+          "/o/{org}",
+          "/o/{org}/{section}",
           "/fields",
           "/automation",
           "/data",
