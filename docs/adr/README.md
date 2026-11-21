@@ -40,3 +40,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0035 – Authenticator codes and organization sign-in requirements](0035-two-factor-authentication.md)
 - [0036 – Passkeys and audit integrity](0036-passkeys-and-audit-integrity.md)
 - [0037 – GitHub task links and delivery history](0037-github-task-links.md)
+- [0038 – Public API and outgoing webhooks](0038-public-api-and-outbound-webhooks.md)

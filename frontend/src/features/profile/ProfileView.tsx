@@ -9,6 +9,7 @@ import { DeleteAccountSettings, PasswordSettings } from './ProfileSecurity';
 import { useProfile, type ProfileViewProps } from './useProfile';
 const PasskeySettings = lazy(() => import('./PasskeySettings'));
 const TwoFactorSettings = lazy(() => import('./TwoFactorSettings'));
+const ApiTokenSettings = lazy(() => import('./ApiTokenSettings'));
 
 export function ProfileView(props: ProfileViewProps) {
   const controller = useProfile(props);
@@ -135,6 +136,7 @@ export function ProfileView(props: ProfileViewProps) {
           <Suspense>
             <TwoFactorSettings />
             <PasskeySettings />
+            <ApiTokenSettings />
           </Suspense>
         )}
         <DeleteAccountSettings

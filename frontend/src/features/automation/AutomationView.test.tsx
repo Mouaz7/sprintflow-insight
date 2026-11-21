@@ -123,3 +123,42 @@ it('updates GitHub status rules on the existing connection and reads delivery hi
   );
   expect(await screen.findByText(/1 task linked, 0 moved/)).toBeVisible();
 });
+
+it('issues the signing secret once and opens outgoing delivery history', async () => {
+  let webhook: { id: number; url: string; events: string[] } | undefined;
+  server.use(
+    http.get('/api/projects/1/webhooks', () =>
+      HttpResponse.json(webhook ? [webhook] : []),
+    ),
+    http.post('/api/projects/1/webhooks', async ({ request }) => {
+      const draft = (await request.json()) as { url: string; events: string[] };
+      expect(draft).toEqual({
+        url: 'https://hooks.example.test/receive',
+        events: ['task.created'],
+      });
+      webhook = { ...draft, id: 14 };
+      return HttpResponse.json(
+        { webhook, secret: 'temporary-signing-key' },
+        { status: 201 },
+      );
+    }),
+    http.get('/api/projects/1/webhooks/14/deliveries', () =>
+      HttpResponse.json([]),
+    ),
+  );
+  renderWithProviders(<AutomationView project={project} />);
+  fireEvent.click(
+    await screen.findByText('Outgoing webhooks', { exact: true }),
+  );
+  fireEvent.change(screen.getByLabelText('Webhook HTTPS URL'), {
+    target: { value: 'https://hooks.example.test/receive' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Create webhook' }));
+  expect(await screen.findByLabelText('New signing secret')).toHaveValue(
+    'temporary-signing-key',
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Hide signing secret' }));
+  expect(screen.queryByLabelText('New signing secret')).not.toBeInTheDocument();
+  fireEvent.click(await screen.findByText('Delivery history', { exact: true }));
+  expect(await screen.findByText('No deliveries yet.')).toBeVisible();
+});
