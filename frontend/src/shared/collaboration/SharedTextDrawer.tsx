@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageProvider';
+import { localizeMessage } from '../i18n/messages';
 import { Drawer, Notice } from '../ui/ui';
 import { CrdtSession, emptyView, type SessionView } from './CrdtSession';
 import type { CollaborationScope } from './contracts';
@@ -93,7 +94,7 @@ export default function SharedTextDrawer({
   return (
     <Drawer title={t.title} onClose={onClose} dirty={view.unsaved}>
       <div className="editor-form">
-        <Notice error={view.error} />
+        <Notice error={localizeMessage(view.error, language)} />
         {status && <p role="status">{status}</p>}
         {view.ready && (
           <>

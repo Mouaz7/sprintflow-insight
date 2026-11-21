@@ -60,6 +60,7 @@ export class CrdtSession {
   private connected = false;
   private refreshing = false;
   private projecting = false;
+  private projectTimer: ReturnType<typeof setTimeout> | undefined;
   private closed = false;
   private error = '';
   private caret: Caret = emptyCaret;
@@ -111,7 +112,8 @@ export class CrdtSession {
     this.abort.abort();
     clearInterval(this.interval);
     clearTimeout(this.caretTimer);
-    this.socket.sendCaret(emptyCaret);
+    clearTimeout(this.projectTimer);
+    if (this.state?.editable) this.socket.sendCaret(emptyCaret);
     this.socket.shutDown();
     this.document.destroy();
   }
@@ -186,7 +188,9 @@ export class CrdtSession {
     }
     if (Date.now() - this.lastPresence >= heartbeatMs && this.caret.head)
       this.sendCaret();
-    for (const [id, update] of this.pending) this.socket.send(id, update);
+    if (this.state?.editable) {
+      for (const [id, update] of this.pending) this.socket.send(id, update);
+    }
     void this.refresh();
     this.publish();
   }
@@ -209,7 +213,7 @@ export class CrdtSession {
       this.refreshing = false;
       this.publish();
     }
-    void this.project();
+    this.scheduleProjection();
   }
 
   private async load(state: Snapshot) {
@@ -252,7 +256,7 @@ export class CrdtSession {
     this.pending.delete(updateId);
     this.publish();
     if (this.arrivals.size) void this.refresh();
-    else void this.project();
+    else this.scheduleProjection();
   }
 
   private apply(update: Uint8Array) {
@@ -277,17 +281,29 @@ export class CrdtSession {
     );
   }
 
+  private needsProjection() {
+    return (
+      this.state?.editable &&
+      this.state.active &&
+      this.revision > this.projected &&
+      !this.invalid()
+    );
+  }
+
+  private scheduleProjection() {
+    if (this.closed || !this.needsProjection()) return;
+    clearTimeout(this.projectTimer);
+    this.projectTimer = setTimeout(() => void this.project(), 350);
+  }
+
   private async project() {
     if (
       this.closed ||
       this.projecting ||
       this.refreshing ||
-      !this.state?.editable ||
-      !this.state.active ||
       this.pending.size ||
       this.arrivals.size ||
-      this.revision <= this.projected ||
-      this.invalid()
+      !this.needsProjection()
     )
       return;
     this.projecting = true;
@@ -353,7 +369,7 @@ export class CrdtSession {
       maxLength: this.state?.maxLength ?? 0,
       ready: !!this.state,
       connected: this.connected,
-      unsaved: this.pending.size > 0,
+      unsaved: this.pending.size > 0 || !!this.needsProjection(),
       invalid: !!this.state?.active && this.invalid(),
       error: this.error,
       presence,

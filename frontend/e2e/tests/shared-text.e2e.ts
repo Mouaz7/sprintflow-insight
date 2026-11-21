@@ -40,8 +40,10 @@ test('converges in two browsers after delayed edits and a broken connection', as
   peer.on('pageerror', (error) => failures.push(error.message));
   const peerApi = new Api(peerContext.request);
   const teammate = newAccount('shared-text-member');
+  let registered = false;
   try {
     await register(peerApi, teammate);
+    registered = true;
     const project = await api.json<{ id: number }>('/projects', 'POST', {
       name: `Collaboration ${account.email}`,
     });
@@ -150,7 +152,21 @@ test('converges in two browsers after delayed edits and a broken connection', as
     await page.getByRole('button', { name: 'Start co-editing' }).click();
     const sharedNote = page.getByRole('textbox', { name: 'Shared note' });
     await expect(sharedNote).toBeEditable();
+    await api.json(`/projects/${project.id}/members`, 'POST', {
+      email: teammate.email,
+      role: 'Admin',
+    });
+    await peer.goto('/retrospective');
+    await peer.getByRole('button', { name: 'Co-edit note' }).click();
+    const peerNote = peer.getByRole('textbox', { name: 'Shared note' });
+    await expect(peerNote).toBeEditable();
+    await expect(
+      peer.getByRole('dialog').getByText('Synced', { exact: true }),
+    ).toBeVisible();
     await sharedNote.fill('First retrospective note, updated');
+    await expect(peerNote).toHaveValue('First retrospective note, updated');
+    await peerNote.fill('Shared retrospective note, updated');
+    await expect(sharedNote).toHaveValue('Shared retrospective note, updated');
     await expect
       .poll(async () => {
         const notes = await api.json<{ id: number; message: string }[]>(
@@ -158,11 +174,17 @@ test('converges in two browsers after delayed edits and a broken connection', as
         );
         return notes.find((entry) => entry.id === note.id)?.message;
       })
-      .toBe('First retrospective note, updated');
+      .toBe('Shared retrospective note, updated');
     expect(failures).toEqual([]);
   } finally {
-    await removeAccount(peerApi, teammate).catch(() => {});
-    await peerContext.close();
-    await proxy(`/proxies/${name}`, 'DELETE');
+    try {
+      if (registered) {
+        await proxy(`/proxies/${name}`, 'POST', { enabled: true });
+        await removeAccount(peerApi, teammate);
+      }
+    } finally {
+      await peerContext.close();
+      await proxy(`/proxies/${name}`, 'DELETE');
+    }
   }
 });
