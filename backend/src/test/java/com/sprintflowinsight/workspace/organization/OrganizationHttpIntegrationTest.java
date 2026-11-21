@@ -175,6 +175,51 @@ class OrganizationHttpIntegrationTest extends HttpFlowTest {
   }
 
   @Test
+  void sharedOrganizationOwnershipTransfersBeforeAnAccountCanBeDeleted() {
+    registerTestUser();
+    String owner = sessionCookie;
+    String ownerEmail = testEmail;
+    String organization = createOrganization();
+    registerTestUser();
+    String recipient = sessionCookie;
+    String recipientEmail = testEmail;
+    long newOwner = userRepository.findByEmail(recipientEmail).orElseThrow().getId();
+    sessionCookie = owner;
+    var invite =
+        request(
+            HttpMethod.POST,
+            organization + "/invites",
+            Map.of("email", recipientEmail, "role", "Member"));
+    sessionCookie = recipient;
+    assertThat(
+            request(
+                    HttpMethod.POST,
+                    organization + "/invites/accept",
+                    Map.of("token", invite.getBody().get("token")))
+                .getStatusCode())
+        .isEqualTo(HttpStatus.NO_CONTENT);
+
+    sessionCookie = owner;
+    var account = Map.<String, Object>of("email", ownerEmail, "currentPassword", "secure-password");
+    assertThat(request(HttpMethod.DELETE, "/api/auth/account", account).getStatusCode())
+        .isEqualTo(HttpStatus.CONFLICT);
+    assertThat(
+            request(HttpMethod.PUT, organization + "/ownership", Map.of("userId", newOwner))
+                .getStatusCode())
+        .isEqualTo(HttpStatus.NO_CONTENT);
+    assertThat(request(HttpMethod.DELETE, "/api/auth/account", account).getStatusCode())
+        .isEqualTo(HttpStatus.OK);
+    sessionCookie = recipient;
+    assertThat(list(organization + "/members"))
+        .singleElement()
+        .satisfies(
+            member ->
+                assertThat(member)
+                    .containsEntry("email", recipientEmail)
+                    .containsEntry("role", "Owner"));
+  }
+
+  @Test
   void postgresDeniesAnUnfilteredQueryAcrossOrganizationScopes() {
     registerTestUser();
     String first = createOrganization();

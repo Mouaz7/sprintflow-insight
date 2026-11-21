@@ -57,6 +57,7 @@ export function useOrganizationWrite<T = void>(
 ) {
   const client = useQueryClient();
   return useMutation({
+    gcTime: 0,
     mutationFn: ({
       path = '',
       method = 'POST',

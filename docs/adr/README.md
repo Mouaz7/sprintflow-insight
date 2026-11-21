@@ -36,3 +36,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0031 – Task duplicate suggestions and flow control signals](0031-duplicate-and-flow-signals.md)
 - [0032 – Project automation and bounded rule execution](0032-automation-rules.md)
 - [0033 – Collaborative task and retrospective text](0033-shared-text-crdt.md)
+- [0034 – Organizations, teams and row-level security](0034-organization-scope.md)

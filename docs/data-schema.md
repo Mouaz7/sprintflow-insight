@@ -64,3 +64,9 @@ B19 (V27) adds `import_batch` with project/request-hash uniqueness and immutable
 ## V31 — collaborative text
 
 `crdt_doc` belongs to exactly one task or retrospective entry in the same project. Composite foreign keys enforce that relationship and cascade on permanent deletion. The document carries an immutable seed, current revision, compressed snapshot revision and latest projected revision. `crdt_update` stores the ordered tail. `crdt_receipt` retains each update UUID and its SHA-256 hash after compaction to make reconnects idempotent. See [the collaboration protocol](collaboration.md).
+
+## V32 — organizations and teams
+
+`organization_member` links account IDs to organization roles. The migration assigns existing projects to the project owner's personal organization and reserves a legacy organization for unlinked historical data. The projects table enforces uniqueness on `(organization_id, name)`.
+
+`team_member` references both its team and its organization membership using composite keys. `organization_invite` holds only a digest of its bearer secret and enforces a database expiry. `organization_template` holds the starter layout and its default description. The four scoped tables apply RLS using the transaction's organization ID. [Organization scope ADR](adr/0034-organization-scope.md).
