@@ -385,3 +385,7 @@ Run the browser flow with `npm --prefix frontend/e2e test -- tests/organizations
 `TotpCodesTest` checks RFC 6238 Appendix B, the adjacent-step tolerance and replay rejection. `MfaHttpIntegrationTest` checks password-only sessions, encrypted setup, recovery code use, account and challenge rate limits, organization roles and the setup path for affected members. The Playwright flow generates its authenticator code independently from the displayed setup key, verifies the locally rendered QR element, and runs axe before and after first-factor sign-in.
 
 Run `npm --prefix frontend/e2e test -- tests/two-factor.e2e.ts` against the application to repeat the browser verification.
+
+## Offline workspace
+
+`OfflineOperationIntegrationTest` exercises task revision checks, duplicate receipts, all project roles and archive state against PostgreSQL. The frontend tests use an isolated IndexedDB implementation and MSW. Run `npm --prefix frontend/e2e test -- tests/offline.e2e.ts` against the packaged application to check the service worker, reload without connectivity, both conflict actions, queued writes and shared-text convergence. The Chromium flow also runs axe on the cached workspace.

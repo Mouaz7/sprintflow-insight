@@ -23,6 +23,8 @@ import {
   validPoints,
 } from '../../shared/lib/formValues';
 import { useDraftProject } from '../../shared/lib/useDraftProject';
+import { offlineText } from '../../shared/offline/i18n';
+import { enqueueTaskMove } from '../../shared/offline/operations';
 import { useConfirm } from '../../shared/ui/ui';
 import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { tasksText } from './i18n';
@@ -50,6 +52,7 @@ export function useTaskBoard({
   const confirm = useConfirm();
   const { language } = useLanguage();
   const t = useT(tasksText);
+  const offline = useT(offlineText);
   const draft = useDraftProject(projectId, language);
   const [panelOpen, setPanelOpen] = useState(false);
   const [savedTitle, setSavedTitle] = useState('');
@@ -297,6 +300,15 @@ export function useTaskBoard({
     if (!beginTaskChange(task.id)) return false;
     setMessage('');
     try {
+      if (
+        !navigator.onLine &&
+        changes.status &&
+        Object.keys(changes).length === 1
+      ) {
+        const queued = await enqueueTaskMove(queryClient, task, changes.status);
+        if (!queued) setMessage(offline('unavailable'));
+        return queued;
+      }
       const saved = await api<Task>(`/tasks/${task.id}`, {
         method: 'PUT',
         headers: { 'If-Match': `"${task.version}"` },

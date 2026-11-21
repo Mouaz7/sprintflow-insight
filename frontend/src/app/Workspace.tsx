@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   Link,
   Navigate,
@@ -39,6 +46,8 @@ import {
 import { appText } from './i18n';
 import { NotificationBell } from './NotificationBell';
 import { useSession } from './SessionGate';
+
+const OfflineBanner = lazy(() => import('../features/offline/OfflineBanner'));
 
 export const workspaceViews: readonly WorkspaceView[] = [
   'overview',
@@ -423,6 +432,12 @@ function WorkspaceShell() {
           }
         >
           <main className="workspace-content" id="workspace-page" tabIndex={-1}>
+            <Suspense fallback={null}>
+              <OfflineBanner
+                key={session.user.id}
+                accountId={session.user.id}
+              />
+            </Suspense>
             <Notice error={preferenceError} />
             {session.user.mfaEnrollmentRequired && (
               <section className="onboarding-banner">

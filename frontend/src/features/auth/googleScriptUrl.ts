@@ -9,9 +9,9 @@ type TrustedTypesFactory = {
 };
 const policies = new WeakMap<TrustedTypesFactory, ScriptUrlPolicy>();
 
-/** The application's only script-URL policy accepts exactly the official live GIS loader. */
+/** The Google script-URL policy accepts exactly the official live GIS loader. */
 export function googleScriptUrl(): string {
-  const factory = (window as Window & { trustedTypes?: TrustedTypesFactory })
+  const factory = (window as unknown as { trustedTypes?: TrustedTypesFactory })
     .trustedTypes;
   if (!factory) return GOOGLE_CLIENT;
   let policy = policies.get(factory);

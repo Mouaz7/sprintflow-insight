@@ -46,7 +46,7 @@ class SecurityConfigurationTest {
     assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy"))
         .contains(
             "require-trusted-types-for 'script'",
-            "trusted-types sprintflow-google goog#html 'allow-duplicates'",
+            "trusted-types sprintflow-google sprintflow-pwa goog#html 'allow-duplicates'",
             "script-src 'none'");
     assertThat(publicResponse.getHeaders().getFirst("Content-Security-Policy-Report-Only"))
         .isNull();
