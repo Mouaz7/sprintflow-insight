@@ -65,6 +65,33 @@ export const automationText = defineLexicon({
     SKIPPED: 'Skipped',
     FAILED: 'Failed',
     github: 'GitHub webhook',
+    githubStatusRules: 'GitHub status rules',
+    reviewOnOpen: 'Move to Review when a pull request opens',
+    doneOnMerge: 'Move to Done when a pull request merges',
+    saveGithubStatusRules: 'Save GitHub rules',
+    githubDeliveries: 'GitHub deliveries',
+    noGithubDeliveries: 'No GitHub deliveries yet.',
+    githubPush: 'Push',
+    githubPullRequest: 'Pull request',
+    githubAction: ({
+      action,
+    }: {
+      action: 'opened' | 'reopened' | 'closed' | 'edited' | 'synchronize';
+    }) =>
+      ({
+        opened: 'Opened',
+        reopened: 'Reopened',
+        closed: 'Closed',
+        edited: 'Edited',
+        synchronize: 'Updated',
+      })[action],
+    githubDeliveryCounts: ({
+      linked,
+      moved,
+    }: {
+      linked: number;
+      moved: number;
+    }) => `${linked} ${linked === 1 ? 'task' : 'tasks'} linked, ${moved} moved`,
     repository: 'GitHub repository',
     configure: 'Generate webhook',
     rotate: 'Replace webhook',
@@ -75,7 +102,7 @@ export const automationText = defineLexicon({
     secret: 'Webhook secret',
     hideSecret: 'Hide secret',
     hookHelp:
-      'Use this URL for a GitHub pull request webhook with JSON content. Put the task key in the pull request title or branch.',
+      'Use this URL for GitHub pull request and push webhooks with JSON content. Add the task key to a pull request title, branch name or commit message.',
     secretHelp: 'Copy the secret to GitHub now. It is displayed once.',
     toDo: 'To Do',
     inProgress: 'In Progress',
@@ -146,6 +173,33 @@ export const automationText = defineLexicon({
     SKIPPED: 'Hoppades över',
     FAILED: 'Misslyckades',
     github: 'GitHub-webhook',
+    githubStatusRules: 'GitHub-regler för status',
+    reviewOnOpen: 'Flytta till Granskning när en pull request öppnas',
+    doneOnMerge: 'Flytta till Klart när en pull request slås ihop',
+    saveGithubStatusRules: 'Spara GitHub-regler',
+    githubDeliveries: 'GitHub-leveranser',
+    noGithubDeliveries: 'Inga GitHub-leveranser än.',
+    githubPush: 'Push',
+    githubPullRequest: 'Pull request',
+    githubAction: ({
+      action,
+    }: {
+      action: 'opened' | 'reopened' | 'closed' | 'edited' | 'synchronize';
+    }) =>
+      ({
+        opened: 'Öppnad',
+        reopened: 'Öppnad igen',
+        closed: 'Stängd',
+        edited: 'Redigerad',
+        synchronize: 'Uppdaterad',
+      })[action],
+    githubDeliveryCounts: ({
+      linked,
+      moved,
+    }: {
+      linked: number;
+      moved: number;
+    }) => `${linked} uppgifter länkade, ${moved} flyttade`,
     repository: 'GitHub-repo',
     configure: 'Skapa webhook',
     rotate: 'Ersätt webhook',
@@ -156,7 +210,7 @@ export const automationText = defineLexicon({
     secret: 'Webhook-hemlighet',
     hideSecret: 'Dölj hemligheten',
     hookHelp:
-      'Använd adressen för en GitHub-webhook för pull requests med JSON-innehåll. Skriv uppgiftsnyckeln i PR-titeln eller grennamnet.',
+      'Använd adressen för GitHub-webhooks för pull requests och push med JSON-innehåll. Skriv uppgiftsnyckeln i PR-titeln, grennamnet eller commitmeddelandet.',
     secretHelp: 'Kopiera hemligheten till GitHub nu. Den visas en gång.',
     toDo: 'Att göra',
     inProgress: 'Pågår',

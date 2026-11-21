@@ -96,7 +96,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "410 kB",
+      "limit": "412 kB",
       "gzip": true
     },
     {
@@ -223,6 +223,12 @@
       "name": "Automation route (gzip)",
       "path": "dist/assets/AutomationView-*.js",
       "limit": "10 kB",
+      "gzip": true
+    },
+    {
+      "name": "Lazy task GitHub links panel (gzip)",
+      "path": "dist/assets/TaskGithubLinks-*.js",
+      "limit": "1.2 kB",
       "gzip": true
     }
   ]

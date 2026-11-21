@@ -166,11 +166,8 @@ values(?,?,?,?,?,?,?,?) on conflict(rule_id,task_id,event_id) do nothing
             changes.setLabels(labels);
           }
           case MOVE -> {
-            if (value.equals(task.getStatus())) return "The task is already in this column.";
-            if ("Done".equals(value)
-                && task.getChecklist().stream()
-                    .anyMatch(step -> step.required() && !step.completed()))
-              return "Required checklist steps are incomplete.";
+            String skipped = moveBlocked(task, value);
+            if (skipped != null) return skipped;
             changes.setStatus(value);
           }
           default -> throw new IllegalStateException("Expected a task update action.");
@@ -194,7 +191,15 @@ values(?,?,?,?,?,?,?,?) on conflict(rule_id,task_id,event_id) do nothing
     return List.copyOf(expanded);
   }
 
-  private static Task copy(Task task) {
+  static String moveBlocked(Task task, String status) {
+    if (status.equals(task.getStatus())) return "The task is already in this column.";
+    if ("Done".equals(status)
+        && task.getChecklist().stream().anyMatch(step -> step.required() && !step.completed()))
+      return "Required checklist steps are incomplete.";
+    return null;
+  }
+
+  static Task copy(Task task) {
     var result = new Task(task.getTitle(), task.getDescription(), task.getStatus());
     result.setProjectId(task.getProjectId());
     result.setSprintId(task.getSprintId());

@@ -136,7 +136,17 @@ if field 42 greater-than "3"
 then comment "Ready for review."
 ```
 
-`when overdue` kontrolleras kvartvis. `when pull-request-merged` använder projektets GitHub-webhook. Skapa en webhook för ditt `owner/repository` och kopiera adress och engångshemlighet till GitHubs webhookinställningar. Välj JSON och händelsen Pull requests. Skriv en uppgiftsnyckel, exempelvis `SF-123`, i PR-titeln eller grennamnet. [Webhooks i GitHub](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks) och [ADR 0032](adr/0032-automation-rules.md).
+`when overdue` kontrolleras kvartvis. `when pull-request-merged` använder samma projektwebhook som GitHub-integrationen. [ADR 0032](adr/0032-automation-rules.md).
+
+## GitHub-länkar (B10)
+
+Öppna **Automationsregler → GitHub-webhook** som projektägare eller administratör. Ange `owner/repository` och skapa en webhook. Kopiera adressen och engångshemligheten till repots webhookinställningar i GitHub. Välj innehållstyp `application/json` och händelserna **Pull requests** och **Pushes**. Hemligheten kan ersättas genom att generera en ny webhook. Uppdatera då både adress och hemlighet i GitHub. [Skapa en webhook i GitHub](https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks).
+
+Skriv en uppgiftsnyckel som `SF-123` i PR-titeln, grennamnet eller commitmeddelandet. Öppna **GitHub-länkar** på uppgiftskortet för att se PR:er, commits och aktuell PR-status. Projektets uppgiftsnyckel och repository måste stämma för att länken ska sparas.
+
+Under **GitHub-regler för status** kan du aktivera **Granskning** när en PR öppnas och **Klart** när en PR slås ihop. Reglerna ändras utan att webhooken roteras. En färdig uppgift flyttas inte tillbaka till Granskning. Obligatoriska checklistesteg måste vara klara för övergången till Klart.
+
+**GitHub-leveranser** visar de hundra senaste verifierade leveranserna med antal länkade och flyttade uppgifter. Dubbletter ändrar varken uppgiften eller loggen. Arkiverade projekt visar befintliga länkar och loggen för behöriga användare. Aktivera projektet igen för att ta emot nya uppdateringar. [ADR 0037](adr/0037-github-task-links.md).
 
 ## Adresser per vy (A6)
 

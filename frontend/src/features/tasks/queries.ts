@@ -9,6 +9,16 @@ export type Attachment = {
   createdAt: string;
 };
 
+type GithubTaskLink = {
+  kind: 'PULL_REQUEST' | 'COMMIT';
+  repository: string;
+  key: string;
+  url: string;
+  title: string;
+  state: 'OPEN' | 'CLOSED' | 'MERGED' | null;
+  linkedAt: string;
+};
+
 // Task-level data; the components that read it know the task, not its project.
 export const taskKeys = {
   attachments: (taskId: number) => ['task', taskId, 'attachments'] as const,
@@ -25,4 +35,14 @@ export const commentsQuery = (taskId: number) =>
   queryOptions({
     queryKey: taskKeys.comments(taskId),
     queryFn: () => api<TaskComment[]>(`/tasks/${taskId}/comments`),
+  });
+
+export const githubTaskLinksQuery = (projectId: number, taskId: number) =>
+  queryOptions({
+    queryKey: ['task', taskId, 'github-links'],
+    queryFn: () =>
+      api<GithubTaskLink[]>(
+        `/projects/${projectId}/github/tasks/${taskId}/links`,
+      ),
+    refetchInterval: 15_000,
   });

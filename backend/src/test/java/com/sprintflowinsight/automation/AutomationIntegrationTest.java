@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
@@ -210,7 +211,7 @@ class AutomationIntegrationTest extends ApiIntegrationTest {
         .andExpect(jsonPath("$.secret").doesNotExist());
     String payload =
         """
-        {"action":"closed","repository":{"full_name":"owner/repo"},"pull_request":{
+        {"action":"closed","number":17,"repository":{"full_name":"owner/repo"},"pull_request":{
            "id":9001,"merged":true,"title":"Finish %s-1"}}
         """
             .formatted(project.getKey());
@@ -228,10 +229,12 @@ class AutomationIntegrationTest extends ApiIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(incorrect))
         .andExpect(status().isUnauthorized());
+    String delivery = UUID.randomUUID().toString();
     for (int i = 0; i < 2; i++) {
       mvc.perform(
               post(hook)
                   .header("X-GitHub-Event", "pull_request")
+                  .header("X-GitHub-Delivery", delivery)
                   .header("X-Hub-Signature-256", sign(secret, payload))
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(payload))
@@ -249,6 +252,160 @@ class AutomationIntegrationTest extends ApiIntegrationTest {
                     .containsExactly("APPLIED"));
     assertThat(jdbc.queryForObject("select labels from task where id=?", String.class, taskId))
         .contains("merged");
+  }
+
+  @Test
+  void signedDeliveriesLinkPullRequestsAndCommitsAndMoveTasksOnce() throws Exception {
+    var owner = user();
+    var project = project(owner, null);
+    var settings = connectGithub(project, owner);
+    String base = endpoint(project) + "/github";
+    var task = createTask(project, owner);
+    long taskId = task.path("id").asLong();
+    String key = task.path("key").asText();
+    mvc.perform(
+            put(base + "/rules")
+                .with(as(owner))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reviewOnOpen\":true,\"doneOnMerge\":true}"))
+        .andExpect(status().isNoContent());
+    mvc.perform(get(base).with(as(owner)))
+        .andExpect(
+            jsonPath("$.endpointId").value(settings.path("settings").path("endpointId").asText()))
+        .andExpect(jsonPath("$.reviewOnOpen").value(true));
+
+    String opened =
+        """
+        {"action":"opened","number":71,"repository":{"full_name":"owner/repo"},
+         "pull_request":{"id":7001,"title":"Start change","head":{"ref":"work/%s"}}}
+        """
+            .formatted(key);
+    UUID first = UUID.randomUUID();
+    deliver(settings, "pull_request", first, opened);
+    deliver(settings, "pull_request", first, opened.replace("Start change", "Duplicate UUID"));
+    deliver(settings, "pull_request", UUID.randomUUID(), opened);
+    assertThat(taskStatus(taskId)).isEqualTo("Review");
+
+    String hash = "a123456789".repeat(4);
+    String pushed =
+        """
+        {"ref":"refs/heads/main","repository":{"full_name":"owner/repo"},
+         "commits":[{"id":"%s","message":"Refine %s","url":"https://elsewhere.invalid/"}]}
+        """
+            .formatted(hash, key);
+    deliver(settings, "push", UUID.randomUUID(), pushed);
+    String merged =
+        opened
+            .replace("\"opened\"", "\"closed\"")
+            .replace("\"id\":7001", "\"id\":7001,\"merged\":true");
+    deliver(settings, "pull_request", UUID.randomUUID(), merged);
+    assertThat(taskStatus(taskId)).isEqualTo("Done");
+    deliver(
+        settings,
+        "pull_request",
+        UUID.randomUUID(),
+        opened.replace("Start change", "Late arrival"));
+    assertThat(taskStatus(taskId)).isEqualTo("Done");
+    String links = links(project, taskId);
+    mvc.perform(get(links).with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].kind").value("COMMIT"))
+        .andExpect(jsonPath("$[0].url").value("https://github.com/owner/repo/commit/" + hash))
+        .andExpect(jsonPath("$[1].kind").value("PULL_REQUEST"))
+        .andExpect(jsonPath("$[1].state").value("MERGED"));
+    mvc.perform(get(base + "/deliveries").with(as(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(4));
+    assertThat(
+            jdbc.queryForObject(
+                "select sum(moved_tasks) from github_delivery where project_id=?",
+                Long.class,
+                project.getId()))
+        .isEqualTo(2);
+  }
+
+  @Test
+  void githubManagementAndTaskLinksUseProjectRolesAndArchiveGuards() throws Exception {
+    var owner = user();
+    var project = project(owner, null);
+    var settings = connectGithub(project, owner);
+    var task = createTask(project, owner);
+    String base = endpoint(project) + "/github";
+    String links = links(project, task.path("id").asLong());
+    for (String role : List.of("Owner", "Admin", "Member", "Viewer", "Outsider")) {
+      var caller = "Owner".equals(role) ? owner : user();
+      if (List.of("Admin", "Member", "Viewer").contains(role)) member(project, caller, role);
+      boolean canManage = List.of("Owner", "Admin").contains(role);
+      mvc.perform(get(base + "/deliveries").with(as(caller)))
+          .andExpect(status().is(canManage ? 200 : 403));
+      mvc.perform(
+              put(base + "/rules")
+                  .with(as(caller))
+                  .with(csrf())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"reviewOnOpen\":true,\"doneOnMerge\":true}"))
+          .andExpect(status().is(canManage ? 204 : 403));
+      mvc.perform(get(links).with(as(caller)))
+          .andExpect(status().is("Outsider".equals(role) ? 403 : 200));
+    }
+    var other = project(owner, null);
+    mvc.perform(get(links(project, createTask(other, owner).path("id").asLong())).with(as(owner)))
+        .andExpect(status().isNotFound());
+    jdbc.update("update projects set archived_at=now() where id=?", project.getId());
+    mvc.perform(
+            put(base + "/rules")
+                .with(as(owner))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reviewOnOpen\":false,\"doneOnMerge\":false}"))
+        .andExpect(status().isConflict());
+    mvc.perform(get(links).with(as(owner))).andExpect(status().isOk());
+    mvc.perform(get(base + "/deliveries").with(as(owner))).andExpect(status().isOk());
+    deliver(
+        settings,
+        "pull_request",
+        UUID.randomUUID(),
+        """
+        {"action":"opened","number":72,"repository":{"full_name":"owner/repo"},
+         "pull_request":{"id":7002,"title":"%s"}}
+        """
+            .formatted(task.path("key").asText()));
+    assertThat(taskStatus(task.path("id").asLong())).isEqualTo("To Do");
+  }
+
+  private JsonNode connectGithub(Project project, User owner) throws Exception {
+    return json.readTree(
+        mvc.perform(
+                put(endpoint(project) + "/github")
+                    .with(as(owner))
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"repository\":\"owner/repo\"}"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString());
+  }
+
+  private void deliver(JsonNode settings, String event, UUID id, String payload) throws Exception {
+    mvc.perform(
+            post("/api/automation/github/" + settings.path("settings").path("endpointId").asText())
+                .header("X-GitHub-Event", event)
+                .header("X-GitHub-Delivery", id.toString())
+                .header("X-Hub-Signature-256", sign(settings.path("secret").asText(), payload))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+        .andExpect(status().isNoContent());
+  }
+
+  private String taskStatus(long taskId) {
+    return jdbc.queryForObject("select status from task where id=?", String.class, taskId);
+  }
+
+  private static String links(Project project, long taskId) {
+    return "/api/projects/" + project.getId() + "/github/tasks/" + taskId + "/links";
   }
 
   private long createRule(Project p, User actor, String name, String source) throws Exception {

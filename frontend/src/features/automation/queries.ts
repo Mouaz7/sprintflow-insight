@@ -20,8 +20,21 @@ export type Run = {
   detail: string;
   executedAt: string;
 };
-export type GithubSettings = { endpointId: string; repository: string };
+export type GithubRules = { reviewOnOpen: boolean; doneOnMerge: boolean };
+export type GithubSettings = GithubRules & {
+  endpointId: string;
+  repository: string;
+};
 export type IssuedGithub = { settings: GithubSettings; secret: string };
+export type GithubDelivery = {
+  id: string;
+  repository: string;
+  event: 'pull_request' | 'push';
+  action: 'opened' | 'reopened' | 'closed' | 'edited' | 'synchronize' | null;
+  linkedTasks: number;
+  movedTasks: number;
+  receivedAt: string;
+};
 
 const base = (projectId: number) => `/projects/${projectId}/automation`;
 const scope = (projectId: number) => [...projectScope(projectId), 'automation'];
@@ -41,6 +54,13 @@ export const githubQuery = (projectId: number) =>
     queryKey: [...scope(projectId), 'github'],
     queryFn: async () =>
       (await api<GithubSettings>(`${base(projectId)}/github`)) ?? null,
+  });
+export const githubDeliveriesQuery = (projectId: number) =>
+  queryOptions({
+    queryKey: [...scope(projectId), 'github-deliveries'],
+    queryFn: () =>
+      api<GithubDelivery[]>(`${base(projectId)}/github/deliveries`),
+    refetchInterval: 15_000,
   });
 
 export function useAutomationActions(projectId: number) {
@@ -79,6 +99,14 @@ export function useAutomationActions(projectId: number) {
         }),
       onSuccess: changed,
       gcTime: 0,
+    }),
+    githubRules: useMutation({
+      mutationFn: (draft: GithubRules) =>
+        api<unknown>(`${base(projectId)}/github/rules`, {
+          method: 'PUT',
+          body: JSON.stringify(draft),
+        }),
+      onSuccess: changed,
     }),
     disconnect: useMutation({
       mutationFn: () =>

@@ -3231,14 +3231,68 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
         '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/github/rules:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    put:
+      summary: Update GitHub task status rules without rotating the webhook secret
+      description: Owner or Admin of an active project with a configured GitHub repository.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GithubStatusRules' }
+      responses:
+        '204': { description: Rules updated }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/automation/github/deliveries:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: List the latest 100 authenticated GitHub deliveries for the project
+      description: Owner or Admin, including archived projects. Only delivery metadata and aggregate counts are returned.
+      responses:
+        '200':
+          description: Recent deliveries newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GithubDelivery' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/github/tasks/{taskId}/links:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - { name: taskId, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: List a task's latest 100 linked GitHub pull requests and commits
+      description: Project read access required. Archived projects remain readable.
+      responses:
+        '200':
+          description: Links newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GithubTaskLink' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/automation/github/{endpointId}:
     post:
-      summary: Accept a signed GitHub pull request event
-      description: Authenticates the raw JSON body by HMAC-SHA-256. Valid events act only on the configured repository and referenced task keys.
+      summary: Accept a signed GitHub pull request or push event
+      description: Authenticates the raw JSON body by HMAC-SHA-256. Pull request and push events need a delivery UUID and act only on the configured repository and referenced task keys. Repeated delivery UUIDs and identical payloads are ignored.
       security: []
       parameters:
       - { name: endpointId, in: path, required: true, schema: { type: string, format: uuid } }
       - { name: X-GitHub-Event, in: header, required: true, schema: { type: string } }
+      - { name: X-GitHub-Delivery, in: header, schema: { type: string, format: uuid }, description: Required for pull_request and push events }
       - { name: X-Hub-Signature-256, in: header, required: true, schema: { type: string } }
       requestBody:
         required: true
@@ -3247,7 +3301,7 @@ paths:
           application/json:
             schema: { type: object }
       responses:
-        '204': { description: Delivery accepted or irrelevant to this trigger }
+        '204': { description: Delivery processed, previously accepted, or irrelevant }
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '413': { $ref: '#/components/responses/Error' }
@@ -3588,11 +3642,41 @@ components:
         executedAt: { type: string, format: date-time }
     AutomationGithubSettings:
       type: object
-      required: [endpointId, repository, createdAt]
+      required: [endpointId, repository, createdAt, reviewOnOpen, doneOnMerge]
       properties:
         endpointId: { type: string, format: uuid }
         repository: { type: string }
         createdAt: { type: string, format: date-time }
+        reviewOnOpen: { type: boolean }
+        doneOnMerge: { type: boolean }
+    GithubStatusRules:
+      type: object
+      required: [reviewOnOpen, doneOnMerge]
+      properties:
+        reviewOnOpen: { type: boolean }
+        doneOnMerge: { type: boolean }
+    GithubDelivery:
+      type: object
+      required: [id, repository, event, action, linkedTasks, movedTasks, receivedAt]
+      properties:
+        id: { type: string, format: uuid }
+        repository: { type: string }
+        event: { type: string, enum: [pull_request, push] }
+        action: { type: string, nullable: true }
+        linkedTasks: { type: integer, minimum: 0 }
+        movedTasks: { type: integer, minimum: 0 }
+        receivedAt: { type: string, format: date-time }
+    GithubTaskLink:
+      type: object
+      required: [kind, repository, key, url, title, state, linkedAt]
+      properties:
+        kind: { type: string, enum: [PULL_REQUEST, COMMIT] }
+        repository: { type: string }
+        key: { type: string, description: Pull request number or commit SHA }
+        url: { type: string, format: uri }
+        title: { type: string }
+        state: { type: string, enum: [OPEN, CLOSED, MERGED], nullable: true }
+        linkedAt: { type: string, format: date-time }
     SharedTextSnapshot:
       type: object
       required: [active, editable, initialText, maxLength, revision, projectionRevision, snapshotRevision, snapshot, updates]

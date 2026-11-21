@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 import { clearCsrfToken } from '../../api/client';
 import { renderWithProviders } from '../../test/render';
 import AutomationView from './AutomationView';
-import type { Draft, Rule } from './queries';
+import type { Draft, GithubRules, Rule } from './queries';
 
 const project = {
   id: 1,
@@ -81,4 +81,45 @@ it('shows the log to an owner of an archived project without write controls', as
   expect(
     screen.queryByRole('button', { name: 'New rule' }),
   ).not.toBeInTheDocument();
+});
+
+it('updates GitHub status rules on the existing connection and reads delivery history', async () => {
+  let configuration: GithubRules = { reviewOnOpen: false, doneOnMerge: false };
+  server.use(
+    http.get('/api/projects/1/automation/github', () =>
+      HttpResponse.json({
+        endpointId: 'registered-endpoint',
+        repository: 'owner/repo',
+        ...configuration,
+      }),
+    ),
+    http.put('/api/projects/1/automation/github/rules', async ({ request }) => {
+      configuration = (await request.json()) as GithubRules;
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.get('/api/projects/1/automation/github/deliveries', () =>
+      HttpResponse.json([
+        {
+          id: 'delivery',
+          repository: 'owner/repo',
+          event: 'push',
+          action: null,
+          linkedTasks: 1,
+          movedTasks: 0,
+          receivedAt: '2026-11-21T12:00:00Z',
+        },
+      ]),
+    ),
+  );
+  renderWithProviders(<AutomationView project={project} />);
+  const disclosure = await screen.findByText('GitHub webhook', { exact: true });
+  fireEvent.click(disclosure);
+  fireEvent.click(
+    await screen.findByRole('checkbox', { name: /Move to Review/ }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Save GitHub rules' }));
+  await waitFor(() =>
+    expect(configuration).toEqual({ reviewOnOpen: true, doneOnMerge: false }),
+  );
+  expect(await screen.findByText(/1 task linked, 0 moved/)).toBeVisible();
 });
