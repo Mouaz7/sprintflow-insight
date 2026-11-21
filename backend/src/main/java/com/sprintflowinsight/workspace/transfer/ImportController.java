@@ -1,5 +1,6 @@
 package com.sprintflowinsight.workspace.transfer;
 
+import com.sprintflowinsight.common.audit.AuditIntegrityService;
 import com.sprintflowinsight.common.audit.AuditService;
 import com.sprintflowinsight.common.error.ApiException;
 import com.sprintflowinsight.workspace.project.*;
@@ -14,11 +15,17 @@ public class ImportController {
   private final ImportService service;
   private final ProjectAccessService access;
   private final AuditService audit;
+  private final AuditIntegrityService integrity;
 
-  public ImportController(ImportService service, ProjectAccessService access, AuditService audit) {
+  public ImportController(
+      ImportService service,
+      ProjectAccessService access,
+      AuditService audit,
+      AuditIntegrityService integrity) {
     this.service = service;
     this.access = access;
     this.audit = audit;
+    this.integrity = integrity;
   }
 
   @PostMapping("/imports/preview")
@@ -52,5 +59,12 @@ public class ImportController {
     if (size < 1 || size > 100 || before != null && before < 1)
       throw ApiException.badRequest("Choose 1–100 audit rows and a positive cursor.");
     return audit.page(projectId, before, size);
+  }
+
+  @GetMapping("/audit/verify")
+  public AuditIntegrityService.Verification verifyAudit(
+      @PathVariable Long projectId, HttpSession session) {
+    access.require(projectId, session, AccessContext.Need.MANAGE_ARCHIVED);
+    return integrity.verify(projectId);
   }
 }

@@ -1,6 +1,12 @@
 import { defineLexicon } from '../../shared/i18n/lexicon';
 export const dataText = defineLexicon({
   EN: {
+    verifyAudit: 'Verify audit history',
+    auditVerified: ({ count }: { count: number }) =>
+      `${count} audit events verified.`,
+    auditMismatch: ({ count }: { count: number }) =>
+      `Audit proof failed at position ${count}.`,
+    auditAnchor: 'Daily anchor',
     title: 'Import & audit',
     details: 'Mapped values',
     description:
@@ -62,6 +68,12 @@ export const dataText = defineLexicon({
     completedAt: 'Completed date',
   },
   SV: {
+    verifyAudit: 'Verifiera granskningsloggen',
+    auditVerified: ({ count }: { count: number }) =>
+      `${count} granskningshändelser verifierade.`,
+    auditMismatch: ({ count }: { count: number }) =>
+      `Granskningsbeviset stämmer inte vid position ${count}.`,
+    auditAnchor: 'Dagligt ankare',
     title: 'Import och granskning',
     details: 'Kopplade värden',
     description:

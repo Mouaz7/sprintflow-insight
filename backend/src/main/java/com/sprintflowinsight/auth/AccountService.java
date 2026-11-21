@@ -162,8 +162,12 @@ public class AccountService {
     }
     if (!previousEmail.equals(email)) {
       userEmails.moveReferences(previousEmail, email);
-      authenticationSessions.signIn(
-          email, servletRequest, servletResponse, sessionUser.mfaVerified());
+      authenticationSessions.saveIdentity(
+          email,
+          servletRequest,
+          servletResponse,
+          sessionUser.mfaVerified(),
+          sessionUser.authenticatedAt().toEpochMilli());
     }
     return ResponseEntity.ok(
         signIn.withWorkspaceRequirement(userRepository.save(user), sessionUser.mfaVerified()));

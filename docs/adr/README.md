@@ -38,3 +38,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0033 – Collaborative task and retrospective text](0033-shared-text-crdt.md)
 - [0034 – Organizations, teams and row-level security](0034-organization-scope.md)
 - [0035 – Authenticator codes and organization sign-in requirements](0035-two-factor-authentication.md)
+- [0036 – Passkeys and audit integrity](0036-passkeys-and-audit-integrity.md)

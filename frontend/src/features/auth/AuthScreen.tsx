@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { useMatch, useNavigate, useSearchParams } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../../api/client';
 import type { SignInResult, User } from '../../api/contracts';
@@ -11,6 +11,8 @@ import { LanguageSelector } from '../../shared/ui/LanguageSelector';
 import { Notice } from '../../shared/ui/ui';
 import { GoogleSignIn } from './GoogleSignIn';
 import { authText } from './i18n';
+
+const PasskeySignIn = lazy(() => import('./PasskeySignIn'));
 
 type AuthMode = 'login' | 'register' | 'reset' | 'new-password' | 'verify';
 export function AuthScreen({
@@ -328,6 +330,11 @@ export function AuthScreen({
                 )}
               </button>
             </form>
+            {mode === 'login' && (
+              <Suspense>
+                <PasskeySignIn onSignedIn={onPrimary} />
+              </Suspense>
+            )}
             {(mode === 'login' || mode === 'register') && (
               <>
                 <div className="divider">

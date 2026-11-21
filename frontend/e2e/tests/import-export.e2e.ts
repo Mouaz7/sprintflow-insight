@@ -61,6 +61,9 @@ test('previews, maps and atomically imports CSV, reads audit and downloads a pri
       .getByRole('region', { name: 'Administrative audit log' })
       .getByText('IMPORT_COMPLETED'),
   ).toBeVisible();
+  await page.getByRole('button', { name: 'Verify audit history' }).click();
+  await expect(page.getByText(/\d+ audit events verified\./)).toBeVisible();
+  await expectAccessible(page, 'audit-integrity');
   // A real browser download must use the authenticated POST and produce a readable JSON ZIP.
   await page.goto('/profile');
   await page.getByRole('tab', { name: 'Settings', exact: true }).click();

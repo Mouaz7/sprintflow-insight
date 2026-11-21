@@ -143,6 +143,111 @@ paths:
       summary: Invalidate the current session
       responses:
         '204': { description: Signed out }
+  /api/auth/passkeys/config:
+    get:
+      security: []
+      summary: Read the configured WebAuthn origin and passkey availability
+      responses:
+        '200':
+          description: One configured secure origin for WebAuthn
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PasskeyConfiguration' }
+  /api/auth/passkeys:
+    get:
+      summary: List the authenticated account's passkeys
+      responses:
+        '200':
+          description: Credential summaries without key material
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PasskeyCredential' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/passkeys/{id}:
+    delete:
+      summary: Remove a passkey owned by the recently authenticated account
+      parameters:
+      - { in: path, name: id, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Passkey removed }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/auth/passkeys/registration/options:
+    post:
+      summary: Begin passkey enrollment for the signed-in account
+      description: Requires sign-in within the last ten minutes. Options expire after two minutes in this session.
+      responses:
+        '200':
+          description: JSON representation of WebAuthn PublicKeyCredentialCreationOptions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebAuthnOptions' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/auth/passkeys/registration/complete:
+    post:
+      summary: Verify attestation and store a passkey for the signed-in account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, credential]
+              properties:
+                label: { type: string, minLength: 1, maxLength: 80 }
+                credential: { $ref: '#/components/schemas/WebAuthnCredential' }
+      responses:
+        '201':
+          description: Registered credential summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PasskeyCredential' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/auth/passkeys/login/options:
+    post:
+      security: []
+      summary: Begin passkey sign-in using a discoverable credential
+      description: Options expire after two minutes in this session. A CSRF token is required.
+      responses:
+        '200':
+          description: JSON representation of WebAuthn PublicKeyCredentialRequestOptions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebAuthnOptions' }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/auth/passkeys/login/complete:
+    post:
+      security: []
+      summary: Verify a passkey assertion and create an authenticated session
+      description: Requires the same session and CSRF token as the options request. One attempt consumes the challenge. User verification is required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential: { $ref: '#/components/schemas/WebAuthnCredential' }
+      responses:
+        '200': { description: User and authenticated session }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /api/auth/me:
     get:
       summary: Return the signed-in user
@@ -2934,6 +3039,21 @@ paths:
         '409': { $ref: '#/components/responses/Error' }
         '413': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/audit/verify:
+    parameters:
+    - { in: path, name: projectId, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: Verify the retained administrative audit chain and latest daily anchor
+      description: Owner or Admin, including archived projects. A completed integrity check returns 200 even if it detects a broken chain.
+      responses:
+        '200':
+          description: Integrity result for the retained chain in one database snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditVerification' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/account/export:
     post:
       summary: Export the authenticated account as JSON ZIP
@@ -3258,6 +3378,56 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    PasskeyConfiguration:
+      type: object
+      required: [available, origin]
+      properties:
+        available: { type: boolean }
+        origin: { type: string, nullable: true }
+    PasskeyCredential:
+      type: object
+      required: [id, label, created, lastUsed]
+      properties:
+        id: { type: string, description: Base64url credential ID }
+        label: { type: string }
+        created: { type: string, format: date-time }
+        lastUsed: { type: string, format: date-time, nullable: true }
+    WebAuthnOptions:
+      type: object
+      required: [challenge]
+      additionalProperties: true
+      properties:
+        challenge: { type: string, description: Base64url challenge }
+        userVerification: { type: string, enum: [required] }
+      description: For creation, userVerification is carried under authenticatorSelection.
+    WebAuthnCredential:
+      type: object
+      required: [id, rawId, type, response]
+      additionalProperties: true
+      properties:
+        id: { type: string }
+        rawId: { type: string }
+        type: { type: string, enum: [public-key] }
+        response: { type: object, additionalProperties: true }
+      description: Browser PublicKeyCredential.toJSON() representation.
+    AuditVerification:
+      type: object
+      required: [valid, checkedEvents, floorPosition, headPosition, headHash, invalidPosition, dailyAnchor]
+      properties:
+        valid: { type: boolean }
+        checkedEvents: { type: integer, format: int64 }
+        floorPosition: { type: integer, format: int64 }
+        headPosition: { type: integer, format: int64 }
+        headHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        invalidPosition: { type: integer, format: int64, nullable: true }
+        dailyAnchor:
+          type: object
+          nullable: true
+          required: [day, position, hash]
+          properties:
+            day: { type: string, format: date }
+            position: { type: integer, format: int64 }
+            hash: { type: string, pattern: '^[a-f0-9]{64}$' }
     SecondFactorRequired:
       type: object
       required: [secondFactorRequired]

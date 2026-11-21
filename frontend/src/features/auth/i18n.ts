@@ -3,6 +3,7 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 export const authText = defineLexicon({
   EN: {
     titleVerify: 'Two-factor verification',
+    signInPasskey: 'Sign in with a passkey',
     subtitleVerify:
       'Enter a code from your authenticator or a saved recovery code.',
     twoFactorCode: 'Authentication code',
@@ -64,6 +65,7 @@ export const authText = defineLexicon({
   },
   SV: {
     titleVerify: 'Tvåfaktorsverifiering',
+    signInPasskey: 'Logga in med en passkey',
     subtitleVerify:
       'Ange en kod från din autentiseringsapp eller en sparad återställningskod.',
     twoFactorCode: 'Autentiseringskod',

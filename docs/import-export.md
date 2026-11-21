@@ -16,6 +16,8 @@ Under **Profile → Settings → Export your account**, download the JSON ZIP. T
 
 Owners/Admins can read **Administrative audit log** on the import page, including archived projects. It keeps fixed action metadata for 90 days and cannot be edited through the application. It is independent of **Updates**, which remains editable. Access ends when membership/project access ends.
 
+Select **Verify audit history / Verifiera granskningsloggen** to check the retained events and latest available daily anchor. The result shows the number of verified events or the first damaged position. An authenticated anchor is captured daily at 00:05 UTC. See [ADR 0036](adr/0036-passkeys-and-audit-integrity.md) for retention and checkpoint behavior.
+
 ## Montgomery MSR 2022 Apache subset
 
 Use the primary [dataset record](https://zenodo.org/records/15719919) and [paper](https://arxiv.org/html/2201.08368v3). Version 7 is dated **2025-06-23**, archive `2025-06-23 ThePublicJiraDataset.zip`, MD5 `02f85309d966092ea130ca0797aea795`. Attribute **Montgomery et al., The Public Jira Dataset (MSR 2022), v7 (2025), DOI 10.5281/zenodo.15719919**, data license **CC BY 4.0**; dataset scripts use **MIT**. Check the archive's licenses before redistribution. Identity fields use anonymized UUIDs; free text still needs review. This repository does not redistribute the dump or claim that all text is anonymized.

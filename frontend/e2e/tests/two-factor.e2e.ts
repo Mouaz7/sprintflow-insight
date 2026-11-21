@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { expectAccessible } from '../support/a11y.ts';
 import { expect, test } from '../support/fixtures.ts';
 
-function authenticatorCode(encoded: string, offset: number): string {
+function authenticatorCode(encoded: string): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   const bits = [...encoded]
     .map((character) =>
@@ -13,7 +13,7 @@ function authenticatorCode(encoded: string, offset: number): string {
     (bits.match(/.{8}/g) ?? []).map((byte) => Number.parseInt(byte, 2)),
   );
   const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000) + offset));
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
   const digest = createHmac('sha1', secret).update(counter).digest();
   return String(
     (digest.readUInt32BE((digest[19] ?? 0) & 15) & 0x7fffffff) % 1_000_000,
@@ -44,7 +44,7 @@ test('enrolls with a local QR code and verifies sign-in with a one-time recovery
     .fill(account.password);
   await settings
     .getByLabel('Authentication code')
-    .fill(authenticatorCode(secret, -1));
+    .fill(authenticatorCode(secret));
   await settings
     .getByRole('button', { name: 'Enable two-factor authentication' })
     .click();
