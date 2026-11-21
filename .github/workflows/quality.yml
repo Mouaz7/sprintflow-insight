@@ -8,6 +8,11 @@ on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      evaluate_replicas:
+        description: Measure realtime and CRDT delivery at one and two replicas in kind
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -215,6 +220,26 @@ jobs:
           E2E_KIND_CONTEXT: kind-sprintflow-ci
           E2E_BASE_URL: http://127.0.0.1:18080
         run: npx playwright test kubernetes-failover.e2e.ts --retries=0
+      - name: Measure live delivery with two and one replicas
+        if: inputs.evaluate_replicas
+        run: |
+          npm ci --prefix scripts
+          mkdir -p "$RUNNER_TEMP/realtime-results"
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci rollout status deployment/sprintflow --timeout=180s
+          test "$(kubectl --context kind-sprintflow-ci -n sprintflow-ci get deployment sprintflow -o jsonpath='{.status.readyReplicas}')" = 2
+          node scripts/evaluation/realtime-load.ts http://127.0.0.1:18080 2 "$RUNNER_TEMP/realtime-results/cluster.json"
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci delete hpa sprintflow
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci scale deployment/sprintflow --replicas=1
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci rollout status deployment/sprintflow --timeout=180s
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci wait deployment/sprintflow --for=jsonpath='{.status.readyReplicas}'=1 --timeout=120s
+          node scripts/evaluation/realtime-load.ts http://127.0.0.1:18080 1 "$RUNNER_TEMP/realtime-results/single.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: inputs.evaluate_replicas
+        with:
+          name: realtime-replica-evaluation
+          path: ${{ runner.temp }}/realtime-results/
+          if-no-files-found: error
+          retention-days: 30
       - name: Show the isolated cluster state
         if: failure()
         run: |
