@@ -1453,6 +1453,22 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/task-risk:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Estimate the risk of unfinished work at sprint end
+      description: Current project members can read predictions for unfinished tasks in the active sprint.
+        Returns an empty task list when no active sprint has a current end date. The read changes no project state.
+      responses:
+        '200':
+          description: Task probabilities and at most three directional explanations per task
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectTaskRisk' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/poker-sessions:
     parameters:
     - &pokerPath001
@@ -3380,6 +3396,38 @@ components:
         quantities are largest counts reached in at least the stated share of paths. Missing/censored completions
         remain in the denominator. No backtesting/model selection is performed here. Six periods is guidance,
         not a validated baseline.
+    ProjectTaskRisk:
+      type: object
+      required: [sprintId, trainedAt, exampleCount, tasks]
+      properties:
+        sprintId: { type: integer, format: int64, nullable: true }
+        trainedAt: { type: string, format: date-time, nullable: true }
+        exampleCount: { type: integer, minimum: 0, maximum: 5000 }
+        tasks:
+          type: array
+          items:
+            type: object
+            required: [taskId, prediction]
+            properties:
+              taskId: { type: integer, format: int64 }
+              prediction: { $ref: '#/components/schemas/TaskRiskPrediction' }
+    TaskRiskPrediction:
+      type: object
+      required: [probability, source, topReasons]
+      properties:
+        probability: { type: number, format: double, minimum: 0, maximum: 1, exclusiveMinimum: true, exclusiveMaximum: true }
+        source: { type: string, enum: [TRAINED, HEURISTIC] }
+        topReasons:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [feature, logOdds]
+            properties:
+              feature:
+                type: string
+                enum: [AGE_IN_COLUMN_VS_P85, TIMES_BLOCKED, REASSIGNMENTS, COMMENTS_LAST_7_DAYS, STORY_POINTS, DEPENDENCY_DEPTH, REMAINING_SPRINT_DAYS, COLUMN_WIP]
+              logOdds: { type: number, format: double, description: Positive raises risk and negative lowers it. }
     ForecastBacktestResponse:
       type: object
       required: [basis, unit, periodDays, availablePeriods, requiredPeriods, trainingPeriods, horizonPeriods, seed, status, candidates]

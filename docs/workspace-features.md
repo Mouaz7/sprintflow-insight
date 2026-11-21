@@ -109,6 +109,12 @@ Kortkommandona gäller inte när du skriver i ett fält eller när en annan dial
 
 Metoden och baslinjerna beskrivs i [ADR 0011](adr/0011-cp-sat-sprint-optimisation.md). [ADR 0029](adr/0029-sprint-planning-scenarios.md) beskriver hur sprintdata blir ett scenario. [Benchmarkresultat](evaluation/sprint-plan-solvers.md) går att återskapa med fast seed.
 
+## Sprintrisk för uppgifter (C3)
+
+Öppna **Sprintrisk** på en oavslutad uppgift i en pågående sprint. Panelen visar sannolikheten att uppgiften är oavslutad vid sprintslutet och upp till tre faktorer som höjer eller sänker risken. Modellkällan visar om sannolikheten bygger på projektets historiska sprintutfall eller på uppskattningen vid begränsad historik. Ägare, administratörer, medlemmar och läsare kan öppna panelen.
+
+En nattlig körning observerar aktuellt arbete och tränar en separat modell per projekt. Bedömningen gäller uppgiften och dess arbetsflöde. Modellen använder exempelvis blockeringar, beroenden och tid i kolumnen. Den använder inga personidentiteter. [ADR 0030](adr/0030-nightly-project-task-risk.md) beskriver när historiken blir träningsunderlag.
+
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).

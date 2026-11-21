@@ -32,3 +32,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0027 – Imports, account portability and retained administrative audit](0027-imports-account-export-and-audit.md)
 - [0028 – Project forecast calibration](0028-project-forecast-calibration.md)
 - [0029 – Sprint-planning scenarios](0029-sprint-planning-scenarios.md)
+- [0030 – Nightly project task risk](0030-nightly-project-task-risk.md)

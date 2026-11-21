@@ -91,7 +91,7 @@ The [Apache Jira evaluation](evaluation/apache-jira-backtest.md) uses a fixed se
 
 ## Late-task risk (C3)
 
-The risk model estimates, for a task in the active sprint, the probability that it is **not done when the sprint ends**. The algorithmic core lives in the `risk` module (pure Java, no persistence); scheduling, storage and the UI are later C3 steps. See [ADR 0012](adr/0012-late-task-risk-model.md).
+The risk model estimates the probability that an unfinished task in the active sprint will be **unfinished at sprint end**. The pure Java model lives in the `risk` module. PostgreSQL supplies project-scoped features and stores the nightly model. The Tasks view shows the probability, the model source and up to three explanations. See [ADR 0012](adr/0012-late-task-risk-model.md) and [ADR 0030](adr/0030-nightly-project-task-risk.md).
 
 ### Features
 
@@ -99,14 +99,14 @@ All features describe the work item, its column or the sprint. Every value is fi
 
 | Feature | Definition |
 | --- | --- |
-| Age vs column p85 | Hours in the current column divided by the 85th percentile (linear interpolation, Hyndman–Fan type 7) of the hours earlier tasks spent in that column. The reference is at least one hour; without history the ratio is 1. |
-| Times blocked | Number of times the task has been marked blocked. |
-| Reassignments | Number of assignee changes (only the count). |
+| Age vs column p85 | Hours in the current column divided by the 85th percentile (linear interpolation, Hyndman–Fan type 7) of project column spans that ended in the preceding 180 days. The reference is at least one hour; without history the ratio is 1. |
+| Times blocked | Number of times the task has been marked blocked since V28, including tasks that were blocked at migration. |
+| Reassignments | Number of assignee changes since V28. |
 | Comments, last 7 days | Comments on the task in the last seven days. |
 | Story points | Current estimate; unestimated tasks use 0. |
 | Dependency depth | Length of the longest chain of unfinished tasks the task depends on. |
 | Remaining sprint days | Calendar days until the sprint ends; 0 once the end has passed. |
-| Column WIP | Tasks currently in the task's column, including itself. |
+| Column WIP | Tasks currently in the same column of the active sprint, including the task itself. |
 
 **Fairness.** No feature identifies a person: assignee, reporter, commenter identity, team membership and similar attributes are deliberately excluded, so the model cannot learn that particular people are "risky". Reassignments and comments are counted, never attributed. A unit test guards the feature record against identity fields. Indirect proxies remain possible (for example, a person who always takes large tasks); risk is a property of the task to be discussed by the team, not a performance measure of individuals.
 
