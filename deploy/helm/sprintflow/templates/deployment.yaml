@@ -77,6 +77,11 @@ spec:
           livenessProbe:
             tcpSocket: { port: http }
             periodSeconds: 10
+          # Ingress controllers need time to remove this terminating endpoint before Tomcat exits.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
