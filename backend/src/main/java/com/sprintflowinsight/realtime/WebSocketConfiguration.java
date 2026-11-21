@@ -10,8 +10,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -42,6 +45,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
   private final SubscriptionLimit subscriptionLimit;
   private final RelaySettings relay;
   private final String diagnosticsInstance;
+  private final RabbitTopicMapping rabbitTopics = new RabbitTopicMapping();
 
   public WebSocketConfiguration(
       @Value("${app.realtime.allowed-origins:${app.password-reset.base-url:http://localhost:8081}}")
@@ -136,6 +140,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     // Client SEND destinations are narrowed by RealtimeSecurityConfiguration.
     registry.setApplicationDestinationPrefixes("/app");
     if (relay.enabled()) {
+      registry.configureBrokerChannel().interceptors(rabbitTopics);
       registry
           .enableStompBrokerRelay("/topic")
           .setRelayHost(relay.host())
@@ -176,5 +181,18 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     // handler. Different sockets retain their own transport threads; domain writes use REST.
     registration.executor(new SyncTaskExecutor());
     registration.interceptors(subscriptionLimit);
+    if (relay.enabled()) registration.interceptors(rabbitTopics);
+  }
+
+  @Override
+  public void configureClientOutboundChannel(ChannelRegistration registration) {
+    if (relay.enabled())
+      registration.interceptors(
+          new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+              return rabbitTopics.fromBroker(message);
+            }
+          });
   }
 }
