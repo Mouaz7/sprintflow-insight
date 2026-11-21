@@ -1,0 +1,75 @@
+groups:
+  - name: sprintflow-slo
+    rules:
+      - record: sprintflow:availability_error_ratio
+        labels: {window: "5m"}
+        expr: >-
+          (sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*",status=~"5.."}[5m])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[5m])) or vector(0)), 1e-9)
+      - record: sprintflow:latency_error_ratio
+        labels: {window: "5m"}
+        expr: >-
+          clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[5m])) or vector(0)) - (sum(rate(http_server_requests_seconds_bucket{job="sprintflow",uri=~"/api/.*",le="0.3"}[5m])) or vector(0)), 0) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[5m])) or vector(0)), 1e-9)
+      - record: sprintflow:availability_error_ratio
+        labels: {window: "30m"}
+        expr: >-
+          (sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*",status=~"5.."}[30m])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30m])) or vector(0)), 1e-9)
+      - record: sprintflow:latency_error_ratio
+        labels: {window: "30m"}
+        expr: >-
+          clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30m])) or vector(0)) - (sum(rate(http_server_requests_seconds_bucket{job="sprintflow",uri=~"/api/.*",le="0.3"}[30m])) or vector(0)), 0) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30m])) or vector(0)), 1e-9)
+      - record: sprintflow:availability_error_ratio
+        labels: {window: "1h"}
+        expr: >-
+          (sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*",status=~"5.."}[1h])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[1h])) or vector(0)), 1e-9)
+      - record: sprintflow:latency_error_ratio
+        labels: {window: "1h"}
+        expr: >-
+          clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[1h])) or vector(0)) - (sum(rate(http_server_requests_seconds_bucket{job="sprintflow",uri=~"/api/.*",le="0.3"}[1h])) or vector(0)), 0) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[1h])) or vector(0)), 1e-9)
+      - record: sprintflow:availability_error_ratio
+        labels: {window: "6h"}
+        expr: >-
+          (sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*",status=~"5.."}[6h])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[6h])) or vector(0)), 1e-9)
+      - record: sprintflow:latency_error_ratio
+        labels: {window: "6h"}
+        expr: >-
+          clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[6h])) or vector(0)) - (sum(rate(http_server_requests_seconds_bucket{job="sprintflow",uri=~"/api/.*",le="0.3"}[6h])) or vector(0)), 0) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[6h])) or vector(0)), 1e-9)
+      - record: sprintflow:availability_error_ratio
+        labels: {window: "30d"}
+        expr: >-
+          (sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*",status=~"5.."}[30d])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30d])) or vector(0)), 1e-9)
+      - record: sprintflow:latency_error_ratio
+        labels: {window: "30d"}
+        expr: >-
+          clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30d])) or vector(0)) - (sum(rate(http_server_requests_seconds_bucket{job="sprintflow",uri=~"/api/.*",le="0.3"}[30d])) or vector(0)), 0) / clamp_min((sum(rate(http_server_requests_seconds_count{job="sprintflow",uri=~"/api/.*"}[30d])) or vector(0)), 1e-9)
+      - alert: SprintFlowAvailabilityFastBurn
+        expr: >-
+          (sprintflow:availability_error_ratio{window="1h"} / 0.005 > 14.4)
+          and ignoring(window)
+          (sprintflow:availability_error_ratio{window="5m"} / 0.005 > 14.4)
+        for: 2m
+        labels: {severity: page, objective: availability}
+        annotations: {summary: "SprintFlow availability budget burn above 14.4x"}
+      - alert: SprintFlowAvailabilitySlowBurn
+        expr: >-
+          (sprintflow:availability_error_ratio{window="6h"} / 0.005 > 6)
+          and ignoring(window)
+          (sprintflow:availability_error_ratio{window="30m"} / 0.005 > 6)
+        for: 2m
+        labels: {severity: ticket, objective: availability}
+        annotations: {summary: "SprintFlow availability budget burn above 6x"}
+      - alert: SprintFlowLatencyFastBurn
+        expr: >-
+          (sprintflow:latency_error_ratio{window="1h"} / 0.05 > 14.4)
+          and ignoring(window)
+          (sprintflow:latency_error_ratio{window="5m"} / 0.05 > 14.4)
+        for: 2m
+        labels: {severity: page, objective: latency}
+        annotations: {summary: "SprintFlow latency budget burn above 14.4x"}
+      - alert: SprintFlowLatencySlowBurn
+        expr: >-
+          (sprintflow:latency_error_ratio{window="6h"} / 0.05 > 6)
+          and ignoring(window)
+          (sprintflow:latency_error_ratio{window="30m"} / 0.05 > 6)
+        for: 2m
+        labels: {severity: ticket, objective: latency}
+        annotations: {summary: "SprintFlow latency budget burn above 6x"}

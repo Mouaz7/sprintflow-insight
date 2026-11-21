@@ -1,0 +1,302 @@
+{
+  "uid": "sprintflow-red",
+  "title": "SprintFlow RED and SLOs",
+  "tags": [
+    "sprintflow",
+    "observability"
+  ],
+  "editable": false,
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (method, uri) (rate(http_server_requests_seconds_count{job=\"sprintflow\",uri=~\"/api/.*\"}[5m]))",
+          "legendFormat": "{{method}} {{uri}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP 5xx rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sprintflow:availability_error_ratio{window=\"5m\"}",
+          "legendFormat": "5-minute error ratio",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Request duration p95",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"sprintflow\",uri=~\"/api/.*\"}[5m])))",
+          "legendFormat": "p95",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Availability and latency SLOs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1 - sprintflow:availability_error_ratio{window=\"30d\"}",
+          "legendFormat": "Non-5xx, target 99.5%",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "1 - sprintflow:latency_error_ratio{window=\"30d\"}",
+          "legendFormat": "At most 300 ms, target 95%",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ],
+      "description": "Rolling 30-day service level indicators for /api routes."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Error budget burn",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:x"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sprintflow:availability_error_ratio{window=\"1h\"} / 0.005",
+          "legendFormat": "Availability 1 hour",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sprintflow:latency_error_ratio{window=\"1h\"} / 0.05",
+          "legendFormat": "Latency 1 hour",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ],
+      "description": "A sustained value of one consumes the full budget over 30 days."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Committed task and realtime events",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(sprintflow_tasks_total{job=\"sprintflow\"}[5m]))",
+          "legendFormat": "Tasks created",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(sprintflow_realtime_published_total{job=\"sprintflow\"}[5m]))",
+          "legendFormat": "Realtime published",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Incomplete outbox publications",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(sprintflow_outbox_backlog{job=\"sprintflow\"})",
+          "legendFormat": "Incomplete events",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Oldest outbox publication",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sprintflow-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(sprintflow_outbox_oldest_age_seconds{job=\"sprintflow\"})",
+          "legendFormat": "Age",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "sprintflow-prometheus"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+rule_files:
+  - slo.yml
+evaluation_interval: 30s
+tests:
+  - name: Sustained server errors consume the availability budget
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="sprintflow",uri="/api/tasks",status="200"}'
+        values: '0+900x90'
+      - series: 'http_server_requests_seconds_count{job="sprintflow",uri="/api/tasks",status="500"}'
+        values: '0+100x90'
+      - series: 'http_server_requests_seconds_bucket{job="sprintflow",uri="/api/tasks",status="200",le="0.3"}'
+        values: '0+900x90'
+      - series: 'http_server_requests_seconds_bucket{job="sprintflow",uri="/api/tasks",status="500",le="0.3"}'
+        values: '0+100x90'
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: SprintFlowAvailabilityFastBurn
+        exp_alerts:
+          - exp_labels: {severity: page, objective: availability, window: "1h"}
+            exp_annotations: {summary: "SprintFlow availability budget burn above 14.4x"}
+      - eval_time: 75m
+        alertname: SprintFlowLatencyFastBurn
+        exp_alerts: []
+  - name: Slow requests consume the latency budget
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="sprintflow",uri="/api/tasks",status="200"}'
+        values: '0+1000x90'
+      - series: 'http_server_requests_seconds_bucket{job="sprintflow",uri="/api/tasks",status="200",le="0.3"}'
+        values: '0+100x90'
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: SprintFlowLatencyFastBurn
+        exp_alerts:
+          - exp_labels: {severity: page, objective: latency, window: "1h"}
+            exp_annotations: {summary: "SprintFlow latency budget burn above 14.4x"}
+      - eval_time: 75m
+        alertname: SprintFlowAvailabilityFastBurn
+        exp_alerts: []
+  - name: Zero traffic does not fire an alert
+    interval: 1m
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: SprintFlowAvailabilityFastBurn
+        exp_alerts: []
+      - eval_time: 75m
+        alertname: SprintFlowLatencyFastBurn
+        exp_alerts: []

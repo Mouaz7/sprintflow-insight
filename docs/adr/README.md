@@ -41,3 +41,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0036 – Passkeys and audit integrity](0036-passkeys-and-audit-integrity.md)
 - [0037 – GitHub task links and delivery history](0037-github-task-links.md)
 - [0038 – Public API and outgoing webhooks](0038-public-api-and-outbound-webhooks.md)
+- [0039 – Observability and service-level objectives](0039-observability-and-slos.md)

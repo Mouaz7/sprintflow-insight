@@ -144,12 +144,18 @@ jobs:
           docker compose -p sprintflow-ci restart
           docker compose -p sprintflow-ci up -d --no-build --wait --wait-timeout 180
           node scripts/verification/container-smoke.ts verify
+      - name: Verify Prometheus, Tempo, and the provisioned Grafana dashboard
+        env:
+          SPRINTFLOW_APP_IMAGE: ${{ env.CI_IMAGE }}
+          SPRINTFLOW_TRACING_EXPORT: "true"
+          SPRINTFLOW_TRACE_SAMPLE_RATE: "1"
+        run: bash scripts/verification/observability-smoke.sh sprintflow-ci
       - name: Logs
         if: failure()
-        run: docker compose -p sprintflow-ci logs --tail 100
+        run: docker compose -p sprintflow-ci --profile observability logs --tail 100
       - name: Remove isolated CI containers
         if: always()
-        run: docker compose -p sprintflow-ci down -v
+        run: docker compose -p sprintflow-ci --profile observability down -v
       - name: Share the tested image with later jobs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

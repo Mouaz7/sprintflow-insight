@@ -2,6 +2,7 @@ package com.sprintflowinsight.common.error;
 
 import java.util.List;
 import java.util.Map;
+import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,8 @@ public final class Problems {
     problem.setTitle(code.title());
     problem.setProperty("code", code.code());
     problem.setProperty("message", text);
+    String traceId = MDC.get("traceId");
+    if (traceId != null && traceId.matches("[0-9a-f]{32}")) problem.setProperty("traceId", traceId);
     return problem;
   }
 
