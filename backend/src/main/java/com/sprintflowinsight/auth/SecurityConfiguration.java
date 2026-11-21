@@ -156,6 +156,7 @@ public class SecurityConfiguration {
                         HttpMethod.GET,
                         "/api/auth/csrf",
                         "/api/auth/google/config",
+                        "/api/auth/passkeys/config",
                         "/api/auth/password/reset/available")
                     .permitAll()
                     .requestMatchers(
@@ -163,6 +164,8 @@ public class SecurityConfiguration {
                         "/api/automation/github/{endpointId}",
                         "/api/auth/login",
                         "/api/auth/two-factor/verify",
+                        "/api/auth/passkeys/login/options",
+                        "/api/auth/passkeys/login/complete",
                         "/api/digest/unsubscribe",
                         "/api/auth/register",
                         "/api/auth/google",

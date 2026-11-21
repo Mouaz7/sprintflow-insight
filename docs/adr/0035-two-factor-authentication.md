@@ -1,5 +1,7 @@
 # ADR 0035 — Authenticator codes and organization sign-in requirements
 
+For user-verified passkey sign-in and its organization MFA behavior, see [ADR 0036](0036-passkeys-and-audit-integrity.md).
+
 Status accepted.
 
 Use 160-bit authenticator secrets and the six-digit, 30-second HMAC-SHA-1 profile. Servers tolerate one adjacent time step on either side of the current step. The greatest accepted step is stored with the encrypted secret and checked under a row lock. A time step can be accepted once. [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238) and [RFC 4226](https://www.rfc-editor.org/rfc/rfc4226).

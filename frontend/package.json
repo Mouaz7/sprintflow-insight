@@ -96,7 +96,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "407 kB",
+      "limit": "410 kB",
       "gzip": true
     },
     {
@@ -193,6 +193,12 @@
       "name": "Two-factor settings and QR encoder (gzip)",
       "path": "dist/assets/TwoFactorSettings-*.js",
       "limit": "11 kB",
+      "gzip": true
+    },
+    {
+      "name": "Lazy passkey sign-in, settings and browser WebAuthn helpers (gzip)",
+      "path": "dist/assets/{PasskeySignIn,PasskeySettings,passkeys}-*.js",
+      "limit": "3.5 kB",
       "gzip": true
     },
     {

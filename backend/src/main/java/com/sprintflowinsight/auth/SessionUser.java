@@ -48,6 +48,13 @@ public class SessionUser {
         && user.mfaVerified();
   }
 
+  java.time.Instant authenticatedAt() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication != null && authentication.getPrincipal() instanceof UserIdentity user
+        ? java.time.Instant.ofEpochMilli(user.authenticatedAtMillis())
+        : java.time.Instant.EPOCH;
+  }
+
   public Long id(HttpSession session) {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null

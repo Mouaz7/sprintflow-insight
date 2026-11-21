@@ -7,6 +7,7 @@ import { ProfileDetails } from './ProfileDetails';
 import { Feedback, SettingsIcon } from './ProfileFeedback';
 import { DeleteAccountSettings, PasswordSettings } from './ProfileSecurity';
 import { useProfile, type ProfileViewProps } from './useProfile';
+const PasskeySettings = lazy(() => import('./PasskeySettings'));
 const TwoFactorSettings = lazy(() => import('./TwoFactorSettings'));
 
 export function ProfileView(props: ProfileViewProps) {
@@ -133,6 +134,7 @@ export function ProfileView(props: ProfileViewProps) {
         {tab === 'security' && (
           <Suspense>
             <TwoFactorSettings />
+            <PasskeySettings />
           </Suspense>
         )}
         <DeleteAccountSettings

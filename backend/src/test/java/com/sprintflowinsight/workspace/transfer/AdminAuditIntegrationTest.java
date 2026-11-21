@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.sprintflowinsight.common.audit.AuditIntegrityService;
 import com.sprintflowinsight.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 class AdminAuditIntegrationTest extends ApiIntegrationTest {
   @Autowired JdbcTemplate jdbc;
+  @Autowired AuditIntegrityService integrity;
 
   @Test
   void administrativeChangesAreAuditedWithoutContentAndSurviveProjectDeletion() throws Exception {
@@ -60,26 +62,40 @@ class AdminAuditIntegrationTest extends ApiIntegrationTest {
   }
 
   @Test
-  void auditRejectsMutationAndAllowsOnlyExpiredDeletion() {
+  void retentionDeletesOnlyTheCheckpointedExpiredPrefix() {
     var actor = user();
+    long projectId = project(actor, null).getId();
+    long old =
+        jdbc.queryForObject(
+            "insert into"
+                + " admin_audit_event(project_id,actor_user_id,actor_role,action,target_type,created_at)"
+                + " values(?,?,'Owner','TEST','project',now()-interval '91 days') returning id",
+            Long.class,
+            projectId,
+            actor.getId());
     long id =
         jdbc.queryForObject(
-            "insert into admin_audit_event(actor_user_id,actor_role,action,target_type)"
-                + " values(?,'Owner','TEST','project') returning id",
+            "insert into admin_audit_event(project_id,actor_user_id,actor_role,action,target_type)"
+                + " values(?,?,'Owner','TEST','project') returning id",
             Long.class,
+            projectId,
             actor.getId());
     assertThatThrownBy(
             () -> jdbc.update("update admin_audit_event set action='FORGED' where id=?", id))
         .hasMessageContaining("append-only");
     assertThatThrownBy(() -> jdbc.update("delete from admin_audit_event where id=?", id))
         .hasMessageContaining("append-only");
-    long old =
-        jdbc.queryForObject(
-            "insert into admin_audit_event(actor_user_id,actor_role,action,target_type,created_at)"
-                + " values(?,'Owner','TEST','project',now()-interval '91 days') returning id",
-            Long.class,
-            actor.getId());
-    assertThat(jdbc.update("delete from admin_audit_event where id=?", old)).isOne();
+    assertThatThrownBy(() -> jdbc.update("delete from admin_audit_event where id=?", old))
+        .hasMessageContaining("append-only");
+    jdbc.queryForObject("select prune_audit_history(10000)", Integer.class);
+    assertThat(
+            jdbc.queryForList(
+                "select id from admin_audit_event where project_id=?", Long.class, projectId))
+        .containsExactly(id);
+    var verification = integrity.verify(projectId);
+    assertThat(verification.valid()).isTrue();
+    assertThat(verification.floorPosition()).isEqualTo(1);
+    assertThat(verification.checkedEvents()).isEqualTo(1);
   }
 
   @Test

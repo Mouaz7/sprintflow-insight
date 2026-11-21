@@ -16,8 +16,6 @@ class AuditRetention {
   @Scheduled(cron = "0 15 3 * * *")
   @SchedulerLock(name = "admin-audit-retention", lockAtMostFor = "PT5M")
   void removeExpired() {
-    jdbc.update(
-        "delete from admin_audit_event where id in (select id from admin_audit_event where"
-            + " created_at < now()-interval '90 days' order by created_at,id limit 10000)");
+    jdbc.queryForObject("select prune_audit_history(10000)", Integer.class);
   }
 }
