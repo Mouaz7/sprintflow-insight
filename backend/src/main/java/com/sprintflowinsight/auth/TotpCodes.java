@@ -48,7 +48,7 @@ final class TotpCodes {
   }
 
   static String base32(byte[] bytes) {
-    var encoded = new StringBuilder((bytes.length * 8 + 4) / 5);
+    var encoded = new StringBuilder();
     int buffer = 0;
     int bits = 0;
     for (byte value : bytes) {
