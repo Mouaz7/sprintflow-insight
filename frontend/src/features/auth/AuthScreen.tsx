@@ -1,17 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { useMatch, useNavigate, useSearchParams } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../../api/client';
-import type { User } from '../../api/contracts';
+import type { SignInResult, User } from '../../api/contracts';
 import { useFieldExample } from '../../shared/ui/Guidance';
 import { InterfaceIcon } from '../../shared/ui/InterfaceIcons';
 import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
+import { localizeMessage } from '../../shared/i18n/messages';
 import { useTheme } from '../../shared/theme/ThemeProvider';
 import { LanguageSelector } from '../../shared/ui/LanguageSelector';
 import { Notice } from '../../shared/ui/ui';
 import { GoogleSignIn } from './GoogleSignIn';
 import { authText } from './i18n';
 
-type AuthMode = 'login' | 'register' | 'reset' | 'new-password';
+type AuthMode = 'login' | 'register' | 'reset' | 'new-password' | 'verify';
 export function AuthScreen({
   onSignedIn,
   initialError,
@@ -28,6 +29,7 @@ export function AuthScreen({
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetToken] = useState(() => searchParams.get('token') ?? '');
   const [busy, setBusy] = useState(false);
@@ -48,7 +50,19 @@ export function AuthScreen({
     setError('');
     setPassword('');
     setConfirmPassword('');
+    setCode('');
   }
+  async function onPrimary(result: SignInResult) {
+    clearCsrfToken();
+    if ('secondFactorRequired' in result) {
+      setMode('verify');
+      setPassword('');
+      setCode('');
+    } else {
+      await onSignedIn(result);
+    }
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -61,7 +75,14 @@ export function AuthScreen({
       return;
     }
     try {
-      if (mode === 'new-password') {
+      if (mode === 'verify') {
+        const signedIn = await api<User>('/auth/two-factor/verify', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        });
+        clearCsrfToken();
+        await onSignedIn(signedIn);
+      } else if (mode === 'new-password') {
         await api('/auth/password/reset/confirm', {
           method: 'POST',
           body: JSON.stringify({ token: resetToken, newPassword: password }),
@@ -76,7 +97,7 @@ export function AuthScreen({
         );
         setNotice(t('resetRequested', { serverMessage: response.message }));
       } else {
-        const user = await api<User>(
+        const user = await api<SignInResult>(
           mode === 'login' ? '/auth/login' : '/auth/register',
           {
             method: 'POST',
@@ -89,8 +110,7 @@ export function AuthScreen({
             }),
           },
         );
-        clearCsrfToken();
-        await onSignedIn(user);
+        await onPrimary(user);
       }
     } catch (cause) {
       const loginFailed =
@@ -112,6 +132,7 @@ export function AuthScreen({
         login: 'titleLogin',
         register: 'titleRegister',
         reset: 'titleReset',
+        verify: 'titleVerify',
         'new-password': 'titleNewPassword',
       } as const
     )[mode],
@@ -122,6 +143,7 @@ export function AuthScreen({
         login: 'subtitleLogin',
         register: 'subtitleRegister',
         reset: 'subtitleReset',
+        verify: 'subtitleVerify',
         'new-password': 'subtitleNewPassword',
       } as const
     )[mode],
@@ -214,7 +236,7 @@ export function AuthScreen({
                     />
                   </label>
                 )}
-                {mode !== 'new-password' && (
+                {mode !== 'new-password' && mode !== 'verify' && (
                   <label>
                     {t('email')}
                     <input
@@ -227,7 +249,7 @@ export function AuthScreen({
                     />
                   </label>
                 )}
-                {mode !== 'reset' && (
+                {mode !== 'reset' && mode !== 'verify' && (
                   <label>
                     {t('password')}
                     <input
@@ -245,6 +267,18 @@ export function AuthScreen({
                           ? 'existingPassword'
                           : 'choosePassword',
                       )}
+                    />
+                  </label>
+                )}
+                {mode === 'verify' && (
+                  <label>
+                    {t('twoFactorCode')}
+                    <input
+                      required
+                      value={code}
+                      autoComplete="one-time-code"
+                      maxLength={32}
+                      onChange={(event) => setCode(event.target.value)}
                     />
                   </label>
                 )}
@@ -274,27 +308,32 @@ export function AuthScreen({
                   {t('forgotPassword')}
                 </button>
               )}
-              <Notice error={error} success={notice} />
+              <Notice
+                error={localizeMessage(error, language)}
+                success={notice}
+              />
               <button className="primary-action" disabled={busy}>
                 {t(
                   busy
                     ? 'pleaseWait'
-                    : mode === 'login'
-                      ? 'logIn'
-                      : mode === 'register'
-                        ? 'createAccount'
-                        : mode === 'new-password'
-                          ? 'saveNewPassword'
-                          : 'sendResetLink',
+                    : mode === 'verify'
+                      ? 'verify'
+                      : mode === 'login'
+                        ? 'logIn'
+                        : mode === 'register'
+                          ? 'createAccount'
+                          : mode === 'new-password'
+                            ? 'saveNewPassword'
+                            : 'sendResetLink',
                 )}
               </button>
             </form>
-            {mode !== 'reset' && mode !== 'new-password' && (
+            {(mode === 'login' || mode === 'register') && (
               <>
                 <div className="divider">
                   <span>{t('or')}</span>
                 </div>
-                <GoogleSignIn darkMode={darkMode} onSignedIn={onSignedIn} />
+                <GoogleSignIn darkMode={darkMode} onSignedIn={onPrimary} />
                 <p className="auth-switch">
                   {t(mode === 'login' ? 'newHere' : 'haveAccount')}{' '}
                   <button
@@ -310,7 +349,9 @@ export function AuthScreen({
                 </p>
               </>
             )}
-            {(mode === 'reset' || mode === 'new-password') && (
+            {(mode === 'reset' ||
+              mode === 'new-password' ||
+              mode === 'verify') && (
               <button
                 type="button"
                 className="text-button back-link"

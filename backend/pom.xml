@@ -250,6 +250,7 @@
                     <targetClasses>
                         <param>com.sprintflowinsight.common.*</param>
                         <param>com.sprintflowinsight.auth.filter.*</param>
+                        <param>com.sprintflowinsight.auth.TotpCodes</param>
                         <param>com.sprintflowinsight.reporting.MetricsService</param>
                         <param>com.sprintflowinsight.reporting.TaskExportFilter</param>
                         <param>com.sprintflowinsight.workspace.attachment.UploadValidator</param>

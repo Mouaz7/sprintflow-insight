@@ -2,6 +2,27 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const profileText = defineLexicon({
   EN: {
+    mfaTitle: 'Two-factor authentication',
+    mfaLoading: 'Loading two-factor settings…',
+    mfaOrganizationRequired:
+      'An organization requires two-factor authentication for this account.',
+    mfaScan:
+      'Scan this QR code in your authenticator app or enter the setup key there.',
+    mfaQr: 'Authenticator QR code',
+    mfaSecret: 'Setup key',
+    mfaPassword: 'Password for two-factor settings',
+    mfaCode: 'Authentication code',
+    mfaSetup: 'Set up two-factor authentication',
+    mfaEnable: 'Enable two-factor authentication',
+    mfaDisable: 'Disable two-factor authentication',
+    mfaEnabled: 'Two-factor authentication enabled.',
+    mfaDisabled: 'Two-factor authentication disabled.',
+    mfaRecovery: 'Recovery codes',
+    mfaKeepRecovery:
+      'Save these codes in a secure place. Each code works once.',
+    mfaHideCodes: 'Hide recovery codes',
+    mfaRecoveryRemaining: ({ count }: { count: number }) =>
+      `Recovery codes remaining: ${count}`,
     // Page
     accountSettings: 'ACCOUNT SETTINGS',
     title: 'Your profile',
@@ -87,6 +108,27 @@ export const profileText = defineLexicon({
       'The administrator configures these services on the server. Passwords and keys are never stored in your profile.',
   },
   SV: {
+    mfaTitle: 'Tvåfaktorsautentisering',
+    mfaLoading: 'Läser in tvåfaktorsinställningar…',
+    mfaOrganizationRequired:
+      'En organisation kräver tvåfaktorsautentisering för kontot.',
+    mfaScan:
+      'Skanna QR-koden i din autentiseringsapp eller ange inställningsnyckeln där.',
+    mfaQr: 'QR-kod för autentisering',
+    mfaSecret: 'Inställningsnyckel',
+    mfaPassword: 'Lösenord för tvåfaktorsinställningar',
+    mfaCode: 'Autentiseringskod',
+    mfaSetup: 'Ställ in tvåfaktorsautentisering',
+    mfaEnable: 'Aktivera tvåfaktorsautentisering',
+    mfaDisable: 'Avaktivera tvåfaktorsautentisering',
+    mfaEnabled: 'Tvåfaktorsautentisering aktiverad.',
+    mfaDisabled: 'Tvåfaktorsautentisering avaktiverad.',
+    mfaRecovery: 'Återställningskoder',
+    mfaKeepRecovery:
+      'Spara koderna på en säker plats. Varje kod kan användas en gång.',
+    mfaHideCodes: 'Dölj återställningskoder',
+    mfaRecoveryRemaining: ({ count }: { count: number }) =>
+      `Återstående återställningskoder: ${count}`,
     accountSettings: 'KONTOINSTÄLLNINGAR',
     title: 'Din profil',
     description: 'Dina uppgifter. Din arbetsyta.',

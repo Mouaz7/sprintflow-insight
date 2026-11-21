@@ -58,7 +58,86 @@ paths:
       responses:
         '429': { $ref: '#/components/responses/RateLimited' }
         '200': { description: User and authenticated session }
+        '202':
+          description: Complete the second factor using the pending session and a fresh CSRF token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecondFactorRequired' }
         '401': { $ref: '#/components/responses/Error' }
+  /api/auth/two-factor:
+    get:
+      summary: Read the signed-in account's two-factor status
+      responses:
+        '200':
+          description: Enrollment, remaining codes and organization requirement
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TwoFactorStatus' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /api/auth/two-factor/setup:
+    post:
+      summary: Create a short-lived encrypted authenticator setup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorPassword' }
+      responses:
+        '200':
+          description: Authenticator secret and URI for local QR rendering
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TwoFactorSetup' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/two-factor/enable:
+    post:
+      summary: Enable TOTP after verifying the current password and a code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorPasswordAndCode' }
+      responses:
+        '200':
+          description: Ten single-use recovery codes returned once
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TwoFactorRecovery' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/two-factor/disable:
+    post:
+      summary: Disable TOTP with the current password and an available second factor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorPasswordAndCode' }
+      responses:
+        '204': { description: Two-factor authentication disabled }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/auth/two-factor/verify:
+    post:
+      security: []
+      summary: Finish sign-in using a session-bound TOTP or recovery code
+      description: A first-factor request must have created a pending cookie. Fetch a fresh CSRF token before verification. Challenge and account rate limits apply.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorCode' }
+      responses:
+        '200': { description: User and authenticated session }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
   /api/auth/logout:
     post:
       summary: Invalidate the current session
@@ -68,7 +147,8 @@ paths:
     get:
       summary: Return the signed-in user
       responses:
-        '200': { description: Current user }
+        '200':
+          description: Current user. Includes mfaEnrollmentRequired when the account must enroll to open its workspace.
         '401': { $ref: '#/components/responses/Error' }
   /api/auth/profile:
     put:
@@ -123,6 +203,11 @@ paths:
       responses:
         '429': { $ref: '#/components/responses/RateLimited' }
         '200': { description: User and authenticated session }
+        '202':
+          description: Complete the second factor using the pending session and a fresh CSRF token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecondFactorRequired' }
         '401': { $ref: '#/components/responses/Error' }
   /api/auth/account:
     delete:
@@ -485,6 +570,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Project' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/organizations/{slug}/security:
+    parameters:
+      - { $ref: '#/components/parameters/organizationSlug' }
+    get:
+      summary: Read the organization's two-factor requirement as owner or admin
+      responses:
+        '200':
+          description: Current organization sign-in requirement
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrganizationTwoFactorPolicy' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Change the organization's two-factor requirement as owner
+      description: Enabling the requirement needs a verified two-factor session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrganizationTwoFactorPolicy' }
+      responses:
+        '200':
+          description: New organization sign-in requirement
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrganizationTwoFactorPolicy' }
         '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
@@ -3141,6 +3258,52 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    SecondFactorRequired:
+      type: object
+      required: [secondFactorRequired]
+      properties:
+        secondFactorRequired: { type: boolean, enum: [true] }
+    TwoFactorStatus:
+      type: object
+      required: [enabled, recoveryCodesRemaining, requiredByOrganization]
+      properties:
+        enabled: { type: boolean }
+        recoveryCodesRemaining: { type: integer, minimum: 0, maximum: 10 }
+        requiredByOrganization: { type: boolean }
+    TwoFactorPassword:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string, format: password, maxLength: 72, writeOnly: true }
+    TwoFactorCode:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, maxLength: 32, writeOnly: true }
+    TwoFactorPasswordAndCode:
+      allOf:
+        - { $ref: '#/components/schemas/TwoFactorPassword' }
+        - { $ref: '#/components/schemas/TwoFactorCode' }
+    TwoFactorSetup:
+      type: object
+      required: [secret, uri]
+      properties:
+        secret: { type: string, description: Base32 authenticator setup key. }
+        uri: { type: string, format: uri, description: Local authenticator configuration URI. }
+    TwoFactorRecovery:
+      type: object
+      required: [recoveryCodes]
+      properties:
+        recoveryCodes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items: { type: string }
+    OrganizationTwoFactorPolicy:
+      type: object
+      required: [requireTwoFactor]
+      properties:
+        requireTwoFactor: { type: boolean }
     Organization:
       type: object
       required: [id, slug, name, role, personal]

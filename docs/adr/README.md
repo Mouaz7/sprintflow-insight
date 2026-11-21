@@ -37,3 +37,4 @@ Each record states a decision, the context that forced it, and its consequences.
 - [0032 – Project automation and bounded rule execution](0032-automation-rules.md)
 - [0033 – Collaborative task and retrospective text](0033-shared-text-crdt.md)
 - [0034 – Organizations, teams and row-level security](0034-organization-scope.md)
+- [0035 – Authenticator codes and organization sign-in requirements](0035-two-factor-authentication.md)

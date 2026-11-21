@@ -89,10 +89,14 @@ public class SecurityConfiguration {
       SecurityContextRepository contexts,
       HttpSessionCsrfTokenRepository csrf,
       ObjectMapper json,
-      CspPolicy cspPolicy)
+      CspPolicy cspPolicy,
+      MfaService mfa)
       throws Exception {
     http.securityContext(
             context -> context.securityContextRepository(contexts).requireExplicitSave(true))
+        .addFilterAfter(
+            new MfaSessionGuard(mfa, contexts, json),
+            org.springframework.security.web.header.HeaderWriterFilter.class)
         .csrf(
             config ->
                 config
@@ -158,6 +162,7 @@ public class SecurityConfiguration {
                         HttpMethod.POST,
                         "/api/automation/github/{endpointId}",
                         "/api/auth/login",
+                        "/api/auth/two-factor/verify",
                         "/api/digest/unsubscribe",
                         "/api/auth/register",
                         "/api/auth/google",

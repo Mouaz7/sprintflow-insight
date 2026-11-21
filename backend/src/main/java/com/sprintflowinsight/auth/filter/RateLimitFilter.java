@@ -41,6 +41,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
       Map.of(
           "/api/auth/login", RateLimitPolicy.LOGIN,
           "/api/auth/google", RateLimitPolicy.GOOGLE_LOGIN,
+          "/api/auth/two-factor/verify", RateLimitPolicy.MFA_VERIFY,
           "/api/auth/register", RateLimitPolicy.REGISTER,
           "/api/auth/password/reset/request", RateLimitPolicy.RESET_REQUEST,
           "/api/auth/password/reset/recovery", RateLimitPolicy.RESET_RECOVERY,

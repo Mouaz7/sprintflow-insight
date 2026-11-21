@@ -25,6 +25,7 @@ public class AccountService {
   private final AuthenticationManager authenticationManager;
   private final SessionAuthenticationService authenticationSessions;
   private final UserEmailService userEmails;
+  private final MfaSignIn signIn;
   private final org.springframework.context.ApplicationEventPublisher events;
 
   public AccountService(
@@ -36,6 +37,7 @@ public class AccountService {
       AuthenticationManager authenticationManager,
       SessionAuthenticationService authenticationSessions,
       UserEmailService userEmails,
+      MfaSignIn signIn,
       org.springframework.context.ApplicationEventPublisher events) {
     this.userRepository = userRepository;
     this.passwordResetTokenRepository = passwordResetTokenRepository;
@@ -45,12 +47,14 @@ public class AccountService {
     this.authenticationManager = authenticationManager;
     this.authenticationSessions = authenticationSessions;
     this.userEmails = userEmails;
+    this.signIn = signIn;
     this.events = events;
   }
 
   public User me(HttpSession session) {
     return userRepository
         .findByEmail(sessionUser.email(session))
+        .map(user -> signIn.withWorkspaceRequirement(user, sessionUser.mfaVerified()))
         .orElseThrow(
             () ->
                 new org.springframework.web.server.ResponseStatusException(
@@ -83,8 +87,8 @@ public class AccountService {
               UsernamePasswordAuthenticationToken.unauthenticated(
                   credentials.email().trim().toLowerCase(java.util.Locale.ROOT),
                   credentials.password()));
-      authenticationSessions.signIn(authentication.getName(), request, response);
-      return ResponseEntity.ok(userRepository.findByEmail(authentication.getName()).orElseThrow());
+      User user = userRepository.findByEmail(authentication.getName()).orElseThrow();
+      return signIn.afterPrimary(user, request, response);
     } catch (AuthenticationException failure) {
       SECURITY_LOG.warn("Authentication failure for a sign-in attempt.");
       return ApiExceptionHandler.error(
@@ -158,9 +162,11 @@ public class AccountService {
     }
     if (!previousEmail.equals(email)) {
       userEmails.moveReferences(previousEmail, email);
-      authenticationSessions.signIn(email, servletRequest, servletResponse);
+      authenticationSessions.signIn(
+          email, servletRequest, servletResponse, sessionUser.mfaVerified());
     }
-    return ResponseEntity.ok(userRepository.save(user));
+    return ResponseEntity.ok(
+        signIn.withWorkspaceRequirement(userRepository.save(user), sessionUser.mfaVerified()));
   }
 
   @Transactional

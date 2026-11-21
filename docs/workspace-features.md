@@ -257,3 +257,11 @@ Owners and admins can create teams, add existing organization members, save proj
 In **Invitations**, enter the recipient's email and role, then copy the link. The recipient signs in with that email and chooses **Accept invitation**. Links expire after seven days and can be revoked. An organization membership grants access to its directory and teams. Manage individual project roles in the project's own settings.
 
 See [organization isolation](adr/0034-organization-scope.md) and [the REST contract](openapi.yaml).
+
+## Two-factor authentication
+
+Open **Profile → Security** and choose **Set up two-factor authentication**. Enter your current password, scan the QR code with your authenticator app, then enter your password and a generated code to finish enrollment. Keep the ten one-time recovery codes in a secure place.
+
+After a password or Google sign-in, SprintFlow asks for an authenticator code or an unused recovery code. A recovery code is removed from the available count after use. Deactivating requires the password and a second factor. Accounts subject to an organization requirement keep two-factor authentication enabled.
+
+An organization owner with two-factor authentication can enable the requirement under **Organizations → Security**. Affected members can sign in to complete enrollment in Profile, then open the workspace. [TOTP architecture](adr/0035-two-factor-authentication.md) and [REST contract](openapi.yaml).

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { api, clearCsrfToken } from '../../api/client';
-import type { User } from '../../api/contracts';
+import type { SignInResult } from '../../api/contracts';
 import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { Notice } from '../../shared/ui/ui';
 import { googleScriptUrl } from './googleScriptUrl';
@@ -68,7 +68,7 @@ export function GoogleSignIn({
   onSignedIn,
 }: {
   darkMode: boolean;
-  onSignedIn: (user: User) => Promise<void>;
+  onSignedIn: (user: SignInResult) => Promise<void>;
 }) {
   const { language } = useLanguage();
   const t = useT(authText);
@@ -121,7 +121,7 @@ export function GoogleSignIn({
             setBusy(true);
             setShownError(undefined);
             try {
-              const user = await api<User>('/auth/google', {
+              const user = await api<SignInResult>('/auth/google', {
                 method: 'POST',
                 body: JSON.stringify({ credential }),
               });

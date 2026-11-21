@@ -70,3 +70,9 @@ B19 (V27) adds `import_batch` with project/request-hash uniqueness and immutable
 `organization_member` links account IDs to organization roles. The migration assigns existing projects to the project owner's personal organization and reserves a legacy organization for unlinked historical data. The projects table enforces uniqueness on `(organization_id, name)`.
 
 `team_member` references both its team and its organization membership using composite keys. `organization_invite` holds only a digest of its bearer secret and enforces a database expiry. `organization_template` holds the starter layout and its default description. The four scoped tables apply RLS using the transaction's organization ID. [Organization scope ADR](adr/0034-organization-scope.md).
+
+## V33 — two-factor authentication
+
+`account_mfa` stores the encrypted setup secret, enrollment timestamp, most recent accepted time step and failure-window state. `account_mfa_recovery` stores one digest per unused code. `account_mfa_challenge` stores a short-lived session challenge digest, the account's credential digest and its attempt count. Account deletion cascades to all three tables. `organization.require_mfa` controls the workspace-access requirement.
+
+See [two-factor authentication](adr/0035-two-factor-authentication.md).

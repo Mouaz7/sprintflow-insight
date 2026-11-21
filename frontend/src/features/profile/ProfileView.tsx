@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { PageHeader } from '../../shared/ui/ui';
 import { profileText } from './i18n';
@@ -6,6 +7,8 @@ import { ProfileDetails } from './ProfileDetails';
 import { Feedback, SettingsIcon } from './ProfileFeedback';
 import { DeleteAccountSettings, PasswordSettings } from './ProfileSecurity';
 import { useProfile, type ProfileViewProps } from './useProfile';
+const TwoFactorSettings = lazy(() => import('./TwoFactorSettings'));
+
 export function ProfileView(props: ProfileViewProps) {
   const controller = useProfile(props);
   const t = useT(profileText);
@@ -127,6 +130,11 @@ export function ProfileView(props: ProfileViewProps) {
         hidden={tab !== 'security'}
       >
         <PasswordSettings email={user.email} />
+        {tab === 'security' && (
+          <Suspense>
+            <TwoFactorSettings />
+          </Suspense>
+        )}
         <DeleteAccountSettings
           email={user.email}
           onDeleted={onAccountDeleted}

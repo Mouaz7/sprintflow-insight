@@ -263,3 +263,15 @@
   display: grid;
   gap: 20px;
 }
+
+.mfa-qr {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.mfa-recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.35rem 1rem;
+}

@@ -2,6 +2,11 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const authText = defineLexicon({
   EN: {
+    titleVerify: 'Two-factor verification',
+    subtitleVerify:
+      'Enter a code from your authenticator or a saved recovery code.',
+    twoFactorCode: 'Authentication code',
+    verify: 'Verify and sign in',
     passwordsDiffer: 'Your new passwords do not match.',
     passwordUpdated: 'Password updated. You can now log in.',
     // English shows the server's own confirmation.
@@ -58,6 +63,11 @@ export const authText = defineLexicon({
     signingInWithGoogle: 'Signing in with Google…',
   },
   SV: {
+    titleVerify: 'Tvåfaktorsverifiering',
+    subtitleVerify:
+      'Ange en kod från din autentiseringsapp eller en sparad återställningskod.',
+    twoFactorCode: 'Autentiseringskod',
+    verify: 'Verifiera och logga in',
     passwordsDiffer: 'Lösenorden matchar inte.',
     passwordUpdated: 'Lösenordet har uppdaterats. Du kan nu logga in.',
     resetRequested: () =>

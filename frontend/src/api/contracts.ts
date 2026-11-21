@@ -5,7 +5,9 @@ export type User = {
   jobTitle?: string;
   bio?: string;
   avatarImage?: string;
+  mfaEnrollmentRequired?: boolean;
 };
+export type SignInResult = User | { secondFactorRequired: true };
 export type Project = {
   id: number;
   name: string;

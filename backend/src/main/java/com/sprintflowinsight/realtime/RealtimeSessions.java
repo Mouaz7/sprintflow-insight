@@ -46,6 +46,7 @@ public class RealtimeSessions {
   private final SessionRepository<? extends Session> httpSessions;
   private final ProjectAccessService access;
   private final UserRepository users;
+  private final com.sprintflowinsight.auth.MfaService mfa;
   private final ObjectProvider<SimpMessageSendingOperations> broker;
   private final Clock clock;
   private final com.sprintflowinsight.workspace.task.TaskRepository tasks;
@@ -54,6 +55,7 @@ public class RealtimeSessions {
       SessionRepository<? extends Session> httpSessions,
       ProjectAccessService access,
       UserRepository users,
+      com.sprintflowinsight.auth.MfaService mfa,
       ObjectProvider<SimpMessageSendingOperations> broker,
       @Value("${app.realtime.presence-ttl:PT90S}") Duration presenceTtl,
       com.sprintflowinsight.workspace.task.TaskRepository tasks) {
@@ -61,6 +63,7 @@ public class RealtimeSessions {
     this.httpSessions = httpSessions;
     this.access = access;
     this.users = users;
+    this.mfa = mfa;
     this.broker = broker;
     this.presence = new PresenceRegistry(presenceTtl);
     this.clock = Clock.systemUTC();
@@ -156,12 +159,22 @@ public class RealtimeSessions {
     broadcast(presence.expire(clock.instant()));
   }
 
+  @org.springframework.transaction.event.TransactionalEventListener
+  public void organizationMfaChanged(
+      com.sprintflowinsight.workspace.events.OrganizationMfaChanged event) {
+    if (event.required()) sweep();
+  }
+
   private boolean stillAuthorised(WebSocketSession session) {
     Object httpSessionId =
         session.getAttributes().get(HttpSessionHandshakeInterceptor.HTTP_SESSION_ID_ATTR_NAME);
     Long userId = RealtimeSecurityConfiguration.userId(session.getPrincipal());
     if (!(httpSessionId instanceof String id) || userId == null) return false;
     if (httpSessions.findById(id) == null) return false;
+    if (session.getPrincipal()
+            instanceof org.springframework.security.core.Authentication authentication
+        && authentication.getPrincipal() instanceof com.sprintflowinsight.auth.UserIdentity user
+        && !mfa.workspaceAllowed(user)) return false;
     for (Long projectId : presence.projects(session.getId()))
       if (!access.canRead(projectId, userId)) return false;
     return true;

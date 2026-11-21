@@ -22,6 +22,9 @@ export const appText = defineLexicon({
     overview: 'Overview',
     projects: 'Projects',
     organizations: 'Organizations',
+    mfaRequired:
+      'An organization requires two-factor authentication for your workspace.',
+    setUpMfa: 'Set up two-factor authentication',
     backlog: 'Backlog',
     sprints: 'Sprints',
     roadmap: 'Roadmap',
@@ -82,6 +85,9 @@ export const appText = defineLexicon({
     overview: 'Översikt',
     projects: 'Projekt',
     organizations: 'Organisationer',
+    mfaRequired:
+      'En organisation kräver tvåfaktorsautentisering för din arbetsyta.',
+    setUpMfa: 'Ställ in tvåfaktorsautentisering',
     backlog: 'Backlog',
     sprints: 'Sprintar',
     roadmap: 'Färdplan',

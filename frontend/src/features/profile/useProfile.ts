@@ -24,7 +24,7 @@ export function useProfile({
 }: ProfileViewProps) {
   const t = useT(profileText);
   const [tab, setTab] = useState<'details' | 'security' | 'settings'>(
-    'details',
+    user.mfaEnrollmentRequired ? 'security' : 'details',
   );
   const [displayName, setDisplayName] = useState(user.displayName || '');
   const [jobTitle, setJobTitle] = useState(user.jobTitle || '');
