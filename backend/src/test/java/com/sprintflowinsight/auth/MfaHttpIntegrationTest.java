@@ -36,7 +36,8 @@ class MfaHttpIntegrationTest extends HttpFlowTest {
     firstFactor(email);
     assertThat(request(HttpMethod.GET, "/api/auth/me", null).getStatusCode())
         .isEqualTo(HttpStatus.UNAUTHORIZED);
-    String current = code(enrollment.secret(), 0);
+    // Enrollment consumed the current code. The next step is accepted within the skew window.
+    String current = code(enrollment.secret(), 1);
     assertThat(verify(current)).isEqualTo(HttpStatus.OK);
     assertThat(request(HttpMethod.GET, "/api/auth/me", null).getBody())
         .containsEntry("email", email);
@@ -178,7 +179,7 @@ class MfaHttpIntegrationTest extends HttpFlowTest {
     assertThat(TotpCodes.base32(raw)).isEqualTo(setup.getBody().get("secret"));
     var enabled =
         request(
-            HttpMethod.POST, BASE + "/enable", Map.of("password", PASSWORD, "code", code(raw, -1)));
+            HttpMethod.POST, BASE + "/enable", Map.of("password", PASSWORD, "code", code(raw, 0)));
     assertThat(enabled.getStatusCode()).isEqualTo(HttpStatus.OK);
     @SuppressWarnings("unchecked")
     List<String> recovery = (List<String>) enabled.getBody().get("recoveryCodes");

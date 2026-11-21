@@ -2,6 +2,14 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const profileText = defineLexicon({
   EN: {
+    passkeys: 'Passkeys',
+    passkeyName: 'Passkey name',
+    addPasskey: 'Add passkey',
+    noPasskeys: 'No passkeys yet.',
+    passkeyAdded: 'Added',
+    passkeyUsed: 'Last used',
+    removePasskey: 'Remove passkey',
+    confirmRemovePasskey: 'Remove this passkey from your account?',
     mfaTitle: 'Two-factor authentication',
     mfaLoading: 'Loading two-factor settings…',
     mfaOrganizationRequired:
@@ -108,6 +116,14 @@ export const profileText = defineLexicon({
       'The administrator configures these services on the server. Passwords and keys are never stored in your profile.',
   },
   SV: {
+    passkeys: 'Passkeys',
+    passkeyName: 'Namn på passkey',
+    addPasskey: 'Lägg till passkey',
+    noPasskeys: 'Inga passkeys ännu.',
+    passkeyAdded: 'Tillagd',
+    passkeyUsed: 'Senast använd',
+    removePasskey: 'Ta bort passkey',
+    confirmRemovePasskey: 'Ta bort denna passkey från ditt konto?',
     mfaTitle: 'Tvåfaktorsautentisering',
     mfaLoading: 'Läser in tvåfaktorsinställningar…',
     mfaOrganizationRequired:

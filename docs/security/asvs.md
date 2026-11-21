@@ -1,6 +1,18 @@
-# OWASP ASVS 5.0 coverage
+# OWASP ASVS 5.0 level 2 assessment
 
-This file tracks how SprintFlow meets OWASP ASVS 5.0 level 2, chapter by chapter. Each entry links the control to the code or test that proves it. Phases add rows, and phase C7 completes the matrix.
+The [control matrix](asvs-5-l2.csv) covers all 253 requirements applicable to an ASVS level 2 assessment, including the 70 level 1 requirements and 183 level 2 requirements. Each row identifies an official requirement, assessment, evidence paths and a finding. Look up each ID in the [OWASP ASVS 5.0.0 release](https://github.com/OWASP/ASVS/releases/tag/v5.0.0_release).
+
+| Assessment | Requirements | Meaning |
+| --- | ---: | --- |
+| `supported` | 96 | Repository controls and evidence support the requirement in the reviewed scope. |
+| `partial` | 69 | A reviewed control addresses part of the requirement. The row records the open evidence or coverage. |
+| `deployment` | 22 | The claim requires evidence from the deployed environment. |
+| `gap` | 15 | A required implementation or design control is missing. |
+| `out-of-scope` | 51 | The relevant technology or role falls outside SprintFlow’s application surface. |
+
+The matrix records a repository assessment. Level 2 conformance requires resolving the applicable gaps and verifying the remaining application and deployment evidence. The [C7 evaluation](../evaluation/advanced-security.md) records matrix validation and the security feature results.
+
+## Existing control examples
 
 | ASVS chapter | Control in SprintFlow | Evidence |
 |---|---|---|
@@ -13,4 +25,4 @@ This file tracks how SprintFlow meets OWASP ASVS 5.0 level 2, chapter by chapter
 | V11 Cryptography | 256-bit random bearer tokens, stored as SHA-256 digests. Secrets at rest use AES-256-GCM (JCA provider, no custom crypto) with a fresh 96-bit IV from `SecureRandom` per value and a 128-bit tag; version, key id and field context are authenticated data. Keys come from the environment (never source or database), are validated at startup (fail fast), carry a fingerprint key id, and rotate in two deploys (new key first readable everywhere, then current) through retired keys plus an idempotent re-encryption job (ADR 0015) | `SecureTokensTest`, `EncryptionServiceTest`, `KeyringTest`, `EncryptionProperties`, `ReEncryptionJobTest`, `ReEncryptionIntegrationTest` |
 | V15 Secure Coding and Architecture | Dependency inventory and update process: CycloneDX SBOMs (jar, frontend, image), osv-scanner and Trivy gates, Dependabot with cooldown, SHA-pinned actions, digest-pinned images, signed images with SLSA provenance ([supply chain](supply-chain.md)) | `quality`, `security`, `image-scan` and `publish` CI jobs, `repository-check.ts` |
 | V16 Security Logging and Error Handling | Security events logged without secrets; 500 responses carry an `errorId`, never internals | `SecurityConfigurationTest`, `ApiExceptionHandlerTest` |
-| V17 WebRTC and WebSocket | WebSocket handshake only with the authenticated session cookie and an allow-listed Origin; CSRF token checked on STOMP CONNECT; SUBSCRIBE authorised per project with READ access; only validated open-task presence SEND is allowed after READ, subscription and task/project checks; frame size, subscription count and send buffers bounded; connections closed when the session ends or access is removed; messages carry ids and versions only (ADR 0017) | `RealtimeWebSocketIntegrationTest`, `RealtimeEventsAccessIntegrationTest`, `RealtimeUnitTest` |
+| V4.4 WebSocket | Authenticated session and allow-listed origin at the handshake. CSRF token on STOMP CONNECT. Per-project membership controls subscriptions and supported SEND destinations. Frame size, subscription count and send buffers are bounded. See [ADR 0017](../adr/0017-realtime-stomp-and-sequence-numbers.md) and [ADR 0033](../adr/0033-shared-text-crdt.md). | `RealtimeWebSocketIntegrationTest`, `RealtimeEventsAccessIntegrationTest`, `RealtimeUnitTest` |

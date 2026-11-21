@@ -65,6 +65,15 @@ function ProjectData({ project }: { project: Project }) {
     ...auditQuery(project.id),
     enabled: canManage,
   });
+  const verification = useMutation({
+    mutationFn: () =>
+      api<{
+        valid: boolean;
+        checkedEvents: number;
+        invalidPosition: number | null;
+        dailyAnchor: { day: string; position: number; hash: string } | null;
+      }>(`/projects/${project.id}/audit/verify`),
+  });
   const [draft, setDraft] = useState<ImportRequest>({
     format: 'CSV',
     content: '',
@@ -458,6 +467,36 @@ function ProjectData({ project }: { project: Project }) {
           <Notice
             error={localizeMessage(audit.error?.message ?? '', language)}
           />
+          <button
+            type="button"
+            disabled={verification.isPending}
+            onClick={() => verification.mutate()}
+          >
+            {t('verifyAudit')}
+          </button>
+          <Notice
+            error={localizeMessage(verification.error?.message ?? '', language)}
+          />
+          {verification.data && (
+            <div role="status">
+              <p>
+                {t(
+                  verification.data.valid ? 'auditVerified' : 'auditMismatch',
+                  {
+                    count: verification.data.valid
+                      ? verification.data.checkedEvents
+                      : (verification.data.invalidPosition ?? 0),
+                  },
+                )}
+              </p>
+              {verification.data.dailyAnchor && (
+                <p>
+                  {t('auditAnchor')} {verification.data.dailyAnchor.day} ·{' '}
+                  <code>{verification.data.dailyAnchor.hash}</code>
+                </p>
+              )}
+            </div>
+          )}
           {audit.isPending ? (
             <p>{t('working')}</p>
           ) : !audit.data?.pages[0]?.items.length ? (

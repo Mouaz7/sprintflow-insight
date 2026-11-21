@@ -34,8 +34,18 @@ public class SessionAuthenticationService {
 
   public void signIn(
       String email, HttpServletRequest request, HttpServletResponse response, boolean mfaVerified) {
+    saveIdentity(email, request, response, mfaVerified, System.currentTimeMillis());
+  }
+
+  void saveIdentity(
+      String email,
+      HttpServletRequest request,
+      HttpServletResponse response,
+      boolean mfaVerified,
+      long authenticatedAtMillis) {
     User user = users.findByEmail(email).orElseThrow();
-    var identity = new UserIdentity(user.getId(), user.getEmail(), mfaVerified);
+    var identity =
+        new UserIdentity(user.getId(), user.getEmail(), mfaVerified, authenticatedAtMillis);
     var authentication =
         UsernamePasswordAuthenticationToken.authenticated(
             identity, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
