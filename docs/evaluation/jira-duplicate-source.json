@@ -1,0 +1,47 @@
+{
+  "source": "https://issues.apache.org/jira/rest/api/2/search",
+  "capturedAt": "2026-11-21T08:10:16.543Z",
+  "seed": 20261121,
+  "cohorts": [
+    {
+      "project": "HADOOP",
+      "jql": "project = HADOOP AND issueLinkType = duplicates AND created >= 2019-01-01 AND created < 2025-01-01 ORDER BY created ASC, key ASC",
+      "issues": 135,
+      "positives": 125,
+      "controls": 375
+    },
+    {
+      "project": "HBASE",
+      "jql": "project = HBASE AND issueLinkType = duplicates AND created >= 2019-01-01 AND created < 2025-01-01 ORDER BY created ASC, key ASC",
+      "issues": 96,
+      "positives": 99,
+      "controls": 297
+    },
+    {
+      "project": "KAFKA",
+      "jql": "project = KAFKA AND issueLinkType = duplicates AND created >= 2019-01-01 AND created < 2025-01-01 ORDER BY created ASC, key ASC",
+      "issues": 299,
+      "positives": 312,
+      "controls": 936
+    }
+  ],
+  "selected": {
+    "threshold": 0.35,
+    "truePositive": 62,
+    "falsePositive": 5,
+    "falseNegative": 162,
+    "precision": 0.9253731343283582,
+    "recall": 0.2767857142857143,
+    "f1": 0.4261168384879725
+  },
+  "holdout": {
+    "threshold": 0.35,
+    "truePositive": 95,
+    "falsePositive": 6,
+    "falseNegative": 217,
+    "precision": 0.9405940594059405,
+    "recall": 0.30448717948717946,
+    "f1": 0.460048426150121
+  },
+  "sha256": "35ce8b03a260c7daec91470104028b2c7184fa530ca6fdb05e79df1847e1429e"
+}

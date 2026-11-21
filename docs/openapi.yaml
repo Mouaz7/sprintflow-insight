@@ -1318,6 +1318,50 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+  /api/projects/{projectId}/flow-signals:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Compare task arrivals and completions to recent control limits
+      description: Project members can read seven full UTC days using the preceding 28 days as a baseline.
+        Insufficient complete history yields null chart fields. This request does not publish notifications.
+      responses:
+        '200':
+          description: Exponentially weighted flow charts or insufficient history
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectFlowSignals' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/task-duplicates:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    post:
+      summary: Suggest possible duplicates of a draft task
+      description: Project members can search the project's live tasks. CSRF is required. Suggestions do not change the draft or prevent creation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 1, maxLength: 255, description: Titles under four characters after trimming yield no suggestions. }
+      responses:
+        '200':
+          description: Up to five candidates in descending similarity score
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 5
+                items: { $ref: '#/components/schemas/TaskDuplicateMatch' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/wip-limits:
     parameters:
     - $ref: '#/components/parameters/projectId'
@@ -3994,6 +4038,46 @@ components:
         WIP with measured-cycle completion rate times mean active-cycle duration. Minimum5 measured completions;
         ratio0.80–1.25 accepted. Finite-window censoring, reopening and changing demand can explain mismatches
         without corrupt data.
+    TaskDuplicateMatch:
+      type: object
+      required: [taskId, key, title, status, score]
+      properties:
+        taskId: { type: integer, format: int64 }
+        key: { type: string }
+        title: { type: string }
+        status: { type: string }
+        score: { type: number, format: double, minimum: 0.35, maximum: 1 }
+    ProjectFlowSignals:
+      type: object
+      required: [firstMonitoredDay, inflow, throughput]
+      properties:
+        firstMonitoredDay: { type: string, format: date, nullable: true }
+        inflow:
+          type: object
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/FlowSignalChart' }]
+        throughput:
+          type: object
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/FlowSignalChart' }]
+    FlowSignalChart:
+      type: object
+      required: [baselineMean, monitoring]
+      properties:
+        baselineMean: { type: number, format: double, minimum: 0 }
+        monitoring:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: object
+            required: [observed, weighted, lower, upper, signal]
+            properties:
+              observed: { type: integer, minimum: 0 }
+              weighted: { type: number, format: double, minimum: 0 }
+              lower: { type: number, format: double, minimum: 0 }
+              upper: { type: number, format: double, minimum: 0 }
+              signal: { type: string, enum: [LOW, IN_LIMITS, HIGH] }
     FlowResponse:
       type: object
       required:

@@ -1,0 +1,13 @@
+# ADR 0031: Task duplicate suggestions and flow control signals
+
+Status: Accepted.
+
+The new task form searches the selected project's live task titles after a short debounce. PostgreSQL ranks title pairs with 75% `pg_trgm` similarity and 25% Jaccard overlap of English and Swedish `tsvector` lexemes. The existing trigram GIN prefilter uses a transaction-local threshold of 0.10. The 0.35 final threshold ensures the trigram floor is sufficient even when lexeme overlap is maximal. The top five results are advisory. POST keeps the draft title in the request body, uses CSRF, validates input length and checks current project membership before querying. [PostgreSQL 16 trigram support](https://www.postgresql.org/docs/16/pgtrgm.html) and [text search functions](https://www.postgresql.org/docs/16/functions-textsearch.html).
+
+Daily flow signals use complete UTC days. The 28 consecutive days before the seven monitored days define the center and dispersion. Inflow counts live tasks created on each day. Throughput counts one entry into Done per live task and day. Repeated adjacent Done snapshots contribute once. An earlier completion remains historical even if a task reopens. A project needs a live task observed by the start of the baseline. Empty observed days carry zero. [Flow metric definitions](../metrics-definition.md#daily-flow-signals-c4).
+
+EWMA starts at the historical mean with weight 0.25 and a three-standard-deviation limit. Its variance starts at zero and updates with the same recursive weights. The count variance is the maximum of the historical sample variance, the historical mean and 0.25. The variance floor gives sparse or constant histories positive control limits. The lower limit is clipped at zero. The chart is a process signal that depends on the baseline. [NIST EWMA reference](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc314.htm).
+
+At 02:10 UTC a database-locked job checks yesterday's point for active projects. A unique project/date/metric row and the existing durable notification event are written in one transaction. The owner is notified once when a direction first occurs. A signal continued from the previous day has no additional notification. Existing account preferences govern delivery. The chart endpoint can also be read in archived projects and does not enqueue alerts.
+
+The [evaluation](../evaluation/duplicate-and-flow-signals.md) records the duplicate threshold and the behavior of the chart under known shifts. Each new UI chunk loads on demand. The duplicate panel has a 2 kB gzip budget and the flow panel has a 3 kB budget. The aggregate route budget is 345 kB and the entry budget remains 125 kB.

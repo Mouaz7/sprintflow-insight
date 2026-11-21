@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { localizeMessage } from '../../shared/i18n/messages';
 import {
   DATE_ERROR,
@@ -10,6 +11,10 @@ import { DateInput } from '../../shared/ui/DateInput';
 import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer } from '../../shared/ui/ui';
 import type { UseTaskBoardState } from './useTaskBoard';
+
+const TaskDuplicateSuggestions = lazy(
+  () => import('./TaskDuplicateSuggestions'),
+);
 export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
   const {
     editing,
@@ -87,16 +92,28 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
         <FormGuide topic="task" />
         <fieldset disabled={saving}>
           <div className="task-form-grid">
-            <label>
-              {t('fieldTitle')}
-              <input
-                required
-                maxLength={255}
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={fieldExample('taskTitle')}
-              />
-            </label>
+            <div>
+              <label>
+                {t('fieldTitle')}
+                <input
+                  required
+                  maxLength={255}
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder={fieldExample('taskTitle')}
+                />
+              </label>
+              {!editing && draft.id && title.trim().length >= 4 && (
+                <Suspense>
+                  <TaskDuplicateSuggestions
+                    projectId={draft.id}
+                    title={title}
+                    language={language}
+                    linkToBoard={draft.id === projectId}
+                  />
+                </Suspense>
+              )}
+            </div>
             <label>
               {t('fieldDescription')}
               <input
