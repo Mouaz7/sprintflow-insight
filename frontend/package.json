@@ -84,7 +84,7 @@
     {
       "name": "Tasks route chunk (gzip)",
       "path": "dist/assets/TasksView-*.js",
-      "limit": "20.5 kB",
+      "limit": "20.6 kB",
       "gzip": true
     },
     {
@@ -96,7 +96,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "412 kB",
+      "limit": "419 kB",
       "gzip": true
     },
     {
@@ -229,6 +229,12 @@
       "name": "Lazy task GitHub links panel (gzip)",
       "path": "dist/assets/TaskGithubLinks-*.js",
       "limit": "1.2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Lazy API tokens and outgoing webhooks (gzip)",
+      "path": "dist/assets/{ApiTokenSettings,OutboundWebhookPanel}-*.js",
+      "limit": "6.5 kB",
       "gzip": true
     }
   ]

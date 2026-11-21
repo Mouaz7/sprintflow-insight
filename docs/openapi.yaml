@@ -248,6 +248,163 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /api/auth/tokens:
+    get:
+      summary: List personal access token metadata for the signed-in account
+      responses:
+        '200':
+          description: Token metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PersonalAccessToken' }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Issue a scoped personal access token and show its value once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, scopes, expiresInDays]
+              properties:
+                label: { type: string, minLength: 1, maxLength: 80 }
+                scopes: { $ref: '#/components/schemas/PersonalTokenScopes' }
+                expiresInDays: { type: integer, minimum: 1, maximum: 90 }
+      responses:
+        '201':
+          description: Personal access token and its metadata with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [metadata, token]
+                properties:
+                  metadata: { $ref: '#/components/schemas/PersonalAccessToken' }
+                  token: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/auth/tokens/{id}:
+    delete:
+      summary: Revoke a token owned by the signed-in account
+      parameters:
+      - { in: path, name: id, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '204': { description: Token revoked }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/v1/openapi:
+    get:
+      security: []
+      summary: Read the generated public API specification
+      description: The equivalent YAML document is available at /api/v1/openapi.yaml.
+      responses:
+        '200':
+          description: Machine-readable OpenAPI document for the versioned endpoints
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /api/v1/projects:
+    get:
+      security: [{ personalToken: [] }]
+      summary: List accessible projects using PROJECT_READ
+      parameters:
+      - $ref: '#/components/parameters/publicAfter'
+      - $ref: '#/components/parameters/publicSize'
+      responses:
+        '200':
+          description: Paged list of projects ordered by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextAfter]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/PublicProject' } }
+                  nextAfter: { type: integer, format: int64, nullable: true }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /api/v1/projects/{projectId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      security: [{ personalToken: [] }]
+      summary: Read a project using PROJECT_READ and project membership
+      responses:
+        '200':
+          description: Public project representation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicProject' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/v1/projects/{projectId}/tasks:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      security: [{ personalToken: [] }]
+      summary: List tasks using TASK_READ and project membership
+      parameters:
+      - $ref: '#/components/parameters/publicAfter'
+      - $ref: '#/components/parameters/publicSize'
+      responses:
+        '200':
+          description: Paged list of tasks ordered by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextAfter]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/PublicTask' } }
+                  nextAfter: { type: integer, format: int64, nullable: true }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+    post:
+      security: [{ personalToken: [] }]
+      summary: Create a task using TASK_WRITE and active-project write access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 1, maxLength: 255 }
+                description: { type: string, maxLength: 255 }
+                storyPoints: { type: integer, minimum: 0, maximum: 1000, default: 0 }
+      responses:
+        '201':
+          description: Task created in To Do
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicTask' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/v1/projects/{projectId}/tasks/{taskId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - { in: path, name: taskId, required: true, schema: { type: integer, format: int64 } }
+    get:
+      security: [{ personalToken: [] }]
+      summary: Read a task using TASK_READ and project membership
+      responses:
+        '200':
+          description: Public task representation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicTask' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/auth/me:
     get:
       summary: Return the signed-in user
@@ -3284,6 +3441,73 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/webhooks:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    get:
+      summary: Read outgoing webhook configuration as a project Owner or Admin
+      responses:
+        '200':
+          description: Configured webhooks without their signing secrets
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OutboundWebhook' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Create an outgoing webhook for an active project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri, maxLength: 1024 }
+                events: { $ref: '#/components/schemas/OutboundWebhookEvents' }
+      responses:
+        '201':
+          description: Webhook and one-time signing secret with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [webhook, secret]
+                properties:
+                  webhook: { $ref: '#/components/schemas/OutboundWebhook' }
+                  secret: { type: string }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/webhooks/{webhookId}:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - { in: path, name: webhookId, required: true, schema: { type: integer, format: int64 } }
+    delete:
+      summary: Remove a project's outgoing webhook and retained delivery history
+      responses:
+        '204': { description: Webhook removed }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/webhooks/{webhookId}/deliveries:
+    parameters:
+    - $ref: '#/components/parameters/projectId'
+    - { in: path, name: webhookId, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: Read the latest 100 deliveries as a project Owner or Admin
+      responses:
+        '200':
+          description: Delivery status and result of the most recent attempt
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/OutboundWebhookDelivery' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /api/automation/github/{endpointId}:
     post:
       summary: Accept a signed GitHub pull request or push event
@@ -3307,11 +3531,18 @@ paths:
         '413': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
+    personalToken:
+      type: http
+      scheme: bearer
     sessionCookie:
       type: apiKey
       in: cookie
       name: SPRINTFLOW_SESSION
   parameters:
+    publicAfter:
+      { in: query, name: after, schema: { type: integer, format: int64, minimum: 0, default: 0 } }
+    publicSize:
+      { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
     organizationSlug:
       in: path
       name: slug
@@ -3432,6 +3663,70 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    PersonalTokenScopes:
+      type: array
+      minItems: 1
+      maxItems: 3
+      uniqueItems: true
+      items: { type: string, enum: [PROJECT_READ, TASK_READ, TASK_WRITE] }
+    PersonalAccessToken:
+      type: object
+      required: [id, label, scopes, issuedAt, expiresAt, lastUsedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        label: { type: string }
+        scopes: { $ref: '#/components/schemas/PersonalTokenScopes' }
+        issuedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+    PublicProject:
+      type: object
+      required: [id, key, name, description, archived]
+      properties:
+        id: { type: integer, format: int64 }
+        key: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        archived: { type: boolean }
+    PublicTask:
+      type: object
+      required: [id, projectId, key, title, description, status, storyPoints, version]
+      properties:
+        id: { type: integer, format: int64 }
+        projectId: { type: integer, format: int64 }
+        key: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        status: { type: string, enum: [To Do, In Progress, Review, Done] }
+        storyPoints: { type: integer }
+        version: { type: integer, format: int64 }
+    OutboundWebhookEvents:
+      type: array
+      minItems: 1
+      maxItems: 4
+      uniqueItems: true
+      items: { type: string, enum: [task.created, task.updated, task.moved, task.deleted] }
+    OutboundWebhook:
+      type: object
+      required: [id, url, events, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        url: { type: string, format: uri }
+        events: { $ref: '#/components/schemas/OutboundWebhookEvents' }
+        createdAt: { type: string, format: date-time }
+    OutboundWebhookDelivery:
+      type: object
+      required: [id, eventId, event, outcome, attempts, createdAt, nextAttemptAt, lastHttpStatus, lastResult]
+      properties:
+        id: { type: string, format: uuid }
+        eventId: { type: string, format: uuid }
+        event: { type: string, enum: [task.created, task.updated, task.moved, task.deleted] }
+        outcome: { type: string, enum: [PENDING, DELIVERED, FAILED] }
+        attempts: { type: integer, minimum: 0, maximum: 5 }
+        createdAt: { type: string, format: date-time }
+        nextAttemptAt: { type: string, format: date-time, nullable: true }
+        lastHttpStatus: { type: integer, nullable: true }
+        lastResult: { type: string, nullable: true }
     PasskeyConfiguration:
       type: object
       required: [available, origin]

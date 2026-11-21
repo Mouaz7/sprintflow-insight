@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router';
 import type { Project } from '../../api/contracts';
 import { roleQuery } from '../../api/queries';
@@ -21,6 +21,8 @@ import {
 } from './queries';
 import { RuleEditor } from './RuleEditor';
 import './automation.css';
+
+const OutboundWebhookPanel = lazy(() => import('./OutboundWebhookPanel'));
 
 export default function AutomationView({
   project,
@@ -151,6 +153,9 @@ function ProjectAutomation({ project }: { project: Project }) {
         />
       )}
       <GithubPanel project={project} actions={actions} />
+      <Suspense>
+        <OutboundWebhookPanel project={project} />
+      </Suspense>
       <section className="flow-panel chart-table">
         <div className="collection-actions">
           <h2>{t('log')}</h2>

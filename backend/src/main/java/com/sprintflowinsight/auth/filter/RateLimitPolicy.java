@@ -19,6 +19,7 @@ public enum RateLimitPolicy {
   RESET_REQUEST(Scope.CLIENT_ADDRESS, intervally(10)),
   RESET_RECOVERY(Scope.CLIENT_ADDRESS, intervally(10)),
   RESET_CONFIRM(Scope.CLIENT_ADDRESS, intervally(30)),
+  PUBLIC_API(Scope.ACCOUNT, greedy(120)),
   EXPORT(Scope.ACCOUNT, greedy(2)),
   UPLOAD(Scope.ACCOUNT, greedy(30)),
   WRITE(Scope.ACCOUNT, greedy(300));

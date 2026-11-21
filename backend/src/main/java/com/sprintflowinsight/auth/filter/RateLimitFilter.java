@@ -101,6 +101,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     String path = request.getServletPath();
     if (path == null || path.isEmpty())
       path = request.getRequestURI().substring(request.getContextPath().length());
+    if (path.startsWith("/api/v1/projects")) return Optional.of(RateLimitPolicy.PUBLIC_API);
     if (!WRITES.contains(request.getMethod()) || !path.startsWith("/api/")) return Optional.empty();
     RateLimitPolicy credential = CREDENTIAL_ENDPOINTS.get(path);
     if (credential != null) return Optional.of(credential);
