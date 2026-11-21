@@ -1,8 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { RetrospectiveEntry } from '../../api/contracts';
 import { afterProjectWrite, roleQuery, sprintsQuery } from '../../api/queries';
+import {
+  SharedTextDrawer,
+  useSharedTextActive,
+} from '../../shared/collaboration/entry';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, PageHeader, useConfirm } from '../../shared/ui/ui';
@@ -45,6 +49,16 @@ export function RetrospectiveView({
   const [actionError, setError] = useState('');
   const error = actionError || setupError || entries.error?.message || '';
   const [editor, setEditor] = useState<{ entry?: RetrospectiveEntry }>();
+  const [sharedEntry, setSharedEntry] = useState<number>();
+  const shared = useSharedTextActive(
+    projectId && editor?.entry
+      ? {
+          projectId,
+          target: 'RETROSPECTIVE',
+          id: editor.entry.id,
+        }
+      : undefined,
+  );
   const [message, setMessage] = useState('');
   const [category, setCategory] =
     useState<RetrospectiveEntry['category']>('well');
@@ -70,7 +84,7 @@ export function RetrospectiveView({
           body: JSON.stringify({
             sprintId: Number(sprintId),
             category,
-            message: message.trim(),
+            message: shared ? message : message.trim(),
             version: editor?.entry?.version,
           }),
         },
@@ -152,6 +166,12 @@ export function RetrospectiveView({
                   <article className="retro-note" key={entry.id}>
                     <p>{entry.message}</p>
                     <small>{entry.authorEmail}</small>
+                    <button
+                      type="button"
+                      onClick={() => setSharedEntry(entry.id)}
+                    >
+                      {t('sharedNote')}
+                    </button>
                     {role !== 'Viewer' &&
                       (entry.authorEmail.toLowerCase() ===
                         userEmail.toLowerCase() ||
@@ -182,6 +202,17 @@ export function RetrospectiveView({
             </section>
           ))}
         </div>
+      )}
+      {projectId && sharedEntry && (
+        <Suspense fallback={<p role="status">{t('loadingNotes')}</p>}>
+          <SharedTextDrawer
+            key={sharedEntry}
+            scope={{ projectId, target: 'RETROSPECTIVE', id: sharedEntry }}
+            userEmail={userEmail}
+            onClose={() => setSharedEntry(undefined)}
+            onProjected={() => void reload()}
+          />
+        </Suspense>
       )}
       {editor && (
         <Drawer
@@ -217,6 +248,7 @@ export function RetrospectiveView({
               {t('note')}
               <textarea
                 aria-label={t('note')}
+                readOnly={shared}
                 required
                 maxLength={1000}
                 placeholder={fieldExample('retro')}

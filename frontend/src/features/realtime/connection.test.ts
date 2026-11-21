@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProjectConnection, realtimeUrl } from './connection';
-import { encodeFrame, parseFrames } from './stomp';
+import { encodeFrame, parseFrames } from '../../shared/lib/stomp';
 
 const api = vi.fn();
 vi.mock('../../api/client', () => ({

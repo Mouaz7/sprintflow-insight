@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { useSharedTextActive } from '../../shared/collaboration/entry';
 import { localizeMessage } from '../../shared/i18n/messages';
 import {
   DATE_ERROR,
@@ -49,6 +50,15 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
     message,
   } = controller;
   const fieldExample = useFieldExample();
+  const shared = useSharedTextActive(
+    editing
+      ? {
+          projectId: editing.projectId,
+          target: 'TASK',
+          id: editing.id,
+        }
+      : undefined,
+  );
   return (
     <Drawer
       title={
@@ -117,6 +127,7 @@ export function TaskEditor({ controller }: { controller: UseTaskBoardState }) {
             <label>
               {t('fieldDescription')}
               <input
+                readOnly={shared}
                 placeholder={fieldExample('taskDescription')}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}

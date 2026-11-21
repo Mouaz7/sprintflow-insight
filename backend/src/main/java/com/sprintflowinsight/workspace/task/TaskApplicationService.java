@@ -2,6 +2,7 @@ package com.sprintflowinsight.workspace.task;
 
 import com.sprintflowinsight.ApiExceptionHandler;
 import com.sprintflowinsight.common.error.ApiException;
+import com.sprintflowinsight.workspace.SharedTextPolicy;
 import com.sprintflowinsight.workspace.project.Project;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.project.ProjectMemberRepository;
@@ -30,6 +31,7 @@ public class TaskApplicationService {
   private final SprintRepository sprints;
   private final UserStoryRepository stories;
   private final ProjectAccessService access;
+  private final SharedTextPolicy sharedText;
 
   public TaskApplicationService(
       TaskService taskService,
@@ -39,7 +41,8 @@ public class TaskApplicationService {
       SprintRepository sprints,
       UserStoryRepository stories,
       ProjectAccessService access,
-      com.sprintflowinsight.workspace.lifecycle.LifecycleService lifecycle) {
+      com.sprintflowinsight.workspace.lifecycle.LifecycleService lifecycle,
+      SharedTextPolicy sharedText) {
     this.lifecycle = lifecycle;
 
     this.taskService = taskService;
@@ -49,6 +52,7 @@ public class TaskApplicationService {
     this.sprints = sprints;
     this.stories = stories;
     this.access = access;
+    this.sharedText = sharedText;
   }
 
   public java.util.List<Task> getAllTasks(Long projectId, HttpSession session) {
@@ -69,9 +73,9 @@ public class TaskApplicationService {
   }
 
   /**
-   * Looks a task up by its identifier, e.g. {@code SF-123}. Unknown keys, trashed tasks, projects in
-   * the recycle bin and projects the caller cannot read all answer the same 404 "Task not found.",
-   * so keys cannot be used to probe for other projects.
+   * Looks a task up by its identifier, e.g. {@code SF-123}. Unknown keys, trashed tasks, projects
+   * in the recycle bin and projects the caller cannot read all answer the same 404 "Task not
+   * found.", so keys cannot be used to probe for other projects.
    */
   public Task getTaskByKey(String key, HttpSession session) {
     TaskKey parsed = TaskKey.parse(key).orElseThrow(() -> ApiException.notFound("Task not found."));
@@ -117,6 +121,7 @@ public class TaskApplicationService {
     com.sprintflowinsight.VersionPrecondition.require(ifMatch, task.getVersion());
     if (changes.getProjectId() == null || !task.getProjectId().equals(changes.getProjectId()))
       return error("A task cannot move to another project.");
+    sharedText.task(task.getProjectId(), id, task.getDescription(), changes.getDescription());
     ResponseEntity<?> invalid = validateAssociations(changes);
     if (invalid != null) return invalid;
     return ResponseEntity.ok(taskService.updateTask(task, changes, access.email(session)));

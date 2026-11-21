@@ -28,7 +28,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "7.18.5",
-    "@messageformat/runtime": "3.0.3"
+    "@messageformat/runtime": "3.0.3",
+    "yjs": "13.6.33"
   },
   "devDependencies": {
     "@babel/core": "7.29.13",
@@ -82,7 +83,7 @@
     {
       "name": "Tasks route chunk (gzip)",
       "path": "dist/assets/TasksView-*.js",
-      "limit": "20 kB",
+      "limit": "20.5 kB",
       "gzip": true
     },
     {
@@ -94,7 +95,7 @@
     {
       "name": "All JavaScript, every route (gzip)",
       "path": "dist/assets/*.js",
-      "limit": "354 kB",
+      "limit": "385 kB",
       "gzip": true
     },
     {
@@ -185,6 +186,12 @@
       "name": "Task duplicate suggestions (gzip)",
       "path": "dist/assets/TaskDuplicateSuggestions-*.js",
       "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Shared text editor (gzip)",
+      "path": "dist/assets/SharedTextDrawer-*.js",
+      "limit": "30 kB",
       "gzip": true
     },
     {

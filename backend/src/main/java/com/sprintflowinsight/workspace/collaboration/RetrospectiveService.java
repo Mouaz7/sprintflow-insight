@@ -1,5 +1,6 @@
 package com.sprintflowinsight.workspace.collaboration;
 
+import com.sprintflowinsight.workspace.SharedTextPolicy;
 import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import com.sprintflowinsight.workspace.sprint.SprintRepository;
 import jakarta.servlet.http.HttpSession;
@@ -16,18 +17,21 @@ public class RetrospectiveService {
   private final ProjectAccessService access;
   private final com.sprintflowinsight.common.audit.AuditService audit;
   private final com.sprintflowinsight.workspace.project.ProjectMutationService mutations;
+  private final SharedTextPolicy sharedText;
 
   public RetrospectiveService(
       RetrospectiveRepository entries,
       SprintRepository sprints,
       ProjectAccessService access,
       com.sprintflowinsight.common.audit.AuditService audit,
-      com.sprintflowinsight.workspace.project.ProjectMutationService mutations) {
+      com.sprintflowinsight.workspace.project.ProjectMutationService mutations,
+      SharedTextPolicy sharedText) {
     this.audit = audit;
     this.mutations = mutations;
     this.entries = entries;
     this.sprints = sprints;
     this.access = access;
+    this.sharedText = sharedText;
   }
 
   public List<RetrospectiveEntry> list(Long projectId, Long sprintId, HttpSession session) {
@@ -60,8 +64,13 @@ public class RetrospectiveService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "This item was changed by someone else. Refresh and try again.");
     validateCategory(request.category());
+    String message =
+        request.message().equals(entry.getMessage())
+            ? entry.getMessage()
+            : request.message().trim();
+    sharedText.retrospective(projectId, id, entry.getMessage(), message);
     entry.setCategory(request.category());
-    entry.setMessage(request.message().trim());
+    entry.setMessage(message);
     moderated(entry, "RETROSPECTIVE_MODERATED", session);
     return entries.save(entry);
   }

@@ -3,6 +3,7 @@ import { defineLexicon } from '../../shared/i18n/lexicon';
 
 export const tasksText = defineLexicon({
   EN: {
+    sharedDescription: 'Co-edit description',
     eyebrow: 'TEAM EXECUTION',
     title: 'Tasks',
     description: 'From the next step to delivered work.',
@@ -118,6 +119,7 @@ export const tasksText = defineLexicon({
     postComment: 'Post comment',
   },
   SV: {
+    sharedDescription: 'Samredigera beskrivning',
     eyebrow: 'TEAMETS ARBETE',
     title: 'Uppgifter',
     description: 'Från nästa steg till levererat arbete.',

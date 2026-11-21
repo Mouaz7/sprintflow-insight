@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { encodeFrame, parseFrames } from './stomp';
+import {
+  encodeBinaryFrame,
+  encodeFrame,
+  parseBinaryFrames,
+  parseFrames,
+} from '../../shared/lib/stomp';
 
 describe('STOMP frames', () => {
   it('encodes headers with escaping except on CONNECT', () => {
@@ -54,4 +59,21 @@ describe('STOMP frames', () => {
     expect(frames[0]?.headers.get('__proto__')).toBe('x');
     expect(frames[0]?.headers.get('constructor')).toBe('y');
   });
+});
+
+it('keeps binary NULs intact across a split STOMP frame', () => {
+  const body = new Uint8Array([0, 10, 0, 255, 13, 2]);
+  const encoded = new Uint8Array(
+    encodeBinaryFrame('MESSAGE', { subscription: 'shared-updates' }, body),
+  );
+  const first = parseBinaryFrames(encoded.subarray(0, encoded.length - 3));
+  expect(first.frames).toHaveLength(0);
+  const completed = new Uint8Array(encoded.length + 1);
+  completed.set(first.rest);
+  completed.set(encoded.subarray(encoded.length - 3), first.rest.length);
+  completed[encoded.length] = 10;
+  const result = parseBinaryFrames(completed);
+  expect(result.frames[0]?.body).toEqual(body);
+  expect(result.frames[0]?.headers.get('subscription')).toBe('shared-updates');
+  expect(result.rest).toHaveLength(0);
 });

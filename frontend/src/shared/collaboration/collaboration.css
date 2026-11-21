@@ -1,0 +1,10 @@
+.shared-text-cursors {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.shared-text-cursors mark {
+  background: transparent;
+  color: currentColor;
+  font-weight: 800;
+}

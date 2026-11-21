@@ -6,6 +6,7 @@ type Title = { title: string };
 
 export const planningText = defineLexicon({
   EN: {
+    sharedNote: 'Co-edit note',
     suggestSprint: 'Suggest sprint',
     loadingSprintPlan: 'Loading sprint planning…',
     // Shared form and action words
@@ -105,6 +106,7 @@ export const planningText = defineLexicon({
     saveNote: 'Save note',
   },
   SV: {
+    sharedNote: 'Samredigera anteckning',
     suggestSprint: 'Föreslå sprint',
     loadingSprintPlan: 'Laddar sprintplanering…',
     title: 'Titel',

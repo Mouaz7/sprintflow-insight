@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '../../api/queries';
-import { encodeFrame } from './stomp';
+import { encodeFrame } from '../../shared/lib/stomp';
 import { useProjectRealtime } from './useProjectRealtime';
 
 vi.mock('../../api/client', () => ({

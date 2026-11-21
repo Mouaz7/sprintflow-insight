@@ -186,6 +186,7 @@ GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup
 | [Schema](docs/data-schema.md) / [OpenAPI](docs/openapi.yaml) | Data and HTTP contracts |
 | [Metric definitions](docs/metrics-definition.md) | Calculations, assumptions and limits |
 | [Testing](docs/testing.md) | Commands, reports, browser checks and screenshots |
+| [Collaborative text](docs/collaboration.md) | Task descriptions, retrospective notes and STOMP protocol |
 | [Security review](docs/security-review.md) / [ASVS](docs/security/asvs.md) | Security boundaries and verification |
 | [Definition of Done](docs/definition-of-done.md) | Completion criteria |
 

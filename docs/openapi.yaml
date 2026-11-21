@@ -658,6 +658,87 @@ paths:
         '401': { $ref: '#/components/responses/Error' }
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/collaboration/{target}/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/projectId' }
+      - { $ref: '#/components/parameters/sharedTextTarget' }
+      - { $ref: '#/components/parameters/id' }
+    get:
+      summary: Read shared text and recover missed collaboration revisions
+      description: Project members can read a room, including in an archived project. The response includes a compressed snapshot when the requested revision predates the compacted prefix, followed by its update tail.
+      parameters:
+        - in: query
+          name: after
+          description: Last contiguous applied revision.
+          schema: { type: integer, format: int64, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Room state and missing frames
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SharedTextSnapshot' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Initialize shared editing from the current text
+      description: Requires CSRF and edit access to the item. Initializing an existing room returns its current state.
+      responses:
+        '200':
+          description: Active room and its frames
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SharedTextSnapshot' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/collaboration/{target}/{id}/metadata:
+    get:
+      summary: Check whether an item has an active shared editor
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - { $ref: '#/components/parameters/sharedTextTarget' }
+        - { $ref: '#/components/parameters/id' }
+      responses:
+        '200':
+          description: Collaboration state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [active]
+                properties:
+                  active: { type: boolean }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /api/projects/{projectId}/collaboration/{target}/{id}/projection:
+    post:
+      summary: Publish the text of a confirmed shared revision to its task or note
+      description: Requires CSRF and edit access to the item. Already published revisions are idempotent. A newer projection must match the latest stored revision.
+      parameters:
+        - { $ref: '#/components/parameters/projectId' }
+        - { $ref: '#/components/parameters/sharedTextTarget' }
+        - { $ref: '#/components/parameters/id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, text]
+              properties:
+                revision: { type: integer, format: int64, minimum: 1 }
+                text: { type: string, maxLength: 1000, description: Tasks allow up to 255 UTF-16 code units. Retrospective notes are required. }
+      responses:
+        '204': { description: Projection published or already present }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
   /api/projects/{projectId}/metrics:
     get:
       summary: Calculate project metrics or selected sprint metrics
@@ -2580,6 +2661,11 @@ components:
       in: cookie
       name: SPRINTFLOW_SESSION
   parameters:
+    sharedTextTarget:
+      in: path
+      name: target
+      required: true
+      schema: { type: string, enum: [TASK, RETROSPECTIVE] }
     exportStatus:
       in: query
       name: status
@@ -2719,6 +2805,30 @@ components:
         endpointId: { type: string, format: uuid }
         repository: { type: string }
         createdAt: { type: string, format: date-time }
+    SharedTextSnapshot:
+      type: object
+      required: [active, editable, initialText, maxLength, revision, projectionRevision, snapshotRevision, snapshot, updates]
+      properties:
+        active: { type: boolean }
+        editable: { type: boolean }
+        initialText: { type: string, description: Immutable starting text for an active room. }
+        maxLength: { type: integer, enum: [255, 1000] }
+        revision: { type: integer, format: int64, minimum: 0 }
+        projectionRevision: { type: integer, format: int64, minimum: 0 }
+        snapshotRevision: { type: integer, format: int64, minimum: 0 }
+        snapshot:
+          type: string
+          format: byte
+          nullable: true
+          description: GZIP containing a big-endian 32-bit update count and a 32-bit length followed by the bytes of each update.
+        updates:
+          type: array
+          items:
+            type: object
+            required: [revision, bytes]
+            properties:
+              revision: { type: integer, format: int64, minimum: 1 }
+              bytes: { type: string, format: byte, description: One opaque Yjs update of up to 12288 bytes. }
     TimeEntry:
       type: object
       required:

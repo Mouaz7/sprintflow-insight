@@ -37,7 +37,8 @@ class TaskApplicationServiceTest {
           mock(SprintRepository.class),
           mock(UserStoryRepository.class),
           access,
-          mock(LifecycleService.class));
+          mock(LifecycleService.class),
+          mock(com.sprintflowinsight.workspace.SharedTextPolicy.class));
 
   @ParameterizedTest
   @EnumSource(
