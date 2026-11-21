@@ -247,6 +247,8 @@ const swedish: Record<string, string> = {
     'Du saknar behörighet. Be projektägaren eller en administratör om åtkomst.',
   'We couldn’t find that item. Refresh the page and try again.':
     'Objektet kunde inte hittas. Uppdatera sidan och försök igen.',
+  'Use the shared editor to change this text.':
+    'Ändra texten i samredigeringen.',
   'This change conflicts with newer information. Refresh the page and try again.':
     'Informationen har ändrats. Uppdatera sidan och försök igen.',
   'Too many requests. Wait a moment, then try again.':

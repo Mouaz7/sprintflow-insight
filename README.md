@@ -176,7 +176,7 @@ GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup
 
 ## Status and documentation
 
-[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Organizations/teams, TOTP, automation rules, GitHub integration and public API/webhooks remain separate roadmap work; their presence in an issue or prototype does not mean they are available in the app.
+[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Open roadmap items include organizations and teams, TOTP, the broader GitHub integration and the public API and webhooks.
 
 | Document | Contents |
 | --- | --- |
@@ -186,6 +186,7 @@ GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup
 | [Schema](docs/data-schema.md) / [OpenAPI](docs/openapi.yaml) | Data and HTTP contracts |
 | [Metric definitions](docs/metrics-definition.md) | Calculations, assumptions and limits |
 | [Testing](docs/testing.md) | Commands, reports, browser checks and screenshots |
+| [Collaborative text](docs/collaboration.md) | Task descriptions, retrospective notes and STOMP protocol |
 | [Security review](docs/security-review.md) / [ASVS](docs/security/asvs.md) | Security boundaries and verification |
 | [Definition of Done](docs/definition-of-done.md) | Completion criteria |
 

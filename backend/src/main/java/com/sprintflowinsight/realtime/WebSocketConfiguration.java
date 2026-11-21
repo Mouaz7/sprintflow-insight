@@ -108,8 +108,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
         .enableSimpleBroker("/topic")
         .setHeartbeatValue(new long[] {HEARTBEAT_MS, HEARTBEAT_MS})
         .setTaskScheduler(heartbeats);
-    // The only client SEND destination carries validated open-task presence, never a domain
-    // mutation.
+    // Client SEND destinations are narrowed by RealtimeSecurityConfiguration.
     registry.setApplicationDestinationPrefixes("/app");
   }
 

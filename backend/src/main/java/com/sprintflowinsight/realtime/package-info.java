@@ -7,6 +7,7 @@
     allowedDependencies = {
       "auth",
       "notifications",
+      "crdt",
       "workspace :: task",
       "common",
       "common :: errors",

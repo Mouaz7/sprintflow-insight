@@ -250,7 +250,17 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:8081
+          E2E_TOXIPROXY_API: http://127.0.0.1:8474
         run: |
+          proxy_dir="$(mktemp -d)"
+          archive="$proxy_dir/toxiproxy.tar.gz"
+          curl -fsSL https://github.com/Shopify/toxiproxy/releases/download/v2.12.0/toxiproxy_2.12.0_linux_amd64.tar.gz -o "$archive"
+          echo "65e042d3fc2290c099527bc506446a6fd863a09f113b8944b636ece70221c2b3  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$proxy_dir" toxiproxy-server
+          "$proxy_dir/toxiproxy-server" -host 127.0.0.1 -port 8474 > "$proxy_dir/toxiproxy.log" 2>&1 &
+          proxy_pid=$!
+          trap 'kill "$proxy_pid"' EXIT
+          curl -fsS --retry 6 --retry-connrefused "$E2E_TOXIPROXY_API/version"
           export E2E_DB_CONTAINER="$(docker compose -p sprintflow-ci ps -q postgres)"
           npm run e2e
       - name: Logs

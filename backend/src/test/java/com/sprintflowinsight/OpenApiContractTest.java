@@ -36,6 +36,9 @@ class OpenApiContractTest {
               "/api/workspace/trash/{kind}/{id}",
               "/api/projects/templates",
               "/api/projects/{projectId}/retrospective",
+              "/api/projects/{projectId}/collaboration/{target}/{id}",
+              "/api/projects/{projectId}/collaboration/{target}/{id}/metadata",
+              "/api/projects/{projectId}/collaboration/{target}/{id}/projection",
               "/api/shared-reports/{token}",
               "/api/projects/{projectId}/events");
 

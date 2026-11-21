@@ -158,13 +158,13 @@ describe('App.activity', () => {
     });
     render(<App />);
     fireEvent.click(await screen.findByRole('link', { name: 'Metrics' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await screen.findByText('All work is complete')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
       'All work is complete',
     );
     expect(
       screen.queryByRole('img', { name: /remaining story points per day/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('All work is complete')).toBeInTheDocument();
     expect(screen.getByText('0 points left')).toBeInTheDocument();
   });
 });

@@ -60,3 +60,7 @@ B8 (V26) adds `comment_mention` with a composite comment/project foreign key and
 `task.custom_fields_revision` is an internal scalar used to increment the existing task version on a changed value snapshot. No custom-value collection is added to core task list queries. Task revision/value reads use a repeatable-read snapshot. CSV streams value rows ordered by task/field using a fetch size of 200 in the same repeatable-read transaction as definitions and tasks.
 
 B19 (V27) adds `import_batch` with project/request-hash uniqueness and immutable replay receipts, `import_source` with scoped external-key uniqueness, composite task/project foreign keys and original text/date provenance, and independent `admin_audit_event`. Audit actor/project IDs deliberately do not cascade; a trigger blocks modification during 90-day retention. Bounded cleanup uses the shared ShedLock infrastructure. See [ADR 0027](adr/0027-imports-account-export-and-audit.md).
+
+## V31 — collaborative text
+
+`crdt_doc` belongs to exactly one task or retrospective entry in the same project. Composite foreign keys enforce that relationship and cascade on permanent deletion. The document carries an immutable seed, current revision, compressed snapshot revision and latest projected revision. `crdt_update` stores the ordered tail. `crdt_receipt` retains each update UUID and its SHA-256 hash after compaction to make reconnects idempotent. See [the collaboration protocol](collaboration.md).

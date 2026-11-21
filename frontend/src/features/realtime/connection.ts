@@ -6,7 +6,13 @@ import {
   type EventPage,
   type RealtimeMessage,
 } from './sequence';
-import { encodeFrame, parseFrames, type StompFrame } from './stomp';
+import {
+  encodeFrame,
+  parseFrames,
+  realtimeUrl,
+  type StompFrame,
+} from '../../shared/lib/stomp';
+export { realtimeUrl } from '../../shared/lib/stomp';
 
 export type Viewer = { userId: number; name: string; taskIds?: number[] };
 export type RealtimeStatus = 'connecting' | 'live' | 'offline';
@@ -21,10 +27,6 @@ export type RealtimeHandlers = {
 const HEARTBEAT_MS = 10_000;
 /** No frame or heart-beat for this long means the connection is dead. */
 const SILENCE_MS = 25_000;
-
-export function realtimeUrl(location: Location = window.location): string {
-  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
-}
 
 /**
  * One project's live connection: STOMP over the same-origin WebSocket,

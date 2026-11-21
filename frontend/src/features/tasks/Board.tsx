@@ -8,10 +8,12 @@ export function Board({
   controller,
   onCustomFields,
   onRisk,
+  onSharedText,
 }: {
   controller: UseTaskBoardState;
   onCustomFields?: ((task: Task) => void) | undefined;
   onRisk?: (task: Task) => void;
+  onSharedText?: (task: Task) => void;
 }) {
   const {
     columns,
@@ -105,6 +107,11 @@ export function Board({
               {t('lateRisk')}
             </button>
           )}
+        {onSharedText && (
+          <button type="button" onClick={() => onSharedText(task)}>
+            {t('sharedDescription')}
+          </button>
+        )}
         {onCustomFields && (
           <button type="button" onClick={() => onCustomFields(task)}>
             {t('customFields')}

@@ -5,6 +5,7 @@ import type { Task } from '../../api/contracts';
 import { customFieldsQuery } from '../../api/customFields';
 import { projectScope } from '../../api/queries';
 
+import { SharedTextDrawer } from '../../shared/collaboration/entry';
 import { useTaskPresence } from '../../shared/lib/useTaskPresence';
 import { localizeMessage } from '../../shared/i18n/messages';
 import { Drawer, PageHeader } from '../../shared/ui/ui';
@@ -49,6 +50,7 @@ export function TasksView(props: TasksViewProps) {
   });
   const client = useQueryClient();
   const [customTask, setCustomTask] = useState<Task>();
+  const [sharedTask, setSharedTask] = useState<Task>();
   const [riskTask, setRiskTask] = useState<Task>();
   const [fieldsSaved, setFieldsSaved] = useState(false);
   useTaskPresence(
@@ -56,6 +58,7 @@ export function TasksView(props: TasksViewProps) {
     discussion?.id ??
       blocking?.id ??
       customTask?.id ??
+      sharedTask?.id ??
       (panelOpen ? controller.editing?.id : undefined),
   );
   return (
@@ -133,6 +136,7 @@ export function TasksView(props: TasksViewProps) {
           <Board
             controller={controller}
             onRisk={setRiskTask}
+            onSharedText={setSharedTask}
             onCustomFields={
               customFields.data?.length
                 ? (task) => {
@@ -142,6 +146,21 @@ export function TasksView(props: TasksViewProps) {
                 : undefined
             }
           />
+          {sharedTask && sharedTask.projectId === projectId && (
+            <Suspense fallback={<p role="status">{t('loadingTasks')}</p>}>
+              <SharedTextDrawer
+                key={sharedTask.id}
+                scope={{ projectId, target: 'TASK', id: sharedTask.id }}
+                userEmail={userEmail}
+                onClose={() => setSharedTask(undefined)}
+                onProjected={() =>
+                  void client.invalidateQueries({
+                    queryKey: projectScope(projectId),
+                  })
+                }
+              />
+            </Suspense>
+          )}
           {riskTask && riskTask.projectId === projectId && (
             <Suspense
               fallback={
