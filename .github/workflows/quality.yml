@@ -165,6 +165,75 @@ jobs:
           retention-days: 1
           compression-level: 1
 
+  kubernetes:
+    needs: docker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sprintflow-image
+          path: ${{ runner.temp }}/sprintflow-image
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/e2e/package-lock.json
+      - name: Verify pinned Kubernetes tools and lint the chart
+        run: |
+          tools="$RUNNER_TEMP/kubernetes-tools"
+          bash scripts/verification/kubernetes-tools.sh "$tools"
+          echo "$tools" >> "$GITHUB_PATH"
+          "$tools/helm" lint deploy/helm/sprintflow -f deploy/kind/values.yaml --set image.tag=current
+      - name: Build the previous version and load the tested current image
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          previous="$RUNNER_TEMP/sprintflow-previous"
+          mkdir "$previous"
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then BASE_SHA="$(git rev-parse HEAD^)"; fi
+          git archive "$BASE_SHA" | tar -x -C "$previous"
+          docker build --tag sprintflow-k8s:previous "$previous"
+          docker load --input "$RUNNER_TEMP/sprintflow-image/sprintflow-image.tar"
+          docker tag "$CI_IMAGE" sprintflow-k8s:current
+      - name: Verify the rolling upgrade and the original shared session
+        run: bash scripts/verification/kubernetes-smoke.sh "$RUNNER_TEMP/kubernetes-tools/traefik.tgz"
+      - name: Install Chromium
+        working-directory: frontend/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Remove the pod serving the browser connection and verify event replay
+        working-directory: frontend/e2e
+        env:
+          E2E_KIND_CONTEXT: kind-sprintflow-ci
+          E2E_BASE_URL: http://127.0.0.1:18080
+        run: npx playwright test kubernetes-failover.e2e.ts --retries=0
+      - name: Show the isolated cluster state
+        if: failure()
+        run: |
+          kubectl --context kind-sprintflow-ci get pods,services,ingress -A || true
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci get events --sort-by=.lastTimestamp || true
+          kubectl --context kind-sprintflow-ci -n sprintflow-ci logs -l app.kubernetes.io/name=sprintflow --all-containers --tail=60 || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: kubernetes-failover-report
+          path: |
+            frontend/e2e/playwright-report/
+            frontend/e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove the isolated cluster
+        if: always()
+        run: if command -v kind >/dev/null; then kind delete cluster --name sprintflow-ci; fi
+
   mutation:
     runs-on: ubuntu-24.04
     permissions:
@@ -427,7 +496,7 @@ jobs:
   publish:
     # Only main pushes publish. Pull requests (including forks) never receive these permissions.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [ quality, docker, security, mutation, e2e, image-scan ]
+    needs: [ quality, docker, security, mutation, e2e, image-scan, kubernetes ]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
