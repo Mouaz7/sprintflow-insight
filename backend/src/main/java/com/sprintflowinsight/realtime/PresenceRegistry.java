@@ -14,12 +14,14 @@ import java.util.TreeSet;
  * Who is viewing which project, kept in memory on this instance. A WebSocket session is present in
  * a project while it subscribes to the project's events topic. Entries leave on UNSUBSCRIBE or
  * disconnect, and also when nobody has confirmed the session for {@code ttl}, so a lost disconnect
- * cannot leave a ghost viewer. With several instances each one only knows its own connections; C6
- * moves presence to the broker relay (ADR 0017).
+ * cannot leave a ghost viewer. In a cluster, {@link ClusterPresence} shares the viewer state across
+ * instances; the registry still owns local subscription bookkeeping.
  *
  * <p>Methods return the projects whose viewer list changed so the caller can broadcast them.
  */
 final class PresenceRegistry {
+  record View(long projectId, long userId, String name, Long taskId) {}
+
   /** One subscription; only events-topic subscriptions make the user a viewer. */
   private record Topic(long projectId, boolean events) {}
 
@@ -128,6 +130,17 @@ final class PresenceRegistry {
   synchronized int subscriptions(String sessionId) {
     Connection connection = connections.get(sessionId);
     return connection == null ? 0 : connection.subscriptions.size();
+  }
+
+  synchronized List<View> views(String sessionId) {
+    Connection connection = connections.get(sessionId);
+    if (connection == null) return List.of();
+    return connection.subscriptions.values().stream()
+        .filter(Topic::events)
+        .map(Topic::projectId)
+        .distinct()
+        .map(id -> new View(id, connection.userId, connection.name, connection.openTasks.get(id)))
+        .toList();
   }
 
   /** Distinct viewers of a project ordered by name, then id. */

@@ -26,6 +26,7 @@ public class EventPublicationMaintenance {
 
   private final IncompleteEventPublications publications;
   private final EventPublicationRepository registry;
+  private final EventPublicationClaims claims;
   private final Duration maxRetryAge;
   private final Clock clock;
 
@@ -33,41 +34,51 @@ public class EventPublicationMaintenance {
   public EventPublicationMaintenance(
       IncompleteEventPublications publications,
       EventPublicationRepository registry,
+      EventPublicationClaims claims,
       @Value("${app.events.max-retry-age:PT24H}") Duration maxRetryAge) {
-    this(publications, registry, maxRetryAge, Clock.systemUTC());
+    this(publications, registry, claims, maxRetryAge, Clock.systemUTC());
   }
 
   EventPublicationMaintenance(
       IncompleteEventPublications publications,
       EventPublicationRepository registry,
+      EventPublicationClaims claims,
       Duration maxRetryAge,
       Clock clock) {
     if (maxRetryAge.compareTo(MIN_AGE) <= 0)
       throw new IllegalArgumentException("app.events.max-retry-age must exceed " + MIN_AGE + ".");
     this.publications = publications;
     this.registry = registry;
+    this.claims = claims;
     this.maxRetryAge = maxRetryAge;
     this.clock = clock;
   }
 
   @Scheduled(fixedDelayString = "${app.events.retry-delay-ms:60000}")
   public void retry() {
-    Instant cutoff = clock.instant().minus(maxRetryAge);
-    var expired = registry.findIncompletePublicationsPublishedBefore(cutoff);
-    if (!expired.isEmpty()) {
+    Instant now = clock.instant();
+    Instant cutoff = now.minus(maxRetryAge);
+    var expiredIds = claims.claim(cutoff, null);
+    if (!expiredIds.isEmpty()) {
+      var expired =
+          registry.findIncompletePublicationsPublishedBefore(cutoff).stream()
+              .filter(item -> expiredIds.contains(item.getIdentifier()))
+              .toList();
       for (TargetEventPublication publication : expired)
         LOG.warn(
             "Giving up event publication {} of type {} after {} without completion.",
             publication.getIdentifier(),
-            publication.getEvent() == null ? "unknown" : publication.getEvent().getClass().getName(),
+            publication.getEvent() == null
+                ? "unknown"
+                : publication.getEvent().getClass().getName(),
             maxRetryAge);
-      registry.deletePublications(
-          expired.stream().map(TargetEventPublication::getIdentifier).toList());
+      if (!expired.isEmpty())
+        registry.deletePublications(
+            expired.stream().map(TargetEventPublication::getIdentifier).toList());
     }
-    Instant retryBefore = clock.instant().minus(MIN_AGE);
-    publications.resubmitIncompletePublications(
-        publication ->
-            publication.getPublicationDate().isBefore(retryBefore)
-                && !publication.getPublicationDate().isBefore(cutoff));
+    var retryIds = claims.claim(now.minus(MIN_AGE), cutoff);
+    if (!retryIds.isEmpty())
+      publications.resubmitIncompletePublications(
+          publication -> retryIds.contains(publication.getIdentifier()));
   }
 }

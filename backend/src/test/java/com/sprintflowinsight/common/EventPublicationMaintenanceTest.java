@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
@@ -26,9 +27,10 @@ class EventPublicationMaintenanceTest {
   private static final Instant NOW = Instant.parse("2026-11-15T12:00:00Z");
   private final IncompleteEventPublications publications = mock(IncompleteEventPublications.class);
   private final EventPublicationRepository registry = mock(EventPublicationRepository.class);
+  private final EventPublicationClaims claims = mock(EventPublicationClaims.class);
   private final EventPublicationMaintenance maintenance =
       new EventPublicationMaintenance(
-          publications, registry, Duration.ofHours(24), Clock.fixed(NOW, ZoneOffset.UTC));
+          publications, registry, claims, Duration.ofHours(24), Clock.fixed(NOW, ZoneOffset.UTC));
 
   @Test
   void givesUpPublicationsOlderThanTheMaxRetryAge() {
@@ -36,6 +38,7 @@ class EventPublicationMaintenanceTest {
     var expired = mock(TargetEventPublication.class);
     when(expired.getIdentifier()).thenReturn(expiredId);
     when(expired.getEvent()).thenReturn("payload");
+    when(claims.claim(NOW.minus(Duration.ofHours(24)), null)).thenReturn(Set.of(expiredId));
     when(registry.findIncompletePublicationsPublishedBefore(NOW.minus(Duration.ofHours(24))))
         .thenReturn(List.of(expired));
 
@@ -45,8 +48,11 @@ class EventPublicationMaintenanceTest {
   }
 
   @Test
-  void resubmitsOnlyPublicationsBetweenOneMinuteAndTheMaxRetryAge() {
-    when(registry.findIncompletePublicationsPublishedBefore(any())).thenReturn(List.of());
+  void resubmitsOnlyClaimedPublicationsBetweenOneMinuteAndTheMaxRetryAge() {
+    UUID older = UUID.randomUUID();
+    UUID oldest = UUID.randomUUID();
+    when(claims.claim(NOW.minus(Duration.ofMinutes(1)), NOW.minus(Duration.ofHours(24))))
+        .thenReturn(Set.of(older, oldest));
 
     maintenance.retry();
 
@@ -54,10 +60,9 @@ class EventPublicationMaintenanceTest {
     @SuppressWarnings("unchecked")
     ArgumentCaptor<Predicate<EventPublication>> filter = ArgumentCaptor.forClass(Predicate.class);
     verify(publications).resubmitIncompletePublications(filter.capture());
-    assertThat(filter.getValue().test(publishedAgo(Duration.ofSeconds(30)))).isFalse();
-    assertThat(filter.getValue().test(publishedAgo(Duration.ofMinutes(5)))).isTrue();
-    assertThat(filter.getValue().test(publishedAgo(Duration.ofHours(23)))).isTrue();
-    assertThat(filter.getValue().test(publishedAgo(Duration.ofHours(25)))).isFalse();
+    assertThat(filter.getValue().test(event(UUID.randomUUID()))).isFalse();
+    assertThat(filter.getValue().test(event(older))).isTrue();
+    assertThat(filter.getValue().test(event(oldest))).isTrue();
   }
 
   @Test
@@ -65,13 +70,13 @@ class EventPublicationMaintenanceTest {
     assertThatThrownBy(
             () ->
                 new EventPublicationMaintenance(
-                    publications, registry, Duration.ofSeconds(30), Clock.systemUTC()))
+                    publications, registry, claims, Duration.ofSeconds(30), Clock.systemUTC()))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  private static EventPublication publishedAgo(Duration age) {
+  private static EventPublication event(UUID id) {
     var publication = mock(EventPublication.class);
-    when(publication.getPublicationDate()).thenReturn(NOW.minus(age));
+    when(publication.getIdentifier()).thenReturn(id);
     return publication;
   }
 }
