@@ -70,7 +70,11 @@ test('updates two browsers, preserves comment drafts and recovers a dropped conn
       if (url.pathname === `/api/projects/${project.id}/events`)
         gapPositions.push(Number(url.searchParams.get('after')));
     });
+    const ownerConnection = page.waitForEvent('websocket', {
+      predicate: (socket) => new URL(socket.url()).pathname === '/ws',
+    });
     await page.goto('/tasks');
+    const ownerSocket = await ownerConnection;
     await peer.goto('/tasks');
     await expect(page.locator('.presence')).toHaveAttribute(
       'title',
@@ -193,6 +197,35 @@ test('updates two browsers, preserves comment drafts and recovers a dropped conn
       body: await peer.screenshot(),
       contentType: 'image/png',
     });
+
+    const pauseUpdates = page.getByRole('button', {
+      name: 'Pause live project updates',
+    });
+    const resumeUpdates = page.getByRole('button', {
+      name: 'Resume live project updates',
+    });
+    const paused = ownerSocket.waitForEvent('close');
+    await pauseUpdates.press('Space');
+    await expect(resumeUpdates).toBeFocused();
+    await paused;
+    await expectAccessible(page, 'realtime-updates-paused');
+
+    const peerStatus = peer
+      .locator('.task-board article')
+      .filter({ hasText: 'Recovered after a dropped connection' })
+      .getByRole('combobox', { name: 'Move to' });
+    const ownerStatus = page
+      .locator('.task-board article')
+      .filter({ hasText: 'Recovered after a dropped connection' })
+      .getByRole('combobox', { name: 'Move to' });
+    await peerStatus.selectOption('Review');
+    await expect(peerStatus).toHaveValue('Review');
+    await expect(ownerStatus).toHaveValue('In Progress');
+    await resumeUpdates.press('Enter');
+    await expect(pauseUpdates).toBeFocused();
+    await expect(ownerStatus).toHaveValue('Review');
+    await peerStatus.selectOption('Done');
+    await expect(ownerStatus).toHaveValue('Done');
     expect(peerErrors).toEqual([]);
   } finally {
     await peerContext.setOffline(false);

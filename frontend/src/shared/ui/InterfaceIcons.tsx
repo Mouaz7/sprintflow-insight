@@ -18,11 +18,15 @@ type IconName =
   | 'profile'
   | 'sun'
   | 'moon'
+  | 'pause'
+  | 'play'
   | 'calendar'
   | 'retrospective'
   | 'trash';
 
 const paths: Record<IconName, ReactNode> = {
+  pause: <path d="M9 5v14M15 5v14" />,
+  play: <path d="m9 5 11 7-11 7Z" />,
   data: (
     <>
       <path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4" />
