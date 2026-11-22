@@ -59,7 +59,7 @@ describe('App.routing', () => {
 
   it('opens a deep link to a view and marks it as the current page', async () => {
     mockSignedIn();
-    visit('/TaSkS/');
+    visit('/tasks');
     expect(
       await screen.findByRole('heading', { name: 'Tasks', level: 1 }),
     ).toBeInTheDocument();

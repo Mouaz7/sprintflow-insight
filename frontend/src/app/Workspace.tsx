@@ -151,7 +151,7 @@ function WorkspaceShell() {
   const t = useT(appText);
   const navigate = useNavigate();
   const location = useLocation();
-  const pathname = location.pathname.toLowerCase().replace(/\/+$/, '');
+  const pathname = location.pathname;
   const view = workspaceViews.find((candidate) => pathname === `/${candidate}`);
   const organizationPage =
     pathname === '/organizations' || pathname.startsWith('/o/');
