@@ -1,12 +1,19 @@
 /* Dashboard: summary, current work, sprint focus and a shared timeline. */
+.dashboard-page > .page-heading {
+  padding: var(--card-space);
+  margin-bottom: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-raised);
+}
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-grid);
-  margin-bottom: var(--space-section);
 }
 .overview-grid article {
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: var(--card-space);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -15,23 +22,28 @@
 }
 .overview-grid article > div {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   color: var(--muted);
   font-size: var(--text-body);
 }
-.stat-index {
-  color: var(--muted);
-  font-size: var(--text-small);
+.stat-icon {
+  display: grid;
+  flex: 0 0 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
 }
 .overview-grid strong {
   display: block;
   margin-block: 12px 6px;
   font:
-    800 var(--text-heading)/1.2 Manrope,
+    800 var(--text-heading)/1.2 'Manrope Variable',
     sans-serif;
   letter-spacing: -0.04em;
-  overflow-wrap: anywhere;
 }
 .overview-grid small {
   color: var(--muted);

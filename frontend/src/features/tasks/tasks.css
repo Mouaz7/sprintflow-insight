@@ -1,14 +1,13 @@
 /* Kanban: the board comes first; creation belongs to its editor. */
+.board-controls {
+  margin-bottom: var(--space-section);
+}
 .task-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 12px;
-  margin-bottom: var(--space-section);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  margin-top: 12px;
 }
 .task-filters > input {
   flex: 1 1 230px;
@@ -35,7 +34,7 @@
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface-raised);
 }
 .task-board > section > header {
@@ -143,10 +142,12 @@
   padding: 5px 8px;
 }
 .task-board .card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 6px;
 }
 .task-board .card-actions button {
-  flex: 1;
   padding: 5px 8px;
   font-size: var(--text-small);
 }

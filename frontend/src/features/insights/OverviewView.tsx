@@ -73,16 +73,19 @@ export function OverviewView({
       t('tasks'),
       metrics ? String(metrics.taskCount ?? 0) : '—',
       t('inThisProject'),
+      'tasks',
     ],
     [
       t('completion'),
       metrics ? `${metrics.completionRate ?? 0}%` : '—',
       t('ofAllWork'),
+      'overview',
     ],
     [
       t('throughput'),
       metrics ? String(metrics.throughputLast14Days ?? 0) : '—',
       t('last14Days'),
+      'flow',
     ],
     [
       t('deliveryHealth'),
@@ -92,8 +95,9 @@ export function OverviewView({
           ? t('healthHealthy')
           : '—',
       t('currentStatus'),
+      'metrics',
     ],
-  ];
+  ] as const;
   function sectionState(path: string, ready: boolean, empty: string) {
     return failed.includes(path) ? (
       <p className="form-message error" role="alert">
@@ -121,11 +125,13 @@ export function OverviewView({
       {failed.includes(`/projects/${id}/metrics`) &&
         sectionState(`/projects/${id}/metrics`, false, '')}
       <div className="overview-grid">
-        {cards.map(([label, value, detail], index) => (
+        {cards.map(([label, value, detail, icon]) => (
           <article key={label}>
             <div>
               <span>{label}</span>
-              <span className="stat-index">0{index + 1}</span>
+              <span className="stat-icon">
+                <InterfaceIcon name={icon} />
+              </span>
             </div>
             <strong>{value}</strong>
             <small>{detail}</small>

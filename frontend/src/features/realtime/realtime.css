@@ -7,10 +7,10 @@
   height: 8px;
   margin-right: 6px;
   border-radius: 50%;
-  background: var(--muted);
+  background: var(--nav-muted);
 }
 .presence-live .presence-dot {
-  background: var(--success-text);
+  background: #bdd6df;
 }
 .presence-avatar {
   flex-basis: 26px;

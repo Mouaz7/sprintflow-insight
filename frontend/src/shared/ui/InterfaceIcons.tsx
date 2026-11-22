@@ -14,6 +14,8 @@ type IconName =
   | 'time'
   | 'dashboard'
   | 'data'
+  | 'fields'
+  | 'automation'
   | 'updates'
   | 'profile'
   | 'sun'
@@ -25,6 +27,8 @@ type IconName =
   | 'trash';
 
 const paths: Record<IconName, ReactNode> = {
+  fields: <path d="M4 6h16M4 12h16M4 18h16M8 4v4m7 2v4m-5 2v4" />,
+  automation: <path d="M12 2 4 13h7l-1 9 10-12h-7l1-8Z" />,
   pause: <path d="M9 5v14M15 5v14" />,
   play: <path d="m9 5 11 7-11 7Z" />,
   data: (

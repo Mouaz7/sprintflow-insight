@@ -173,6 +173,8 @@ Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overvie
 
 Språk och tema delas av inloggningen och arbetsytan och sätts innan gränssnittet renderas. Plural och datum använder förkompilerade ICU-meddelanden för svenska och engelska. Vid byte av vy flyttas tangentbordsfokus till sidrubriken; skip-länken går direkt till huvudinnehållet.
 
+På dator grupperar sidomenyn vyerna under **Arbetsyta**, **Planering**, **Insikter** och **Administration**. På smalare skärmar öppnar **Öppna meny** samma vyer. Sökning, språk, tema, notiser och projektets liveuppdateringar finns i sidhuvudet.
+
 ## Shared design foundations (A7)
 
 Theme colours, typography and spacing live in `shared/styles/tokens.css`; responsive breakpoints are defined once in `shared/styles/breakpoints.css`. Feature styles sit with their feature and share one documented cascade. Inter/Manrope fonts are self-hosted, with local fallbacks and no Google Fonts stylesheet request.

@@ -193,7 +193,7 @@ input[type='file']::file-selector-button {
   min-width: 0;
   padding: var(--card-space);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface);
 }
 .brand {
@@ -215,8 +215,8 @@ input[type='file']::file-selector-button {
   height: 30px;
   flex: 0 0 30px;
   border-radius: 9px;
-  color: #faf8f5;
-  background: #243047;
+  color: var(--nav-text);
+  background: var(--sidebar);
 }
 .brand-home {
   padding: 0;

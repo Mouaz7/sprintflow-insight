@@ -24,18 +24,24 @@
   --chart-3: #47703b;
   --chart-4: #784a91;
   --chart-5: #9a6713;
+  --sidebar: #243047;
+  --nav-text: #faf8f5;
+  --nav-muted: #cbd3df;
+  --nav-control: #303c52;
+  --nav-active: #3c485e;
+  --nav-accent: #e77d59;
   --inline-space: 16px;
   --block-space: 20px;
   --card-space: 16px;
   --text-body: 14px;
   --text-small: 12px;
-  --text-heading: 26px;
-  --text-section: 18px;
+  --text-heading: 30px;
+  --text-section: 19px;
   --control-height: 36px;
   --compact-control-height: 32px;
   --field-font: 14px;
   --space-grid: 12px;
-  --space-section: 20px;
+  --space-section: 24px;
   --surface-shadow: 0 2px 8px #151d2a04, 0 8px 24px #151d2a03;
   color-scheme: light;
 }

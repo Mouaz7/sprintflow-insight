@@ -78,6 +78,26 @@ const projectFreeViews: readonly WorkspaceView[] = [
   'profile',
   'trash',
 ];
+const navigationGroups = [
+  ['workNavigation', ['overview', 'tasks', 'projects']],
+  ['planNavigation', ['backlog', 'sprints', 'roadmap', 'calendar', 'poker']],
+  [
+    'insightNavigation',
+    [
+      'dashboard',
+      'metrics',
+      'flow',
+      'forecast',
+      'time',
+      'updates',
+      'retrospective',
+    ],
+  ],
+  [
+    'manageNavigation',
+    ['organizations', 'fields', 'automation', 'data', 'profile', 'trash'],
+  ],
+] as const;
 
 export function rememberedView(userId: number): WorkspaceView {
   try {
@@ -299,29 +319,34 @@ function WorkspaceShell() {
   };
   const nav = (mobile = false) => (
     <nav aria-label={t(mobile ? 'mobileNavigation' : 'mainNavigation')}>
-      {workspaceViews
-        .filter((key) => key !== 'fields' && key !== 'automation')
-        .map((key) => (
-          <NavLink
-            key={key}
-            to={`/${key}`}
-            className={({ isActive }) => (isActive ? 'active' : '')}
-            onClick={() => setMenuOpen(false)}
-          >
-            <InterfaceIcon name={key} />
-            <span>{t(key)}</span>
-          </NavLink>
-        ))}
-      <NavLink
-        to="/organizations"
-        className={({ isActive }) =>
-          isActive || location.pathname.startsWith('/o/') ? 'active' : ''
-        }
-        onClick={() => setMenuOpen(false)}
-      >
-        <InterfaceIcon name="projects" />
-        <span>{t('organizations')}</span>
-      </NavLink>
+      {navigationGroups.map(([label, views]) => (
+        <div
+          key={label}
+          className="nav-group"
+          role="group"
+          aria-label={t(label)}
+        >
+          <p aria-hidden="true">{t(label)}</p>
+          {views.map((key) => (
+            <NavLink
+              key={key}
+              to={`/${key}`}
+              className={({ isActive }) =>
+                isActive ||
+                (key === 'organizations' && pathname.startsWith('/o/'))
+                  ? 'active'
+                  : ''
+              }
+              onClick={() => setMenuOpen(false)}
+            >
+              <InterfaceIcon
+                name={key === 'organizations' ? 'projects' : key}
+              />
+              <span>{t(key)}</span>
+            </NavLink>
+          ))}
+        </div>
+      ))}
     </nav>
   );
   return (
@@ -341,6 +366,27 @@ function WorkspaceShell() {
             </span>
             <strong>SprintFlow</strong>
           </Link>
+          <button
+            ref={menuButton}
+            className="menu-toggle icon-button"
+            type="button"
+            aria-label={t('openMenu')}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen(true)}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <div className="header-controls">
             <label className="project-control">
               <span>{t('project')}</span>
@@ -414,34 +460,10 @@ function WorkspaceShell() {
               </span>{' '}
               <span className="account-name">{accountName}</span>
             </Link>
-            <button
-              ref={menuButton}
-              className="menu-toggle icon-button"
-              type="button"
-              aria-label={t('openMenu')}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
-              onClick={() => setMenuOpen(true)}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
           </div>
         </div>
-        <div className="header-navigation">
-          {nav()}
-          <span className="workspace-caption">{t('caption')}</span>
-        </div>
       </header>
+      <aside className="header-navigation">{nav()}</aside>
       {menuOpen && (
         <MobileMenu
           onClose={() => {
@@ -500,10 +522,6 @@ function WorkspaceShell() {
           onNavigate={selectView}
         />
       )}
-      <footer className="workspace-footer">
-        <span>SprintFlow</span>
-        <span>{t('slogan')}</span>
-      </footer>
     </div>
   );
 }

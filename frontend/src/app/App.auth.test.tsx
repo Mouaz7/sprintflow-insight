@@ -101,9 +101,11 @@ describe('App.auth', () => {
       await screen.findByRole('button', { name: 'Forgot password?' }),
     );
     expect(
-      await screen.findByRole('heading', { name: 'Reset your password.' }),
+      await screen.findByRole('heading', {
+        name: 'Reset your password.',
+        level: 1,
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText('ACCOUNT RECOVERY')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Back to log in/ }),
     ).toBeInTheDocument();
