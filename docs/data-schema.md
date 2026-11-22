@@ -19,8 +19,12 @@ erDiagram
     TASK ||--o{ TASK_COMMENT : receives
     TASK ||--o{ TIME_ENTRY : records
     TASK ||--o{ TASK_LINK : links
-    CRDT_DOC ||--o{ CRDT_UPDATE : orders
+    PROJECTS ||--o{ RETROSPECTIVE_ENTRY : contains
+    PROJECTS ||--o{ CRDT_DOC : scopes
+    TASK o|--o| CRDT_DOC : describes
+    RETROSPECTIVE_ENTRY o|--o| CRDT_DOC : describes
     CRDT_DOC ||--o{ CRDT_RECEIPT : deduplicates
+    CRDT_RECEIPT ||--o| CRDT_UPDATE : retains
     USERS ||--o{ PERSONAL_ACCESS_TOKEN : owns
     PROJECTS ||--o{ OUTBOUND_WEBHOOK : configures
     OUTBOUND_WEBHOOK ||--o{ OUTBOUND_WEBHOOK_DELIVERY : queues
