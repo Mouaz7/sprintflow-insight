@@ -65,7 +65,17 @@ The 48-observation holdout contained 12 late outcomes. The smoothed pooled base 
 
 ### RQ5 — usability and accessibility
 
-The browser suite includes axe checks and keyboard flows for the documented views, including offline recovery. Participant response data are pending. The report has no measured SUS aggregate yet. Complete a criterion-by-criterion manual review before making an AA conformance claim. [Browser verification](../testing.md).
+The browser suite includes axe checks and keyboard flows for the documented views, including offline recovery. A focused Chromium review on the B13 package (`5cfbc24`) used a disposable project with one task. It produced these observations. [Browser verification](../testing.md).
+
+| WCAG 2.2 criterion | Browser action and observed result |
+| --- | --- |
+| 2.1.1 Keyboard | Focused the task's Move to select and used Arrow Down and Enter. The server recorded the task in In Progress. |
+| 2.1.2 No Keyboard Trap and 2.4.3 Focus Order | Opened Comments with Enter and pressed Tab eight times. Focus started and stayed inside the panel. Escape closed it and returned focus to the Comments button. |
+| 2.4.1 Bypass Blocks and 2.4.7 Focus Visible | Pressed Tab after directly loading Tasks. Skip to content received visible focus. Enter moved focus to the workspace main landmark. |
+| 1.4.10 Reflow | Opened Tasks, Organizations, Automation with Outgoing webhooks expanded, and Metrics at 320 CSS pixels. The document and main region each measured 320 CSS pixels without horizontal overflow. |
+| 4.1.3 Status Messages | Went offline with the cached Tasks page open. Chromium exposed the offline message with a `status` role in its accessibility tree. |
+
+The selected observations cover one browser, fixture and interaction per criterion. The remaining review includes criterion coverage across the target flows and checking announcements with assistive technology. The SUS survey has yet to be conducted.
 
 ### RQ6 — realtime and CRDT delivery
 
