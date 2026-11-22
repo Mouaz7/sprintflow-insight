@@ -2,9 +2,9 @@
 
 ## Scope
 
-This review covers the packaged SprintFlow revision `a05e41b` and four study tasks in disposable projects. The sample includes creating and moving a task, finding Metrics, and resolving a queued edit after reconnecting. The browser suite also exercises password sign-in, a populated Flow analysis report, a read-only project, and offline collaborative text. Prior Chromium and Orca observations and their revisions are recorded in the evaluation report. The assessment target is WCAG 2.2 A and AA. [Evaluation report](report.md) · [WCAG 2.2](https://www.w3.org/TR/WCAG22/) · [WCAG-EM 2.0](https://www.w3.org/TR/wcag-em-2/).
+This review covers the packaged SprintFlow revision `a05e41b` and four study tasks in disposable projects, with additional browser and screen-reader checks on revision `0362f83`. The sample includes creating and moving a task, finding Metrics, and resolving a queued edit after reconnecting. The browser suite also exercises sign-in, a populated Flow analysis report, a read-only project, offline collaborative text and selected administrative states. Prior Chromium and Orca observations and their revisions are recorded in the evaluation report. The assessment target is WCAG 2.2 A and AA. [Evaluation report](report.md) · [WCAG 2.2](https://www.w3.org/TR/WCAG22/) · [WCAG-EM 2.0](https://www.w3.org/TR/wcag-em-2/).
 
-The matrix records evidence for the inspected states. Interface areas outside the sample, including other authentication methods, installation surfaces, exports and administrative workflows, require additional coverage for a product-wide AA assessment.
+The matrix records evidence for the inspected states. A product-wide AA assessment requires additional coverage for areas such as installation, external identity providers, other export formats, and administrative states outside the sample.
 
 ## Browser results
 
@@ -19,6 +19,20 @@ The six existing Playwright cases exercised sign-in and sign-out, a project with
 The 45 completed scans reported zero violations for the project's selected WCAG axe rules. The initial run combined the secure-cookie default with HTTP and WebKit stayed at sign-in. The Firefox report case reported a browser-process crash in that run and completed in the serial comparison. The WebKit read-only-project trace hit the test deadline while opening a new viewer page. [Browser suite and axe rules](../testing.md).
 
 WebKit also completed sign-in, the project workflow and both offline cases on a loopback HTTPS instance with the secure-session setting. The queued-edits case reached the test deadline on the group run and passed on an isolated rerun. This comparison used an isolated self-signed test certificate and the same packaged application.
+
+### Authentication, organization and data management follow-up
+
+Chromium 159 ran five existing cases on `0362f83`. Nine axe scans reported zero violations for the selected rules. These observations extend the sample to two additional authentication methods, two organization views and the account export.
+
+| Case | Observed result | Axe states |
+| --- | --- | --- |
+| Browser passkey | Registered a virtual passkey, signed out and signed back in with authenticator user verification. | Passkey settings |
+| Two-factor authentication | Enrolled with an authenticator and completed sign-in with a recovery code. | Security settings and verification challenge |
+| Organization | Created an organization, accepted an invitation and applied a scoped project template. | Organization projects and team roster |
+| CSV import and account export | Mapped statuses, confirmed the import, verified the audit history and downloaded a ZIP whose manifest listed the imported tasks. | Import preview, audit history and account export |
+| Jira import | Mapped historical data in the Swedish dark mobile interface. | Import preview |
+
+To repeat these cases, set the local app's `SPRINTFLOW_PUBLIC_URL` and the browser suite's `E2E_BASE_URL` to the same `http://localhost:<port>` origin. Run `passkeys.e2e.ts two-factor.e2e.ts organizations.e2e.ts import-export.e2e.ts` with `--project=chromium`. [Browser verification](../testing.md).
 
 ### Reproduce the browser comparison
 
@@ -58,9 +72,13 @@ E2E_BASE_URL=http://127.0.0.1:8081 npx playwright test \
 
 For the additional loopback HTTPS check, set `E2E_BASE_URL` to the disposable TLS origin and use only `auth.e2e.ts`, `workspace.e2e.ts` and `offline.e2e.ts` with `--project=webkit` at the end. Use `RQ5_LOCAL_TEST_CERT=1` with the generated test certificate.
 
-## Confirmed barrier
+## Character shortcuts (2.1.4)
 
-In Chromium, pressing `c` with the workspace main landmark focused opened the New task dialog. The document-level shortcut listener implements a fixed map for `c`, `/`, `?` and sequences beginning with `g`. The shortcut dialog offers a reference list, and the inspected preference flow leaves that map fixed. This is a 2.1.4 finding for the sampled release. [Shortcut implementation](../../frontend/src/features/search/shortcuts.ts) · [W3C guidance on character shortcuts](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html).
+In the baseline revision `a05e41b`, pressing `c` with the workspace main landmark focused opened the New task dialog. The document-level listener used a fixed map for `c`, `/`, `?` and sequences beginning with `g`. The shortcut dialog offered a reference list. [W3C guidance on character shortcuts](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html).
+
+Revision `0362f83` adds a labelled checkbox in the Keyboard shortcuts dialog. The packaged-app regression used Ctrl+K, Enter, Tab and Space to turn the shortcuts off and Escape to close the dialog. After a reload the checkbox was still unchecked. Pressing `c`, `/`, `?` and the `g` then `m` sequence kept the task view open. After re-enabling, `g` then `m` opened Metrics. The three search-suite cases passed on each of Chromium 159, Firefox 159 and WebKit 27.2. The nine axe scans from those cases reported zero violations for the selected rules. Add `search.e2e.ts` to the browser comparison command to repeat the test. [Code change](https://github.com/Mouaz7/sprintflow-insight/pull/94).
+
+Orca 46.1 on Chromium read the checkbox label, role and checked state when Tab moved focus to it. Chromium emitted an AT-SPI checked-state event when Space cleared the checkbox. The targeted check kept keyboard focus on the checkbox until Escape closed the dialog.
 
 ## Criterion matrix
 
@@ -84,7 +102,7 @@ In Chromium, pressing `c` with the workspace main landmark focused opened the Ne
 | 1.4.13 | AA | Review custom hover and focus disclosures for dismissal, pointer access and persistence. |
 | 2.1.1 | A | Keyboard operation reached task creation, task movement, Metrics and conflict resolution. |
 | 2.1.2 | A | Escape closed the Comments panel and restored focus to its opening control. |
-| 2.1.4 | A | Confirmed barrier. The global `c` shortcut opened New task from the main landmark and the shortcut map is fixed. |
+| 2.1.4 | A | The baseline allowed `c` to open New task from the main landmark. In the follow-up, the workspace shortcut map could be turned off with the keyboard and stayed off after a reload in all three engines. |
 | 2.2.1 | A | Review the session and offline time limits and whether each applicable limit can be adjusted. |
 | 2.2.2 | A | Evaluate automatically changing data and notices with multiple active clients and a longer observation window. |
 | 2.3.1 | A | Review the motion and feedback states for flashing. The inspected studies used reduced-motion settings in the browser suite. |
@@ -114,6 +132,6 @@ In Chromium, pressing `c` with the workspace main landmark focused opened the Ne
 | 3.3.3 | AA | The required-title message identifies the value to supply. Additional validation and error paths need review. |
 | 3.3.4 | AA | The conflict flow pauses before applying the stale operation and offers a choice. Review other relevant changes and deletions separately. |
 | 3.3.7 | A | The queued edit can be submitted again from Redo my change using its stored value. |
-| 3.3.8 | AA | Clipboard pasting filled both fields and completed the standard email and password sign-in. Other authentication steps need separate coverage. |
-| 4.1.2 | A | The sampled editor, status selector and conflict buttons expose roles and names. Validate dynamic states and dialogs across further flows. |
+| 3.3.8 | AA | Clipboard pasting completed password sign-in. Follow-up cases completed passkey sign-in and used a recovery code to answer the two-factor challenge. Remaining authentication steps need separate coverage. |
+| 4.1.2 | A | The sampled editor, status selector and conflict buttons expose roles and names. Orca read the name, role and checked state of the shortcut checkbox. Chromium exposed the state change through AT-SPI. |
 | 4.1.3 | AA | Orca announced the offline state and the number of conflicts needing review without moving focus to the message. |

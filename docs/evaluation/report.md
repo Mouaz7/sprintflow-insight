@@ -73,6 +73,18 @@ CP-SAT proved an optimum in all 64 fixed cases in the recorded comparison. It ma
 
 The 48-observation holdout contained 12 late outcomes. The smoothed pooled base rate returned AUC 0.5000 and Brier 0.1948. Pooled logistic regression returned AUC 0.4560 and Brier 0.3503. Calibration bins show substantial underestimation in part of the holdout. [Cohort, metrics and calibration](apache-jira-risk.md).
 
+### Mutation coverage for the algorithm packages
+
+The PIT XML from the successful run for `9ab9794` was grouped by mutated class package. The table uses PIT's `detected` flag and lists killed mutants and timeouts explicitly. All three packages exceeded the 70% issue threshold even when counting only killed mutants. [CI run and mutation artifact](https://github.com/Mouaz7/sprintflow-insight/actions/runs/45005333725).
+
+| Package under `com.sprintflowinsight` | Mutants | Killed | Timed out | Detected |
+| --- | ---: | ---: | ---: | ---: |
+| `forecast` | 578 | 506 | 17 | 90.48% |
+| `planning.optimizer` | 500 | 445 | 5 | 90.00% |
+| `risk` | 506 | 465 | 1 | 92.09% |
+
+The same run passed the forecast, planning and risk unit suites, including their jqwik properties. `ForecastIntegrationTest` and `TaskRiskIntegrationTest` passed all 14 cases. The CI run publishes the underlying test reports.
+
 ### RQ5 — usability and accessibility
 
 The browser suite includes axe checks and keyboard flows for the documented views, including offline recovery. A focused Chromium review on the B13 package (`5cfbc24`) used a disposable project with one task. It produced these observations. [Browser verification](../testing.md).
@@ -105,7 +117,9 @@ The reporting browser test checked the Cumulative flow figure, its seven data ro
 
 The original workspace used the same browser-tab title for Tasks, Metrics and the Swedish Metrics view. The follow-up verified distinct Tasks and Metrics titles and the localized `Mätvärden · SprintFlow` title after switching languages. The offline browser test also checked the title after reloading the cached Tasks view (2.4.2). [Page titles](https://www.w3.org/WAI/WCAG22/Understanding/page-titled.html).
 
-The reviewed views are a process sample. The criterion matrix records the coverage for all 55 A and AA criteria. The browser follow-up exercised six cases per engine in Chromium, Firefox and WebKit, with one isolated WebKit rerun. A manual check reproduced a global printable-key shortcut that opened the task dialog from the workspace main landmark (2.1.4). The SUS survey has yet to be conducted. [Accessibility coverage](accessibility-coverage.md) · [W3C evaluation methodology](https://www.w3.org/WAI/test-evaluate/conformance/wcag-em/).
+The reviewed views are a process sample. The criterion matrix records the coverage for all 55 A and AA criteria. The browser follow-up exercised six cases per engine in Chromium, Firefox and WebKit, with one isolated WebKit rerun. A manual check reproduced a global printable-key shortcut that opened the task dialog from the workspace main landmark (2.1.4). The follow-up on `0362f83` verified in all three engines that users can turn these shortcuts off with the keyboard, keep the setting after reload and re-enable them. Orca announced the checkbox name, role and checked state when reached with Tab. [Accessibility coverage](accessibility-coverage.md) · [W3C evaluation methodology](https://www.w3.org/WAI/test-evaluate/conformance/wcag-em/).
+
+Five further Chromium cases on `0362f83` covered passkeys, two-factor authentication, organization access, import, audit and account export. All nine automated scans from those cases reported zero violations for the selected rules. The SUS survey has yet to be conducted. [Authentication, organization and data management follow-up](accessibility-coverage.md#authentication-organization-and-data-management-follow-up).
 
 ### RQ6 — realtime and CRDT delivery
 
