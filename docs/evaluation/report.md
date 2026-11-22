@@ -21,6 +21,14 @@ SprintFlow combines a project-scoped PostgreSQL application, a React client, sce
 
 The WCAG 2.2 AA evaluation combines automated checks with keyboard, focus, zoom and assistive-technology review of the selected flows. The usability protocol asks participants to create a task, move it, find a report and resolve a conflicting edit using fixtures. Capture completion and observations during the task. Collect ten anonymous ratings immediately afterward. Store only ordered responses `q1,q2,q3,q4,q5,q6,q7,q8,q9,q10` with values 1–5 in an external CSV. [WCAG 2.2](https://www.w3.org/TR/WCAG22/) · [Brooke's SUS chapter](https://www.taylorfrancis.com/chapters/edit/10.1201/9781498710411-35/sus-quick-dirty-usability-scale-john-brooke).
 
+### Usability session procedure
+
+1. Give every participant the same app revision, browser and starting project. Reset the fixture between sessions. Explain that the study evaluates the workspace and participation is voluntary.
+2. Use the same four prompts in order. Ask the participant to create a task with a supplied title, move it to In Progress, find the project metrics, then resolve an offline edit conflict. For the final task, open the cached board offline and have the participant move the comparison task. Apply a second edit from a connected session before reconnecting the participant's browser. Ask the participant to keep the server version.
+3. Record whether each task was completed and whether it required help. Capture usability observations without recording identifying details. Keep any interventions consistent across sessions.
+4. Immediately after the tasks, give each participant Brooke's ten statements in their original order, using the five-point agreement scale described in the instrument. Collect the ratings before discussing the session. Give participants the same questionnaire language for all sessions and report the language used.
+5. Export one row per complete questionnaire without names, accounts or timestamps. Provide it through `EVAL_SUS_CSV` and report the number of valid responses alongside the aggregate score.
+
 ## Implementation
 
 Run `make eval` with Java 25, Maven and Node 24. Results go to `artifacts/evaluation` by default. The runner reproduces the committed aggregate Jira analyses, generates the synthetic series and invokes the existing solver and risk benchmarks. It keeps the private usability CSV outside the repository.
@@ -69,8 +77,10 @@ The browser suite includes axe checks and keyboard flows for the documented view
 
 | WCAG 2.2 criterion | Browser action and observed result |
 | --- | --- |
-| 2.1.1 Keyboard | Focused the task's Move to select and used Arrow Down and Enter. The server recorded the task in In Progress. |
+| 2.1.1 Keyboard and 2.4.3 Focus Order | Reached New task, Title and Create task by Tab and created a task using the keyboard. Then used Arrow Down and Enter on Move to. The server recorded the task in In Progress. |
+| 2.1.1 Keyboard and 2.4.7 Focus Visible | Moved the task offline using the keyboard and edited it from a connected session. After reconnecting, Keep server version had a visible focus indicator. Enter resolved the conflict and retained the connected edit. |
 | 2.1.2 No Keyboard Trap and 2.4.3 Focus Order | Opened Comments with Enter and pressed Tab eight times. Focus started and stayed inside the panel. Escape closed it and returned focus to the Comments button. |
+| 2.4.3 Focus Order | Activated Metrics in the navigation with Enter. The Metrics heading received focus when the route rendered. |
 | 2.4.1 Bypass Blocks and 2.4.7 Focus Visible | Pressed Tab after directly loading Tasks. Skip to content received visible focus. Enter moved focus to the workspace main landmark. |
 | 1.4.10 Reflow | Opened Tasks, Organizations, Automation with Outgoing webhooks expanded, and Metrics at 320 CSS pixels. The document and main region each measured 320 CSS pixels without horizontal overflow. |
 | 4.1.3 Status Messages | Went offline with the cached Tasks page open. Chromium exposed the offline message with a `status` role in its accessibility tree. |
