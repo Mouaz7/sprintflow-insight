@@ -40,6 +40,12 @@ Run `make eval` with Java 25, Maven and Node 24. Results go to `artifacts/evalua
 - For RQ6, install the locked script dependencies with `npm ci --prefix scripts` and set `EVAL_REALTIME_SINGLE_URL` and `EVAL_REALTIME_CLUSTER_URL` to the respective disposable endpoints. Use the same application image and broker across the replica comparison. `EVAL_REALTIME_CLIENTS` can select a smaller smoke sample from the supported range.
 - The quality workflow's `evaluate_replicas` input runs RQ6 in one kind cluster. It measures with two ready replicas, scales the disposable release to one replica and measures again. The artifact records both sets of measurements.
 
+### Reproduction and access checks
+
+On the report revision `d7ba4e6`, `make eval` reproduced the forecast tables and both risk outputs byte for byte. All 160 solver rows matched the recorded fixture, solver outcomes and bounds when excluding measured runtimes. The archived k6 reports retain the request protocol and measured results. Each of the one- and two-replica kind reports records complete delivery for both streams at all five load levels. The runner reports SUS separately when participant responses are supplied. [Technical results](results/) · [Solver benchmark](sprint-plan-solvers.md).
+
+The evaluation uses the existing REST and STOMP interfaces documented in OpenAPI and the realtime and collaboration design records. The report branch carries the same `docs/openapi.yaml` file as the application baseline. The successful `d7ba4e6` CI run passed 32 project-access, event-log and WebSocket integration cases, including all four project roles and access rejections for outsiders. The shared-text documentation contains the STRIDE review for the collaboration interfaces exercised by the benchmark. [OpenAPI](../openapi.yaml) · [Realtime ADR](../adr/0017-realtime-stomp-and-sequence-numbers.md) · [Collaboration threat review](../collaboration.md#threat-review) · [CI test artifacts](https://github.com/Mouaz7/sprintflow-insight/actions/runs/45039284362).
+
 ## Results
 
 ### RQ1 — workspace reads
@@ -123,7 +129,7 @@ Five further Chromium cases on `0362f83` covered passkeys, two-factor authentica
 
 The contrast follow-up measured the Project and Language controls on the header and the Custom field filter inside Search. The dark search filter's border-to-dialog ratio rose from 2.02:1 to 3.22:1. Its light-theme ratio was 3.29:1 in the follow-up. Both header select outlines had a 4.71:1 ratio against the header across themes. Chromium, Firefox and WebKit agreed on these ratios. [Control contrast results](accessibility-coverage.md#control-contrast-1411).
 
-Two status changes made by a project member appeared automatically on a second account's board while it retained keyboard focus in the task search field. The sampled board and settings offered no control to pause the automatic changes or set their frequency (2.2.2). Search and its Keyboard shortcuts command were reached from the same header position on Tasks, Metrics, Flow and Profile. The SUS survey has yet to be conducted. [Automatic updates and shared help](accessibility-coverage.md#automatic-updates-and-shared-help).
+Two status changes made by a project member appeared automatically on a second account's board in the baseline. In the follow-up, the owner paused the live project feed with Space and kept the displayed task status while the member moved the task. Resuming with Enter refreshed the board and restored automatic updates (2.2.2). Search and its Keyboard shortcuts command were reached from the same header position on Tasks, Metrics, Flow and Profile. The SUS survey has yet to be conducted. [Automatic updates and shared help](accessibility-coverage.md#automatic-updates-and-shared-help).
 
 A shortened 12-second test session exercised the task editor's expiry path. The session expired without an observed warning. The editor kept the draft after the failed submission, and reloading and signing in again opened an empty editor (2.2.1). [Session timeout results](accessibility-coverage.md#session-timeout-221).
 
