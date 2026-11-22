@@ -17,10 +17,11 @@
   align-content: start;
   gap: 14px;
   padding: clamp(32px, 5vw, 64px);
-  color: #edf1ff;
+  color: var(--nav-text);
   background:
-    linear-gradient(155deg, #141a37f5 10%, #141a37b8 35%, #141a3726 80%),
-    url('/images/sign-in-staircase.webp') center / cover #181f39;
+    linear-gradient(155deg, #243047f5 10%, #243047b8 35%, #24304726 80%),
+    url('/images/sign-in-staircase.webp') center / cover var(--sidebar);
+  background-blend-mode: normal, luminosity;
 }
 .auth-story-title {
   max-width: 13ch;
@@ -31,7 +32,7 @@
 }
 .auth-story > p + p {
   max-width: 32ch;
-  color: #d7def7;
+  color: var(--nav-muted);
   line-height: 1.65;
 }
 .auth-panel {

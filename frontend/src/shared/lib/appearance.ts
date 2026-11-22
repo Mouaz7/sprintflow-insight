@@ -5,8 +5,8 @@ export type Theme = 'light' | 'dark';
 const languageKey = 'sprintflow-language';
 const themeKey = 'sprintflow-theme';
 const themeColors: Record<Theme, string> = {
-  light: '#F2F4FA',
-  dark: '#10162A',
+  light: '#FAF8F5',
+  dark: '#151D2A',
 };
 
 function read(key: string): string | null {

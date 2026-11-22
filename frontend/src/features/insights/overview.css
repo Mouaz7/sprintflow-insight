@@ -4,7 +4,7 @@
   margin-bottom: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(115deg, var(--surface), var(--accent-soft));
+  background: var(--surface-raised);
 }
 .overview-grid {
   display: grid;

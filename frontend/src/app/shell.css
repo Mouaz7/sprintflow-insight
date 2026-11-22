@@ -1,18 +1,25 @@
+.workspace-header,
+.header-navigation {
+  color: var(--nav-text);
+  background: var(--sidebar);
+}
 .workspace-header {
   grid-column: 1 / -1;
-  color: var(--text);
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--nav-active);
 }
 .header-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: min(1800px, 100%);
   min-height: 68px;
-  margin-inline: auto;
   padding: 12px var(--inline-space);
+}
+.workspace-header .brand-mark {
+  background: var(--nav-active);
+}
+.workspace-header :is(a, button):focus-visible {
+  outline-color: var(--nav-accent);
 }
 .header-controls {
   display: flex;
@@ -29,19 +36,22 @@
   font-weight: 400;
 }
 .header-controls .project-control > span {
-  color: var(--muted);
+  color: var(--nav-muted);
   font-size: 13px;
 }
 .header-controls
   :is(.project-control > select, .language-control, .theme-toggle) {
   height: var(--control-height);
-  color: var(--text);
-  border-color: var(--muted);
-  background: var(--input-bg);
-  outline-color: var(--accent);
+  color: var(--nav-text);
+  border-color: var(--nav-muted);
+  background: var(--nav-control);
+  outline-color: var(--nav-accent);
 }
 .header-controls .project-control select {
   width: clamp(140px, 19vw, 280px);
+}
+.header-controls :is(.project-control > select, .language-control) {
+  color-scheme: dark;
 }
 .language-selector {
   position: relative;
@@ -76,7 +86,7 @@
   cursor: pointer;
 }
 .workspace-header .theme-toggle:hover {
-  background: var(--accent-soft);
+  background: var(--nav-active);
 }
 .account-profile {
   display: flex;
@@ -85,8 +95,8 @@
   min-height: var(--control-height);
   padding: 0 0 0 12px;
   border: 0;
-  border-left: 1px solid var(--line);
-  color: var(--text);
+  border-left: 1px solid var(--nav-active);
+  color: var(--nav-text);
   background: transparent;
   font-size: var(--text-body);
 }
@@ -103,8 +113,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-text);
+  background: var(--nav-text);
+  color: var(--sidebar);
   font-family: 'Manrope Variable', 'Manrope Fallback', sans-serif;
   font-weight: 800;
   overflow: hidden;
@@ -116,8 +126,6 @@
 }
 .header-navigation {
   min-width: 0;
-  color: var(--nav-text);
-  background: var(--sidebar);
 }
 .header-navigation nav {
   position: sticky;
@@ -133,7 +141,7 @@
 }
 .nav-group p {
   padding: 0 10px 5px;
-  color: var(--nav-accent);
+  color: var(--nav-muted);
   font-size: var(--text-small);
   font-weight: 650;
 }
@@ -144,7 +152,7 @@
   min-height: var(--control-height);
   padding: 7px 10px;
   border-radius: 8px;
-  color: var(--nav-text);
+  color: var(--nav-muted);
   font-size: 13px;
   font-weight: 500;
 }
@@ -226,7 +234,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0;
 }
 .empty-state {
   display: grid;
