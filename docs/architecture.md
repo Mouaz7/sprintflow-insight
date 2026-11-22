@@ -19,6 +19,39 @@ Spring Boot REST API (port 8081)
 PostgreSQL + Flyway migrations
 ```
 
+## C4 system context
+
+```mermaid
+flowchart LR
+    Team["Team member"] -->|plans and follows work| SprintFlow["SprintFlow Insight"]
+    Integrator["Integration owner"] -->|uses scoped access token| SprintFlow
+    GitHub["GitHub"] -->|signed push and pull request events| SprintFlow
+    SprintFlow -->|signed project events| Receiver["Webhook receiver"]
+    SprintFlow -->|optional sign-in and email| Services["Google Identity and SMTP"]
+```
+
+## C4 containers
+
+```mermaid
+flowchart TB
+    Browser["Browser · React, Query cache and Yjs"]
+    Local[("Browser storage · IndexedDB and static cache")]
+    Ingress["Kubernetes Ingress or direct Compose port"]
+    App["Spring Boot · REST, authentication and STOMP"]
+    DB[("PostgreSQL · workspace, sessions and event log")]
+    Relay["RabbitMQ STOMP relay · Kubernetes"]
+    Monitor["Prometheus, Tempo and Grafana · optional"]
+    Browser <-->|HTTPS REST and WebSocket| Ingress
+    Browser <-->|account-scoped offline data| Local
+    Ingress <-->|routes requests and upgrades| App
+    App <-->|Flyway, JPA, JDBC and outbox| DB
+    App <-->|cross-replica topics| Relay
+    Monitor -->|private metrics| App
+    App -->|OTLP traces| Monitor
+```
+
+Compose runs one application container with PostgreSQL and the in-process STOMP broker. Helm adds multiple app replicas and RabbitMQ. Spring Security uses the same session and project authorization in both deployment modes.
+
 ## Boundaries
 
 - The frontend is split into `app/` (shell, routes and composition), `features/{auth,tasks,planning,insights,projects,profile,onboarding,search}`, `shared/{ui,i18n,lib,theme}` and `api/`. Features may import only themselves, `shared` and `api`; ESLint enforces this ([ADR 0008](adr/0008-frontend-feature-folders-and-lint.md)). Test helpers in `src/test` may be imported by tests only.
@@ -29,7 +62,7 @@ PostgreSQL + Flyway migrations
 - Token-bucket rate limits ([ADR 0003](adr/0003-token-bucket-rate-limiting.md)): credential routes per client address (30 login/Google/token-confirmation attempts, 20 registrations and 10 recovery requests per minute) and all other API writes per account (300 per minute, uploads 30). Rejections return a 429 problem with `Retry-After`. Forwarded IP headers are not trusted.
 - `ProjectAccessService` loads an `AccessContext` (project state and the caller's role) with one query per request and checks a declared need: read, write, manage, or owner, each with or without archive protection ([ADR 0004](adr/0004-single-query-access-context.md)). Admins manage members and viewers; only the owner manages admins.
 - Every error is an RFC 9457 problem document with a stable `code` and `type` from the `ErrorCode` catalogue ([ADR 0001](adr/0001-problem-details-error-catalogue.md)). Request bodies are explicit records, never JPA entities.
-- PostgreSQL 16 is used in production and tests. Testcontainers supplies disposable databases through `@ServiceConnection`; H2 is removed. V8 is PostgreSQL SQL with a partial unique index; existing installations need the one-time history repair in [ADR 0005](adr/0005-postgresql-tests-and-sql-migrations.md).
+- PostgreSQL 16 is used in production and tests. Testcontainers supplies the disposable database through shared `JdbcConnectionDetails`. V8 is PostgreSQL SQL with a partial unique index. Older installations that ran the Java V8 migration need the documented Flyway history repair. [ADR 0005](adr/0005-postgresql-tests-and-sql-migrations.md).
 - Connection failures in controllers or the JDBC session filter return a generic 503 problem with `Retry-After: 5` while the response is still buffered. Health reports DOWN during an outage; restoring connectivity lets the connection pool and existing sessions recover without restarting the app.
 - Project and notification visibility is filtered in database queries. Both list endpoints accept optional `page` and `size` parameters; existing clients can omit `page` to receive the complete accessible list. Due-date reminders query eligible tasks in batches of 200 and load project memberships in batches.
 
@@ -47,7 +80,7 @@ The original redesign reused the existing REST routes and schema. The subsequent
 
 ## Local verification
 
-The backend test suite covers session-protected API flows, roles, attachments, project-scoped metrics and CSRF/security headers. The React test suite covers UI flows, routing, CSRF use in the REST client (through MSW), axe accessibility checks and the 5,000-item virtualization budget. CI runs both suites, builds the production React client, packages it into Spring Boot, verifies the frontend is present in the JAR, and stores the package as a seven-day workflow artifact. Automated deployment is not configured because this repository has no deployment target.
+The backend test suite covers session-protected API flows, roles, attachments, project-scoped metrics and CSRF/security headers. The React test suite covers UI flows, routing, CSRF use in the REST client through MSW, axe accessibility checks and the 5,000-item virtualization budget. CI packages the React client in the Spring Boot JAR, tests the container, and publishes signed images from the passing main pipeline. The Kubernetes job tests a rolling upgrade and removal of the pod holding an active WebSocket.
 
 Run `./mvnw clean verify` in `backend` with Java 25 and Docker running. Testcontainers creates and removes its own PostgreSQL databases; no external test URL or database credentials are needed. CI runs the same suite, enforces JaCoCo coverage and runs PIT against selected logic classes in a separate job. See [backend testing](testing.md) for reports, thresholds, migration fixtures and fault injection.
 
@@ -57,7 +90,7 @@ Backend feature packages now live in `auth`, `workspace/{project,story,task,spri
 
 The generated [C4 component diagram](architecture/components.puml) and [module documentation](architecture/all-docs.adoc) are regenerated by `ModuleArchitectureTest`. [ADR 0006](adr/0006-modulith-and-transactional-events.md) explains the module boundaries, their initial read interfaces, and why workspace features currently share one transactional module.
 
-Task movement and comments publish typed events within their transaction. Notification listeners run after commit through the JDBC event registry, retry failed delivery and deduplicate by event/recipient. Identity/reference cleanup and deletion checks stay synchronous and atomic. Events reference users by id, and listeners resolve the current account at delivery, so an email change before delivery still arrives and stored publications hold no email address. Successful event publications are deleted; outstanding failures remain queryable and retry on restart or once older than a minute. After `app.events.max-retry-age` (default 24 hours, `SPRINTFLOW_EVENTS_MAX_RETRY_AGE`) a publication is logged by type and id and removed. Deleting an account removes outstanding notification requests addressed to it.
+Task movement and comments publish typed events in their transaction. Listeners run after commit through the JDBC event registry. Successful records are deleted. The retry scheduler claims outstanding records older than a minute with `FOR UPDATE SKIP LOCKED` and a lease so replicas can share the queue. Notification deduplication uses the event and recipient. After `app.events.max-retry-age` (default 24 hours), maintenance logs the publication type and ID and removes the record.
 
 ## A4 runtime
 
@@ -69,4 +102,8 @@ The `search` module serves `GET /api/search` with PostgreSQL full-text search: g
 
 ## B1 realtime
 
-The `realtime` module consumes durable workspace/notification events after commit, writes a deduplicated per-project sequence and replay log (V19), and broadcasts identifiers over session-authenticated STOMP. Project READ authorization protects subscriptions, replay and the single open-task presence SEND destination. Inbound frames run directly on their session transport thread so authorization failures propagate; outbound messages retain project publication order. The frontend invalidates the active project's Query keys and affected open threads, coalesces bursts, preserves drafts and fills gaps after reconnect. Presence is in memory for one instance. See [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).
+The `realtime` module consumes durable workspace events after commit, writes a deduplicated per-project replay log (V19), and broadcasts identifiers over authenticated STOMP. Each subscription and replay request checks project access. Shared-text destinations also check editing access for mutations. The frontend reloads affected queries and fills gaps using its last applied sequence. Kubernetes shares presence leases in PostgreSQL and relays STOMP through RabbitMQ. [Realtime protocol](adr/0017-realtime-stomp-and-sequence-numbers.md) · [Collaborative text](collaboration.md) · [Cluster recovery](adr/0040-kubernetes-and-cluster-recovery.md).
+
+## Public integrations and offline writes
+
+Scoped access tokens address the versioned `/api/v1` API. Signed GitHub events link changes to tasks by project and task key. Project webhooks are queued with transactional state and retries. The browser persists a bounded set of queries and supported offline commands in IndexedDB. Replayed commands use the task version and commit an idempotent receipt in the same transaction. [Public API and webhooks](adr/0038-public-api-and-outbound-webhooks.md) · [Offline workspace](adr/0041-offline-workspace.md).

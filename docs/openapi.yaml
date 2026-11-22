@@ -9,6 +9,9 @@ info:
     per client IP and endpoint over one minute. A rejected request returns 429 and Retry-After.
     Database connection failures before the response is committed return a 503 SERVICE_UNAVAILABLE
     problem with Retry-After set to 5 seconds, including failures loading or saving the JDBC session.
+externalDocs:
+  description: Workspace behavior, authorization and version conflicts
+  url: https://github.com/Mouaz7/sprintflow-insight/blob/main/docs/workspace-features.md
 servers:
   - url: http://localhost:8081
 security:
