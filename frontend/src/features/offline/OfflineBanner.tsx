@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { useIsOnline } from '../../shared/offline/connectivity';
 import { offlineText } from '../../shared/offline/i18n';
@@ -22,6 +22,8 @@ export default function OfflineBanner({ accountId }: { accountId: number }) {
   const [operations, setOperations] = useState<QueuedOperation[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const banner = useRef<HTMLElement>(null);
+  const focusedAction = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let active = true;
     const refresh = () => {
@@ -43,8 +45,18 @@ export default function OfflineBanner({ accountId }: { accountId: number }) {
     if (online)
       void replayOfflineChanges(client, accountId).catch(() => undefined);
   }, [accountId, client, online]);
+  useLayoutEffect(() => {
+    const previous = focusedAction.current;
+    if (!previous || previous.isConnected) return;
+    focusedAction.current = null;
+    if (document.activeElement !== document.body) return;
+    const next = banner.current?.querySelector<HTMLButtonElement>('li button');
+    (next ?? banner.current?.closest('main'))?.focus();
+  }, [operations]);
 
-  async function run(action: () => Promise<void>) {
+  async function run(button: HTMLButtonElement, action: () => Promise<void>) {
+    if (!online || busy) return;
+    if (document.activeElement === button) focusedAction.current = button;
     setBusy(true);
     setFailed(false);
     try {
@@ -62,70 +74,79 @@ export default function OfflineBanner({ accountId }: { accountId: number }) {
     });
     await replayOfflineChanges(client, accountId);
   }
-  if (online && operations.length === 0) return null;
+  const visible = !online || operations.length > 0;
+  const review = operations.filter((operation) => operation.state);
+  const status = [
+    !online && t('offline'),
+    operations.length > 0 && t('pending', { count: operations.length }),
+    online && review.length > 0 && t('needsReview', { count: review.length }),
+    busy && t('busy'),
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     <section
-      className="offline-banner"
-      aria-label={t(online ? 'retry' : 'offline')}
+      ref={banner}
+      className={visible ? 'offline-banner' : undefined}
+      aria-label={visible ? t(online ? 'retry' : 'offline') : undefined}
     >
-      <div className="offline-summary">
-        <p role="status">
-          {!online && t('offline')}
-          {!online && operations.length > 0 && ' '}
-          {operations.length > 0 && t('pending', { count: operations.length })}
-          {busy && ` ${t('busy')}`}
+      <div className={visible ? 'offline-summary' : 'offline-summary sr-only'}>
+        <p role="status" aria-atomic="true">
+          {status}
         </p>
         {online && operations.some((operation) => !operation.state) && (
           <button
             type="button"
-            disabled={busy}
-            onClick={() =>
-              void run(() => replayOfflineChanges(client, accountId))
+            aria-disabled={busy}
+            onClick={(event) =>
+              void run(event.currentTarget, () =>
+                replayOfflineChanges(client, accountId),
+              )
             }
           >
             {t('retry')}
           </button>
         )}
       </div>
-      {failed && <p role="alert">{t('failed')}</p>}
-      {operations.some((operation) => operation.state) && (
+      {visible && failed && <p role="alert">{t('failed')}</p>}
+      {review.length > 0 && (
         <ul>
-          {operations
-            .filter((operation) => operation.state)
-            .map((operation) => (
-              <li key={operation.operationId}>
-                <div>
-                  <strong>
-                    {t(operation.kind)} · {operation.title}
-                  </strong>
-                  <p>
-                    {t(operation.state === 'conflict' ? 'conflict' : 'blocked')}
-                  </p>
-                </div>
-                <span className="offline-actions">
+          {review.map((operation) => (
+            <li key={operation.operationId}>
+              <div>
+                <strong>
+                  {t(operation.kind)} · {operation.title}
+                </strong>
+                <p>
+                  {t(operation.state === 'conflict' ? 'conflict' : 'blocked')}
+                </p>
+              </div>
+              <span className="offline-actions">
+                <button
+                  type="button"
+                  aria-disabled={!online || busy}
+                  onClick={(event) =>
+                    void run(event.currentTarget, () => discard(operation))
+                  }
+                >
+                  {t(operation.state === 'conflict' ? 'keep' : 'discard')}
+                </button>
+                {operation.state === 'conflict' && (
                   <button
                     type="button"
-                    disabled={!online || busy}
-                    onClick={() => void run(() => discard(operation))}
+                    aria-disabled={!online || busy}
+                    onClick={(event) =>
+                      void run(event.currentTarget, () =>
+                        retryOfflineChange(client, accountId, operation),
+                      )
+                    }
                   >
-                    {t(operation.state === 'conflict' ? 'keep' : 'discard')}
+                    {t('redo')}
                   </button>
-                  {operation.state === 'conflict' && (
-                    <button
-                      type="button"
-                      disabled={!online || busy}
-                      onClick={() =>
-                        void run(() =>
-                          retryOfflineChange(client, accountId, operation),
-                        )
-                      }
-                    >
-                      {t('redo')}
-                    </button>
-                  )}
-                </span>
-              </li>
-            ))}
+                )}
+              </span>
+            </li>
+          ))}
         </ul>
       )}
     </section>
