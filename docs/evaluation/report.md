@@ -87,7 +87,21 @@ The browser suite includes axe checks and keyboard flows for the documented view
 
 Ten targeted axe scans of the integrated V39 app (`9dc42f4`) found zero violations with the suite's WCAG 2.2 A/AA rule selection. The scans covered Organizations, expanded Outgoing webhooks, Metrics, Tasks and cached offline Tasks in both light and dark themes at 1440 × 900 CSS pixels.
 
-The selected observations cover one browser, fixture and interaction per criterion. The remaining review includes criterion coverage across the target flows and checking announcements with assistive technology. The SUS survey has yet to be conducted.
+### RQ5 — zoom, spacing and screen-reader follow-up
+
+The four study tasks were completed on the V39 package using keyboard controls at Chromium's 200% browser zoom. The device-pixel ratio doubled from 1 to 2 and the content viewport went from 1440 to 720 CSS pixels. The responsive menu opened Metrics and focus landed on its heading. This exercised text resizing and navigation across the selected study process (1.4.4 and 2.4.3).
+
+Tasks, Organizations, expanded Outgoing webhooks and Metrics were also inspected at a nominal 640 CSS-pixel viewport with line height set to 1.5, paragraph spacing to 2 em, letter spacing to 0.12 em and word spacing to 0.16 em. The document and workspace widths matched their available width in all four states. This records page-level overflow for 1.4.12.
+
+Orca 46.1 ran with headed Chromium over Linux AT-SPI. Speech Dispatcher captured generated utterances through an isolated audio sink. On the original V39 build, Orca announced the offline status and queue size. When a queued edit became a conflict, the queue size stayed the same and the speech trace lacked a message about the conflict. Resolving the final conflict placed keyboard focus on the document body. The follow-up targets status announcements and focus order (4.1.3 and 2.4.3). [Status messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) · [Focus order](https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html).
+
+The corrected package (`ada25d0`) kept the status region mounted and included the number of changes needing review. Orca announced that review message as soon as the conflict appeared, before the tester entered the conflict controls. Resolving the last change moved focus to the workspace main landmark. The browser regression also used Enter on both conflict choices, checked focus on the remaining conflict's control, and verified the resulting task values against the API. [Offline accessibility fix](https://github.com/Mouaz7/sprintflow-insight/pull/93).
+
+At 360 CSS pixels, the menu toggle, task creation control, title field, submit control and Move to select were all 44 pixels high and at least 44 pixels wide. The center of each control remained exposed when focused (2.4.11 and 2.5.8). Submitting the task form with an empty title focused the labelled field and exposed Chromium's required-field message. The API still showed zero tasks after the invalid attempt and one after a corrected submission (3.3.1 and 3.3.2). Switching to Swedish updated the visible Tasks heading and the document language to `sv`, and the saved preference was `SV` (3.1.1).
+
+The reporting browser test checked the Cumulative flow figure, its seven data rows in the table alternative and keyboard movement through the chart explorer. It then opened the same report in Swedish at 390 CSS pixels with the dark theme and ran axe. This exercises alternatives and semantic relationships for a populated report (1.1.1 and 1.3.1). [Reporting browser test](../../frontend/e2e/tests/flow.e2e.ts).
+
+The reviewed views are a process sample. A product-wide AA assessment needs a broader criterion and page sample. The SUS survey has yet to be conducted. [W3C evaluation methodology](https://www.w3.org/WAI/test-evaluate/conformance/wcag-em/).
 
 ### RQ6 — realtime and CRDT delivery
 
