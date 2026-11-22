@@ -69,6 +69,7 @@ describe('App.routing', () => {
     expect(
       within(navigation).getByRole('link', { name: 'Tasks' }),
     ).toHaveAttribute('aria-current', 'page');
+    expect(document.title).toBe('Tasks · SprintFlow');
   });
 
   it('sends unknown paths to the overview', async () => {
@@ -112,6 +113,11 @@ describe('App.routing', () => {
       level: 1,
     });
     await waitFor(() => expect(heading).toHaveFocus());
+    expect(document.title).toBe('Projects · SprintFlow');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), {
+      target: { value: 'SV' },
+    });
+    await waitFor(() => expect(document.title).toBe('Projekt · SprintFlow'));
   });
 
   it('has one main landmark and a skip link to it', async () => {

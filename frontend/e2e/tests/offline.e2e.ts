@@ -57,6 +57,8 @@ test('reopens a cached workspace and replays queued writes after conflict review
   await page.goto('/tasks');
   await expect(card(page, 'Queue three updates')).toBeVisible();
 
+  const syncStatus = page.locator('.offline-summary').getByRole('status');
+  await expect(syncStatus).toBeEmpty();
   const context = page.context();
   await context.setOffline(true);
   try {
@@ -95,6 +97,7 @@ test('reopens a cached workspace and replays queued writes after conflict review
     await expect(form).toHaveCount(0);
     await expect(page.getByText(/5 queued changes/)).toBeVisible();
     await page.goto('/tasks');
+    await expect(page).toHaveTitle('Tasks · SprintFlow');
     await expect(page.getByText(/5 queued changes/)).toBeVisible();
     await expect(card(page, 'Queue three updates')).toBeVisible();
     await expectAccessible(page, 'offline-cached-workspace');
@@ -125,12 +128,21 @@ test('reopens a cached workspace and replays queued writes after conflict review
   await expect(
     second.getByText('This task changed on the server.'),
   ).toBeVisible();
+  await expect(syncStatus).toContainText('2 changes need your review.');
+  await expectAccessible(page, 'offline-conflict-review');
   expect(
     (await api.json<{ status: string }>(`/tasks/${conflict.id}`)).status,
   ).toBe('In Progress');
-  await first.getByRole('button', { name: 'Redo my change' }).click();
-  await second.getByRole('button', { name: 'Keep server version' }).click();
+  await first.getByRole('button', { name: 'Redo my change' }).focus();
+  await page.keyboard.press('Enter');
+  const keepVersion = second.getByRole('button', {
+    name: 'Keep server version',
+  });
+  await expect(keepVersion).toBeFocused();
+  await expect(keepVersion).toBeEnabled();
+  await page.keyboard.press('Enter');
   await expect(page.locator('.offline-banner')).toHaveCount(0);
+  await expect(page.locator('#workspace-page')).toBeFocused();
   expect(
     (await api.json<{ status: string }>(`/tasks/${normal.id}`)).status,
   ).toBe('Review');
