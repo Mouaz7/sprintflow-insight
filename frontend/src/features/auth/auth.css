@@ -1,4 +1,3 @@
-/* Compact two-part authentication, with no full-screen marketing column. */
 .auth-page {
   display: grid;
   place-items: center;
@@ -6,145 +5,41 @@
 }
 .auth-frame {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(1100px, 100%);
+  grid-template-columns: 1.05fr minmax(0, 1fr);
+  width: min(1024px, 100%);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 12px 40px #151d2a06;
+  box-shadow: var(--surface-shadow);
 }
 .auth-story {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 28px;
-  border-right: 1px solid var(--line);
-  background: var(--surface-raised);
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: clamp(32px, 5vw, 64px);
+  color: #edf1ff;
+  background:
+    linear-gradient(155deg, #141a37f5 10%, #141a37b8 35%, #141a3726 80%),
+    url('/images/sign-in-staircase.webp') center / cover #181f39;
 }
-.auth-story h1 {
-  max-width: 12ch;
-  margin-block: 16px;
-  font-size: 28px;
-  font-weight: 800;
-}
-.auth-story-heading > p {
-  max-width: 40ch;
-  color: var(--muted);
-  font-size: var(--text-body);
-  line-height: 1.9;
-}
-.auth-example {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.auth-example > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.auth-example h2 {
-  font-size: var(--text-section);
-}
-.auth-example > p {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.8;
-}
-.example-progress {
-  height: 6px;
-  margin-top: 16px;
-  border-radius: 9px;
-  background: var(--line);
-  overflow: hidden;
-}
-.example-progress > span {
-  display: block;
-  width: 68%;
-  height: 100%;
-  background: var(--chart);
-}
-.example-progress-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-block: 12px 16px;
-}
-.example-progress-label strong {
+.auth-story-title {
+  max-width: 13ch;
   font:
-    800 24px Manrope,
+    800 clamp(32px, 4vw, 50px)/1.14 'Manrope Variable',
     sans-serif;
+  letter-spacing: -0.045em;
 }
-.example-progress-label > span {
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.example-task {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-block: 12px;
-  border-top: 1px solid var(--line);
-}
-.example-task > div {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-.example-task strong {
-  font-size: 13px;
-  font-weight: 600;
-}
-.example-task small {
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.example-check {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.example-dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
-  margin-inline: 8px;
-  border-radius: 50%;
-  background: var(--chart);
-}
-.auth-story > footer {
-  display: flex;
-  align-items: start;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: var(--text-small);
-  line-height: 1.8;
-}
-.auth-story > footer > span {
-  font-size: var(--text-small);
+.auth-story > p + p {
+  max-width: 32ch;
+  color: #d7def7;
+  line-height: 1.65;
 }
 .auth-panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 30px;
   min-width: 0;
-  padding: 24px 28px;
+  padding: clamp(28px, 4vw, 56px);
   background: var(--surface);
 }
 .auth-brand-row {
@@ -159,9 +54,9 @@
   gap: 8px;
 }
 .auth-card {
-  padding-block: 12px;
+  padding-block: 12px 4px;
 }
-.auth-card h2 {
+.auth-card h1 {
   margin-block: 10px 12px;
   font-size: var(--text-heading);
   font-weight: 800;
@@ -215,13 +110,6 @@
   color: var(--muted);
   font-size: var(--text-body);
   text-align: center;
-}
-.auth-footnote {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: var(--text-small);
 }
 .back-link {
   display: block;

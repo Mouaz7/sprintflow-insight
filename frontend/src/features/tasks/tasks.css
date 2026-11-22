@@ -1,14 +1,13 @@
 /* Kanban: the board comes first; creation belongs to its editor. */
+.board-controls {
+  margin-bottom: var(--space-section);
+}
 .task-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 12px;
-  margin-bottom: var(--space-section);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  margin-top: 12px;
 }
 .task-filters > input {
   flex: 1 1 230px;
@@ -32,10 +31,12 @@
   align-items: start;
 }
 .task-board > section {
+  --column-accent: var(--muted);
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-top: 3px solid var(--column-accent);
+  border-radius: 14px;
   background: var(--surface-raised);
 }
 .task-board > section > header {
@@ -66,14 +67,16 @@
   height: 7px;
   margin-right: 8px;
   border-radius: 50%;
-  background: var(--muted);
+  background: var(--column-accent);
 }
-.task-board > section:nth-child(2) > header span::before {
-  background: var(--chart);
+.task-board > section:nth-child(2) {
+  --column-accent: var(--chart-1);
 }
-.task-board > section:nth-child(3) > header span::before {
-  border: 2px solid var(--chart);
-  background: transparent;
+.task-board > section:nth-child(3) {
+  --column-accent: var(--chart-5);
+}
+.task-board > section:nth-child(4) {
+  --column-accent: var(--success-text);
 }
 .task-board article {
   display: grid;
@@ -143,10 +146,12 @@
   padding: 5px 8px;
 }
 .task-board .card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 6px;
 }
 .task-board .card-actions button {
-  flex: 1;
   padding: 5px 8px;
   font-size: var(--text-small);
 }

@@ -154,44 +154,8 @@ export function AuthScreen({
     <main className="auth-page" data-theme={darkMode ? 'dark' : 'light'}>
       <div className="auth-frame">
         <aside className="auth-story">
-          <div className="auth-story-heading">
-            <span className="eyebrow">SPRINTFLOW / WORKSPACE</span>
-            <h1>{t('storyTitle')}</h1>
-            <p>{t('storyText')}</p>
-          </div>
-          <div className="auth-example" aria-label={t('exampleWorkspace')}>
-            <header>
-              <span className="status-badge">{t('example')}</span>
-              <span>01 / 03</span>
-            </header>
-            <h2>{t('nextRelease')}</h2>
-            <p>{t('nextReleaseText')}</p>
-            <div className="example-progress">
-              <span />
-            </div>
-            <div className="example-progress-label">
-              <strong>68%</strong>
-              <span>{t('planComplete')}</span>
-            </div>
-            <div className="example-task">
-              <span className="example-check">✓</span>
-              <div>
-                <strong>{t('sharedGoal')}</strong>
-                <small>{t('sharedGoalStatus')}</small>
-              </div>
-            </div>
-            <div className="example-task">
-              <span className="example-dot" />
-              <div>
-                <strong>{t('nextExperience')}</strong>
-                <small>{t('nextExperienceStatus')}</small>
-              </div>
-            </div>
-          </div>
-          <footer>
-            <span>01</span>
-            <p>{t('storyFooter')}</p>
-          </footer>
+          <p className="auth-story-title">{t('storyTitle')}</p>
+          <p>{t('storyText')}</p>
         </aside>
         <section className="auth-panel">
           <header className="auth-brand-row">
@@ -214,14 +178,7 @@ export function AuthScreen({
             </div>
           </header>
           <div className="auth-card">
-            <span className="eyebrow">
-              {t(
-                mode === 'reset' || mode === 'new-password'
-                  ? 'accountRecovery'
-                  : 'yourWorkspace',
-              )}
-            </span>
-            <h2>{title}</h2>
+            <h1>{title}</h1>
             <p className="auth-subtitle">{subtitle}</p>
             <form onSubmit={submit} aria-busy={busy}>
               <fieldset disabled={busy}>
@@ -369,7 +326,6 @@ export function AuthScreen({
               </button>
             )}
           </div>
-          <footer className="auth-footnote">{t('footnote')}</footer>
         </section>
       </div>
     </main>

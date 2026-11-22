@@ -6,8 +6,8 @@ html {
   font-family: 'Inter Variable', 'Inter Fallback', Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: var(--text, #243047);
-  background: var(--canvas, #faf8f5);
+  color: var(--text);
+  background: var(--canvas);
   -webkit-font-smoothing: antialiased;
 }
 body {
@@ -86,7 +86,7 @@ textarea {
   padding: 12px 20px;
   z-index: 150;
   background: #ffffff;
-  color: #243047;
+  color: #17213b;
   border-radius: 8px;
   transform: translateY(-200%);
 }
@@ -96,7 +96,7 @@ textarea {
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--accent, #bf4b2b);
+  outline: 3px solid var(--accent);
   outline-offset: 4px;
 }
 button {
@@ -110,8 +110,8 @@ button {
   display: grid;
   min-height: 100dvh;
   place-items: center;
-  color: #faf8f5;
-  background: #151d2a;
+  color: var(--text);
+  background: var(--canvas);
 }
 
 .date-input-control {

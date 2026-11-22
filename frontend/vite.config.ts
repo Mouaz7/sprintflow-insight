@@ -18,8 +18,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        theme_color: '#243047',
-        background_color: '#faf8f5',
+        theme_color: '#181f39',
+        background_color: '#f2f4fa',
         icons: [
           {
             src: '/icons/sprintflow-192.png',

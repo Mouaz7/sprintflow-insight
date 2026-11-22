@@ -14,8 +14,8 @@
   overflow: auto;
   overscroll-behavior: contain;
   padding: 16px;
-  color: #faf8f5;
-  background: #243047;
+  color: var(--nav-text);
+  background: var(--sidebar);
 }
 .mobile-menu > header {
   display: flex;
@@ -25,40 +25,15 @@
   margin-bottom: 20px;
 }
 .mobile-menu .icon-button {
-  color: #faf8f5;
-  border-color: #536075;
-  background: #303c52;
-}
-.mobile-menu nav {
-  display: grid;
-  gap: 8px;
-}
-.mobile-menu nav a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--control-height);
-  padding: 12px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #cbd3df;
-  font-size: var(--text-body);
-  text-align: left;
-}
-.mobile-menu nav a.active {
-  color: #ffffff;
-  background: #3c485e;
+  color: var(--nav-text);
+  border-color: var(--nav-accent);
+  background: var(--nav-active);
+  outline-color: var(--nav-accent);
 }
 @media (--desktop) {
   .workspace-shell,
   .auth-page {
     --inline-space: 24px;
-  }
-}
-@media (--wide) {
-  .workspace-caption {
-    display: none;
   }
 }
 @media (--laptop) {
@@ -71,19 +46,19 @@
   .account-name {
     display: none;
   }
-  .header-navigation nav a {
-    padding-inline: 12px;
-  }
 }
 @media (--tablet) {
+  .workspace-shell {
+    display: block;
+  }
   .header-navigation {
     display: none;
   }
   .menu-toggle {
     display: inline-flex;
-    border-color: #536075;
-    color: #faf8f5;
-    background: #303c52;
+    border-color: var(--input-line);
+    color: var(--text);
+    background: var(--input-bg);
   }
   .auth-frame {
     grid-template-columns: minmax(0, 1fr);
@@ -93,10 +68,12 @@
     display: none;
   }
   .header-main {
+    flex-wrap: wrap;
     gap: 12px;
   }
   .header-controls {
-    gap: 8px;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
   }
   .header-controls .project-control > span {
     display: none;
@@ -124,6 +101,16 @@
   .workspace-shell,
   .auth-page {
     --inline-space: 16px;
+  }
+  .workspace-header .language-selector {
+    flex-basis: 62px;
+    width: 62px;
+  }
+  .workspace-header .language-symbol {
+    display: none;
+  }
+  .header-controls .language-selector .language-control {
+    padding-left: 8px;
   }
   .profile-tabs {
     flex-wrap: wrap;
@@ -172,7 +159,6 @@
     padding: 12px;
   }
   .task-board .card-actions button {
-    flex: 0 1 auto;
     padding-inline: 10px;
     font-size: var(--text-body);
   }
@@ -296,14 +282,6 @@
   .profile-card-footer {
     align-items: flex-start;
   }
-  .header-main {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .header-controls {
-    flex-wrap: wrap;
-    flex: 1 1 100%;
-  }
   .header-controls .project-control {
     flex: 1 1 100%;
   }
@@ -334,7 +312,7 @@
   .auth-panel .brand {
     font-size: var(--text-section);
   }
-  .auth-card h2 {
+  .auth-card h1 {
     font-size: var(--text-heading);
   }
   .directory-toolbar,
@@ -378,9 +356,5 @@
   }
   .auth-panel .brand {
     font-size: var(--text-body);
-  }
-  .workspace-footer {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }

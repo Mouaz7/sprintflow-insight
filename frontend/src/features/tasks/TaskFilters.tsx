@@ -41,7 +41,7 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
   const exportsUnavailable =
     !!customCondition && (customMatches.isPending || customMatches.isError);
   return (
-    <>
+    <div className="board-controls surface">
       <SavedFilters
         projectId={projectId}
         userEmail={userEmail}
@@ -191,6 +191,6 @@ export function TaskFilters({ controller }: { controller: UseTaskBoardState }) {
           {t('exportPdf')}
         </a>
       </div>
-    </>
+    </div>
   );
 }
