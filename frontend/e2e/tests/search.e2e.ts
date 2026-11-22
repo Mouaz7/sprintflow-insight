@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test';
 import { expectAccessible } from '../support/a11y.ts';
 import { expect, test } from '../support/fixtures.ts';
 
@@ -16,6 +17,36 @@ function uniqueWord(): string {
   for (let i = 0; i < 10; i++)
     word += letters[Math.floor(Math.random() * letters.length)];
   return word;
+}
+
+async function expectFilterContrast(palette: Locator) {
+  const contrast = await palette
+    .getByRole('combobox', { name: 'Custom field' })
+    .evaluate((select) => {
+      const style = getComputedStyle(select);
+      const dialog = select.closest('[role="dialog"]');
+      if (!dialog) throw new Error('The filter must be inside the palette.');
+      const luminance = (color: string) => {
+        const [red = 0, green = 0, blue = 0] = (color.match(/\d+/g) ?? []).map(
+          (channel) => {
+            const value = Number(channel) / 255;
+            return value <= 0.04045
+              ? value / 12.92
+              : ((value + 0.055) / 1.055) ** 2.4;
+          },
+        );
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      };
+      const border = luminance(style.borderTopColor);
+      return [style.backgroundColor, getComputedStyle(dialog).backgroundColor]
+        .map(luminance)
+        .map(
+          (background) =>
+            (Math.max(background, border) + 0.05) /
+            (Math.min(background, border) + 0.05),
+        );
+    });
+  for (const ratio of contrast) expect(ratio).toBeGreaterThanOrEqual(3);
 }
 
 test('searches from the command palette, jumps to a task key and shows the shortcut help', async ({
@@ -58,6 +89,7 @@ test('searches from the command palette, jumps to a task key and shows the short
   await expect(option).toBeVisible();
   await expect(option).toHaveAttribute('aria-selected', 'true');
   await expect(option.locator('mark')).toHaveText(word);
+  await expectFilterContrast(palette);
   await expectAccessible(page, 'search-palette');
 
   // The same palette in dark mode.
@@ -67,6 +99,7 @@ test('searches from the command palette, jumps to a task key and shows the short
   await page.keyboard.press('Control+K');
   await input.fill(word);
   await expect(option).toBeVisible();
+  await expectFilterContrast(palette);
   await expectAccessible(page, 'search-palette-dark');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Switch to light mode' }).click();

@@ -37,13 +37,13 @@
   color: #c4cbd6;
   font-size: 13px;
 }
-.header-controls select,
-.workspace-header .theme-toggle {
-  min-height: var(--control-height);
+.header-controls
+  :is(.project-control > select, .language-control, .theme-toggle) {
   height: var(--control-height);
   color: #faf8f5;
-  border-color: #586378;
+  border-color: #c4cbd6;
   background: #303c52;
+  outline-color: #e77d59;
 }
 .header-controls .project-control select {
   width: clamp(140px, 19vw, 280px);
