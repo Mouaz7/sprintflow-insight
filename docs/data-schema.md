@@ -4,6 +4,35 @@ PostgreSQL is the system of record. The authoritative, executable schema is the 
 
 ## Logical relationships
 
+```mermaid
+erDiagram
+    USERS ||--o{ ORGANIZATION_MEMBER : joins
+    ORGANIZATION ||--o{ ORGANIZATION_MEMBER : grants
+    ORGANIZATION ||--o{ PROJECTS : contains
+    USERS ||--o{ PROJECT_MEMBER : joins
+    PROJECTS ||--o{ PROJECT_MEMBER : grants
+    PROJECTS ||--o{ SPRINT : plans
+    PROJECTS ||--o{ USER_STORIES : defines
+    PROJECTS ||--o{ TASK : contains
+    SPRINT o|--o{ TASK : schedules
+    USER_STORIES o|--o{ TASK : describes
+    TASK ||--o{ TASK_COMMENT : receives
+    TASK ||--o{ TIME_ENTRY : records
+    TASK ||--o{ TASK_LINK : links
+    CRDT_DOC ||--o{ CRDT_UPDATE : orders
+    CRDT_DOC ||--o{ CRDT_RECEIPT : deduplicates
+    USERS ||--o{ PERSONAL_ACCESS_TOKEN : owns
+    PROJECTS ||--o{ OUTBOUND_WEBHOOK : configures
+    OUTBOUND_WEBHOOK ||--o{ OUTBOUND_WEBHOOK_DELIVERY : queues
+    OUTBOUND_WEBHOOK_DELIVERY ||--o{ OUTBOUND_WEBHOOK_ATTEMPT : records
+    USERS ||--o{ REALTIME_PRESENCE : leases
+    PROJECTS ||--o{ REALTIME_PRESENCE : tracks
+    USERS ||--o{ OFFLINE_OPERATION : submits
+    PROJECTS ||--o{ OFFLINE_OPERATION : receives
+```
+
+The diagram shows the main workspace, collaboration and integration relationships. The migration set defines all physical foreign keys, deletion rules and composite project constraints.
+
 - `users` stores normalized unique email addresses, BCrypt password hashes, profile fields, and hashed recovery codes.
 - `projects` has one owner email and a unique `key` (2–10 upper-case letters, check constraint `projects_key_format`, unique `projects_key_unique`) that prefixes task identifiers such as `SF-123`.
 - `project_member` stores project membership and the supported roles `Owner`, `Admin`, `Member`, and `Viewer`. Since V15 every row references its account through `user_id` (`users.id`, `ON DELETE CASCADE`, unique per project). Access checks match on `user_id` only; `email` is a display copy that follows the account's address. The owner always has an `Owner` row, which is what grants owner access.
@@ -30,7 +59,7 @@ select lower(email), count(*) from users group by lower(email) having count(*) >
 
 If it returns rows, merge or rename the duplicate accounts before applying V15.
 
-Encrypted columns (none yet; later phases add them) store `EncryptionService` envelopes `sf1:<keyId>:<base64url(iv|ciphertext|tag)>` in a text column. The key id makes key rotation possible; see [ADR 0015](adr/0015-encryption-and-key-rotation.md).
+Encrypted authenticator and webhook secrets use `EncryptionService` envelopes `sf1:<keyId>:<base64url(iv|ciphertext|tag)>` in text columns. The key ID selects the key used for decryption and rotation. [ADR 0015](adr/0015-encryption-and-key-rotation.md).
 
 Migration V13 adds the Spring Session tables `spring_session` and `spring_session_attributes`. `principal_name` holds `user:<id>`, which lets the server find and revoke all of an account's sessions.
 
@@ -76,3 +105,14 @@ B19 (V27) adds `import_batch` with project/request-hash uniqueness and immutable
 `account_mfa` stores the encrypted setup secret, enrollment timestamp, most recent accepted time step and failure-window state. `account_mfa_recovery` stores one digest per unused code. `account_mfa_challenge` stores a short-lived session challenge digest, the account's credential digest and its attempt count. Account deletion cascades to all three tables. `organization.require_mfa` controls the workspace-access requirement.
 
 See [two-factor authentication](adr/0035-two-factor-authentication.md).
+
+## V34–V39 — integrity, integrations and recovery
+
+| Migration | Stored state |
+| --- | --- |
+| V34 | Audit chain positions and SHA-256 links on `admin_audit_event`, per-scope state in `admin_audit_chain` and daily anchors in `admin_audit_anchor`. |
+| V35 | WebAuthn user handles, public credentials and expiring challenges. |
+| V36 | Deduplicated `github_delivery` records and project-scoped `task_link` references to commits and pull requests. |
+| V37 | Token digests and scopes, encrypted outbound destinations' signing secrets, durable deliveries and attempt history. |
+| V38 | Retry leases on the event registry and expiring `realtime_presence` entries tied to a user, project and socket. |
+| V39 | `offline_operation` receipts keyed by account, project and operation UUID, with a request hash and resulting task version. |

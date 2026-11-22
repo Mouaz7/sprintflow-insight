@@ -36,8 +36,11 @@ These screenshots come from the packaged application and PostgreSQL using fictio
 | Activity and profile | [Activity](docs/images/screenshots/activity.webp), [profile](docs/images/screenshots/profile.webp), [email preferences](docs/images/screenshots/email-preferences.webp) |
 | Shared report and account | [Public report snapshot](docs/images/screenshots/shared-report.webp), [sign-in](docs/images/screenshots/sign-in.webp) |
 | Mobile | [Overview](docs/images/screenshots/mobile-overview.webp), [board](docs/images/screenshots/mobile-board.webp) |
+| Organizations | [Light](docs/images/release/organizations-light.webp) · [Dark](docs/images/release/organizations-dark.webp) |
+| Outgoing webhooks | [Light](docs/images/release/outgoing-webhooks-light.webp) · [Dark](docs/images/release/outgoing-webhooks-dark.webp) |
+| Offline task board | [Light](docs/images/release/offline-board-light.webp) · [Dark](docs/images/release/offline-board-dark.webp) |
 
-The generator also captures Projects and Trash. All images and their SHA-256 hashes are listed in [the capture manifest](docs/images/screenshots/manifest.json).
+The capture manifests record the image sizes, SHA-256 hashes and source revisions. [Core views](docs/images/screenshots/manifest.json) · [Release views](docs/images/release/manifest.json).
 
 </details>
 
@@ -50,6 +53,8 @@ The generator also captures Projects and Trash. All images and their SHA-256 has
 | Data portability | CSV/Jira mapping and dry-run, [Apache research subset converter](docs/import-export.md), account JSON ZIP and retained admin audit |
 | Task delivery | Board, labels, checklists, attachments, saved filters, typed custom fields and filtered CSV/PDF exports |
 | Collaboration | Live updates and presence, comments, @mentions, in-app notifications and optional daily/weekly email summaries |
+| Offline workspace | Installable app, cached boards, queued moves, comments and time logs with conflict review, and persistent shared-text edits |
+| Integrations | GitHub task links, scoped API tokens and signed outgoing project webhooks |
 | Time | Manual entries, one running timer per account, estimates versus actuals, sprint availability and capacity warnings |
 | Insights | Burndown, cumulative flow, cycle-time/WIP views, bootstrap delivery forecasts, personal dashboards and shared report snapshots |
 | Navigation | Reloadable routes, project-scoped search and command palette, keyboard shortcuts and EN/SV help |
@@ -174,9 +179,13 @@ The real-database suite covers account, role, planning, collaboration, custom-fi
 
 GitHub Actions runs frontend/repository checks, a Maven `verify`, Docker startup/restart checks, secret/dependency scans, PIT, Playwright/axe, Storybook, Trivy, ZAP, k6 and Lighthouse. CodeQL and Scorecard have separate workflows. Actions and base images are pinned. On `main`, a passing pipeline publishes the tested image to `ghcr.io/mouaz7/sprintflow-insight` with cosign signing, SLSA provenance and an SBOM attestation. See [supply chain](docs/security/supply-chain.md).
 
+## Kubernetes
+
+The Helm chart configures multiple replicas, RabbitMQ STOMP, shared PostgreSQL sessions and recovery from a lost pod. The CI job rolls from the previous image to the current image and exercises WebSocket recovery through Ingress. [Deployment guide](docs/adr/0040-kubernetes-and-cluster-recovery.md) · [Verification](docs/evaluation/kubernetes.md).
+
 ## Status and documentation
 
-[Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) and [open issues](https://github.com/Mouaz7/sprintflow-insight/issues) track delivery. Open roadmap items include the broader GitHub integration and the public API and webhooks.
+The live roadmap links each feature and evaluation to its issue and verification. [Roadmap #38](https://github.com/Mouaz7/sprintflow-insight/issues/38) · [Open issues](https://github.com/Mouaz7/sprintflow-insight/issues).
 
 | Document | Contents |
 | --- | --- |

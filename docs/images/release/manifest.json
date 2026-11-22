@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-11-22T00:02:00.187Z",
+  "sourceCommit": "5cfbc247afbb12cab3f6e99437bfa9f33518e9c8",
+  "images": [
+    {
+      "file": "organizations-light.webp",
+      "bytes": 26666,
+      "sha256": "c74eea34a45af8f04584b704b90f7bbe19e385c6979ec4639eff49698335154b"
+    },
+    {
+      "file": "outgoing-webhooks-light.webp",
+      "bytes": 32794,
+      "sha256": "07bb9844ed2ec864f0a185e60fdd3b4c2e955c9174d808921319a542fee3952f"
+    },
+    {
+      "file": "offline-board-light.webp",
+      "bytes": 58896,
+      "sha256": "b3f2a115a6e6747657191a9d8743882569c3e4cf9204190879d2b7c0e49428ab"
+    },
+    {
+      "file": "organizations-dark.webp",
+      "bytes": 26534,
+      "sha256": "12d00a2ce64b1166a578cc4e426b9f19d49b762a54388124f40904085efbe798"
+    },
+    {
+      "file": "outgoing-webhooks-dark.webp",
+      "bytes": 32910,
+      "sha256": "4ca5c5071c7c51de31a8f973d60153df3920ee1500205894e68e18ca54bf1eb6"
+    },
+    {
+      "file": "offline-board-dark.webp",
+      "bytes": 58600,
+      "sha256": "733eb874a0d4101337d87234f5e45a23394912b8fee39dad639771ea797c97ed"
+    }
+  ]
+}
