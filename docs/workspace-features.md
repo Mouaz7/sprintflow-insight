@@ -183,6 +183,8 @@ Burndown uses the shared line chart. The chart catalogue also includes bars, sca
 
 Tavlan, öppna kommentarstrådar och notisklockan uppdateras när andra arbetar i samma projekt. Du behöver inte ladda om sidan. Egna osparade utkast behålls när nya data hämtas. Även ändringar som berör flera uppgifter, exempelvis när en story flyttas till papperskorgen, uppdaterar projektets vyer.
 
+Välj **Pausa projektets liveuppdateringar** i sidhuvudet för att pausa projektflödet i den öppna fliken. Välj **Återuppta projektets liveuppdateringar** för att hämta aktuella projektdata. Navigation och egna ändringar kan fortfarande hämta data. Delad text har en egen anslutning.
+
 Sidhuvudet visar andra projektmedlemmars initialer. Håll pekaren över närvaron för namn och vilken uppgift de har öppen; skärmläsare får samma information. Flera flikar sammanförs till en person. Indikatorn visar om liveuppdateringarna är anslutna eller återansluter. Efter ett avbrott hämtas missade händelser automatiskt; om historiken har gallrats uppdateras projektets data i stället.
 
 Alla läsroller, inklusive Viewer och medlemmar i arkiverade projekt, kan se närvaro och rapportera vilken uppgift de tittar på. Det ger ingen skrivrätt. Närvaron innehåller visningsnamn och uppgiftsreferenser, aldrig e-post eller uppgiftstext. I Kubernetes delas närvaro och sessionsdata i PostgreSQL och RabbitMQ förmedlar uppdateringar mellan repliker.

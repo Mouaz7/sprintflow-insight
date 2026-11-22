@@ -187,6 +187,7 @@ function WorkspaceShell() {
         ?.focus();
   }, [menuOpen]);
   const [taskRequest, setTaskRequest] = useState(0);
+  const [liveUpdatesPaused, setLiveUpdatesPaused] = useState(false);
   const darkMode = theme === 'dark';
   const accountName = session.user.displayName || session.user.email;
   const accountInitial = accountName.slice(0, 1).toUpperCase();
@@ -195,7 +196,12 @@ function WorkspaceShell() {
     session.projects.find((project) => project.id === selectedProjectId) ??
     session.projects[0];
   const activeProjectId = activeProject?.id;
-  const realtime = useProjectRealtime(activeProjectId);
+  const realtime = useProjectRealtime(
+    liveUpdatesPaused ? undefined : activeProjectId,
+  );
+  const liveUpdatesAction = t(
+    liveUpdatesPaused ? 'resumeLiveUpdates' : 'pauseLiveUpdates',
+  );
   const preferences = useQuery(preferencesQuery);
   const projectRole = useQuery({
     ...roleQuery(activeProjectId ?? 0),
@@ -361,12 +367,25 @@ function WorkspaceShell() {
               onNewTask={context.requestTask}
             />
             <LanguageSelector language={language} onChange={changeLanguage} />
-            <PresenceAvatars
-              viewers={realtime.viewers}
-              selfId={session.user.id}
-              status={realtime.status}
-              language={language}
-            />
+            {!liveUpdatesPaused && (
+              <PresenceAvatars
+                viewers={realtime.viewers}
+                selfId={session.user.id}
+                status={realtime.status}
+                language={language}
+              />
+            )}
+            {activeProjectId !== undefined && (
+              <button
+                className="theme-toggle"
+                type="button"
+                aria-label={liveUpdatesAction}
+                title={liveUpdatesAction}
+                onClick={() => setLiveUpdatesPaused((paused) => !paused)}
+              >
+                <InterfaceIcon name={liveUpdatesPaused ? 'play' : 'pause'} />
+              </button>
+            )}
             <button
               className="theme-toggle"
               type="button"

@@ -46,6 +46,8 @@ Presence is kept in memory per instance. A connection counts as viewing a projec
 
 The CSP keeps `connect-src 'self'`. The browser E2E flow verifies actual same-origin WebSocket connections under the enforced policy and asserts no CSP or Trusted Types violations. The client is a small hand-written STOMP 1.2 implementation in `frontend/src/features/realtime/`, used instead of `@stomp/stompjs` to keep the bundle small. It reconnects with exponential backoff (1 s doubling to 30 s, with jitter).
 
+The workspace header lets each tab pause the live project feed for WCAG 2.2 criterion 2.2.2. Pausing closes the project subscription and stops its refresh timer. Resuming creates a new subscription and uses the initial synchronization path to reload current project data. This preference is scoped to the open workspace. Explicit edits and navigation can still fetch data, and other feeds such as collaborative text use their own connections. The existing REST and STOMP contracts apply. [WCAG 2.2 pause, stop, hide](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html).
+
 ## Consequences
 
 - One more table pair and a few short transactions per domain event. The counter row serialises realtime production within one project, never the domain transaction itself.
