@@ -106,6 +106,9 @@
   }
 }
 @media (--compact) {
+  .stat-icon {
+    display: none;
+  }
   .workspace-shell,
   .auth-page {
     --inline-space: 16px;

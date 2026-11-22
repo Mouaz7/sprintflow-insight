@@ -13,6 +13,7 @@
 }
 .overview-grid article {
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: var(--card-space);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -23,14 +24,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   color: var(--muted);
   font-size: var(--text-body);
 }
 .stat-icon {
   display: grid;
-  flex: 0 0 var(--compact-control-height);
-  height: var(--compact-control-height);
+  flex: 0 0 32px;
+  height: 32px;
   place-items: center;
   border-radius: 8px;
   color: var(--accent-text);
@@ -43,7 +44,6 @@
     800 var(--text-heading)/1.2 'Manrope Variable',
     sans-serif;
   letter-spacing: -0.04em;
-  overflow-wrap: anywhere;
 }
 .overview-grid small {
   color: var(--muted);

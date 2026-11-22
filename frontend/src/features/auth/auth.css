@@ -24,7 +24,6 @@
   background-blend-mode: normal, luminosity;
 }
 .auth-story-title {
-  max-width: 13ch;
   font:
     800 clamp(32px, 4vw, 50px)/1.14 'Manrope Variable',
     sans-serif;

@@ -144,3 +144,31 @@ test('creates a project, sprint, story and task, then plans the story into the s
   await expectAccessible(page, 'backlog-dark');
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
 });
+
+test('keeps Swedish overview cards within their columns on a phone', async ({
+  page,
+  api,
+  account,
+}) => {
+  const suffix = account.email.split('@')[0]?.slice(-12) ?? 'run';
+  await api.json('/projects', 'POST', { name: `Mobil översikt ${suffix}` });
+  await api.json('/auth/preferences', 'PUT', {
+    language: 'SV',
+    theme: 'dark',
+    onboardingCompleted: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/overview');
+
+  const cards = page.getByRole('article').filter({
+    has: page.getByText(/^(Genomströmning|Leveransstatus)$/),
+  });
+  await expect(cards).toHaveCount(2);
+  await page.evaluate(() => document.fonts.ready);
+  const overflow = await cards.evaluateAll((articles) =>
+    articles
+      .filter((article) => article.scrollWidth > article.clientWidth)
+      .map((article) => article.textContent),
+  );
+  expect(overflow).toEqual([]);
+});
