@@ -29,6 +29,8 @@ The WCAG 2.2 AA evaluation combines automated checks with keyboard, focus, zoom 
 4. Immediately after the tasks, give each participant Brooke's ten statements in their original order, using the five-point agreement scale described in the instrument. Collect the ratings before discussing the session. Give participants the same questionnaire language for all sessions and report the language used.
 5. Export one row per complete questionnaire without names, accounts or timestamps. Provide it through `EVAL_SUS_CSV` and report the number of valid responses alongside the aggregate score.
 
+Use the facilitator guide for the exact study prompts, comparison-task setup and CSV header. [Swedish facilitator guide](sus-session.sv.md).
+
 ## Implementation
 
 Run `make eval` with Java 25, Maven and Node 24. Results go to `artifacts/evaluation` by default. The runner reproduces the committed aggregate Jira analyses, generates the synthetic series and invokes the existing solver and risk benchmarks. It keeps the private usability CSV outside the repository.
@@ -103,7 +105,7 @@ The reporting browser test checked the Cumulative flow figure, its seven data ro
 
 The original workspace used the same browser-tab title for Tasks, Metrics and the Swedish Metrics view. The follow-up verified distinct Tasks and Metrics titles and the localized `Mätvärden · SprintFlow` title after switching languages. The offline browser test also checked the title after reloading the cached Tasks view (2.4.2). [Page titles](https://www.w3.org/WAI/WCAG22/Understanding/page-titled.html).
 
-The reviewed views are a process sample. A product-wide AA assessment needs a broader criterion and page sample. The SUS survey has yet to be conducted. [W3C evaluation methodology](https://www.w3.org/WAI/test-evaluate/conformance/wcag-em/).
+The reviewed views are a process sample. The criterion matrix records the coverage for all 55 A and AA criteria. The browser follow-up exercised six cases per engine in Chromium, Firefox and WebKit, with one isolated WebKit rerun. A manual check reproduced a global printable-key shortcut that opened the task dialog from the workspace main landmark (2.1.4). The SUS survey has yet to be conducted. [Accessibility coverage](accessibility-coverage.md) · [W3C evaluation methodology](https://www.w3.org/WAI/test-evaluate/conformance/wcag-em/).
 
 ### RQ6 — realtime and CRDT delivery
 
