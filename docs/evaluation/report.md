@@ -85,6 +85,8 @@ The browser suite includes axe checks and keyboard flows for the documented view
 | 1.4.10 Reflow | Opened Tasks, Organizations, Automation with Outgoing webhooks expanded, and Metrics at 320 CSS pixels. The document and main region each measured 320 CSS pixels without horizontal overflow. |
 | 4.1.3 Status Messages | Went offline with the cached Tasks page open. Chromium exposed the offline message with a `status` role in its accessibility tree. |
 
+Ten targeted axe scans of the integrated V39 app (`9dc42f4`) found zero violations with the suite's WCAG 2.2 A/AA rule selection. The scans covered Organizations, expanded Outgoing webhooks, Metrics, Tasks and cached offline Tasks in both light and dark themes at 1440 × 900 CSS pixels.
+
 The selected observations cover one browser, fixture and interaction per criterion. The remaining review includes criterion coverage across the target flows and checking announcements with assistive technology. The SUS survey has yet to be conducted.
 
 ### RQ6 — realtime and CRDT delivery
