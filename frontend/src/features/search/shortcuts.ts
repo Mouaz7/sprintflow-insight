@@ -42,10 +42,12 @@ function modalOpen(): boolean {
 
 /**
  * The single global keyboard listener: Ctrl/⌘+K, `/`, `?`, `c` and `g` + key.
- * Plain keys are ignored while typing in a field or while any modal dialog is
- * open, so they never steal text input or act behind a dialog.
+ * Plain keys apply only when enabled, outside fields and modal dialogs.
  */
-export function useGlobalShortcuts(handlers: ShortcutHandlers) {
+export function useGlobalShortcuts(
+  characterShortcuts: boolean,
+  handlers: ShortcutHandlers,
+) {
   const latest = useRef(handlers);
   useEffect(() => {
     latest.current = handlers;
@@ -66,7 +68,8 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
         latest.current.togglePalette();
         return;
       }
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (!characterShortcuts || event.ctrlKey || event.metaKey || event.altKey)
+        return;
       if (typing(event.target) || modalOpen()) return;
       if (pendingG && Date.now() - pendingG <= SEQUENCE_TIMEOUT_MS) {
         pendingG = 0;
@@ -93,5 +96,5 @@ export function useGlobalShortcuts(handlers: ShortcutHandlers) {
     };
     document.addEventListener('keydown', keydown);
     return () => document.removeEventListener('keydown', keydown);
-  }, []);
+  }, [characterShortcuts]);
 }

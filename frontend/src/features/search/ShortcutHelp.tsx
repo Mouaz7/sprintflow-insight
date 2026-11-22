@@ -3,7 +3,12 @@ import { useModalFocus } from '../../shared/ui/ui';
 import { GO_TO } from './shortcuts';
 import type { SearchText } from './searchText';
 
-type Props = { t: SearchText; onClose: () => void };
+type Props = {
+  t: SearchText;
+  onClose: () => void;
+  characterShortcuts: boolean;
+  onCharacterShortcutsChange: (enabled: boolean) => void;
+};
 
 function Keys({ keys, then }: { keys: string[]; then?: string }) {
   return (
@@ -19,7 +24,12 @@ function Keys({ keys, then }: { keys: string[]; then?: string }) {
 }
 
 /** Accessible list of keyboard shortcuts: modal dialog with focus trap. */
-export function ShortcutHelp({ t, onClose }: Props) {
+export function ShortcutHelp({
+  t,
+  onClose,
+  characterShortcuts,
+  onCharacterShortcutsChange,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const introId = useId();
@@ -62,6 +72,16 @@ export function ShortcutHelp({ t, onClose }: Props) {
           </button>
         </header>
         <p id={introId}>{t('shortcutsIntro')}</p>
+        <label className="shortcut-preference">
+          <input
+            type="checkbox"
+            checked={characterShortcuts}
+            onChange={(event) =>
+              onCharacterShortcutsChange(event.currentTarget.checked)
+            }
+          />
+          {t('characterShortcuts')}
+        </label>
         <h3>{t('general')}</h3>
         <dl>
           {general.map(([keys, label]) => (

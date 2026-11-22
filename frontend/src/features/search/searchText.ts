@@ -40,7 +40,8 @@ export const searchLexicon = defineLexicon({
     showShortcuts: 'Keyboard shortcuts',
     shortcutsTitle: 'Keyboard shortcuts',
     shortcutsIntro:
-      'Shortcuts work when you are not typing in a field. Press Esc to close a dialog.',
+      'Letter and symbol shortcuts work outside fields when enabled. Press Esc to close this dialog.',
+    characterShortcuts: 'Enable shortcuts made only of letters or symbols',
     keyPalette: 'Open search and commands',
     keySlash: 'Open search',
     keyHelp: 'Show this help',
@@ -87,7 +88,9 @@ export const searchLexicon = defineLexicon({
     showShortcuts: 'Kortkommandon',
     shortcutsTitle: 'Kortkommandon',
     shortcutsIntro:
-      'Kortkommandona fungerar när du inte skriver i ett fält. Tryck Esc för att stänga en dialog.',
+      'Kortkommandon med bokstäver och symboler fungerar utanför fält när de är aktiverade. Tryck Esc för att stänga dialogen.',
+    characterShortcuts:
+      'Aktivera kortkommandon med enbart bokstäver eller symboler',
     keyPalette: 'Öppna sök och kommandon',
     keySlash: 'Öppna sök',
     keyHelp: 'Visa den här hjälpen',
