@@ -111,6 +111,81 @@ test('searches from the command palette, jumps to a task key and shows the short
   ).toHaveAttribute('aria-current', 'page');
 });
 
+test('turns off character shortcuts by keyboard and remembers the choice after reload', async ({
+  page,
+  api,
+  account,
+}) => {
+  await api.json('/projects', 'POST', {
+    name: 'Character shortcut settings',
+    description: account.email,
+  });
+  const search = page.getByRole('button', { name: 'Search', exact: true });
+  const main = page.getByRole('main');
+  const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  const preference = help.getByRole('checkbox', {
+    name: 'Enable shortcuts made only of letters or symbols',
+  });
+  const showHelp = async () => {
+    await search.waitFor();
+    await page.keyboard.press('Control+K');
+    const palette = page.getByRole('dialog', { name: 'Search and commands' });
+    const input = palette.getByRole('combobox', {
+      name: 'Search or run a command',
+    });
+    await expect(input).toBeFocused();
+    await input.fill('Keyboard shortcuts');
+    await expect(
+      palette.getByRole('option', { name: 'Keyboard shortcuts' }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Enter');
+    await expect(help.getByRole('button', { name: 'Close' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(preference).toBeFocused();
+  };
+
+  await page.goto('/tasks');
+  await expect(page.getByRole('button', { name: /New task/ })).toBeEnabled();
+  await main.focus();
+  await page.keyboard.press('c');
+  const newTask = page.getByRole('dialog', { name: 'New task' });
+  await expect(newTask).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(newTask).toBeHidden();
+
+  await showHelp();
+  await expect(preference).toBeChecked();
+  await page.keyboard.press('Space');
+  await expect(preference).not.toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(help).toBeHidden();
+
+  await page.reload();
+  await showHelp();
+  await expect(preference).not.toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(help).toBeHidden();
+
+  await main.focus();
+  for (const key of ['c', '/', 'Shift+?']) {
+    await page.keyboard.press(key);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  await page.keyboard.press('g');
+  await page.keyboard.press('m');
+  await expect(page).toHaveURL(/\/tasks$/);
+
+  await showHelp();
+  await page.keyboard.press('Space');
+  await expect(preference).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(help).toBeHidden();
+  await main.focus();
+  await page.keyboard.press('g');
+  await page.keyboard.press('m');
+  await expect(page).toHaveURL(/\/metrics$/);
+});
+
 test('keeps the active search option visible when keyboard navigation crosses the scroll window', async ({
   page,
   api,

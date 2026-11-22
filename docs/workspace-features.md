@@ -92,9 +92,9 @@ Tryck **Ctrl+K** (**⌘K** på Mac) eller **/**, eller klicka på **Sök** i sid
 | / | Öppna sök |
 | ? | Visa alla kortkommandon |
 | C | Ny uppgift |
-| G sedan O / B / L / S / M / P | Gå till översikt, tavlan, backlog, sprintar, mätvärden eller projekt |
+| G sedan O / B / L / S / R / M / P | Gå till översikt, tavlan, backlog, sprintar, färdplan, mätvärden eller projekt |
 
-Kortkommandona gäller inte när du skriver i ett fält eller när en annan dialog är öppen. Hjälpdialogen (?) är en modal dialog där fokus stannar tills du stänger den.
+Öppna **Sök** och välj **Kortkommandon** för att slå av eller på kortkommandon med enbart bokstäver eller symboler. Valet sparas i webbläsaren. Du når inställningen med **Ctrl+K** eller **⌘K** även när teckengenvägarna är avstängda. När de är aktiverade fungerar de utanför skrivfält och dialoger.
 
 `GET /api/search?q=…` är API:t bakom paletten. Valfria parametrar är `projectId`, `types` (till exempel `task,comment`), `limit` (högst 50) och `cursor` för nästa sida. Sökningen bygger på PostgreSQL:s fulltextsökning och `pg_trgm`. Migreringen V16 installerar `pg_trgm`, vilket kräver att databasanvändaren äger databasen, som i `compose.yaml`. Se [ADR 0016](adr/0016-postgresql-full-text-search.md).
 

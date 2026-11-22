@@ -14,6 +14,7 @@ const CommandPalette = lazy(loadPalette);
 const ShortcutHelp = lazy(() =>
   import('./ShortcutHelp').then((module) => ({ default: module.ShortcutHelp })),
 );
+const characterShortcutsKey = 'sprintflow-character-shortcuts';
 
 export type { SearchTarget } from './CommandPalette';
 
@@ -36,9 +37,24 @@ export function CommandCenter({
 }: Props) {
   const { language } = useLanguage();
   const [open, setOpen] = useState<'palette' | 'help' | null>(null);
+  const [characterShortcuts, setCharacterShortcuts] = useState(() => {
+    try {
+      return localStorage.getItem(characterShortcutsKey) !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const changeCharacterShortcuts = (enabled: boolean) => {
+    setCharacterShortcuts(enabled);
+    try {
+      localStorage.setItem(characterShortcutsKey, enabled ? 'on' : 'off');
+    } catch {
+      // The preference still applies while the workspace is open.
+    }
+  };
   const t = useT(searchLexicon);
   const close = () => setOpen(null);
-  useGlobalShortcuts({
+  useGlobalShortcuts(characterShortcuts, {
     togglePalette: () =>
       setOpen((current) => (current === 'palette' ? null : 'palette')),
     openPalette: () => setOpen('palette'),
@@ -112,7 +128,14 @@ export function CommandCenter({
             onShowShortcuts={() => setOpen('help')}
           />
         )}
-        {open === 'help' && <ShortcutHelp t={t} onClose={close} />}
+        {open === 'help' && (
+          <ShortcutHelp
+            t={t}
+            onClose={close}
+            characterShortcuts={characterShortcuts}
+            onCharacterShortcutsChange={changeCharacterShortcuts}
+          />
+        )}
       </Suspense>
     </>
   );

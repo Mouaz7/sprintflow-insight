@@ -146,6 +146,11 @@
   margin: 0;
   font-size: 20px;
 }
+.shortcut-preference {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .shortcut-help h3 {
   margin: 16px 0 6px;
   font-size: var(--text-small);
