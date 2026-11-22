@@ -6,6 +6,7 @@ import com.sprintflowinsight.workspace.project.ProjectAccessService;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +44,7 @@ public class RealtimeSessions {
 
   private final Map<String, WebSocketSession> open = new ConcurrentHashMap<>();
   private final PresenceRegistry presence;
+  private final ClusterPresence clusterPresence;
   private final SessionRepository<? extends Session> httpSessions;
   private final ProjectAccessService access;
   private final UserRepository users;
@@ -57,6 +59,7 @@ public class RealtimeSessions {
       UserRepository users,
       com.sprintflowinsight.auth.MfaService mfa,
       ObjectProvider<SimpMessageSendingOperations> broker,
+      ObjectProvider<ClusterPresence> clusterPresence,
       @Value("${app.realtime.presence-ttl:PT90S}") Duration presenceTtl,
       com.sprintflowinsight.workspace.task.TaskRepository tasks) {
     this.tasks = tasks;
@@ -66,6 +69,7 @@ public class RealtimeSessions {
     this.mfa = mfa;
     this.broker = broker;
     this.presence = new PresenceRegistry(presenceTtl);
+    this.clusterPresence = clusterPresence.getIfAvailable();
     this.clock = Clock.systemUTC();
   }
 
@@ -112,19 +116,23 @@ public class RealtimeSessions {
             displayName(userId),
             clock.instant());
     // A new presence subscriber needs the current list even when nobody joined.
-    broadcast(events ? changed : Set.of(projectId.getAsLong()));
+    broadcast(
+        presenceChanged(headers.getSessionId(), events ? changed : Set.of(projectId.getAsLong())));
   }
 
   @EventListener
   public void unsubscribed(SessionUnsubscribeEvent event) {
     var headers = SimpMessageHeaderAccessor.wrap(event.getMessage());
     if (headers.getSessionId() == null) return;
-    broadcast(presence.unsubscribed(headers.getSessionId(), headers.getSubscriptionId()));
+    broadcast(
+        presenceChanged(
+            headers.getSessionId(),
+            presence.unsubscribed(headers.getSessionId(), headers.getSubscriptionId())));
   }
 
   @EventListener
   public void disconnected(SessionDisconnectEvent event) {
-    broadcast(presence.disconnected(event.getSessionId()));
+    broadcast(presenceChanged(event.getSessionId(), presence.disconnected(event.getSessionId())));
   }
 
   public void openTask(
@@ -140,7 +148,9 @@ public class RealtimeSessions {
             .isEmpty())
       throw new org.springframework.security.access.AccessDeniedException(
           "Task is not available in this project.");
-    broadcast(presence.openTask(sessionId, projectId, taskId, clock.instant()));
+    broadcast(
+        presenceChanged(
+            sessionId, presence.openTask(sessionId, projectId, taskId, clock.instant())));
   }
 
   /** Verifies every open connection, refreshes live presence and expires the rest. */
@@ -153,10 +163,14 @@ public class RealtimeSessions {
         open.remove(session.getId());
         continue;
       }
-      if (stillAuthorised(session)) presence.touch(session.getId(), clock.instant());
-      else close(session);
+      if (stillAuthorised(session)) {
+        presence.touch(session.getId(), clock.instant());
+        if (clusterPresence != null) clusterPresence.touch(session.getId());
+      } else close(session);
     }
-    broadcast(presence.expire(clock.instant()));
+    var expired = new HashSet<>(presence.expire(clock.instant()));
+    if (clusterPresence != null) expired.addAll(clusterPresence.expire());
+    broadcast(expired);
   }
 
   @org.springframework.transaction.event.TransactionalEventListener
@@ -198,12 +212,23 @@ public class RealtimeSessions {
         .orElse("");
   }
 
+  private Set<Long> presenceChanged(String socket, Set<Long> localChanges) {
+    if (clusterPresence == null) return localChanges;
+    var changed = new HashSet<>(localChanges);
+    changed.addAll(clusterPresence.sync(socket, presence));
+    return changed;
+  }
+
   private void broadcast(Set<Long> projects) {
     if (projects.isEmpty()) return;
     SimpMessageSendingOperations messages = broker.getObject();
     for (Long projectId : projects)
       messages.convertAndSend(
           ProjectTopics.presence(projectId),
-          new PresenceMessage(projectId, presence.viewers(projectId)));
+          new PresenceMessage(
+              projectId,
+              clusterPresence == null
+                  ? presence.viewers(projectId)
+                  : clusterPresence.viewers(projectId)));
   }
 }

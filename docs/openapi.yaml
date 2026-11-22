@@ -16,6 +16,7 @@ security:
 x-stomp:
   endpoint: /ws
   authentication: Session cookie, allowed Origin and X-CSRF-TOKEN in CONNECT
+  reconnect: Reconnect through any replica and call GET /api/projects/{projectId}/events with the last applied sequence.
   subscribe:
     - /topic/projects/{projectId}
     - /topic/projects/{projectId}/presence
@@ -27,10 +28,10 @@ paths:
   /actuator/health:
     get:
       security: []
-      summary: Read minimal application and database health
+      summary: Read aggregate application readiness
       responses:
         '200': { description: Healthy, status UP without details }
-        '503': { description: Unhealthy, status DOWN without details }
+        '503': { description: Unavailable dependency or application without component details }
   /api/auth/csrf:
     get:
       security: []
