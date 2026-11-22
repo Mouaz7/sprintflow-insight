@@ -28,6 +28,7 @@ Run `make eval` with Java 25, Maven and Node 24. Results go to `artifacts/evalua
 - Set `EVAL_SUS_CSV` to the anonymous response CSV for SUS scoring.
 - For RQ1, provide `EVAL_HTTP_BEFORE_URL`, `EVAL_HTTP_AFTER_URL`, `EVAL_HTTP_BEFORE_DATABASE` and `EVAL_HTTP_AFTER_DATABASE`. Use disposable apps on `127.0.0.1`, k6 2.4.0 and a PostgreSQL server with `pg_stat_statements` loaded and installed in both databases. Use `PGHOST`, `PGPORT` and `PGUSER` for the fixture database connection.
 - For RQ6, install the locked script dependencies with `npm ci --prefix scripts` and set `EVAL_REALTIME_SINGLE_URL` and `EVAL_REALTIME_CLUSTER_URL` to the respective disposable endpoints. Use the same application image and broker across the replica comparison. `EVAL_REALTIME_CLIENTS` can select a smaller smoke sample from the supported range.
+- The quality workflow's `evaluate_replicas` input runs RQ6 in one kind cluster. It measures with two ready replicas, scales the disposable release to one replica and measures again. The artifact records both sets of measurements.
 
 ## Results
 
@@ -78,7 +79,19 @@ The local single-instance run delivered all three samples per client in both str
 | 250 | 68.99 | 44.10 |
 | 500 | 96.97 | 90.36 |
 
-The table uses the in-process broker and one workstation. The controlled replica comparison uses the Kubernetes fixture with RabbitMQ enabled in both variants. [Single-instance output](results/realtime-single.json).
+The table uses the in-process broker and one workstation. [Single-instance output](results/realtime-single.json).
+
+The kind comparison used the same application image, HTTP ingress, PostgreSQL and RabbitMQ across both replica counts. At every load level, all subscribers received all three measured project events and all three collaborative updates.
+
+| Clients | Project p95, 1 replica (ms) | Project p95, 2 replicas (ms) | CRDT p95, 1 replica (ms) | CRDT p95, 2 replicas (ms) |
+| ---: | ---: | ---: | ---: | ---: |
+| 10 | 25.32 | 48.78 | 10.34 | 30.01 |
+| 50 | 37.96 | 64.76 | 35.24 | 39.44 |
+| 100 | 55.99 | 83.79 | 32.57 | 64.15 |
+| 250 | 80.01 | 132.35 | 60.24 | 89.39 |
+| 500 | 155.07 | 167.87 | 142.87 | 179.08 |
+
+The second replica maintained complete delivery with higher p95 latency in this run. The test measured fan-out latency in a shared runner, with the two-replica sample first. [One replica](results/realtime-kind-single.json) · [Two replicas](results/realtime-kind-cluster.json) · [CI job](https://github.com/Mouaz7/sprintflow-insight/actions/runs/44964059516/job/137029837723).
 
 ## Discussion
 
@@ -86,8 +99,8 @@ Read performance was close across the two measured packages. SQL work rose in th
 
 ## Threats to validity
 
-The k6 comparison measures two releases and all their changes on one host. The forecast windows overlap and use tracker resolution dates affected by bulk closures. The risk holdout is small and drawn from DATALAB. Solver wall-clock results depend on the host and the fixed timeout. Realtime probes share one account, one project and one workstation, and measure delivery from the local client rather than geographical latency. Accessibility and perceived usability require their separate review protocols.
+The k6 comparison measures two releases and all their changes on one host. The forecast windows overlap and use tracker resolution dates affected by bulk closures. The risk holdout is small and drawn from DATALAB. Solver wall-clock results depend on the host and the fixed timeout. Realtime probes share one account and one project and measure local transport delivery. The replica runs share CPU, PostgreSQL and RabbitMQ, and their fixed execution order may favor the warmer single-replica sample. Accessibility and perceived usability require their separate review protocols.
 
 ## Conclusion
 
-The measured read workload retained a p95 near 18 ms. Model quality varied across workloads, with the clearest improvement observed in constrained sprint planning. Fixed inputs and the evaluation runner make those comparisons repeatable. Human usability and the controlled two-replica sample are tracked as outstanding evidence.
+The measured read workload retained a p95 near 18 ms. Model quality varied across workloads, with the clearest improvement observed in constrained sprint planning. Both replica counts delivered every measured event up to 500 clients. Fixed inputs and the evaluation runner make those comparisons repeatable. Human usability responses and the manual accessibility evaluation remain outstanding.
