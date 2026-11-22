@@ -151,9 +151,21 @@ function WorkspaceShell() {
   const t = useT(appText);
   const navigate = useNavigate();
   const location = useLocation();
-  const view = workspaceViews.find(
-    (candidate) => location.pathname === `/${candidate}`,
-  );
+  const pathname = location.pathname.toLowerCase().replace(/\/+$/, '');
+  const view = workspaceViews.find((candidate) => pathname === `/${candidate}`);
+  const organizationPage =
+    pathname === '/organizations' || pathname.startsWith('/o/');
+  const titleKey = view ?? (organizationPage ? 'organizations' : undefined);
+  const viewTitle = titleKey ? t(titleKey) : '';
+  useEffect(() => {
+    const original = document.title;
+    return () => {
+      document.title = original;
+    };
+  }, []);
+  useEffect(() => {
+    document.title = viewTitle ? `${viewTitle} · SprintFlow` : 'SprintFlow';
+  }, [viewTitle]);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideDismissed, setGuideDismissed] = useState(false);
   const [preferenceError, setPreferenceError] = useState('');

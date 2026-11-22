@@ -97,6 +97,7 @@ test('reopens a cached workspace and replays queued writes after conflict review
     await expect(form).toHaveCount(0);
     await expect(page.getByText(/5 queued changes/)).toBeVisible();
     await page.goto('/tasks');
+    await expect(page).toHaveTitle('Tasks · SprintFlow');
     await expect(page.getByText(/5 queued changes/)).toBeVisible();
     await expect(card(page, 'Queue three updates')).toBeVisible();
     await expectAccessible(page, 'offline-cached-workspace');
