@@ -19,6 +19,7 @@ security:
 x-stomp:
   endpoint: /ws
   authentication: Session cookie, allowed Origin and X-CSRF-TOKEN in CONNECT
+  reconnect: Reconnect through any replica and call GET /api/projects/{projectId}/events with the last applied sequence.
   subscribe:
     - /topic/projects/{projectId}
     - /topic/projects/{projectId}/presence
@@ -30,10 +31,10 @@ paths:
   /actuator/health:
     get:
       security: []
-      summary: Read minimal application and database health
+      summary: Read aggregate application readiness
       responses:
         '200': { description: Healthy, status UP without details }
-        '503': { description: Unhealthy, status DOWN without details }
+        '503': { description: Unavailable dependency or application without component details }
   /api/auth/csrf:
     get:
       security: []
@@ -2598,6 +2599,65 @@ paths:
         command returns 409. Viewer and unrelated Member cannot facilitate. storyVersion must match the current story
         (412 otherwise). At least one estimating vote must have been revealed. Accepting closes the session atomically
         with the story update and activity.
+  /api/projects/{projectId}/offline-operations:
+    post:
+      summary: Replay a queued task move, comment or manual time log
+      description: >-
+        The signed-in account must match accountId and have write access to an active project.
+        If-Match refers to the task revision last reviewed by the caller. An identical retry with
+        the same operationId returns its original receipt. A stale revision needs a fresh read and
+        an explicit decision before replaying.
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: header
+          name: If-Match
+          required: true
+          schema: { type: string, example: '"7"' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operationId, accountId, taskId, kind]
+              properties:
+                operationId: { type: string, format: uuid }
+                accountId: { type: integer, format: int64, minimum: 1 }
+                taskId: { type: integer, format: int64, minimum: 1 }
+                kind: { type: string, enum: [MOVE, COMMENT, LOG_TIME] }
+                status: { type: string, enum: [To Do, In Progress, Review, Done] }
+                message: { type: string, minLength: 1, maxLength: 1000 }
+                time:
+                  type: object
+                  required: [minutes, spentOn]
+                  properties:
+                    minutes: { type: integer, minimum: 1, maximum: 1440 }
+                    spentOn: { type: string, format: date }
+                    note: { type: string, maxLength: 500 }
+              oneOf:
+                - required: [status]
+                - required: [message]
+                - required: [time]
+      responses:
+        '200':
+          description: Applied operation or original receipt
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [taskVersion]
+                properties:
+                  taskVersion: { type: integer, format: int64 }
+        '400': { description: Invalid operation }
+        '401': { description: Authentication required }
+        '403': { description: Account or project role does not permit replay }
+        '404': { description: Project or task unavailable }
+        '409': { description: Project or operation identifier conflicts }
+        '412': { description: Task revision changed }
+        '428': { description: Task revision is required }
   /api/projects/{projectId}/time-entries:
     parameters:
     - $ref: '#/components/parameters/projectId'

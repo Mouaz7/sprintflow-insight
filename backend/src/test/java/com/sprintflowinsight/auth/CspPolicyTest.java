@@ -69,8 +69,10 @@ class CspPolicyTest {
             "'nonce-" + nonce + "'",
             "'strict-dynamic'",
             "require-trusted-types-for 'script'",
-            "trusted-types sprintflow-google goog#html 'allow-duplicates'")
-        .doesNotContain("'unsafe-eval'", "trusted-types default", "trusted-types *", "trusted-types 'none'");
+            "worker-src 'self'",
+            "trusted-types sprintflow-google sprintflow-pwa goog#html 'allow-duplicates'")
+        .doesNotContain(
+            "'unsafe-eval'", "trusted-types default", "trusted-types *", "trusted-types 'none'");
   }
 
   @Test

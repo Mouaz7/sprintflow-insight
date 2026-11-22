@@ -1,10 +1,18 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Outlet, useMatch, useOutletContext } from 'react-router';
 import { api, ApiError, clearCsrfToken } from '../api/client';
 import type { Session, User } from '../api/contracts';
 import { meQuery, projectsQuery } from '../api/queries';
 import { useT } from '../shared/i18n/LanguageProvider';
+import {
+  loadSessionWithOfflineFallback,
+  watchOfflineQueries,
+} from '../shared/offline/sessionCache';
+import {
+  clearOfflineAccount,
+  verifyOfflineAccount,
+} from '../shared/offline/storage';
 import { appText } from './i18n';
 
 // Signed-in visits never download the sign-in page.
@@ -31,9 +39,22 @@ export function SessionGate() {
   const t = useT(appText);
   const queryClient = useQueryClient();
   const resetPassword = useMatch('/reset-password');
-  const me = useQuery(meQuery);
+  const me = useQuery({
+    ...meQuery,
+    queryFn: () => loadSessionWithOfflineFallback(queryClient),
+    networkMode: 'always',
+    refetchOnReconnect: 'always',
+  });
   const projects = useQuery({ ...projectsQuery, enabled: Boolean(me.data) });
   const user = me.data;
+  const accountId = user?.id;
+  useEffect(
+    () =>
+      accountId === undefined
+        ? undefined
+        : watchOfflineQueries(queryClient, accountId),
+    [accountId, queryClient],
+  );
 
   async function refreshProjects() {
     await queryClient.fetchQuery({ ...projectsQuery, staleTime: 0 });
@@ -46,11 +67,13 @@ export function SessionGate() {
   }
   async function signedIn(next: User) {
     forgetAccountData();
+    await verifyOfflineAccount(next).catch(() => undefined);
     await refreshProjects();
     queryClient.setQueryData(meQuery.queryKey, next);
   }
   function signedOut() {
     clearCsrfToken();
+    void clearOfflineAccount(accountId).catch(() => undefined);
     queryClient.setQueryData(meQuery.queryKey, null);
     forgetAccountData();
   }

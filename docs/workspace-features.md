@@ -160,6 +160,12 @@ Projektägare och administratörer kan skapa en koppling under **Automationsregl
 
 Driftprofilen för Compose innehåller Prometheus, Tempo och en färdig Grafana-dashboard. Följ antal anrop, felandel, p95 och felbudget. Vid ett oväntat fel kan du söka på `errorId` i serverloggen och använda `traceId` för att öppna spårningen i Tempo. [Starta driftprofilen](adr/0039-observability-and-slos.md).
 
+## Installera appen och arbeta offline (B13)
+
+Öppna SprintFlow via HTTPS och använd webbläsarens meny för att installera appen. Öppna **Uppgifter**, kommentarstråden eller **Tid och kapacitet** medan du är ansluten så att arbetsytan finns sparad när nätet försvinner. Offlinevyn går att öppna i upp till 24 timmar efter att webbläsaren senast verifierade kontot.
+
+Du kan flytta uppgifter, skriva nya kommentarer och logga tid manuellt. Bannern visar hur många ändringar som väntar på anslutning. När en uppgift har ändrats på servern väljer du **Behåll serverns version** eller **Gör om min ändring**. Om du redan har öppnat en aktiv delad beskrivning kan du också fortsätta skriva offline. Ändringarna sammanfogas med andra deltagares redigeringar när anslutningen återkommer. Utloggning rensar den sparade arbetsytan på enheten. [Lagring och uppspelning](adr/0041-offline-workspace.md).
+
 ## Adresser per vy (A6)
 
 Varje vy har en egen adress som går att ladda om, bokmärka och dela: `/overview`, `/projects`, `/backlog`, `/sprints`, `/tasks`, `/metrics`, `/updates`, `/profile`, `/calendar`, `/retrospective` och `/trash`. `/` öppnar den vy du senast använde i fliken. Delade rapporter öppnas på `/report/{token}` och återställningsmejl länkar till `/reset-password?token=…`. Äldre länkar med `?report=` eller `?resetToken=` skickas vidare till de nya adresserna. Projektväljaren finns på ett ställe, i sidhuvudet. Långa tavlor och backloggar (fler än 60 objekt i en kolumn eller lista) visas i ett rullningsbart område där bara de synliga korten finns i sidan. Se [ADR 0013](adr/0013-router-query-and-typed-lexicon.md).
@@ -179,7 +185,11 @@ Tavlan, öppna kommentarstrådar och notisklockan uppdateras när andra arbetar 
 
 Sidhuvudet visar andra projektmedlemmars initialer. Håll pekaren över närvaron för namn och vilken uppgift de har öppen; skärmläsare får samma information. Flera flikar sammanförs till en person. Indikatorn visar om liveuppdateringarna är anslutna eller återansluter. Efter ett avbrott hämtas missade händelser automatiskt; om historiken har gallrats uppdateras projektets data i stället.
 
-Alla läsroller, inklusive Viewer och medlemmar i arkiverade projekt, kan se närvaro och rapportera vilken uppgift de tittar på. Det ger ingen skrivrätt. Närvaron innehåller visningsnamn och uppgiftsreferenser, aldrig e-post eller uppgiftstext. En instans stöds nu; flera instanser kräver C6:s externa broker enligt [ADR 0017](adr/0017-realtime-stomp-and-sequence-numbers.md).
+Alla läsroller, inklusive Viewer och medlemmar i arkiverade projekt, kan se närvaro och rapportera vilken uppgift de tittar på. Det ger ingen skrivrätt. Närvaron innehåller visningsnamn och uppgiftsreferenser, aldrig e-post eller uppgiftstext. I Kubernetes delas närvaro och sessionsdata i PostgreSQL och RabbitMQ förmedlar uppdateringar mellan repliker.
+
+## Kubernetes (C6)
+
+Helm-chartet kör minst två repliker och använder delade sessioner. En webbläsare kan återansluta via en annan replik och hämta saknade uppdateringar med senaste sekvensnummer. Under en uppgradering kan tidigare och aktuell appversion använda den utökade databasen samtidigt. [Installation, beroenden och rollback](adr/0040-kubernetes-and-cluster-recovery.md).
 
 
 ## Epics, färdplan och beroenden (B3)

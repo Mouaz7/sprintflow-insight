@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sprintflow.name" . }}
+  labels:
+    {{- include "sprintflow.selector" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "sprintflow.selector" . | nindent 4 }}
+  ports:
+    - { name: http, port: 8081, targetPort: http }

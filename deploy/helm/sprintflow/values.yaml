@@ -1,0 +1,43 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/mouaz7/sprintflow-insight
+  tag: ''
+  digest: ''
+  pullPolicy: IfNotPresent
+existingSecret: sprintflow-runtime
+publicUrl: https://sprintflow.example.test
+secureCookies: true
+webSocketDiagnostics: false
+broker:
+  host: rabbitmq
+  port: 61613
+  virtualHost: /
+uploads:
+  existingClaim: ''
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+ingress:
+  enabled: false
+  className: traefik
+  host: ''
+  tlsSecret: ''
+networkPolicy:
+  enabled: true
+  ingressNamespace: traefik
+  databaseSelector:
+    app.kubernetes.io/name: postgres
+  brokerSelector:
+    app.kubernetes.io/name: rabbitmq
+  extraEgress: []
