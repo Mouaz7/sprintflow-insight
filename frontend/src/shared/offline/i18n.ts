@@ -5,8 +5,13 @@ export const offlineText = defineLexicon({
     offline: 'Offline. Showing saved workspace data.',
     pending: ({ count }: { count: number }, format) =>
       format.plural(count, {
-        one: '# queued change',
-        other: '# queued changes',
+        one: '# queued change.',
+        other: '# queued changes.',
+      }),
+    needsReview: ({ count }: { count: number }, format) =>
+      format.plural(count, {
+        one: '# change needs your review.',
+        other: '# changes need your review.',
       }),
     unavailable:
       'Could not save this change offline. Keep your draft and try again when connected.',
@@ -26,8 +31,13 @@ export const offlineText = defineLexicon({
     offline: 'Offline. Sparad information från arbetsytan visas.',
     pending: ({ count }: { count: number }, format) =>
       format.plural(count, {
-        one: '# köad ändring',
-        other: '# köade ändringar',
+        one: '# köad ändring.',
+        other: '# köade ändringar.',
+      }),
+    needsReview: ({ count }: { count: number }, format) =>
+      format.plural(count, {
+        one: '# ändring behöver granskas.',
+        other: '# ändringar behöver granskas.',
       }),
     unavailable:
       'Ändringen kunde inte sparas offline. Behåll utkastet och försök igen när du är ansluten.',
