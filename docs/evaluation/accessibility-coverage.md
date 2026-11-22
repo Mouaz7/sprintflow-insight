@@ -16,7 +16,7 @@ The six existing Playwright cases exercised sign-in and sign-out, a project with
 | Firefox 159 | 6 passed | 15 |
 | WebKit 27.2 | 5 passed initially. The read-only-project case completed on an isolated rerun. | 15 |
 
-The 45 completed scans reported zero violations for the project's selected WCAG axe rules. The initial run combined the secure-cookie default with HTTP. WebKit displayed the sign-in screen instead of reaching the authenticated workspace. The Firefox report case reported a browser-process crash in that run and completed in the serial comparison. The WebKit read-only-project trace hit the test deadline while opening a new viewer page. [Browser suite and axe rules](../testing.md).
+The 45 completed scans reported zero violations for the project's selected WCAG axe rules. The initial run combined the secure-cookie default with HTTP and WebKit stayed at sign-in. The Firefox report case reported a browser-process crash in that run and completed in the serial comparison. The WebKit read-only-project trace hit the test deadline while opening a new viewer page. [Browser suite and axe rules](../testing.md).
 
 WebKit also completed sign-in, the project workflow and both offline cases on a loopback HTTPS instance with the secure-session setting. The queued-edits case reached the test deadline on the group run and passed on an isolated rerun. This comparison used an isolated self-signed test certificate and the same packaged application.
 
@@ -60,7 +60,7 @@ For the additional loopback HTTPS check, set `E2E_BASE_URL` to the disposable TL
 
 ## Confirmed barrier
 
-In Chromium, pressing `c` with the workspace main landmark focused opened the New task dialog. The document-level shortcut listener implements a fixed map for `c`, `/`, `?` and sequences beginning with `g`. The shortcut dialog provides a reference list. In the inspected interface and preference flow, there was no way to disable or remap the printable-key shortcuts. This is a 2.1.4 finding for the sampled release. A focused check should cover the same task after any shortcut changes. [Shortcut implementation](../../frontend/src/features/search/shortcuts.ts) · [W3C guidance on character shortcuts](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html).
+In Chromium, pressing `c` with the workspace main landmark focused opened the New task dialog. The document-level shortcut listener implements a fixed map for `c`, `/`, `?` and sequences beginning with `g`. The shortcut dialog offers a reference list, and the inspected preference flow leaves that map fixed. This is a 2.1.4 finding for the sampled release. [Shortcut implementation](../../frontend/src/features/search/shortcuts.ts) · [W3C guidance on character shortcuts](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html).
 
 ## Criterion matrix
 
