@@ -12,6 +12,8 @@
 //   BASE_URL (or SPRINTFLOW_QA_URL)  app address, default http://127.0.0.1:8081
 //   SCREENSHOT_DIR                   output directory, default docs/images/screenshots
 //   SCREENSHOT_QUALITY               WebP quality 0..1, default 0.82
+//   SCREENSHOT_PROFILE=release       capture current release views in both themes
+//   SCREENSHOT_SOURCE_COMMIT         source revision for a separately served packaged app
 //   SCREENSHOT_DB_CONTAINER          optional disposable PostgreSQL container.
 //                                    When set, Docker spreads the seeded status history
 //                                    over the past weeks so burndown and cycle time are
@@ -39,6 +41,7 @@ const { request: playwrightRequest }: typeof import("playwright") = require(
 );
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const releaseViews = process.env.SCREENSHOT_PROFILE === "release";
 const baseURL = (
   process.env.BASE_URL ??
   process.env.SPRINTFLOW_QA_URL ??
@@ -46,7 +49,7 @@ const baseURL = (
 ).replace(/\/$/, "");
 const outDir = resolve(
   root,
-  process.env.SCREENSHOT_DIR ?? "docs/images/screenshots",
+  process.env.SCREENSHOT_DIR ?? (releaseViews ? "docs/images/release" : "docs/images/screenshots"),
 );
 const quality = Number(process.env.SCREENSHOT_QUALITY ?? "0.82");
 if (!Number.isFinite(quality) || quality < 0 || quality > 1)
@@ -765,6 +768,40 @@ async function openView(page: Page, route: string): Promise<void> {
   await page.locator("#workspace-page h1").first().waitFor();
 }
 
+async function captureRelease(browser: Browser, owner: Account): Promise<void> {
+  for (const scheme of ["light", "dark"] as const) {
+    const { context, page } = await newPage(browser, desktop, scheme, owner);
+    try {
+      await openView(page, "organizations");
+      await capture(page, `organizations-${scheme}`);
+      await openView(page, "automation");
+      const webhooks = page.locator("summary").filter({ hasText: /^Outgoing webhooks$/ });
+      await webhooks.click();
+      await webhooks.scrollIntoViewIfNeeded();
+      await capture(page, `outgoing-webhooks-${scheme}`);
+      await openView(page, "tasks");
+      await page.locator(".task-board article").first().waitFor();
+      await context.setOffline(true);
+      await page.getByRole("status").filter({ hasText: "Offline. Showing saved workspace data." }).waitFor();
+      await capture(page, `offline-board-${scheme}`);
+    } finally {
+      await context.setOffline(false);
+      await context.close();
+    }
+  }
+}
+
+function writeManifest(): void {
+  const sourceCommit =
+    process.env.SCREENSHOT_SOURCE_COMMIT ??
+    execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  if (!/^[0-9a-f]{40}$/.test(sourceCommit)) throw new Error("Expected a complete source commit SHA.");
+  writeFileSync(
+    join(outDir, "manifest.json"),
+    JSON.stringify({ generatedAt: new Date().toISOString(), sourceCommit, images: written }, null, 2) + "\n",
+  );
+}
+
 async function main(): Promise<void> {
   mkdirSync(outDir, { recursive: true });
   const browser = await launchBrowser();
@@ -773,6 +810,11 @@ async function main(): Promise<void> {
     const data = await seed();
     encoder = await browser.newPage();
     console.log(`Writing screenshots to ${outDir}`);
+    if (releaseViews) {
+      await captureRelease(browser, data.owner);
+      writeManifest();
+      return;
+    }
     const anonymous = await newPage(browser, desktop, "light");
     await anonymous.page.locator('input[type="password"]').first().waitFor();
     await capture(anonymous.page, "sign-in");
@@ -872,21 +914,7 @@ async function main(): Promise<void> {
     await browser.close();
   }
   const total = written.reduce((sum, entry) => sum + entry.bytes, 0);
-  writeFileSync(
-    join(outDir, "manifest.json"),
-    JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
-          cwd: root,
-          encoding: "utf8",
-        }).trim(),
-        images: written,
-      },
-      null,
-      2,
-    ) + "\n",
-  );
+  writeManifest();
   console.log(
     `${written.length} screenshots, ${(total / 1024 / 1024).toFixed(2)} MB in total.`,
   );

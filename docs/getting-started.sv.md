@@ -29,6 +29,10 @@ med upp-/nedknapparna; ordningen sparas. Sprintfiltret visar en viss sprintbackl
 eller oplanerade berättelser. Under Uppgifter exporterar **Exportera filtrerade
 uppgifter** precis det aktuella urvalet till CSV eller PDF, med filtren angivna i filen.
 
+### Installera appen och använd den offline
+
+Öppna SprintFlow via HTTPS eller på localhost och använd webbläsarens installationsmeny. Besök vyn du vill läsa offline medan nätet fungerar. I **Uppgifter** kan du köa en flytt eller en ny kommentar. Under **Tid och kapacitet** kan du köa en manuell tidsregistrering. När anslutningen återkommer synkas ändringarna. Om servern har en nyare uppgiftsversion visar bannern dina val. [Guide till offlinefunktionen](workspace-features.md#installera-appen-och-arbeta-offline-b13).
+
 ## 4. Stoppa och starta igen
 
 Kör kommandona i projektmappen:
@@ -70,3 +74,7 @@ Med Node 24 och Java 25 installerat kan du köra:
 ```
 
 Behåll terminalen öppen och stoppa med Ctrl+C. Läget använder samma databas och uppladdningsmapp som Docker. [Huvudguiden](../README.md) beskriver tester, konfiguration och Linux-behörigheter.
+
+## Drift
+
+Composeprofilen `observability` startar Prometheus, Grafana och Tempo i den lokala miljön. Använd Kubernetes-guiden när appen ska köras med flera repliker och delad databas. [Observerbarhetsprofil](adr/0039-observability-and-slos.md) · [Kubernetes-guide](adr/0040-kubernetes-and-cluster-recovery.md).

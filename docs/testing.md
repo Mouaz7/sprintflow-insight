@@ -356,6 +356,8 @@ npm run repository --prefix scripts
 
 The selected ports must be free. Set `BASE_URL` to the disposable app's URL; its default is `http://127.0.0.1:8081`. `SCREENSHOT_DIR` changes the output directory, and `SCREENSHOT_QUALITY` accepts 0–1 (default 0.82). `PLAYWRIGHT_EXECUTABLE_PATH` can select an existing Chromium. SMTP and Google credentials remain blank in this generated demo configuration, so no real mail is sent.
 
+Set `SCREENSHOT_PROFILE=release` to capture Organizations, outgoing webhooks and the task board offline in both themes. This profile writes to `docs/images/release/`. Set `SCREENSHOT_SOURCE_COMMIT` to the full Git SHA when a different checkout builds the application being captured.
+
 `SCREENSHOT_DB_CONTAINER` is optional. When set, the script uses `docker exec ... psql` to spread only the freshly seeded project's status history over prior weeks before creating the report snapshot. A database transaction checks the demo owner and project key first. The container must contain the same database used by the app, with database/user `sprintflow`; `SCREENSHOT_DB_NAME` overrides the database name. Omit the container option for API-only capture: metrics then honestly reflect the newly created history and may show insufficient-data warnings. Backdating is solely a documentation fixture, never an application API.
 
 Review the images at desktop (1440×900) and mobile (390×844), check text/labels and ensure only demo identities appear. Copy the regenerated directory into the working branch if capturing in the temporary worktree. Update it after major UI phases, including router/search/realtime changes and newly added pages; keep the README links and manifest together. Keep actual UI screenshots separate from fixture-based layout checks.
