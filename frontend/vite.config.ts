@@ -1,11 +1,65 @@
 import { defineConfig } from 'vitest/config';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset({ target: '19' })] }),
+    VitePWA({
+      injectRegister: null,
+      registerType: 'autoUpdate',
+      manifest: {
+        id: '/',
+        name: 'SprintFlow Insight',
+        short_name: 'SprintFlow',
+        description: 'Plan and follow work with your team.',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        theme_color: '#243047',
+        background_color: '#faf8f5',
+        icons: [
+          {
+            src: '/icons/sprintflow-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/sprintflow-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/sprintflow-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        inlineWorkboxRuntime: true,
+        navigateFallback: '',
+        directoryIndex: '',
+        globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url, sameOrigin }) =>
+              sameOrigin &&
+              request.mode === 'navigate' &&
+              !/^\/(api|ws|actuator|report|reset-password|email-preferences)(\/|$)/.test(
+                url.pathname,
+              ),
+            handler: 'NetworkOnly',
+            options: {
+              precacheFallback: { fallbackURL: '/index.html' },
+            },
+          },
+        ],
+      },
+    }),
   ],
   html: { cspNonce: '__SPRINTFLOW_CSP_NONCE__' },
   server: {

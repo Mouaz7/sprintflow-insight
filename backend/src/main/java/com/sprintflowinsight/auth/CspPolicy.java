@@ -66,14 +66,14 @@ public final class CspPolicy implements HeaderWriter, ResourceTransformer {
             + " https://fonts.googleapis.com https://accounts.google.com/gsi/style;"
             // React assigns typed CSS properties and GIS renders width styles. This exception
             // permits style attributes, never inline scripts, style elements or eval.
-            + " style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;"
-            + " img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/;"
-            + " frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none';"
-            + " form-action 'self'; frame-ancestors 'none'; require-trusted-types-for 'script';"
+            + " style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src"
+            + " 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src"
+            + " https://accounts.google.com/gsi/; worker-src 'self'; object-src 'none'; base-uri"
+            + " 'none'; form-action 'self'; frame-ancestors 'none'; require-trusted-types-for"
+            + " 'script';"
             // Google Identity Services creates its Closure goog#html policy itself and may do so
             // again (for example when its loader runs twice). Without 'allow-duplicates' that
-            // second createPolicy throws and breaks sign-in. Only the two named policies remain
-            // allowed; enforcement and the sink checks are unchanged.
-            + " trusted-types sprintflow-google goog#html 'allow-duplicates'");
+            // second createPolicy throws and breaks sign-in. The offline policy accepts /sw.js.
+            + " trusted-types sprintflow-google sprintflow-pwa goog#html 'allow-duplicates'");
   }
 }

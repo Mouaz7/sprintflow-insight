@@ -62,16 +62,18 @@ export const queryKeys = {
 };
 
 /** The signed-in user, or `null` when the server reports no session. */
+export async function fetchSessionUser() {
+  try {
+    return await api<User>('/auth/me');
+  } catch (cause) {
+    if (cause instanceof ApiError && cause.status === 401) return null;
+    throw cause;
+  }
+}
+
 export const meQuery = queryOptions({
   queryKey: queryKeys.me,
-  queryFn: async () => {
-    try {
-      return await api<User>('/auth/me');
-    } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 401) return null;
-      throw cause;
-    }
-  },
+  queryFn: fetchSessionUser,
 });
 
 export const projectsQuery = queryOptions({

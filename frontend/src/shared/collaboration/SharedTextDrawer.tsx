@@ -1,6 +1,10 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import type { User } from '../../api/contracts';
+import { queryKeys } from '../../api/queries';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { localizeMessage } from '../i18n/messages';
+import { useIsOnline } from '../offline/connectivity';
 import { Drawer, Notice } from '../ui/ui';
 import { CrdtSession, emptyView, type SessionView } from './CrdtSession';
 import type { CollaborationScope } from './contracts';
@@ -15,6 +19,7 @@ const labels = {
     loading: 'Loading shared text…',
     readOnly: 'Read only',
     connecting: 'Connecting. Edits stay in this tab until syncing resumes.',
+    offlineSaved: 'Connecting. Edits are saved on this device.',
     pending: 'Syncing edits…',
     synced: 'Synced',
     people: 'Writing here',
@@ -30,6 +35,7 @@ const labels = {
     readOnly: 'Skrivskyddad',
     connecting:
       'Ansluter. Ändringar ligger kvar i fliken tills synkningen återupptas.',
+    offlineSaved: 'Ansluter. Ändringar är sparade på den här enheten.',
     pending: 'Synkar ändringar…',
     synced: 'Synkad',
     people: 'Skriver här',
@@ -51,6 +57,8 @@ export default function SharedTextDrawer({
 }) {
   const { language } = useLanguage();
   const t = labels[language];
+  const online = useIsOnline();
+  const accountId = useQueryClient().getQueryData<User>(queryKeys.me)?.id;
   const [view, setView] = useState(emptyView);
   const session = useRef<CrdtSession | null>(null);
   const notifyProjected = useEffectEvent(onProjected);
@@ -61,23 +69,24 @@ export default function SharedTextDrawer({
       userEmail,
       setView,
       () => notifyProjected(),
+      accountId,
     );
     session.current = current;
     return () => {
       current.close();
       session.current = null;
     };
-  }, [projectId, target, id, userEmail]);
+  }, [projectId, target, id, userEmail, accountId]);
 
   useEffect(() => {
-    if (!view.unsaved) return;
+    if (!view.unsaved || view.localSaved) return;
     const protect = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = true;
     };
     window.addEventListener('beforeunload', protect);
     return () => window.removeEventListener('beforeunload', protect);
-  }, [view.unsaved]);
+  }, [view.unsaved, view.localSaved]);
 
   const status = !view.ready
     ? t.loading
@@ -85,14 +94,20 @@ export default function SharedTextDrawer({
       ? t.readOnly
       : !view.active
         ? null
-        : !view.connected
-          ? t.connecting
+        : !online || !view.connected
+          ? view.localSaved
+            ? t.offlineSaved
+            : t.connecting
           : view.unsaved
             ? t.pending
             : t.synced;
 
   return (
-    <Drawer title={t.title} onClose={onClose} dirty={view.unsaved}>
+    <Drawer
+      title={t.title}
+      onClose={onClose}
+      dirty={view.unsaved && !view.localSaved}
+    >
       <div className="editor-form">
         <Notice error={localizeMessage(view.error, language)} />
         {status && <p role="status">{status}</p>}
