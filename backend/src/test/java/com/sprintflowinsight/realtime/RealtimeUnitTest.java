@@ -37,6 +37,7 @@ class RealtimeUnitTest {
             mock(com.sprintflowinsight.auth.UserRepository.class),
             mock(com.sprintflowinsight.auth.MfaService.class),
             broker,
+            mock(org.springframework.beans.factory.ObjectProvider.class),
             Duration.ofSeconds(90),
             tasks);
     when(access.canRead(7L, 5L)).thenReturn(true);
