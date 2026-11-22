@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Task } from '../../api/contracts';
 import { ApiError } from '../../api/client';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { Drawer, Notice } from '../../shared/ui/ui';
 import { DateInput } from '../../shared/ui/DateInput';
 import { validDate } from '../../shared/lib/formValues';
+import { offlineText } from '../../shared/offline/i18n';
+import { enqueueTaskChange } from '../../shared/offline/operations';
 import type { MemberCapacity, TimeEntry } from './contracts';
 import { timeText } from './i18n';
 import { useTimeWrite } from './queries';
@@ -39,26 +42,46 @@ export function LogEditor({
   timer?: boolean;
 }) {
   const t = useT(timeText);
+  const offline = useT(offlineText);
+  const client = useQueryClient();
   const write = useTimeWrite(projectId);
   const [taskId, setTaskId] = useState(entry ? String(entry.taskId) : '');
   const [minutes, setMinutes] = useState(String(entry?.minutes ?? 60));
   const [day, setDay] = useState(entry?.spentOn ?? today());
   const [note, setNote] = useState(entry?.note ?? '');
   const [dirty, setDirty] = useState(false);
+  const [queueing, setQueueing] = useState(false);
+  const [queueError, setQueueError] = useState('');
+  const busy = write.isPending || queueing;
   const title = t(entry ? 'edit' : timer ? 'start' : 'log');
+  async function logOffline() {
+    const task = tasks.find((item) => item.id === Number(taskId));
+    setQueueing(true);
+    setQueueError('');
+    const queued =
+      task &&
+      (await enqueueTaskChange(client, task, {
+        kind: 'LOG_TIME',
+        time: { minutes: Number(minutes), spentOn: day, note },
+      }));
+    setQueueing(false);
+    if (queued) onClose();
+    else setQueueError(offline('unavailable'));
+  }
   return (
-    <Drawer
-      title={title}
-      dirty={dirty}
-      busy={write.isPending}
-      onClose={onClose}
-    >
+    <Drawer title={title} dirty={dirty} busy={busy} onClose={onClose}>
       <TimeError error={write.error} />
+      <Notice error={queueError} />
       <form
         className="editor-form"
         onChange={() => setDirty(true)}
         onSubmit={(event) => {
           event.preventDefault();
+          if (busy) return;
+          if (!entry && !timer && !navigator.onLine) {
+            void logOffline();
+            return;
+          }
           write.mutate(
             {
               path: entry
@@ -83,7 +106,7 @@ export function LogEditor({
           );
         }}
       >
-        <fieldset disabled={write.isPending}>
+        <fieldset disabled={busy}>
           {entry ? (
             <p>
               {entry.taskKey} · {entry.taskTitle}
@@ -144,7 +167,7 @@ export function LogEditor({
           </label>
           {timer && <p className="time-hint">{t('timerHint')}</p>}
           <button className="primary-action" type="submit">
-            {t(write.isPending ? 'saving' : 'save')}
+            {t(busy ? 'saving' : 'save')}
           </button>
         </fieldset>
       </form>

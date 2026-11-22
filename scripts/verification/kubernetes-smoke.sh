@@ -67,8 +67,11 @@ verify_project "$base_url"
 install sprintflow current
 kube rollout status deployment/sprintflow --timeout=120s
 verify_project "$base_url"
+migration_version=$(printf '%s\n' backend/src/main/resources/db/migration/V*__*.sql |
+  sed -nE 's|.*/V([0-9]+)__.*\.sql$|\1|p' | sort -n | tail -1)
+[[ "$migration_version" =~ ^[0-9]+$ ]]
 kube exec deployment/postgres -- psql -U sprintflow -d sprintflow -Atc \
-  "select count(*) from flyway_schema_history where version='38' and success" | grep -qx 1
+  "select count(*) from flyway_schema_history where version='$migration_version' and success" | grep -qx 1
 
 # Start the previous image against the expanded schema and reuse the original JDBC session.
 install sprintflow-previous previous --set ingress.enabled=false --set autoscaling.enabled=false
@@ -78,4 +81,4 @@ curl -fsS --retry 10 --retry-all-errors --retry-delay 1 --max-time 5 http://127.
 verify_project http://127.0.0.1:18081
 h uninstall sprintflow-previous --wait --timeout 120s
 kube get hpa,pdb,networkpolicy
-echo 'Verified the previous image and its original session before and after migration V38.'
+echo "Verified the previous image and its original session through schema V$migration_version."

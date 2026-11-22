@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { ChecklistStep, Task, TaskComment } from '../../api/contracts';
+import { offlineText } from '../../shared/offline/i18n';
+import { enqueueTaskChange } from '../../shared/offline/operations';
 import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { tasksText } from './i18n';
@@ -238,6 +240,7 @@ export function TaskDiscussion({
   const { format } = useLanguage();
   const fieldExample = useFieldExample();
   const queryClient = useQueryClient();
+  const offline = useT(offlineText);
   const commentList = useQuery(commentsQuery(task.id));
   const comments = commentList.data ?? [];
   const loading = commentList.isPending;
@@ -259,6 +262,15 @@ export function TaskDiscussion({
     setBusy(true);
     setError('');
     try {
+      if (!editing && !navigator.onLine) {
+        const queued = await enqueueTaskChange(queryClient, task, {
+          kind: 'COMMENT',
+          message: message.trim(),
+        });
+        if (queued) setMessage('');
+        else setError(offline('unavailable'));
+        return;
+      }
       const saved = await api<TaskComment>(
         `/tasks/${task.id}/comments${editing ? '/' + editing.id : ''}`,
         {
