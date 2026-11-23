@@ -10,7 +10,6 @@ import {
 import {
   Link,
   Navigate,
-  NavLink,
   Outlet,
   useLocation,
   useNavigate,
@@ -328,22 +327,18 @@ function WorkspaceShell() {
         >
           <p aria-hidden="true">{t(label)}</p>
           {views.map((key) => (
-            <NavLink
+            <Link
               key={key}
               to={`/${key}`}
-              className={({ isActive }) =>
-                isActive ||
-                (key === 'organizations' && pathname.startsWith('/o/'))
-                  ? 'active'
-                  : ''
-              }
+              aria-current={titleKey === key ? 'page' : undefined}
+              className={titleKey === key ? 'active' : undefined}
               onClick={() => setMenuOpen(false)}
             >
               <InterfaceIcon
                 name={key === 'organizations' ? 'projects' : key}
               />
               <span>{t(key)}</span>
-            </NavLink>
+            </Link>
           ))}
         </div>
       ))}
@@ -536,6 +531,15 @@ function MobileMenu({
   const t = useT(appText);
   const ref = useRef<HTMLDivElement>(null);
   useModalFocus(onClose, ref);
+  useEffect(() => {
+    const menu = ref.current;
+    const current = menu?.querySelector('[aria-current="page"]');
+    if (!menu || !current) return;
+    const overflow =
+      current.getBoundingClientRect().bottom -
+      menu.getBoundingClientRect().bottom;
+    if (overflow > 0) menu.scrollTop += overflow + 16;
+  }, []);
   useEffect(() => {
     const resize = () => {
       if (window.innerWidth >= 1024) onClose();

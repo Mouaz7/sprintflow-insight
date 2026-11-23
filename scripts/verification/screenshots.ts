@@ -909,6 +909,19 @@ async function main(): Promise<void> {
       .click();
     await phone.page.locator("#workspace-page h1").waitFor();
     await capture(phone.page, "mobile-board");
+    await phone.page
+      .getByRole("searchbox", { name: "Search tasks", exact: true })
+      .fill(data.commentedTask);
+    await phone.page.getByText(/^Showing 1 of \d+ tasks$/).waitFor();
+    await capture(phone.page, "mobile-board-filtered");
+
+    await openView(phone.page, "profile");
+    await phone.page.getByRole("button", { name: "Open menu" }).click();
+    await phone.page
+      .getByRole("navigation", { name: "Mobile navigation" })
+      .getByRole("link", { name: "Profile", exact: true })
+      .waitFor();
+    await capture(phone.page, "mobile-navigation");
     await phone.context.close();
   } finally {
     await browser.close();
