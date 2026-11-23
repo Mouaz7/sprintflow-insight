@@ -2,18 +2,20 @@
 
 [![Quality](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/Mouaz7/sprintflow-insight/actions/workflows/quality.yml) ![Java 25](https://img.shields.io/badge/Java-25-ED8B00) ![React and TypeScript](https://img.shields.io/badge/React-TypeScript-3178C6) ![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1)
 
-Plan a sprint, collaborate on a shared board and review what the team delivered. SprintFlow combines a prioritized backlog with live task updates, planning poker, time tracking and delivery analytics. The interface supports English and Swedish, light and dark themes, keyboard navigation and mobile screens.
+SprintFlow Insight is a project workspace for planning sprints, tracking live work and reviewing delivery. Open it in a browser or install it as a web app. The interface is available in English and Swedish, with light and dark themes.
 
-[Start in Swedish](docs/getting-started.sv.md) · [Feature guide](docs/workspace-features.md) · [API contract](docs/openapi.yaml) · [Roadmap](https://github.com/Mouaz7/sprintflow-insight/issues/38)
+[Run locally](#run-with-docker) · [See the app](#see-the-app) · [Svensk startguide](docs/getting-started.sv.md) · [Feature guide](docs/workspace-features.md) · [Roadmap](https://github.com/Mouaz7/sprintflow-insight/issues/38)
+
+![SprintFlow project overview with grouped navigation, delivery metrics and the active sprint](docs/images/screenshots/overview.webp)
 
 ## See the app
 
-These screenshots come from the packaged application and PostgreSQL using fictional demo accounts. [Regenerate them](docs/testing.md#readme-screenshots-d1) after a major interface change.
-
-| Project overview | Live task board |
+| Task board | Mobile search |
 | --- | --- |
-| ![Project overview with sprint goal and delivery progress](docs/images/screenshots/overview.webp) | ![Task board with work in four columns](docs/images/screenshots/board.webp) |
-| ![Task board in dark mode](docs/images/screenshots/board-dark.webp) | ![Command palette with matching tasks and comments](docs/images/screenshots/search-palette.webp) |
+| ![Task board with a project search field, filter options and four status columns](docs/images/screenshots/board.webp) | <img src="docs/images/screenshots/mobile-board-filtered.webp" width="230" alt="Mobile task board showing the search result count and a matching task card"> |
+| [Dark board](docs/images/screenshots/board-dark.webp) · [Global search](docs/images/screenshots/search-palette.webp) | [Mobile menu](docs/images/screenshots/mobile-navigation.webp) · [Mobile overview](docs/images/screenshots/mobile-overview.webp) |
+
+The screenshots come from the packaged application, using demo accounts and data in PostgreSQL. [Capture instructions](docs/testing.md#readme-screenshots-d1)
 
 <details>
 <summary>Planning, collaboration, analytics and mobile screenshots</summary>
@@ -35,7 +37,7 @@ These screenshots come from the packaged application and PostgreSQL using fictio
 | Import and audit | [CSV/Jira import and audit](docs/images/screenshots/import-audit.webp) |
 | Activity and profile | [Activity](docs/images/screenshots/activity.webp), [profile](docs/images/screenshots/profile.webp), [email preferences](docs/images/screenshots/email-preferences.webp) |
 | Shared report and account | [Public report snapshot](docs/images/screenshots/shared-report.webp), [sign-in](docs/images/screenshots/sign-in.webp) |
-| Mobile | [Overview](docs/images/screenshots/mobile-overview.webp), [board](docs/images/screenshots/mobile-board.webp) |
+| Mobile | [Overview](docs/images/screenshots/mobile-overview.webp) · [Board](docs/images/screenshots/mobile-board.webp) · [Filtered board](docs/images/screenshots/mobile-board-filtered.webp) · [Navigation](docs/images/screenshots/mobile-navigation.webp) |
 | Organizations | [Light](docs/images/release/organizations-light.webp) · [Dark](docs/images/release/organizations-dark.webp) |
 | Outgoing webhooks | [Light](docs/images/release/outgoing-webhooks-light.webp) · [Dark](docs/images/release/outgoing-webhooks-dark.webp) |
 | Offline task board | [Light](docs/images/release/offline-board-light.webp) · [Dark](docs/images/release/offline-board-dark.webp) |
@@ -43,37 +45,6 @@ These screenshots come from the packaged application and PostgreSQL using fictio
 The capture manifests record the image sizes, SHA-256 hashes and source revisions. [Core views](docs/images/screenshots/manifest.json) · [Release views](docs/images/release/manifest.json).
 
 </details>
-
-## What works
-
-| Area | Behavior |
-| --- | --- |
-| Project workspace | Scrum/Kanban templates, Owner/Admin/Member/Viewer access, membership, archives and recoverable trash |
-| Planning | Ordered backlog, sprint goals/history, epics, roadmap dependencies, PERT estimates and planning poker with private votes |
-| Data portability | CSV/Jira mapping and dry-run, [Apache research subset converter](docs/import-export.md), account JSON ZIP and retained admin audit |
-| Task delivery | Board, labels, checklists, attachments, saved filters, typed custom fields and filtered CSV/PDF exports |
-| Collaboration | Live updates and presence, comments, @mentions, in-app notifications and optional daily/weekly email summaries |
-| Offline workspace | Installable app, cached boards, queued moves, comments and time logs with conflict review, and persistent shared-text edits |
-| Integrations | GitHub task links, scoped API tokens and signed outgoing project webhooks |
-| Time | Manual entries, one running timer per account, estimates versus actuals, sprint availability and capacity warnings |
-| Insights | Burndown, cumulative flow, cycle-time/WIP views, bootstrap delivery forecasts, personal dashboards and shared report snapshots |
-| Navigation | Reloadable routes, project-scoped search and command palette, keyboard shortcuts and EN/SV help |
-| Accounts | Email/password, optional Google sign-in, optional password recovery, profile and notification preferences |
-
-Forecasts depend on the recorded history and assumptions; warnings and accessible data tables accompany the charts. See [metric definitions](docs/metrics-definition.md). Email summaries start **Off**, require SMTP for delivery and have a confirmation page for unsubscribing.
-
-## Architecture
-
-```text
-Browser → React / TypeScript / Vite
-                    ↓ same-origin REST + WebSocket
-          Java 25 / Spring Boot / Spring Modulith
-                    ↓
-          PostgreSQL 16 + Flyway migrations
-          Local attachment files
-```
-
-Spring Boot serves the built frontend and API from one address. Feature folders and lazy routes organize the frontend; backend modules use durable domain events for notifications and realtime invalidations. PostgreSQL stores sessions and application data. [Architecture](docs/architecture.md), [module diagrams](docs/architecture/all-docs.adoc) and [ADRs](docs/adr/README.md) describe the boundaries and decisions.
 
 ## Run with Docker
 
@@ -90,6 +61,37 @@ On Windows, use PowerShell and run `.\start.cmd` instead. Open **http://localhos
 The launchers prepare a private `.env`, generating the database password and encryption key once. Keep this file with your backups: replacing its password does not change an existing database user's password, and losing its encryption key makes encrypted values unreadable.
 
 Choose **Create account**, register an email/password and create a project or start from a template. There is no default administrator account. Google and SMTP settings can stay empty.
+
+## What works
+
+| Area | Behavior |
+| --- | --- |
+| Project workspace | Scrum/Kanban templates, Owner/Admin/Member/Viewer access, membership, archives and recoverable trash |
+| Planning | Ordered backlog, sprint goals/history, epics, roadmap dependencies, PERT estimates and planning poker with private votes |
+| Data portability | CSV/Jira mapping and dry-run, [Apache research subset converter](docs/import-export.md), account JSON ZIP and retained admin audit |
+| Task delivery | Live board, mobile task search, saved filters, checklists, attachments, custom fields and CSV/PDF exports |
+| Collaboration | Live updates and presence, comments, @mentions, in-app notifications and optional daily/weekly email summaries |
+| Offline workspace | Installable app, cached boards, queued moves, comments and time logs with conflict review, and persistent shared-text edits |
+| Integrations | GitHub task links, scoped API tokens and signed outgoing project webhooks |
+| Time | Manual entries, one running timer per account, estimates versus actuals, sprint availability and capacity warnings |
+| Insights | Burndown, cumulative flow, cycle-time/WIP views, bootstrap delivery forecasts, personal dashboards and shared report snapshots |
+| Navigation | Grouped desktop sidebar, mobile menu that shows the current page, project search, keyboard shortcuts and EN/SV help |
+| Accounts | Email/password, optional Google sign-in, optional password recovery, profile and notification preferences |
+
+Forecasts depend on the recorded history and assumptions; warnings and accessible data tables accompany the charts. See [metric definitions](docs/metrics-definition.md). Email summaries start **Off**, require SMTP for delivery and have a confirmation page for unsubscribing.
+
+## Architecture
+
+```text
+Browser → React / TypeScript / Vite
+                    ↓ same-origin REST + WebSocket
+          Java 25 / Spring Boot / Spring Modulith
+                    ↓
+          PostgreSQL 16 + Flyway migrations
+          Local attachment files
+```
+
+Spring Boot serves the built frontend and API from one address. Feature folders and lazy routes organize the frontend; backend modules use durable domain events for notifications and realtime invalidations. PostgreSQL stores sessions and application data. [Architecture](docs/architecture.md), [module diagrams](docs/architecture/all-docs.adoc) and [ADRs](docs/adr/README.md) describe the boundaries and decisions.
 
 ## Native development
 
@@ -195,6 +197,7 @@ The live roadmap links each feature and evaluation to its issue and verification
 | [Schema](docs/data-schema.md) / [OpenAPI](docs/openapi.yaml) | Data and HTTP contracts |
 | [Metric definitions](docs/metrics-definition.md) | Calculations, assumptions and limits |
 | [Testing](docs/testing.md) | Commands, reports, browser checks and screenshots |
+| [Evaluation #37](https://github.com/Mouaz7/sprintflow-insight/issues/37) · [Archived report draft](https://github.com/Mouaz7/sprintflow-insight/blob/df9f11e5ed5611e2aeb826e778554323d8863be2/docs/evaluation/report.md) | Evaluation status and measured results |
 | [Collaborative text](docs/collaboration.md) | Task descriptions, retrospective notes and STOMP protocol |
 | [Security review](docs/security-review.md) / [ASVS](docs/security/asvs.md) | Security boundaries and verification |
 | [Definition of Done](docs/definition-of-done.md) | Completion criteria |

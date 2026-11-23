@@ -10,7 +10,6 @@ import {
 import {
   Link,
   Navigate,
-  NavLink,
   Outlet,
   useLocation,
   useNavigate,
@@ -171,7 +170,7 @@ function WorkspaceShell() {
   const t = useT(appText);
   const navigate = useNavigate();
   const location = useLocation();
-  const pathname = location.pathname;
+  const pathname = location.pathname.replace(/\/+$/, '') || '/';
   const view = workspaceViews.find((candidate) => pathname === `/${candidate}`);
   const organizationPage =
     pathname === '/organizations' || pathname.startsWith('/o/');
@@ -328,22 +327,18 @@ function WorkspaceShell() {
         >
           <p aria-hidden="true">{t(label)}</p>
           {views.map((key) => (
-            <NavLink
+            <Link
               key={key}
               to={`/${key}`}
-              className={({ isActive }) =>
-                isActive ||
-                (key === 'organizations' && pathname.startsWith('/o/'))
-                  ? 'active'
-                  : ''
-              }
+              aria-current={titleKey === key ? 'page' : undefined}
+              className={titleKey === key ? 'active' : undefined}
               onClick={() => setMenuOpen(false)}
             >
               <InterfaceIcon
                 name={key === 'organizations' ? 'projects' : key}
               />
               <span>{t(key)}</span>
-            </NavLink>
+            </Link>
           ))}
         </div>
       ))}
@@ -536,6 +531,19 @@ function MobileMenu({
   const t = useT(appText);
   const ref = useRef<HTMLDivElement>(null);
   useModalFocus(onClose, ref);
+  useEffect(() => {
+    // Let the focus on the close button settle before scrolling the menu.
+    const frame = requestAnimationFrame(() => {
+      const navigation = ref.current?.querySelector('nav');
+      const current = navigation?.querySelector('[aria-current="page"]');
+      if (!navigation || !current) return;
+      const overflow =
+        current.getBoundingClientRect().bottom -
+        navigation.getBoundingClientRect().bottom;
+      if (overflow > 0) navigation.scrollTop += overflow + 16;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   useEffect(() => {
     const resize = () => {
       if (window.innerWidth >= 1024) onClose();

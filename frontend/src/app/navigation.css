@@ -9,26 +9,25 @@
   position: absolute;
   top: 0;
   right: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(78vw, 360px);
   height: 100dvh;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scroll-padding-top: 68px;
   padding: 0 16px 16px;
   color: var(--nav-text);
   background: var(--sidebar);
 }
 .mobile-menu > header {
-  position: sticky;
-  z-index: 1;
-  top: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
   padding: 16px 0 8px;
-  background: var(--sidebar);
+}
+.mobile-menu > nav {
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .mobile-menu .icon-button {
   color: var(--nav-text);

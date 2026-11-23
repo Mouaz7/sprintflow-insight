@@ -1,36 +1,36 @@
 {
-  "generatedAt": "2026-11-22T00:50:12.350Z",
-  "sourceCommit": "9dc42f49b3c37f270b411bcbd62160eb8cef74dc",
+  "generatedAt": "2026-11-23T19:29:46.188Z",
+  "sourceCommit": "2a4254b251956679539782baea2fbacef03a1fa4",
   "images": [
     {
       "file": "organizations-light.webp",
-      "bytes": 26666,
-      "sha256": "c74eea34a45af8f04584b704b90f7bbe19e385c6979ec4639eff49698335154b"
+      "bytes": 26444,
+      "sha256": "9a2267016d7f7c8fa0f9e94c2100af8849a9d7c74fd4b6afc0592028b2d99705"
     },
     {
       "file": "outgoing-webhooks-light.webp",
-      "bytes": 32794,
-      "sha256": "07bb9844ed2ec864f0a185e60fdd3b4c2e955c9174d808921319a542fee3952f"
+      "bytes": 35860,
+      "sha256": "7615b0dca407c78976efe6fcc90a83d0decbf3fff64eaf519b75ec62dcc8fc96"
     },
     {
       "file": "offline-board-light.webp",
-      "bytes": 58896,
-      "sha256": "b3f2a115a6e6747657191a9d8743882569c3e4cf9204190879d2b7c0e49428ab"
+      "bytes": 60582,
+      "sha256": "3c418719044ba60b972f958972aa46a334c22473e0ce64164bddeda9322e504a"
     },
     {
       "file": "organizations-dark.webp",
-      "bytes": 26534,
-      "sha256": "12d00a2ce64b1166a578cc4e426b9f19d49b762a54388124f40904085efbe798"
+      "bytes": 26030,
+      "sha256": "8259862215b9fb4f3b10430f8a29cd67725eeeb938f458ce703531ee6e38d1d5"
     },
     {
       "file": "outgoing-webhooks-dark.webp",
-      "bytes": 32910,
-      "sha256": "4ca5c5071c7c51de31a8f973d60153df3920ee1500205894e68e18ca54bf1eb6"
+      "bytes": 35440,
+      "sha256": "27752585a48bb35da15e206d23533db7a153d07365699ade81aae1a58fc995a8"
     },
     {
       "file": "offline-board-dark.webp",
-      "bytes": 58600,
-      "sha256": "733eb874a0d4101337d87234f5e45a23394912b8fee39dad639771ea797c97ed"
+      "bytes": 60258,
+      "sha256": "f4b295687ebc3971f65670218ea510ae95eec3de388e9811abb4160b5296d03f"
     }
   ]
 }
