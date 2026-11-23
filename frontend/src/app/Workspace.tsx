@@ -170,7 +170,7 @@ function WorkspaceShell() {
   const t = useT(appText);
   const navigate = useNavigate();
   const location = useLocation();
-  const pathname = location.pathname;
+  const pathname = location.pathname.replace(/\/+$/, '') || '/';
   const view = workspaceViews.find((candidate) => pathname === `/${candidate}`);
   const organizationPage =
     pathname === '/organizations' || pathname.startsWith('/o/');
@@ -532,13 +532,17 @@ function MobileMenu({
   const ref = useRef<HTMLDivElement>(null);
   useModalFocus(onClose, ref);
   useEffect(() => {
-    const menu = ref.current;
-    const current = menu?.querySelector('[aria-current="page"]');
-    if (!menu || !current) return;
-    const overflow =
-      current.getBoundingClientRect().bottom -
-      menu.getBoundingClientRect().bottom;
-    if (overflow > 0) menu.scrollTop += overflow + 16;
+    // Let the focus on the close button settle before scrolling the menu.
+    const frame = requestAnimationFrame(() => {
+      const navigation = ref.current?.querySelector('nav');
+      const current = navigation?.querySelector('[aria-current="page"]');
+      if (!navigation || !current) return;
+      const overflow =
+        current.getBoundingClientRect().bottom -
+        navigation.getBoundingClientRect().bottom;
+      if (overflow > 0) navigation.scrollTop += overflow + 16;
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
   useEffect(() => {
     const resize = () => {

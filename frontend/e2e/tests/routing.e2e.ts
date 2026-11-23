@@ -59,7 +59,7 @@ test('opens the mobile menu at the current page and restores keyboard focus', as
 }) => {
   expect(account.email).toContain('@example.com');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/trash');
+  await page.goto('/trash/');
 
   const openMenu = page.getByRole('button', { name: 'Open menu' });
   await openMenu.press('Enter');
