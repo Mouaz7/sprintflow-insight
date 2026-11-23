@@ -54,21 +54,9 @@
   font-size: var(--text-small);
   background: var(--surface);
 }
-.task-board > section > header span::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: var(--muted);
-}
-.task-board > section:nth-child(2) > header span::before {
-  background: var(--chart);
-}
-.task-board > section:nth-child(3) > header span::before {
-  border: 2px solid var(--chart);
-  background: transparent;
+.task-board h2 {
+  font: inherit;
+  letter-spacing: normal;
 }
 .task-board article {
   display: grid;

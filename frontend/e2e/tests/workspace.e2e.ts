@@ -205,9 +205,26 @@ test('finds, combines and clears board filters on a phone', async ({
   const disclosure = page.getByText('Filter och export', { exact: true });
   const planningTask = page.getByText('Planera släppet', { exact: true });
   const calendarTask = page.getByText('Uppdatera kalendern', { exact: true });
+  const toDo = page.getByRole('heading', { name: 'Att göra', exact: true });
   await expect(search).toBeVisible();
   await expect(filter).toBeHidden();
   await expect(planningTask).toBeInViewport();
+
+  await search.fill('kalendern');
+  await expect(calendarTask).toBeInViewport();
+  await expect(toDo).toBeHidden();
+  const calendarCard = page.getByRole('article').filter({ has: calendarTask });
+  await calendarCard.dispatchEvent('dragstart');
+  await expect(toDo).toBeVisible();
+  await page
+    .locator('.task-board > section')
+    .filter({ has: toDo })
+    .dispatchEvent('drop');
+  const moveTo = calendarCard.getByRole('combobox', { name: 'Flytta till' });
+  await expect(moveTo).toHaveValue('To Do');
+  await moveTo.selectOption('Review');
+  await expect(toDo).toBeHidden();
+  await expect(moveTo).toHaveValue('Review');
 
   await search.fill('släpp');
   await expect(page.getByText('Visar 1 av 2 uppgifter')).toBeVisible();

@@ -47,6 +47,7 @@ export function Board({
     setDraggedTaskId,
     labels,
     filtered,
+    exportQuery,
     busyTasks,
     canWrite,
     t,
@@ -61,8 +62,6 @@ export function Board({
     (sprint) =>
       sprint.status === 'Active' && sprint.endDate && sprint.endDate >= today,
   );
-  const columnTasks = (column: Task['status']) =>
-    filtered.filter((task) => task.status === column);
   const renderWip = (column: Task['status']) => {
     const limit = wipLimits.find((row) => row.status === column)?.limit;
     if (limit == null) return null;
@@ -184,42 +183,50 @@ export function Board({
     </article>
   );
   return (
-    <div className="task-board">
-      {columns.map((column) => (
-        <section
-          key={column}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            const task = tasks.find((item) => item.id === draggedTaskId);
-            if (task && task.status !== column)
-              void updateTask(task, { status: column });
-            setDraggedTaskId(undefined);
-          }}
-        >
-          <header>
-            <span>{labels[column]}</span>
-            <b>{columnTasks(column).length}</b>
-          </header>
-          {renderWip(column)}
-          {columnTasks(column).length > VIRTUALIZE_AFTER ? (
-            <VirtualList
-              items={columnTasks(column)}
-              label={labels[column]}
-              estimateSize={320}
-              getKey={(task) => task.id}
-              renderItem={renderCard}
-            />
-          ) : (
-            columnTasks(column).map((task) => (
-              <Fragment key={task.id}>{renderCard(task)}</Fragment>
-            ))
-          )}
-          {!filtered.some((task) => task.status === column) && (
-            <p className="empty-column">{t('noTasks')}</p>
-          )}
-        </section>
-      ))}
+    <div
+      className="task-board"
+      data-show-matches={
+        exportQuery && draggedTaskId === undefined ? true : undefined
+      }
+    >
+      {columns.map((column) => {
+        const items = filtered.filter((task) => task.status === column);
+        const wip = renderWip(column);
+        return (
+          <section
+            key={column}
+            data-empty={!items.length && wip === null ? true : undefined}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              const task = tasks.find((item) => item.id === draggedTaskId);
+              if (task && task.status !== column)
+                void updateTask(task, { status: column });
+              setDraggedTaskId(undefined);
+            }}
+          >
+            <header>
+              <h2>{labels[column]}</h2>
+              <b>{items.length}</b>
+            </header>
+            {wip}
+            {items.length > VIRTUALIZE_AFTER ? (
+              <VirtualList
+                items={items}
+                label={labels[column]}
+                estimateSize={320}
+                getKey={(task) => task.id}
+                renderItem={renderCard}
+              />
+            ) : (
+              items.map((task) => (
+                <Fragment key={task.id}>{renderCard(task)}</Fragment>
+              ))
+            )}
+            {!items.length && <p className="empty-column">{t('noTasks')}</p>}
+          </section>
+        );
+      })}
     </div>
   );
 }
