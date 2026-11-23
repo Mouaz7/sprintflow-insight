@@ -35,7 +35,7 @@
   "devDependencies": {
     "@babel/core": "7.29.13",
     "@csstools/postcss-global-data": "4.0.0",
-    "@eslint/js": "9.39.5",
+    "@eslint/js": "10.0.1",
     "@messageformat/core": "3.4.1",
     "@rolldown/plugin-babel": "0.2.4",
     "@size-limit/file": "14.3.0",
