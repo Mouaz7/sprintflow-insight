@@ -62,7 +62,7 @@
     "prettier": "3.10.1",
     "size-limit": "14.3.0",
     "storybook": "10.6.7",
-    "typescript": "5.7.2",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.72.2",
     "vite": "8.3.4",
     "vite-plugin-pwa": "2.0.0",
