@@ -1,22 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Preferences, CustomFieldCondition } from '../../api/contracts';
+import type { Preferences } from '../../api/contracts';
 import { useT } from '../../shared/i18n/LanguageProvider';
 import { tasksText } from './i18n';
 import { preferencesQuery } from '../../api/queries';
 import { FormGuide, useFieldExample } from '../../shared/ui/Guidance';
 import { Drawer, Notice, useConfirm } from '../../shared/ui/ui';
-export type TaskFilters = {
-  query: string;
-  status: string;
-  sprint: string;
-  assignee: string;
-  due: string;
-  blocked: boolean;
-  label: string;
-  custom?: CustomFieldCondition | null;
-};
+import { emptyTaskFilters as empty, type TaskFilters } from './filterCriteria';
+
 type SavedFilter = {
   id: string;
   name: string;
@@ -118,16 +110,6 @@ export function SavedFilters({
     )
       setSelected('');
   }
-  const empty: TaskFilters = {
-    query: '',
-    status: '',
-    sprint: '',
-    assignee: '',
-    due: '',
-    blocked: false,
-    label: '',
-    custom: null,
-  };
   const selectedCriteria =
     selected === 'mine'
       ? { ...empty, assignee: userEmail }

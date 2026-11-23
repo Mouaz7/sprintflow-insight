@@ -28,6 +28,7 @@ import { enqueueTaskMove } from '../../shared/offline/operations';
 import { useConfirm } from '../../shared/ui/ui';
 import { useLanguage, useT } from '../../shared/i18n/LanguageProvider';
 import { tasksText } from './i18n';
+import { emptyTaskFilters, type TaskFilters } from './filterCriteria';
 export type TasksViewProps = {
   userEmail?: string;
   readOnly?: boolean;
@@ -170,6 +171,16 @@ export function useTaskBoard({
   const [labelFilter, setLabelFilter] = useState('');
   const [customCondition, setCustomCondition] =
     useState<CustomFieldCondition | null>(null);
+  function applyFilters(filters: TaskFilters) {
+    setQuery(filters.query);
+    setStatusFilter(filters.status);
+    setSprintFilter(filters.sprint);
+    setAssigneeFilter(filters.assignee);
+    setDueFilter(filters.due);
+    setBlockedOnly(filters.blocked);
+    setLabelFilter(filters.label);
+    setCustomCondition(filters.custom ?? null);
+  }
   const customMatches = useQuery(
     customMatchesQuery(projectId ?? 0, customCondition),
   );
@@ -277,13 +288,7 @@ export function useTaskBoard({
             : [...current, saved],
         );
       clearForm();
-      setQuery('');
-      setStatusFilter('');
-      setSprintFilter('');
-      setAssigneeFilter('');
-      setDueFilter('');
-      setBlockedOnly(false);
-      setLabelFilter('');
+      applyFilters(emptyTaskFilters);
       setSavedTitle(saved.title);
     } catch (cause) {
       setMessage(
@@ -435,6 +440,7 @@ export function useTaskBoard({
     savedTitle,
     setSavedTitle,
     loading,
+    loadError,
     tasks,
     dependencyBlocked,
     wipLimits: wipResult.data?.limits ?? [],
@@ -474,6 +480,7 @@ export function useTaskBoard({
     setAssigneeEmail,
     query,
     setQuery,
+    applyFilters,
     statusFilter,
     setStatusFilter,
     sprintFilter,

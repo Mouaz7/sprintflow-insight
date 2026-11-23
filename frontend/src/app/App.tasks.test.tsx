@@ -116,7 +116,7 @@ describe('App.tasks', () => {
     );
     const card = screen.getByText('Ship reliable board').closest('article');
     const reviewColumn = screen
-      .getByText('Review', { selector: 'span' })
+      .getByRole('heading', { level: 2, name: 'Review' })
       .closest('section');
     fireEvent.dragStart(card!);
     fireEvent.drop(reviewColumn!, {

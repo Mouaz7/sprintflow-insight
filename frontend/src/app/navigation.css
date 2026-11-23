@@ -166,6 +166,9 @@
   .task-board {
     grid-template-columns: minmax(0, 1fr);
   }
+  .task-board[data-show-matches] > [data-empty] {
+    display: none;
+  }
   .task-board article {
     padding: 12px;
   }

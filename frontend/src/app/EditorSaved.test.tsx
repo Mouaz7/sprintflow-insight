@@ -82,7 +82,7 @@ it('reveals a created task when search and a saved blocked filter would hide it'
   await waitFor(() =>
     expect(screen.getByRole('button', { name: /New task/ })).toBeEnabled(),
   );
-  fireEvent.change(screen.getByLabelText('Saved filters'), {
+  fireEvent.change(await screen.findByLabelText('Saved filters'), {
     target: { value: 'blocked' },
   });
   fireEvent.change(screen.getByLabelText('Search tasks'), {
