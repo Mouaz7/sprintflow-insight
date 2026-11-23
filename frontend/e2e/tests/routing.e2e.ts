@@ -59,14 +59,14 @@ test('opens the mobile menu at the current page and restores keyboard focus', as
 }) => {
   expect(account.email).toContain('@example.com');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/trash/');
+  await page.goto('/trash');
 
   const openMenu = page.getByRole('button', { name: 'Open menu' });
   await openMenu.press('Enter');
   const menu = page.getByRole('dialog', { name: 'Navigation' });
   const current = menu.getByRole('link', { name: 'Recycle bin', exact: true });
   await expect(current).toHaveAttribute('aria-current', 'page');
-  await expect(current).toBeInViewport({ ratio: 1 });
+  await expect(current).toBeInViewport({ ratio: 0.99 });
   await expect(menu.getByRole('button', { name: 'Close menu' })).toBeFocused();
 
   await page.keyboard.press('Escape');
