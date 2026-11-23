@@ -2,12 +2,10 @@
 .board-controls {
   margin-bottom: var(--space-section);
 }
-.task-toolbar {
+.task-filters {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 8px;
 }
 .task-filters > input {
   flex: 1 1 230px;
@@ -21,8 +19,6 @@
   align-items: center;
   gap: 8px;
   min-height: var(--control-height);
-  font-size: var(--text-body);
-  white-space: nowrap;
 }
 .task-board {
   display: grid;

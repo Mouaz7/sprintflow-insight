@@ -172,3 +172,62 @@ test('keeps Swedish overview cards within their columns on a phone', async ({
   );
   expect(overflow).toEqual([]);
 });
+
+test('finds, combines and clears board filters on a phone', async ({
+  page,
+  api,
+  account,
+}) => {
+  const suffix = account.email.split('@')[0]?.slice(-12) ?? 'run';
+  const project = await api.json<Project>('/projects', 'POST', {
+    name: `Mobil uppgiftstavla ${suffix}`,
+  });
+  for (const [title, status] of [
+    ['Planera släppet', 'To Do'],
+    ['Uppdatera kalendern', 'Done'],
+  ]) {
+    await api.json('/tasks', 'POST', {
+      projectId: project.id,
+      title,
+      status,
+      storyPoints: 1,
+    });
+  }
+  await api.json('/auth/preferences', 'PUT', {
+    language: 'SV',
+    onboardingCompleted: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/tasks');
+
+  const search = page.getByRole('searchbox', { name: 'Sök uppgifter' });
+  const filter = page.getByRole('combobox', { name: 'Filtrera status' });
+  const disclosure = page.getByText('Filter och export', { exact: true });
+  const planningTask = page.getByText('Planera släppet', { exact: true });
+  const calendarTask = page.getByText('Uppdatera kalendern', { exact: true });
+  await expect(search).toBeVisible();
+  await expect(filter).toBeHidden();
+  await expect(planningTask).toBeInViewport();
+
+  await search.fill('släpp');
+  await expect(page.getByText('Visar 1 av 2 uppgifter')).toBeVisible();
+  await expect(calendarTask).toBeHidden();
+  await disclosure.press('Enter');
+  await expect(filter).toBeVisible();
+  await filter.selectOption('Done');
+  await expect(page.getByText('Visar 0 av 2 uppgifter')).toBeVisible();
+  await expect(planningTask).toBeHidden();
+  await expect(page.locator('a[href*="export.csv"]')).toHaveAttribute(
+    'href',
+    /status=Done.*q=sl%C3%A4pp/,
+  );
+  await disclosure.press('Enter');
+  await expect(filter).toBeHidden();
+  await expect(page.getByText('Visar 0 av 2 uppgifter')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Rensa filter' }).click();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('');
+  await expect(planningTask).toBeVisible();
+  await expect(calendarTask).toBeVisible();
+});

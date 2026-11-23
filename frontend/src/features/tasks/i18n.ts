@@ -65,6 +65,10 @@ export const tasksText = defineLexicon({
     allLabels: 'All labels',
     searchPlaceholder: 'Search tasks…',
     searchTasks: 'Search tasks',
+    filtersAndExport: 'Filters and export',
+    clearFilters: 'Clear filters',
+    filterResults: ({ shown, total }: { shown: number; total: number }, f) =>
+      `Showing ${f.number(shown)} of ${f.number(total)} ${total === 1 ? 'task' : 'tasks'}`,
     filterStatus: 'Filter status',
     allStatuses: 'All statuses',
     filterSprint: 'Filter sprint',
@@ -186,6 +190,10 @@ export const tasksText = defineLexicon({
     allLabels: 'Alla etiketter',
     searchPlaceholder: 'Sök uppgifter…',
     searchTasks: 'Sök uppgifter',
+    filtersAndExport: 'Filter och export',
+    clearFilters: 'Rensa filter',
+    filterResults: ({ shown, total }: { shown: number; total: number }, f) =>
+      `Visar ${f.number(shown)} av ${f.number(total)} ${total === 1 ? 'uppgift' : 'uppgifter'}`,
     filterStatus: 'Filtrera status',
     allStatuses: 'Alla statusar',
     filterSprint: 'Filtrera sprint',
